@@ -1,0 +1,1080 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_saperp": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_SAPAcceleratorERP"
+        },
+        "api": {
+          "name": "shared_saperp"
+        }
+      },
+      "shared_commondataserviceforapps_2": {
+        "impersonation": {
+          "source": "invoker"
+        },
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_SAPAcceleratorDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "SAP Application Server (mpa_SAPApplicationServer)": {
+          "defaultValue": "{\"AppServerHost\":\"sap.clearsoftware.com\",\"Client\":\"100\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_SAPApplicationServer"
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "7ed7c9d5-4a2b-4fca-bdbb-bc9126b1b05b"
+          },
+          "type": "Request",
+          "kind": "PowerAppV2",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "JSON",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Set_Vendor": {
+          "runAfter": {
+            "Initialize_SAPErrorMessage": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "4b0212c7-3ffa-4661-9cb5-e4e8ac8d68e7"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Vendor",
+                "type": "string",
+                "value": "@triggerBody()['text']"
+              }
+            ]
+          }
+        },
+        "Try": {
+          "actions": {
+            "LFA1": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "33682607-d4c0-4198-bab2-3b8606bd278a"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp",
+                  "operationId": "ReadTableVersion3",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                  "inputParameters/tableName": "LFA1",
+                  "inputParameters/FieldNames": [
+                    "LIFNR:Account Number of Vendor or Creditor",
+                    "LAND1:Country Key",
+                    "NAME1:Name 1",
+                    "ORT01:City",
+                    "PSTLZ:Postal Code",
+                    "STRAS:House number and street",
+                    "REGIO:Region (State, Province, County)",
+                    "KTOKK:Vendor account group"
+                  ],
+                  "inputParameters/RowCount": 1,
+                  "inputParameters/WhereFilters": [
+                    "LIFNR = '@{if(isInt(variables('Vendor')), formatNumber(int(variables('Vendor')), 'D10'), variables('Vendor'))}'"
+                  ]
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              }
+            },
+            "Parse_Header": {
+              "runAfter": {
+                "Set_SAPErrorMessage01": [
+                  "Skipped"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@outputs('LFA1')?['body/Rows']",
+                "select": {
+                  "Country": "@item()?['LAND1']",
+                  "VendorName": "@item()?['NAME1']",
+                  "City": "@item()?['ORT01']",
+                  "PostalCode": "@item()?['PSTLZ']",
+                  "Street": "@item()?['STRAS']",
+                  "AccountGroup": "@item()?['KTOKK']",
+                  "Region": "@item()?['REGIO']",
+                  "Vendor": "@if(isInt(item()?['LIFNR']), string(int(item()?['LIFNR'])), item()?['LIFNR'])",
+                  "FullName": "@concat(if(isInt(item()?['LIFNR']), string(int(item()?['LIFNR'])), item()?['LIFNR']),' - ',item()?['NAME1'])"
+                }
+              }
+            },
+            "LFB1": {
+              "runAfter": {
+                "Parse_Header": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "471961bb-fc43-48bb-aec7-93a46e4a693b"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp",
+                  "operationId": "ReadTableVersion3",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                  "inputParameters/tableName": "LFB1",
+                  "inputParameters/FieldNames": [
+                    "AKONT:Reconciliation Account in General Ledger",
+                    "BUKRS:Company Code",
+                    "ZTERM:Terms of Payment Key",
+                    "ZWELS:List of the Payment Methods to be Considered",
+                    "LIFNR:Account Number of Vendor or Creditor"
+                  ],
+                  "inputParameters/RowCount": 999,
+                  "inputParameters/WhereFilters": [
+                    "LIFNR = '@{if(isInt(variables('Vendor')), formatNumber(int(variables('Vendor')), 'D10'), variables('Vendor'))}'",
+                    "AND LOEVM = ''"
+                  ]
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              }
+            },
+            "Parse_LFB1": {
+              "runAfter": {
+                "Set_SAPErrorMessage02": [
+                  "Skipped",
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "0e5714f9-6141-4172-abb5-63cd90c665a1"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@outputs('LFB1')?['body/Rows']",
+                "select": {
+                  "GLAccountRaw": "@item()?['AKONT']",
+                  "CompanyCode": "@item()?['BUKRS']",
+                  "PaymentTerms": "@item()?['ZTERM']",
+                  "PaymentMethods": "@item()?['ZWELS']",
+                  "GLAccount": "@if(isInt(item()?['AKONT']), string(int(item()?['AKONT'])), item()?['AKONT'])",
+                  "ID": "@concat(item()?['LIFNR'],item()?['BUKRS'])"
+                }
+              }
+            },
+            "LFM1": {
+              "runAfter": {
+                "Parse_LFB1": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "3d00b00b-f752-4e13-b9fa-83e27f98d7b8"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp",
+                  "operationId": "ReadTableVersion3",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                  "inputParameters/tableName": "LFM1",
+                  "inputParameters/FieldNames": [
+                    "EKGRP:Purchasing Group",
+                    "EKORG:Purchasing Organization",
+                    "WAERS:Purchase order currency",
+                    "ZTERM:Terms of Payment Key",
+                    "LIFNR:Vendor's account number"
+                  ],
+                  "inputParameters/RowCount": 999,
+                  "inputParameters/WhereFilters": [
+                    "LIFNR = '@{if(isInt(variables('Vendor')), formatNumber(int(variables('Vendor')), 'D10'), variables('Vendor'))}'",
+                    "AND LOEVM = ''"
+                  ]
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              }
+            },
+            "Parse_LFM1": {
+              "runAfter": {
+                "Set_SAPErrorMessage03": [
+                  "Succeeded",
+                  "Skipped"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "87603cc0-7fcd-49ff-945d-a97c571905b2"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@outputs('LFM1')?['body/Rows']",
+                "select": {
+                  "PurchasingOrganization": "@item()?['EKORG']",
+                  "PurchasingGroup": "@item()?['EKGRP']",
+                  "Currency": "@item()?['WAERS']",
+                  "PaymentTerms": "@item()?['ZTERM']",
+                  "ID": "@concat(item()?['LIFNR'],item()?['EKORG'])"
+                }
+              }
+            },
+            "ADDRESS": {
+              "runAfter": {
+                "Parse_LFM1": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "171e5a0a-389d-4e83-811d-1973eca00b50"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp",
+                  "operationId": "CallRfcJson",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                  "rfcName": "BAPI_ADDRESSORG_GETDETAIL",
+                  "rfcGroupFilter": "*",
+                  "autoCommit": false,
+                  "rfcInputs/OBJ_ID": "@if(isInt(variables('Vendor')), formatNumber(int(variables('Vendor')), 'D10'), variables('Vendor'))",
+                  "rfcInputs/OBJ_TYPE": "LFA1",
+                  "rfcInputs/CONTEXT": "0001",
+                  "rfcInputs/IV_CURRENT_COMM_DATA": "X"
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": {
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']",
+                  "type": "Raw"
+                }
+              }
+            },
+            "Parse_Emails": {
+              "runAfter": {
+                "Set_SAPErrorMessage04": [
+                  "Succeeded",
+                  "Skipped"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "1ed1c4cb-6ce9-4810-9bcd-1264817d6369"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@outputs('ADDRESS')?['body/BAPIADSMTP']",
+                "select": {
+                  "Email": "@item()?['E_MAIL']",
+                  "Default": "@if(equals(item()?['STD_NO'],'X'),true,false)",
+                  "ID": "@item()?['CONSNUMBER']"
+                }
+              }
+            },
+            "Parse_Phones": {
+              "runAfter": {
+                "Parse_Emails": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "1f1f7818-3a15-4e1e-9063-ee60f5e27f62"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@outputs('ADDRESS')?['body/BAPIADTEL']",
+                "select": {
+                  "Country": "@item()?['COUNTRY']",
+                  "Phone": "@item()?['TELEPHONE']",
+                  "Extension": "@item()?['EXTENSION']",
+                  "Default": "@if(equals(item()?['STD_NO'],'X'),true,false)",
+                  "ID": "@item()?['CONSNUMBER']"
+                }
+              }
+            },
+            "Condition": {
+              "actions": {
+                "Response": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "3acb6b71-7516-4f46-82a7-fe87c0f4120b"
+                  },
+                  "type": "Response",
+                  "kind": "Http",
+                  "inputs": {
+                    "statusCode": 200,
+                    "body": {
+                      "Status": "Success",
+                      "Header": "@body('Parse_Header')[0]",
+                      "Vendor": "@variables('Vendor')",
+                      "CompanyCodes": "@body('Parse_LFB1')",
+                      "PurchasingOrgs": "@body('Parse_LFM1')",
+                      "Emails": "@body('Parse_Emails')",
+                      "Phones": "@body('Parse_Phones')",
+                      "Messages": []
+                    },
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "Status": {
+                          "type": "string"
+                        },
+                        "Header": {
+                          "type": "object",
+                          "properties": {
+                            "Country": {
+                              "type": "string"
+                            },
+                            "VendorName": {
+                              "type": "string"
+                            },
+                            "City": {
+                              "type": "string"
+                            },
+                            "PostalCode": {
+                              "type": "string"
+                            },
+                            "Street": {
+                              "type": "string"
+                            },
+                            "AccountGroup": {
+                              "type": "string"
+                            },
+                            "Region": {
+                              "type": "string"
+                            },
+                            "Vendor": {
+                              "type": "string"
+                            },
+                            "FullName": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "Vendor": {
+                          "type": "string"
+                        },
+                        "CompanyCodes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ID": {
+                                "type": "string"
+                              },
+                              "GLAccount": {
+                                "type": "string"
+                              },
+                              "CompanyCode": {
+                                "type": "string"
+                              },
+                              "PaymentTerms": {
+                                "type": "string"
+                              },
+                              "PaymentMethods": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "PurchasingOrgs": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ID": {
+                                "type": "string"
+                              },
+                              "PurchasingOrganization": {
+                                "type": "string"
+                              },
+                              "PurchasingGroup": {
+                                "type": "string"
+                              },
+                              "PaymentTerms": {
+                                "type": "string"
+                              },
+                              "Currency": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "Emails": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ID": {
+                                "type": "string"
+                              },
+                              "Email": {
+                                "type": "string"
+                              },
+                              "Default": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        },
+                        "Phones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ID": {
+                                "type": "string"
+                              },
+                              "Country": {
+                                "type": "string"
+                              },
+                              "Phone": {
+                                "type": "string"
+                              },
+                              "Extension": {
+                                "type": "string"
+                              },
+                              "Default": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        },
+                        "Messages": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "Message"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Parse_Phones": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Response_2": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "b9cfca2c-70f9-4749-878c-653f1d0be098"
+                    },
+                    "type": "Response",
+                    "kind": "Http",
+                    "inputs": {
+                      "statusCode": 200,
+                      "body": {
+                        "Status": "Information",
+                        "Messages": [
+                          {
+                            "Message": "No vendors found based on your search criteria."
+                          }
+                        ]
+                      },
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "Status": {
+                            "type": "string"
+                          },
+                          "Header": {
+                            "type": "object",
+                            "properties": {
+                              "Country": {
+                                "type": "string"
+                              },
+                              "VendorName": {
+                                "type": "string"
+                              },
+                              "City": {
+                                "type": "string"
+                              },
+                              "PostalCode": {
+                                "type": "string"
+                              },
+                              "Street": {
+                                "type": "string"
+                              },
+                              "AccountGroup": {
+                                "type": "string"
+                              },
+                              "Region": {
+                                "type": "string"
+                              },
+                              "Vendor": {
+                                "type": "string"
+                              },
+                              "FullName": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "Vendor": {
+                            "type": "string"
+                          },
+                          "CompanyCodes": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "ID": {
+                                  "type": "string"
+                                },
+                                "GLAccount": {
+                                  "type": "string"
+                                },
+                                "CompanyCode": {
+                                  "type": "string"
+                                },
+                                "PaymentTerms": {
+                                  "type": "string"
+                                },
+                                "PaymentMethods": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "PurchasingOrgs": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "ID": {
+                                  "type": "string"
+                                },
+                                "PurchasingOrganization": {
+                                  "type": "string"
+                                },
+                                "PurchasingGroup": {
+                                  "type": "string"
+                                },
+                                "PaymentTerms": {
+                                  "type": "string"
+                                },
+                                "Currency": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "Emails": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "ID": {
+                                  "type": "string"
+                                },
+                                "Email": {
+                                  "type": "string"
+                                },
+                                "Default": {
+                                  "type": "boolean"
+                                }
+                              }
+                            }
+                          },
+                          "Phones": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "ID": {
+                                  "type": "string"
+                                },
+                                "Country": {
+                                  "type": "string"
+                                },
+                                "Phone": {
+                                  "type": "string"
+                                },
+                                "Extension": {
+                                  "type": "string"
+                                },
+                                "Default": {
+                                  "type": "boolean"
+                                }
+                              }
+                            }
+                          },
+                          "Messages": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "Message": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "Message"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "greater": [
+                  "@length(body('Parse_Header'))",
+                  0
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "8db7432e-4733-4bff-8ff0-17cc99254022"
+              },
+              "type": "If"
+            },
+            "Set_SAPErrorMessage01": {
+              "runAfter": {
+                "LFA1": [
+                  "Failed",
+                  "TimedOut"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "ce5d0c06-0fe6-4fc6-8645-10acf7f40f33"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "SAPErrorMessage",
+                "value": "@{body('LFA1')['error']['innerError']['error']['message']}"
+              }
+            },
+            "Set_SAPErrorMessage02": {
+              "runAfter": {
+                "LFB1": [
+                  "Failed",
+                  "TimedOut"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "524151e3-4c12-4726-87fc-435fcab34714"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "SAPErrorMessage",
+                "value": "@{body('LFB1')['error']['innerError']['error']['message']}"
+              }
+            },
+            "Set_SAPErrorMessage03": {
+              "runAfter": {
+                "LFM1": [
+                  "Failed",
+                  "TimedOut"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "524151e3-4c12-4726-87fc-435fcab34714"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "SAPErrorMessage",
+                "value": "@{body('LFM1')['error']['innerError']['error']['message']}"
+              }
+            },
+            "Set_SAPErrorMessage04": {
+              "runAfter": {
+                "ADDRESS": [
+                  "Failed",
+                  "TimedOut"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "524151e3-4c12-4726-87fc-435fcab34714"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "SAPErrorMessage",
+                "value": "@{body('ADDRESS')['error']['message']}"
+              }
+            }
+          },
+          "runAfter": {
+            "Set_Vendor": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "dbb20b16-314c-4ed7-987e-a9847369560b"
+          },
+          "type": "Scope"
+        },
+        "Catch": {
+          "actions": {
+            "Filter_array": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "e4ff6915-74dd-4ad8-aeb5-69689f7cd846"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@result('Try')",
+                "where": "@or(equals(item()?['Status'], 'Failed'),equals(item()?['Status'], 'TimedOut'))"
+              }
+            },
+            "ErrorTable": {
+              "runAfter": {
+                "Filter_array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "a4543bb1-084d-4bd9-865a-d59ec8caa8fc"
+              },
+              "type": "Table",
+              "inputs": {
+                "from": "@body('Filter_array')",
+                "format": "HTML",
+                "columns": [
+                  {
+                    "header": "Step",
+                    "value": "@item()?['name']"
+                  },
+                  {
+                    "header": "Status",
+                    "value": "@item()?['Status']"
+                  },
+                  {
+                    "header": "Code",
+                    "value": "@item()?['code']"
+                  },
+                  {
+                    "header": "InnerErrorMessage",
+                    "value": "@{item()?['outputs']?['body']?['error']?['innerError']?['error']?['message']}@{item()?['error']?['message']}@{variables('SAPErrorMessage')}"
+                  },
+                  {
+                    "header": "Input",
+                    "value": "@triggerBody()"
+                  }
+                ]
+              }
+            },
+            "ErrorReturn": {
+              "runAfter": {
+                "ErrorTable": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6ea00725-e758-40bb-9cc7-b69d0a65d01b"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Filter_array')",
+                "select": {
+                  "Step": "@item()?['name']",
+                  "Status": "@item()?['Status']",
+                  "Code": "@item()?['code']",
+                  "InnerErrorMessage": "@{item()?['outputs']?['body']?['error']?['innerError']?['error']?['message']} @{item()?['error']?['message']}@{variables('SAPErrorMessage')}",
+                  "Input": "@triggerBody()",
+                  "FlowName": "@workflow()?['tags']['flowDisplayName']",
+                  "URL": "@concat('https://flow.microsoft.com/manage/environments/', workflow()?['tags']['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']['name'])"
+                }
+              }
+            },
+            "Create_Integration_Log_Error": {
+              "runAfter": {
+                "ErrorReturn": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "65c53a8f-bba5-4aee-a2c2-1bbea7395180"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_2",
+                  "operationId": "CreateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_sapacceleratorerrors",
+                  "item/mpa_name": "@outputs('ErrorReturn')?['body'][0]['FlowName']",
+                  "item/mpa_action": "@outputs('ErrorReturn')?['body'][0]['Step']",
+                  "item/mpa_additionalinformation": "@triggerBody()['text']",
+                  "item/mpa_errormessage": "@outputs('ErrorReturn')?['body'][0]['InnerErrorMessage']",
+                  "item/mpa_sourcetype": 865420000,
+                  "item/mpa_workflowinstanceurl": "@outputs('ErrorReturn')?['body'][0]['URL']",
+                  "item/mpa_workflowstatus": "@If(equals(item()?['Status'],'Failed'),'865420001', '865420000')"
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              }
+            },
+            "Response_3": {
+              "runAfter": {
+                "Create_Integration_Log_Error": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "1a07fe00-c854-4b19-9f61-ff2091a0b894"
+              },
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "Status": "Error",
+                  "Messages": [
+                    {
+                      "Message": "@outputs('Create_Integration_Log_Error')?['body/mpa_errormessage']"
+                    }
+                  ]
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Status": {
+                      "type": "string"
+                    },
+                    "Header": {
+                      "type": "object",
+                      "properties": {
+                        "Country": {
+                          "type": "string"
+                        },
+                        "VendorName": {
+                          "type": "string"
+                        },
+                        "City": {
+                          "type": "string"
+                        },
+                        "PostalCode": {
+                          "type": "string"
+                        },
+                        "Street": {
+                          "type": "string"
+                        },
+                        "AccountGroup": {
+                          "type": "string"
+                        },
+                        "Region": {
+                          "type": "string"
+                        },
+                        "Vendor": {
+                          "type": "string"
+                        },
+                        "FullName": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "Vendor": {
+                      "type": "string"
+                    },
+                    "CompanyCodes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ID": {
+                            "type": "string"
+                          },
+                          "GLAccount": {
+                            "type": "string"
+                          },
+                          "CompanyCode": {
+                            "type": "string"
+                          },
+                          "PaymentTerms": {
+                            "type": "string"
+                          },
+                          "PaymentMethods": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "PurchasingOrgs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ID": {
+                            "type": "string"
+                          },
+                          "PurchasingOrganization": {
+                            "type": "string"
+                          },
+                          "PurchasingGroup": {
+                            "type": "string"
+                          },
+                          "PaymentTerms": {
+                            "type": "string"
+                          },
+                          "Currency": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "Emails": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ID": {
+                            "type": "string"
+                          },
+                          "Email": {
+                            "type": "string"
+                          },
+                          "Default": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    },
+                    "Phones": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ID": {
+                            "type": "string"
+                          },
+                          "Country": {
+                            "type": "string"
+                          },
+                          "Phone": {
+                            "type": "string"
+                          },
+                          "Extension": {
+                            "type": "string"
+                          },
+                          "Default": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    },
+                    "Messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Message"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "acddc208-94dd-4daf-9177-fa386ba1baec"
+          },
+          "type": "Scope"
+        },
+        "Initialize_SAPErrorMessage": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "6a6087f9-b1aa-4966-9ea5-0f695d638f87"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "SAPErrorMessage",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

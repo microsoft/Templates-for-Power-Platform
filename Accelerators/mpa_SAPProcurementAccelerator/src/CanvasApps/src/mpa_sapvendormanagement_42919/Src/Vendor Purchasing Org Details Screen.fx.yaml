@@ -1,0 +1,1134 @@
+"'Vendor Purchasing Org Details Screen' As screen":
+    LoadingSpinner: =LoadingSpinner.Data
+    LoadingSpinnerColor: =varThemeColors.primary
+    OnVisible: |-
+        =//Reset all the input controls
+        Reset(cmbVendorPurchasingDetailsOrg);
+        Reset(cmbVendorPurchasingOrgDetailsCurrency);
+        Reset(cmbVendorPurchasingOrgDetailsPaymentTerms);
+        Reset(cmbVendorPurchasingOrgDetailsGroup);
+        //Collection that tracks cross screen navigation thread and allows to back out in reverse sequence, remove from "thread" if navigating back to this screen
+        RemoveIf(
+            colAppNavigationThreads,
+            Screen = App.ActiveScreen
+        );
+
+    conVendorPurchasingOrgDetailsMain As groupContainer.verticalAutoLayoutContainer:
+        Height: =App.Height-Self.Y
+        LayoutAlignItems: =LayoutAlignItems.Stretch
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutMode: =LayoutMode.Auto
+        LayoutOverflowX: =LayoutOverflow.Scroll
+        LayoutOverflowY: =LayoutOverflow.Scroll
+        PaddingLeft: =32
+        PaddingRight: =32
+        Width: =App.Width
+        Y: =cmpVendorPurchasingOrgDetailsHeader.Height
+        ZIndex: =1
+
+        conVendorPurchasingOrgDetailsNavHeader As groupContainer.horizontalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Fill: =RGBA(255, 255, 255, 1)
+            FillPortions: =0
+            Height: =48
+            LayoutAlignItems: =LayoutAlignItems.Center
+            LayoutGap: =5
+            LayoutMinHeight: =100
+            LayoutMinWidth: =400
+            LayoutMode: =LayoutMode.Auto
+            PaddingLeft: =2
+            PaddingRight: =2
+            Width: =Parent.Width-Parent.PaddingLeft-Parent.PaddingRight
+            ZIndex: =1
+
+            "icoVendorPurchasingOrgDetailsBack As icon.'3DPrinting'":
+                AccessibleLabel: =Self.Tooltip
+                BorderColor: =varThemeColors.primary
+                Color: =varThemeColors.primary
+                DisabledBorderColor: =varThemeColors.disabledText
+                DisabledColor: =varThemeColors.backgroundFillDisabled
+                DisabledFill: =RGBA(0,0,0,0)
+                Fill: =RGBA(0,0,0,0)
+                FocusedBorderColor: =varThemeColors.tertiaryGray
+                Height: =30
+                HoverBorderColor: =varThemeColors.primary
+                HoverColor: =varThemeColors.tertiary
+                HoverFill: =RGBA(0,0,0,0)
+                Icon: =Icon.ArrowLeft
+                OnSelect: |-
+                    =//Navigate back to proceeding screen according to navigation threads collection
+                    Navigate(
+                        Last(
+                            Sort(
+                                colAppNavigationThreads,
+                                Order
+                            )
+                        ).Screen,
+                        ScreenTransition.CoverRight
+                    );
+                PaddingBottom: =5
+                PaddingLeft: =5
+                PaddingRight: =5
+                PaddingTop: =5
+                PressedBorderColor: =varThemeColors.primary
+                PressedColor: =varThemeColors.primary
+                PressedFill: =RGBA(0,0,0,0)
+                TabIndex: =0
+                Tooltip: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {Text: "Back"},
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text 
+                            ).'Localized Value'
+                        )
+                    )
+                Width: =30
+                Y: =Parent.Height/2-Self.Height/2
+                ZIndex: =1
+
+            lblVendorPurchasingOrgDetailsNavHeader As label:
+                BorderColor: =RGBA(0, 0, 0, 0)
+                BorderStyle: =BorderStyle.None
+                BorderThickness: =2
+                Color: =varThemeColors.text
+                DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                FocusedBorderColor: =
+                FocusedBorderThickness: =4
+                Font: =Font.'Segoe UI'
+                FontWeight: =FontWeight.Semibold
+                Height: =Parent.Height
+                PaddingBottom: =0
+                PaddingLeft: =0
+                PaddingTop: =0
+                Role: =TextRole.Heading1
+                Size: =14.5
+                Text: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {
+                            Text: Switch(
+                                true,
+                                And(
+                                    !varIsEdit,
+                                    !varIsNew
+                                ),
+                                "View vendor purchasing organization details",
+                                IsBlank(_purchaseOrg),
+                                "New vendor purchasing organization details",
+                                "Edit vendor purchasing organization details"
+                            )
+                        },
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Width: =Parent.Width-Self.X
+                Wrap: =false
+                ZIndex: =2
+
+        conVendorPurchasingOrgDetailsData As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            Height: =400
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutGap: =15
+            LayoutMinHeight: =conVendorPurchasingOrgDetailsFields.Height+conVendorPurchasingOrgDetailsButtons.Height+Self.LayoutGap
+            LayoutMinWidth: =400
+            LayoutMode: =LayoutMode.Auto
+            LayoutOverflowY: =LayoutOverflow.Scroll
+            PaddingLeft: =5
+            PaddingRight: =5
+            Width: =Parent.Width-Parent.PaddingLeft-Parent.PaddingRight
+            ZIndex: =4
+
+            conVendorPurchasingOrgDetailsFields As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                BorderColor: =RGBA(0, 0, 0, 0)
+                BorderStyle: =BorderStyle.None
+                FillPortions: =0
+                Height: |-
+                    =With(
+                        {defaultHeight: 64},
+                        Switch(
+                            true,
+                            Self.Width <= 570,
+                            4 * defaultHeight + 3 * Self.LayoutGap,
+                            Self.Width <= 600,
+                            3 * defaultHeight + 2 * Self.LayoutGap,
+                            Self.Width <= 1140,
+                            2 * defaultHeight + Self.LayoutGap,
+                            defaultHeight
+                        )
+                    )
+                LayoutGap: =10
+                LayoutMinHeight: =Self.Height
+                LayoutMinWidth: =400
+                LayoutMode: =LayoutMode.Auto
+                LayoutWrap: =true
+                PaddingRight: =32
+                Width: =Parent.Width
+                ZIndex: =1
+
+                conVendorPurchasingOrgDetails As groupContainer.manualLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    FillPortions: =0
+                    Height: =64
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    Width: |-
+                        =Max(
+                            164,
+                            Len(cmbVendorPurchasingDetailsOrg.AccessibleLabel) * 10
+                        )
+                    X: =40
+                    ZIndex: =5
+
+                    cmbVendorPurchasingDetailsOrg As combobox:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Select purchasing organization"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: |-
+                            =If(
+                                IsBlank(Self.Selected.'Display Value'),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
+                        BorderThickness: =1
+                        ChevronBackground: =varThemeColors.backgroundFill
+                        ChevronDisabledBackground: =varThemeColors.backgroundFillDisabled
+                        ChevronDisabledFill: |
+                            =varThemeColors.text
+                        ChevronFill: =varThemeColors.text
+                        ChevronHoverBackground: =varThemeColors.secondaryGray
+                        ChevronHoverFill: |
+                            =varThemeColors.text
+                        Color: =varThemeColors.text
+                        DefaultSelectedItems: |-
+                            =//Defualt value based upon _purchaseOrg context variable, will be blank if new record
+                            Filter(
+                                'SAP Accelerator List of Values',
+                                Domain = 'Domain (SAP Accelerator List of Values)'.'Purchasing Organization',
+                                Language = varISOUserLanguageCode,
+                                'Value Code' = _purchaseOrg.PurchasingOrganization
+                            )
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayFields: =["mpa_value","mpa_valuecode"]
+                        DisplayMode: |-
+                            =If(
+                                And(
+                                    Or(//As purchase org is a SAP key, only allow changing if new record that has not been saved yet in SAP
+                                        IsBlank(_purchaseOrg),
+                                        _purchaseOrg.CrudType = "C"
+                                    ),
+                                    Or(
+                                        varIsNew,
+                                        varIsEdit
+                                    )
+                                ),
+                                DisplayMode.Edit,
+                                DisplayMode.View
+                            )
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HoverBorderColor: =Self.BorderColor
+                        HoverColor: =varThemeColors.text
+                        HoverFill: =varThemeColors.secondaryGray
+                        InputTextPlaceholder: =Self.AccessibleLabel
+                        Items: |-
+                            =//Filter possible list of values according to mapped domain and language field
+                            Sort(
+                                Filter(
+                                    'SAP Accelerator List of Values',
+                                    Status = 'Status (SAP Accelerator List of Values)'.Active,
+                                    Domain = 'Domain (SAP Accelerator List of Values)'.'Purchasing Organization',
+                                    Language = varISOUserLanguageCode
+                                ),
+                                'Display Value'
+                            )
+                        NoSelectionText: =Self.AccessibleLabel
+                        OnChange: =
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        PressedBorderColor: =Self.BorderColor
+                        PressedColor: =varThemeColors.altText
+                        PressedFill: =varThemeColors.backgroundFill
+                        SearchFields: =["mpa_value","mpa_valuecode"]
+                        SearchItems: |-
+                            =Search(//Filter possible list of values according to mapped domain and language field
+                            Sort(
+                                Filter(
+                                    'SAP Accelerator List of Values',
+                                    Status = 'Status (SAP Accelerator List of Values)'.Active,
+                                    Domain = 'Domain (SAP Accelerator List of Values)'.'Purchasing Organization',
+                                    Language = varISOUserLanguageCode
+                                ),
+                                'Display Value'
+                            ),cmbVendorPurchasingDetailsOrg.SearchText,"mpa_value","mpa_valuecode")
+                        SelectionColor: =varThemeColors.altText
+                        SelectionFill: =varThemeColors.primaryGray
+                        SelectionTagColor: =varThemeColors.text
+                        SelectionTagFill: =varThemeColors.backgroundFill
+                        SelectMultiple: =false
+                        Size: =10.5
+                        Template: =ListItemTemplate.Double
+                        Tooltip: |-
+                            =Coalesce(
+                                Self.Selected.'Display Value',
+                                Self.AccessibleLabel
+                            )
+                        Width: =lblVendorPurchasingOrgDetails.Width
+                        X: =lblVendorPurchasingOrgDetails.X
+                        Y: =lblVendorPurchasingOrgDetails.Y+lblVendorPurchasingOrgDetails.Height
+                        ZIndex: =1
+
+                    lblVendorPurchasingOrgDetails As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        Size: =10.5
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Purchasing organization"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            ) & " *"
+                        Width: =Parent.Width-Self.FocusedBorderThickness*2
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =2
+
+                conVendorPurchasingOrgDetailsCurrency As groupContainer.manualLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    FillPortions: =0
+                    Height: =64
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    Width: |-
+                        =Max(
+                            250,
+                            Len(cmbVendorPurchasingOrgDetailsCurrency.AccessibleLabel) * 10
+                        )
+                    X: =40
+                    ZIndex: =6
+
+                    cmbVendorPurchasingOrgDetailsCurrency As combobox:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Select currency"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: |-
+                            =If(
+                                IsBlank(Self.Selected.'Display Value'),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
+                        BorderThickness: =1
+                        ChevronBackground: =varThemeColors.backgroundFill
+                        ChevronDisabledBackground: =varThemeColors.backgroundFillDisabled
+                        ChevronDisabledFill: |
+                            =varThemeColors.text
+                        ChevronFill: =varThemeColors.text
+                        ChevronHoverBackground: =varThemeColors.secondaryGray
+                        ChevronHoverFill: |
+                            =varThemeColors.text
+                        Color: =varThemeColors.text
+                        DefaultSelectedItems: |-
+                            =//Defualt value based upon _purchaseOrg context variable, will be blank if new record
+                            Filter(
+                                'SAP Accelerator List of Values',
+                                Domain = 'Domain (SAP Accelerator List of Values)'.Currency,
+                                Language = varISOUserLanguageCode,
+                                'Value Code' = _purchaseOrg.Currency
+                            )
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayFields: =["mpa_value","mpa_valuecode"]
+                        DisplayMode: |-
+                            =If(
+                                Or(
+                                    varIsNew,
+                                    varIsEdit
+                                ),
+                                DisplayMode.Edit,
+                                DisplayMode.View
+                            )
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HoverBorderColor: =Self.BorderColor
+                        HoverColor: =varThemeColors.text
+                        HoverFill: =varThemeColors.secondaryGray
+                        InputTextPlaceholder: =Self.AccessibleLabel
+                        Items: |-
+                            =//Filter possible list of values according to mapped domain and language field
+                            Sort(
+                                Filter(
+                                    'SAP Accelerator List of Values',
+                                    Status = 'Status (SAP Accelerator List of Values)'.Active,
+                                    Domain = 'Domain (SAP Accelerator List of Values)'.Currency,
+                                    Language = varISOUserLanguageCode
+                                ),
+                                'Display Value'
+                            )
+                        NoSelectionText: =Self.AccessibleLabel
+                        OnChange: =
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        PressedBorderColor: =Self.BorderColor
+                        PressedColor: =varThemeColors.altText
+                        PressedFill: =varThemeColors.backgroundFill
+                        SearchFields: =["mpa_value","mpa_valuecode"]
+                        SearchItems: |-
+                            =Search(//Filter possible list of values according to mapped domain and language field
+                            Sort(
+                                Filter(
+                                    'SAP Accelerator List of Values',
+                                    Status = 'Status (SAP Accelerator List of Values)'.Active,
+                                    Domain = 'Domain (SAP Accelerator List of Values)'.Currency,
+                                    Language = varISOUserLanguageCode
+                                ),
+                                'Display Value'
+                            ),cmbVendorPurchasingOrgDetailsCurrency.SearchText,"mpa_value","mpa_valuecode")
+                        SelectionColor: =varThemeColors.altText
+                        SelectionFill: =varThemeColors.primaryGray
+                        SelectionTagColor: =varThemeColors.text
+                        SelectionTagFill: =varThemeColors.backgroundFill
+                        SelectMultiple: =false
+                        Size: =10.5
+                        Template: =ListItemTemplate.Double
+                        Tooltip: |-
+                            =Coalesce(
+                                Self.Selected.'Display Value',
+                                Self.AccessibleLabel
+                            )
+                        Width: =lblVendorPurchasingOrgDetailsCurrency.Width
+                        X: =lblVendorPurchasingOrgDetailsCurrency.X
+                        Y: =lblVendorPurchasingOrgDetailsCurrency.Y+lblVendorPurchasingOrgDetailsCurrency.Height
+                        ZIndex: =1
+
+                    lblVendorPurchasingOrgDetailsCurrency As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        Size: =10.5
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Currency"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )&" *"
+                        Width: =Parent.Width-Self.FocusedBorderThickness*2
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =2
+
+                conVendorPurchasingOrgDetailsPaymentTerms As groupContainer.manualLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    FillPortions: =0
+                    Height: =64
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    Width: |-
+                        =Max(
+                            300,
+                            Len(cmbVendorPurchasingOrgDetailsPaymentTerms.AccessibleLabel) * 10
+                        )
+                    X: =40
+                    ZIndex: =7
+
+                    cmbVendorPurchasingOrgDetailsPaymentTerms As combobox:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Select payment terms"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: =varThemeColors.primaryGray
+                        BorderThickness: =1
+                        ChevronBackground: =varThemeColors.backgroundFill
+                        ChevronDisabledBackground: =varThemeColors.backgroundFillDisabled
+                        ChevronDisabledFill: |
+                            =varThemeColors.text
+                        ChevronFill: =varThemeColors.text
+                        ChevronHoverBackground: =varThemeColors.secondaryGray
+                        ChevronHoverFill: |
+                            =varThemeColors.text
+                        Color: =varThemeColors.text
+                        DefaultSelectedItems: |-
+                            =//Defualt value based upon _purchaseOrg context variable, will be blank if new record
+                            Filter(
+                                'SAP Accelerator List of Values',
+                                Domain = 'Domain (SAP Accelerator List of Values)'.'Payment Terms',
+                                Language = varISOUserLanguageCode,
+                                'Value Code' = _purchaseOrg.PaymentTerms
+                            )
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayFields: =["mpa_value","mpa_valuecode"]
+                        DisplayMode: |-
+                            =If(
+                                Or(
+                                    varIsNew,
+                                    varIsEdit
+                                ),
+                                DisplayMode.Edit,
+                                DisplayMode.View
+                            )
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HoverBorderColor: =Self.BorderColor
+                        HoverColor: =varThemeColors.text
+                        HoverFill: =varThemeColors.secondaryGray
+                        InputTextPlaceholder: =Self.AccessibleLabel
+                        Items: |-
+                            =//Filter possible list of values according to mapped domain and language field
+                            Sort(
+                                Filter(
+                                    'SAP Accelerator List of Values',
+                                    Status = 'Status (SAP Accelerator List of Values)'.Active,
+                                    Domain = 'Domain (SAP Accelerator List of Values)'.'Payment Terms',
+                                    Language = varISOUserLanguageCode
+                                ),
+                                'Display Value'
+                            )
+                        NoSelectionText: =Self.AccessibleLabel
+                        OnChange: =
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        PressedBorderColor: =Self.BorderColor
+                        PressedColor: =varThemeColors.altText
+                        PressedFill: =varThemeColors.backgroundFill
+                        SearchFields: =["mpa_value","mpa_valuecode"]
+                        SearchItems: |-
+                            =Search(//Filter possible list of values according to mapped domain and language field
+                            Sort(
+                                Filter(
+                                    'SAP Accelerator List of Values',
+                                    Status = 'Status (SAP Accelerator List of Values)'.Active,
+                                    Domain = 'Domain (SAP Accelerator List of Values)'.'Payment Terms',
+                                    Language = varISOUserLanguageCode
+                                ),
+                                'Display Value'
+                            ),cmbVendorPurchasingOrgDetailsPaymentTerms.SearchText,"mpa_value","mpa_valuecode")
+                        SelectionColor: =varThemeColors.altText
+                        SelectionFill: =varThemeColors.primaryGray
+                        SelectionTagColor: =varThemeColors.text
+                        SelectionTagFill: =varThemeColors.backgroundFill
+                        SelectMultiple: =false
+                        Size: =10.5
+                        Template: =ListItemTemplate.Double
+                        Tooltip: |-
+                            =Coalesce(
+                                Self.Selected.'Display Value',
+                                Self.AccessibleLabel
+                            )
+                        Width: =lblVendorPurchasingOrgDetailsPaymentTerms.Width
+                        X: =lblVendorPurchasingOrgDetailsPaymentTerms.X
+                        Y: =lblVendorPurchasingOrgDetailsPaymentTerms.Y+lblVendorPurchasingOrgDetailsPaymentTerms.Height
+                        ZIndex: =1
+
+                    lblVendorPurchasingOrgDetailsPaymentTerms As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        Size: =10.5
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Payment terms"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Width: =Parent.Width-Self.FocusedBorderThickness*2
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =2
+
+                conVendorPurchasingOrgDetailsGroup As groupContainer.manualLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    FillPortions: =0
+                    Height: =64
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    Width: |-
+                        =Max(
+                            164,
+                            Len(cmbVendorPurchasingOrgDetailsGroup.AccessibleLabel) * 10
+                        )
+                    X: =40
+                    ZIndex: =8
+
+                    cmbVendorPurchasingOrgDetailsGroup As combobox:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Select purchasing group"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: =varThemeColors.primaryGray
+                        BorderThickness: =1
+                        ChevronBackground: =varThemeColors.backgroundFill
+                        ChevronDisabledBackground: =varThemeColors.backgroundFillDisabled
+                        ChevronDisabledFill: |
+                            =varThemeColors.text
+                        ChevronFill: =varThemeColors.text
+                        ChevronHoverBackground: =varThemeColors.secondaryGray
+                        ChevronHoverFill: |
+                            =varThemeColors.text
+                        Color: =varThemeColors.text
+                        DefaultSelectedItems: |-
+                            =//Defualt value based upon _purchaseOrg context variable, will be blank if new record
+                            Filter(
+                                'SAP Accelerator List of Values',
+                                Domain = 'Domain (SAP Accelerator List of Values)'.'Purchasing Group',
+                                Language = varISOUserLanguageCode,
+                                'Value Code' = _purchaseOrg.PurchasingGroup
+                            )
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayFields: =["mpa_value","mpa_valuecode"]
+                        DisplayMode: |-
+                            =If(
+                                Or(
+                                    varIsNew,
+                                    varIsEdit
+                                ),
+                                DisplayMode.Edit,
+                                DisplayMode.View
+                            )
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HoverBorderColor: =Self.BorderColor
+                        HoverColor: =varThemeColors.text
+                        HoverFill: =varThemeColors.secondaryGray
+                        InputTextPlaceholder: =Self.AccessibleLabel
+                        Items: |-
+                            =//Filter possible list of values according to mapped domain and language field
+                            Sort(
+                                Filter(
+                                    'SAP Accelerator List of Values',
+                                    Status = 'Status (SAP Accelerator List of Values)'.Active,
+                                    Domain = 'Domain (SAP Accelerator List of Values)'.'Purchasing Group',
+                                    Language = varISOUserLanguageCode
+                                ),
+                                'Display Value'
+                            )
+                        NoSelectionText: =Self.AccessibleLabel
+                        OnChange: =
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        PressedBorderColor: =Self.BorderColor
+                        PressedColor: =varThemeColors.altText
+                        PressedFill: =varThemeColors.backgroundFill
+                        SearchFields: =["mpa_value","mpa_valuecode"]
+                        SearchItems: |-
+                            =Search(//Filter possible list of values according to mapped domain and language field
+                            Sort(
+                                Filter(
+                                    'SAP Accelerator List of Values',
+                                    Status = 'Status (SAP Accelerator List of Values)'.Active,
+                                    Domain = 'Domain (SAP Accelerator List of Values)'.'Purchasing Group',
+                                    Language = varISOUserLanguageCode
+                                ),
+                                'Display Value'
+                            ),cmbVendorPurchasingOrgDetailsGroup.SearchText,"mpa_value","mpa_valuecode")
+                        SelectionColor: =varThemeColors.altText
+                        SelectionFill: =varThemeColors.primaryGray
+                        SelectionTagColor: =varThemeColors.text
+                        SelectionTagFill: =varThemeColors.backgroundFill
+                        SelectMultiple: =false
+                        Size: =10.5
+                        Template: =ListItemTemplate.Double
+                        Tooltip: |-
+                            =Coalesce(
+                                Self.Selected.'Display Value',
+                                Self.AccessibleLabel
+                            )
+                        Width: =lblVendorPurchasingOrgDetailsGroup.Width
+                        X: =lblVendorPurchasingOrgDetailsGroup.X
+                        Y: =lblVendorPurchasingOrgDetailsGroup.Y+lblVendorPurchasingOrgDetailsGroup.Height
+                        ZIndex: =1
+
+                    lblVendorPurchasingOrgDetailsGroup As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        Size: =10.5
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Purchasing group"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Width: =Parent.Width-Self.FocusedBorderThickness*2
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =2
+
+            conVendorPurchasingOrgDetailsButtons As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                BorderColor: =RGBA(0, 0, 0, 0)
+                BorderStyle: =BorderStyle.None
+                FillPortions: =0
+                Height: =44
+                LayoutAlignItems: =LayoutAlignItems.Center
+                LayoutGap: |-
+                    =If(
+                        Or(
+                            varIsNew,
+                            varIsEdit
+                        ),
+                        20,
+                        0
+                    )
+                LayoutMinHeight: =Self.Height
+                LayoutMinWidth: =400
+                LayoutMode: =LayoutMode.Auto
+                PaddingLeft: =2
+                PaddingRight: =2
+                Visible: |-
+                    =Or(
+                        varIsNew,
+                        varIsEdit
+                    )
+                Width: =Parent.Width
+                ZIndex: =3
+
+                btnVendorPurchasingOrgDetailsDone As button:
+                    BorderColor: =varThemeColors.primary
+                    BorderThickness: =1
+                    Color: =varThemeColors.altText
+                    DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                    DisabledColor: =varThemeColors.disabledText
+                    DisabledFill: =varThemeColors.backgroundFillDisabled
+                    Fill: =varThemeColors.primary
+                    FocusedBorderColor: =varThemeColors.tertiaryGray
+                    FocusedBorderThickness: =2
+                    Font: =Font.'Segoe UI'
+                    HoverBorderColor: =varThemeColors.primary
+                    HoverColor: =varThemeColors.altText
+                    HoverFill: =varThemeColors.tertiary
+                    OnSelect: |
+                        =//Check to see if all required information is populated first and build a temporary collection of required fields missing
+                        Clear(colRequiredFieldsTemp);
+                        If(
+                            IsBlank(cmbVendorPurchasingDetailsOrg.Selected.'Value Code'),
+                            Collect(
+                                colRequiredFieldsTemp,
+                                lblVendorPurchasingOrgDetails.Text
+                            )
+                        );
+                        If(
+                            IsBlank(cmbVendorPurchasingOrgDetailsCurrency.Selected.'Value Code'),
+                            Collect(
+                                colRequiredFieldsTemp,
+                                lblVendorPurchasingOrgDetailsCurrency.Text
+                            )
+                        );
+                        //Evaluate against potential error conditions, else save the new/updated record
+                        Switch(
+                            true,
+                            //Check to see if required fields are populated and if not, notify which fields are missing 
+                            !IsEmpty(colRequiredFieldsTemp),
+                            Notify(
+                                Substitute(
+                                    With(
+                                        {Text: "The following information is required before saving"},
+                                        If(
+                                // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    ) & ": " & Concat(
+                                        colRequiredFieldsTemp,
+                                        Value,
+                                        ", "
+                                    ),
+                                    " *",
+                                    ""
+                                ),
+                                NotificationType.Error,
+                                0
+                            ),
+                            //Validate if the purchasing org already is exists on the vendor
+                            Or(
+                                And(
+                                    IsBlank(_purchaseOrg),
+                                    cmbVendorPurchasingDetailsOrg.Selected.'Value Code' in Filter(
+                                        colVendorPurchasingOrgs,
+                                        CrudType <> "D"
+                                    ).PurchasingOrganization
+                                ),
+                                And(
+                                    !IsBlank(_purchaseOrg),
+                                    _purchaseOrg.PurchasingOrganization <> cmbVendorPurchasingDetailsOrg.Selected.'Value Code',
+                                    cmbVendorPurchasingDetailsOrg.Selected.'Value Code' in Filter(
+                                        colVendorPurchasingOrgs,
+                                        CrudType <> "D"
+                                    ).PurchasingOrganization
+                                )
+                            ),
+                            Notify(
+                                // Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Purchasing organization already exists for vendor"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                ),
+                                NotificationType.Error,
+                                0
+                            ),
+                            //Checks pass, either create new vendor purchasing org record or update existing in the collection
+                            If(
+                                IsBlank(_purchaseOrg),//Blank context variable means new record
+                                Collect(
+                                    colVendorPurchasingOrgs,//Add a new record to collection creating a temp id to refer to later if updated before saved to SAP
+                                    {
+                                        CrudType: "C",
+                                        ID: Text(CountRows(colVendorPurchasingOrgs) + 1),
+                                        PurchasingOrganization: cmbVendorPurchasingDetailsOrg.Selected.'Value Code',
+                                        Currency: cmbVendorPurchasingOrgDetailsCurrency.Selected.'Value Code',
+                                        PaymentTerms: cmbVendorPurchasingOrgDetailsPaymentTerms.Selected.'Value Code',
+                                        PurchasingGroup: cmbVendorPurchasingOrgDetailsGroup.Selected.'Value Code'
+                                    }
+                                ),
+                                Patch(//Update existing record
+                                    colVendorPurchasingOrgs,
+                                    _purchaseOrg,
+                                    {
+                                        CrudType: If(//Only update CrudType if not a newly created record that has not been saved yet to SAP
+                                            _purchaseOrg.CrudType <> "C",
+                                            "U",
+                                            _purchaseOrg.CrudType
+                                        ),
+                                        PurchasingOrganization: cmbVendorPurchasingDetailsOrg.Selected.'Value Code',
+                                        Currency: cmbVendorPurchasingOrgDetailsCurrency.Selected.'Value Code',
+                                        PaymentTerms: cmbVendorPurchasingOrgDetailsPaymentTerms.Selected.'Value Code',
+                                        PurchasingGroup: cmbVendorPurchasingOrgDetailsGroup.Selected.'Value Code'
+                                    }
+                                )
+                            );
+                            //Navigate back to preceding screen
+                        Select(icoVendorPurchasingOrgDetailsBack);
+                            
+                        );
+                        //No longer need required field temp data
+                        Clear(colRequiredFieldsTemp);
+                    PressedBorderColor: =varThemeColors.primary
+                    PressedColor: =varThemeColors.altText
+                    PressedFill: =varThemeColors.primary
+                    RadiusBottomLeft: =4
+                    RadiusBottomRight: =4
+                    RadiusTopLeft: =4
+                    RadiusTopRight: =4
+                    Size: =10.5
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {Text: "Done"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Tooltip: =Self.Text
+                    Width: =150
+                    X: =1
+                    Y: =1
+                    ZIndex: =1
+
+                btnVendorPurchasingOrgDetailsCancel As button:
+                    BorderColor: =varThemeColors.primary
+                    BorderThickness: =1
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                    DisabledColor: =varThemeColors.disabledText
+                    DisabledFill: =varThemeColors.backgroundFillDisabled
+                    Fill: =varThemeColors.backgroundFill
+                    FocusedBorderColor: =varThemeColors.tertiaryGray
+                    FocusedBorderThickness: =2
+                    Font: =Font.'Segoe UI'
+                    HoverBorderColor: =varThemeColors.primary
+                    HoverColor: =varThemeColors.altText
+                    HoverFill: =varThemeColors.tertiary
+                    OnSelect: |-
+                        =//Navigate back to proceeding screen
+                        Select(icoVendorPurchasingOrgDetailsBack)
+                    PressedBorderColor: =varThemeColors.primary
+                    PressedColor: =varThemeColors.altText
+                    PressedFill: =varThemeColors.primary
+                    RadiusBottomLeft: =4
+                    RadiusBottomRight: =4
+                    RadiusTopLeft: =4
+                    RadiusTopRight: =4
+                    Size: =10.5
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {Text: "Cancel"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Tooltip: =Self.Text
+                    Width: =150
+                    X: =1
+                    Y: =1
+                    ZIndex: =2
+
+    cmpVendorPurchasingOrgDetailsHeader As ScreenHeader:
+        Width: =Parent.Width
+        ZIndex: =3
+

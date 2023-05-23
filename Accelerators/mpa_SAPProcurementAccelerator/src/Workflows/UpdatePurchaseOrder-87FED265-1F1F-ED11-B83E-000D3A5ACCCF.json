@@ -1,0 +1,872 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_saperp_1": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_SAPAcceleratorERP"
+        },
+        "api": {
+          "name": "shared_saperp"
+        }
+      },
+      "shared_commondataserviceforapps_1": {
+        "impersonation": {
+          "source": "invoker"
+        },
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_SAPAcceleratorDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "SAP Application Server (mpa_SAPApplicationServer)": {
+          "defaultValue": "{\"AppServerHost\":\"sap.clearsoftware.com\",\"Client\":\"100\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_SAPApplicationServer"
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "50d033d4-8bb2-4e85-b4ad-f4343b21b27b"
+          },
+          "type": "Request",
+          "kind": "PowerAppV2",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "JSON",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Initialize_SAPErrorMessage": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "6a6087f9-b1aa-4966-9ea5-0f695d638f87"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "SAPErrorMessage",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Try": {
+          "actions": {
+            "POITEM": {
+              "runAfter": {
+                "Items": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "67b60224-0f7c-4338-b520-808a2181795b"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Items')",
+                "select": {
+                  "PO_ITEM": "@formatNumber(int(item()?['ItemNumber']), 'D5')",
+                  "MATERIAL": "@if(isInt(item()?['MaterialNumber']), formatNumber(int(item()?['MaterialNumber']), 'D18'), item()?['MaterialNumber'])",
+                  "SHORT_TEXT": "@item()?['Description']",
+                  "QUANTITY": "@item()?['Quantity']",
+                  "PO_UNIT": "@item()?['Unit']",
+                  "PLANT": "@item()?['Location']",
+                  "INFO_UPD": "X",
+                  "DELETE_IND": "@if(equals(item()?['CrudType'], 'D'), 'L', '')"
+                }
+              }
+            },
+            "POITEMX": {
+              "runAfter": {
+                "POITEM": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "7fc5c57e-dd3d-4efb-980a-16a4f735bae0"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Items')",
+                "select": {
+                  "PO_ITEM": "@formatNumber(int(item()?['ItemNumber']), 'D5')",
+                  "MATERIAL": "X",
+                  "SHORT_TEXT": "X",
+                  "QUANTITY": "X",
+                  "PO_UNIT": "X",
+                  "PLANT": "X",
+                  "INFO_UPD": "X",
+                  "DELETE_IND": "@if(equals(item()?['CrudType'], 'D'), 'X', '')"
+                }
+              }
+            },
+            "POSCHEDULE": {
+              "runAfter": {
+                "POITEMX": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "67b60224-0f7c-4338-b520-808a2181795b"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Items')",
+                "select": {
+                  "PO_ITEM": "@formatNumber(int(item()?['ItemNumber']), 'D5')",
+                  "SCHED_LINE": "0001",
+                  "QUANTITY": "@item()?['Quantity']"
+                }
+              }
+            },
+            "POSCHEDULEX": {
+              "runAfter": {
+                "POSCHEDULE": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "67b60224-0f7c-4338-b520-808a2181795b"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Items')",
+                "select": {
+                  "PO_ITEM": "@formatNumber(int(item()?['ItemNumber']), 'D5')",
+                  "SCHED_LINE": "0001",
+                  "QUANTITY": "X",
+                  "PO_ITEMX": "X",
+                  "SCHED_LINEX": "X"
+                }
+              }
+            },
+            "POCOND": {
+              "runAfter": {
+                "POSCHEDULEX": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "08468f56-72eb-4840-802f-dd43d389f78b"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Items')",
+                "select": {
+                  "ITM_NUMBER": "@formatNumber(int(item()?['ItemNumber']), 'D6')",
+                  "COND_TYPE": "PBXX",
+                  "COND_VALUE": "@div(float(item()?['UnitPrice']), 10)",
+                  "CHANGE_ID": "U"
+                }
+              }
+            },
+            "POCONDX": {
+              "runAfter": {
+                "POCOND": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "fdc39c15-2648-4240-842c-480fd2b1b868"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Items')",
+                "select": {
+                  "ITM_NUMBER": "@formatNumber(int(item()?['ItemNumber']), 'D6')",
+                  "COND_TYPE": "X",
+                  "COND_VALUE": "X",
+                  "CHANGE_ID": "X"
+                }
+              }
+            },
+            "POTEXTHEADER": {
+              "runAfter": {
+                "POCONDX": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "71ea1095-0422-42a2-87f5-023c73fc119e"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@variables('HeaderText')",
+                "select": {
+                  "TEXT_ID": "F02",
+                  "TEXT_FORM": "*",
+                  "TEXT_LINE": "@item()"
+                }
+              }
+            },
+            "Create_stateful_session": {
+              "runAfter": {
+                "POTEXTHEADER": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "83f79be3-364a-472f-8f9a-8f48dc8f0aa5"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp_1",
+                  "operationId": "CreateSession",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')"
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              }
+            },
+            "BAPI_PO_CHANGE": {
+              "runAfter": {
+                "Create_stateful_session": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "29da7556-d672-413e-bcbc-670b3a081d26"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp_1",
+                  "operationId": "CallRfcJson",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                  "rfcName": "BAPI_PO_CHANGE:Change Purchase Order:2012",
+                  "rfcGroupFilter": "*",
+                  "autoCommit": true,
+                  "sessionId": "@outputs('Create_stateful_session')?['body/SessionId']",
+                  "rfcInputs/PURCHASEORDER": "@formatNumber(int(variables('Header')?['OrderNumber']), 'D10')",
+                  "rfcInputs/POCOND": "@body('POCOND')",
+                  "rfcInputs/POCONDX": "@body('POCONDX')",
+                  "rfcInputs/POITEM": "@body('POITEM')",
+                  "rfcInputs/POITEMX": "@body('POITEMX')",
+                  "rfcInputs/POSCHEDULE": "@body('POSCHEDULE')",
+                  "rfcInputs/POSCHEDULEX": "@body('POSCHEDULEX')",
+                  "rfcInputs/POTEXTHEADER": "@body('POTEXTHEADER')"
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": {
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']",
+                  "type": "Raw"
+                }
+              }
+            },
+            "Filter_Messages_for_Errors": {
+              "runAfter": {
+                "Set_SAPErrorMessage": [
+                  "Skipped"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "314738ec-9d05-4ae3-b089-64259885fb43"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@outputs('BAPI_PO_CHANGE')?['body/RETURN']",
+                "where": "@equals(item()?['TYPE'], 'E')"
+              }
+            },
+            "Success_Check": {
+              "actions": {
+                "Commit": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "87a1cd8c-a5f6-4a7b-bce8-e61d1b75ac66"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_saperp_1",
+                      "operationId": "CallRfcJson",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                    },
+                    "parameters": {
+                      "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                      "rfcName": "BAPI_TRANSACTION_COMMIT:Execute external Commit when using BAPIs:BAPT",
+                      "rfcGroupFilter": "*",
+                      "autoCommit": false,
+                      "sessionId": "@outputs('Create_stateful_session')?['body/SessionId']"
+                    },
+                    "retryPolicy": {
+                      "type": "none"
+                    },
+                    "authentication": {
+                      "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']",
+                      "type": "Raw"
+                    }
+                  }
+                },
+                "Success_Response": {
+                  "runAfter": {
+                    "Commit": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "88ce5aac-9ebe-41ab-87a6-dea14c80f06e"
+                  },
+                  "type": "Response",
+                  "kind": "Http",
+                  "inputs": {
+                    "statusCode": 200,
+                    "body": {
+                      "Status": "Success",
+                      "OrderNumber": "@variables('Header')?['OrderNumber']",
+                      "Messages": [
+                        {
+                          "Message": "Purchase order @{variables('Header')?['OrderNumber']} was successfully updated."
+                        }
+                      ]
+                    },
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "Status": {
+                          "type": "string"
+                        },
+                        "OrderNumber": {
+                          "type": "string"
+                        },
+                        "Messages": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "Message"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Filter_Messages_for_Errors": [
+                  "Skipped",
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Clean_Up_Error_Messages": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "3ac4404f-21c4-4bae-bac7-2525e23d910f"
+                    },
+                    "type": "Select",
+                    "inputs": {
+                      "from": "@body('Filter_Messages_for_Errors')",
+                      "select": {
+                        "Message": "@item()?['MESSAGE']"
+                      }
+                    }
+                  },
+                  "Failure_Response": {
+                    "runAfter": {
+                      "Clean_Up_Error_Messages": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "0364356b-c5f6-40d1-89d8-d1e42b0df753"
+                    },
+                    "type": "Response",
+                    "kind": "Http",
+                    "inputs": {
+                      "statusCode": 200,
+                      "body": {
+                        "Status": "Error",
+                        "OrderNumber": "@variables('Header')?['Order']",
+                        "Messages": "@body('Clean_Up_Error_Messages')"
+                      },
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "Status": {
+                            "type": "string"
+                          },
+                          "OrderNumber": {
+                            "type": "string"
+                          },
+                          "Messages": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "Message": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "Message"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "equals": [
+                  "@length(outputs('Filter_Messages_for_Errors')?['body'])",
+                  0
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "e9efd70f-e739-4ab6-ad9b-90b1e544b087"
+              },
+              "type": "If"
+            },
+            "Set_SAPErrorMessage": {
+              "runAfter": {
+                "BAPI_PO_CHANGE": [
+                  "Failed",
+                  "TimedOut"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "8a70d4b9-a001-4eef-9471-3ac46453ca9f"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "SAPErrorMessage",
+                "value": "@{body('BAPI_PO_CHANGE')['error']['message']}"
+              }
+            },
+            "Items": {
+              "runAfter": {
+                "Set_All_Items": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "14b4abac-495b-4e65-bb8d-46404366866e"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@variables('All_Items')",
+                "where": "@not(equals(item()?['CrudType'], 'R'))"
+              }
+            },
+            "Set_HeaderText": {
+              "runAfter": {
+                "Header": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "fcc86bdb-080b-4da9-85d3-c76e039fe0bb"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "HeaderText",
+                "value": "@chunk(variables('Header')?['HeaderText'], 132)"
+              }
+            },
+            "Header": {
+              "runAfter": {
+                "Parse_JSON": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "3bedf4a3-a542-42dc-9616-336232f7cab0"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "Header",
+                "value": "@body('Parse_JSON')?['Header']"
+              }
+            },
+            "Parse_JSON": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "12f0f586-4295-4bdd-8329-522cf48feb2c"
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@triggerBody()['text']",
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Header": {
+                      "type": "object",
+                      "properties": {
+                        "PurchasingOrganization": {
+                          "type": "string"
+                        },
+                        "PurchasingGroup": {
+                          "type": "string"
+                        },
+                        "Vendor": {
+                          "type": "string"
+                        },
+                        "Currency": {
+                          "type": "string"
+                        },
+                        "HeaderText": {
+                          "type": "string"
+                        },
+                        "OrderNumber": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "OrderNumber"
+                      ]
+                    },
+                    "Items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Location": {
+                            "type": "string"
+                          },
+                          "MaterialNumber": {
+                            "type": "string"
+                          },
+                          "Description": {
+                            "type": "string"
+                          },
+                          "Quantity": {
+                            "type": "number"
+                          },
+                          "ItemNumber": {
+                            "type": "string"
+                          },
+                          "UnitPrice": {
+                            "type": "number"
+                          },
+                          "UnitOfMeasure": {
+                            "type": "string"
+                          },
+                          "CrudType": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Location",
+                          "MaterialNumber",
+                          "Description",
+                          "Quantity",
+                          "ItemNumber",
+                          "UnitPrice",
+                          "CrudType"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "Set_All_Items": {
+              "runAfter": {
+                "Set_HeaderText": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "00d5790b-100d-40e0-a05c-b850efa4698a"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "All_Items",
+                "value": "@body('Parse_JSON')?['Items']"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_All_Items": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "ecc90f73-3b8d-465a-b50a-32f5dafc2f8f"
+          },
+          "type": "Scope"
+        },
+        "Catch": {
+          "actions": {
+            "Filter_array": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "e4ff6915-74dd-4ad8-aeb5-69689f7cd846"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@result('Try')",
+                "where": "@or(equals(item()?['Status'], 'Failed'), equals(item()?['Status'], 'TimedOut'))"
+              }
+            },
+            "ErrorTable": {
+              "runAfter": {
+                "Filter_array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "a4543bb1-084d-4bd9-865a-d59ec8caa8fc"
+              },
+              "type": "Table",
+              "inputs": {
+                "from": "@body('Filter_array')",
+                "format": "HTML",
+                "columns": [
+                  {
+                    "header": "Step",
+                    "value": "@item()?['name']"
+                  },
+                  {
+                    "header": "Status",
+                    "value": "@item()?['Status']"
+                  },
+                  {
+                    "header": "Code",
+                    "value": "@item()?['code']"
+                  },
+                  {
+                    "header": "InnerErrorMessage",
+                    "value": "@{item()?['outputs']?['body']?['error']?['innerError']?['error']?['message']}@{item()?['error']?['message']}@{variables('SAPErrorMessage')}"
+                  },
+                  {
+                    "header": "Input",
+                    "value": "@triggerBody()"
+                  }
+                ]
+              }
+            },
+            "ErrorReturn": {
+              "runAfter": {
+                "ErrorTable": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6ea00725-e758-40bb-9cc7-b69d0a65d01b"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Filter_array')",
+                "select": {
+                  "Step": "@item()?['name']",
+                  "Status": "@item()?['Status']",
+                  "Code": "@item()?['code']",
+                  "InnerErrorMessage": "@{item()?['outputs']?['body']?['error']?['innerError']?['error']?['message']} @{item()?['error']?['message']} @{variables('SAPErrorMessage')}",
+                  "Input": "@triggerBody()",
+                  "FlowName": "@workflow()?['tags']['flowDisplayName']",
+                  "URL": "@concat('https://flow.microsoft.com/manage/environments/', workflow()?['tags']['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']['name'])"
+                }
+              }
+            },
+            "Create_Integration_Log_Error": {
+              "runAfter": {
+                "ErrorReturn": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "65c53a8f-bba5-4aee-a2c2-1bbea7395180"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "CreateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_sapacceleratorerrors",
+                  "item/mpa_name": "@outputs('ErrorReturn')?['body'][0]['FlowName']",
+                  "item/mpa_action": "@outputs('ErrorReturn')?['body'][0]['Step']",
+                  "item/mpa_additionalinformation": "@triggerBody()['text']",
+                  "item/mpa_errormessage": "@outputs('ErrorReturn')?['body'][0]['InnerErrorMessage']",
+                  "item/mpa_sourcetype": 865420000,
+                  "item/mpa_workflowinstanceurl": "@outputs('ErrorReturn')?['body'][0]['URL']",
+                  "item/mpa_workflowstatus": "@If(equals(item()?['Status'], 'Failed'), '865420001', '865420000')"
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              }
+            },
+            "Response_3": {
+              "runAfter": {
+                "Create_Integration_Log_Error": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "1a07fe00-c854-4b19-9f61-ff2091a0b894"
+              },
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "Status": "Error",
+                  "Messages": [
+                    {
+                      "Message": "@outputs('Create_Integration_Log_Error')?['body/mpa_errormessage']"
+                    }
+                  ]
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Status": {
+                      "type": "string"
+                    },
+                    "OrderNumber": {
+                      "type": "string"
+                    },
+                    "Messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Message"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "acddc208-94dd-4daf-9177-fa386ba1baec"
+          },
+          "type": "Scope"
+        },
+        "Initialize_Header": {
+          "runAfter": {
+            "Initialize_SAPErrorMessage": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "629e64e5-8f86-4c55-ba87-4496f2b303fc"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Header",
+                "type": "object"
+              }
+            ]
+          }
+        },
+        "Initialize_HeaderText": {
+          "runAfter": {
+            "Initialize_Header": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "15c549ad-f0ca-4613-a1fb-f572a66b34b4"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "HeaderText",
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "Initialize_All_Items": {
+          "runAfter": {
+            "Initialize_HeaderText": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6d96d4e5-293a-424c-80e5-46c42344c490"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "All_Items",
+                "type": "array"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}
