@@ -1,4 +1,4 @@
-# Accelerator's for Power Platform 
+# Accelerators for Power Platform 
 
 ## Contributing
 
