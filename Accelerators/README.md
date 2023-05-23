@@ -8,6 +8,11 @@
 
 4) Submit App Source Package to Microsoft Partner Marketplace Offers.
 
+## Key Things To Note:
+
+`.DeploymentPackage` -> [Dynamics 365 package](https://learn.microsoft.com/en-us/power-platform/alm/package-deployer-tool?tabs=cli)
+`.AppSourcePackage` -> [AppSource Package](https://learn.microsoft.com/en-us/power-platform/developer/appsource/create-package-app#create-content_typesxml)
+
 ## Process:
 
 #### Get and build solutions
