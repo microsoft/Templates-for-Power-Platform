@@ -72,7 +72,7 @@ Navigate into the `*.DeploymentPackage/bin/Debug/net472/pdpublish` folder and co
 #### To Deploy a Package Deployer Package.
 
 ```
-pac package deploy --package .\bin\Debug\mpa_SAPProcurementAccelerator.DeploymentPackage.1.0.0.pdpkg.zip --logConsole
+pac package deploy --package .\bin\Debug\mpa_SAPProcurement.DeploymentPackage.1.0.0.pdpkg.zip --logConsole
 ```
 
 #### Helpful links:
