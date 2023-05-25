@@ -1,0 +1,3181 @@
+GLAccountSearch As CanvasComponent:
+    Fill: =varThemeColors.background
+    Height: =App.Height
+    OnReset: |-
+        =Set(
+            varCurrentGLAccountSearchTab,//Variable that drives which tab is selected control behavior, default to search all
+            btnGLAccountSearchAllTab.Text
+        );
+        Set(
+            varRecentlySearchedSortOrder,//Variable that drives the sort order of recently searched gallery, default to descending
+            SortOrder.Descending
+        );
+        Set(
+            varRecentlySearchedSortByColumn,//Variable that drives the sort by column of recently searched gallery, default to last searched datetime field
+            btnGLAccountRecentlySearchedResultsHeaderLastSearched.Text
+        );
+        Set(
+            varGLAccountSearchAllSortOrder,//Variable that drives the sort order of search all results gallery, default to ascending
+            SortOrder.Ascending
+        );
+        Set(
+            varGLAccountSearchAllSortByColumn,//Variable that drives the sort by column of search all results gallery, default to vendor
+            btnGLAccountSearchResultsTabelHeaderAccount.Text
+        );
+        //Ensure any cached searched results and recent search history is blank
+        Clear(colGLAccountSearchResults);
+    ResetSearch: =true
+    Width: =1240
+    X: =0
+    Y: =0
+    ZIndex: =1
+
+    conGLAccountSearchMain As groupContainer.verticalAutoLayoutContainer:
+        Height: =GLAccountSearch.Height
+        LayoutAlignItems: =LayoutAlignItems.Stretch
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutMode: =LayoutMode.Auto
+        LayoutOverflowX: =LayoutOverflow.Scroll
+        LayoutOverflowY: =LayoutOverflow.Scroll
+        Width: =GLAccountSearch.Width
+        ZIndex: =2
+
+        conGLAccountSearchHeader As groupContainer.horizontalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Fill: =RGBA(255, 255, 255, 1)
+            FillPortions: =0
+            Height: =48
+            LayoutAlignItems: =LayoutAlignItems.Center
+            LayoutGap: =5
+            LayoutMinHeight: =
+            LayoutMinWidth: |-
+                =If(
+                    conGLAccountSearchAll.Visible,
+                    conGLAccountSearchAll.LayoutMinWidth,
+                    conGLAccountRecentlySearched.LayoutMinWidth
+                )
+            LayoutMode: =LayoutMode.Auto
+            PaddingLeft: =32
+            PaddingRight: =32
+            Width: =Parent.Width
+            ZIndex: =1
+
+            "icoGLAccountSearchBack As icon.'3DPrinting'":
+                AccessibleLabel: =Self.Tooltip
+                BorderColor: =varThemeColors.primary
+                Color: =varThemeColors.primary
+                DisabledBorderColor: =varThemeColors.disabledText
+                DisabledColor: =varThemeColors.backgroundFillDisabled
+                DisabledFill: =RGBA(0,0,0,0)
+                DisplayMode: |-
+                    =If(
+                        varIsProcessing,
+                        DisplayMode.Disabled,
+                        DisplayMode.Edit
+                    )
+                Fill: =RGBA(0,0,0,0)
+                FocusedBorderColor: =varThemeColors.tertiaryGray
+                Height: =30
+                HoverBorderColor: =varThemeColors.primary
+                HoverColor: =varThemeColors.tertiary
+                HoverFill: =RGBA(0,0,0,0)
+                Icon: =Icon.ArrowLeft
+                OnSelect: |-
+                    =Navigate(
+                        Last(
+                            Sort(
+                                colAppNavigationThreads,
+                                Order
+                            )
+                        ).Screen,
+                        ScreenTransition.CoverRight
+                    )
+                PaddingBottom: =5
+                PaddingLeft: =5
+                PaddingRight: =5
+                PaddingTop: =5
+                PressedBorderColor: =varThemeColors.primary
+                PressedColor: =varThemeColors.primary
+                PressedFill: =RGBA(0,0,0,0)
+                TabIndex: =0
+                Tooltip: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {Text: "Back"},
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text 
+                            ).'Localized Value'
+                        )
+                    )
+                Width: =30
+                Y: =Parent.Height/2-Self.Height/2
+                ZIndex: =1
+
+            lblGLAccountSearch As label:
+                BorderColor: =RGBA(0, 0, 0, 0)
+                BorderStyle: =BorderStyle.None
+                BorderThickness: =2
+                Color: =varThemeColors.text
+                DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                FocusedBorderColor: =
+                FocusedBorderThickness: =4
+                Font: =Font.'Segoe UI'
+                FontWeight: =FontWeight.Semibold
+                Height: =Parent.Height
+                PaddingBottom: =0
+                PaddingLeft: =0
+                PaddingTop: =0
+                Role: =TextRole.Heading1
+                Size: =14.5
+                Text: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {Text: "General ledger account search"},
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text 
+                            ).'Localized Value'
+                        )
+                    )
+                Width: =Parent.Width-Self.X
+                Wrap: =false
+                ZIndex: =2
+
+        conGLAccountSearchTabs As groupContainer.horizontalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            Fill: =RGBA(255, 255, 255, 1)
+            FillPortions: =0
+            Height: =43
+            LayoutAlignItems: =LayoutAlignItems.Center
+            LayoutGap: =5
+            LayoutMinHeight: =
+            LayoutMinWidth: |-
+                =If(
+                    conGLAccountSearchAll.Visible,
+                    conGLAccountSearchAll.LayoutMinWidth,
+                    conGLAccountRecentlySearched.LayoutMinWidth
+                )
+            LayoutMode: =LayoutMode.Auto
+            PaddingLeft: =32
+            PaddingRight: =32
+            Width: =Parent.Width
+            ZIndex: =2
+
+            conGLAccountSearchAllTab As groupContainer.manualLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                FillPortions: =0
+                Height: =Parent.Height
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                Width: =Len(btnGLAccountSearchAllTab.Text)*8
+                Y: =36
+                ZIndex: =1
+
+                shpGLAccountSearchAllTabSelected As rectangle:
+                    AccessibleLabel: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {
+                                Text: "Tab selected"
+                            },
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    DisabledFill: =varThemeColors.backgroundFillDisabled
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Fill: =varThemeColors.primary
+                    Height: =2
+                    Visible: =varCurrentGLAccountSearchTab=btnGLAccountSearchAllTab.Text
+                    Width: =btnGLAccountSearchAllTab.Width
+                    X: =1
+                    Y: =btnGLAccountSearchAllTab.Y+btnGLAccountSearchAllTab.Height
+                    ZIndex: =1
+
+                btnGLAccountSearchAllTab As button:
+                    BorderColor: =varThemeColors.primaryGray
+                    BorderThickness: =0
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =varThemeColors.primaryGray
+                    DisabledColor: =varThemeColors.disabledText
+                    DisabledFill: =varThemeColors.backgroundFillDisabled
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Fill: =varThemeColors.backgroundFill
+                    FocusedBorderColor: =varThemeColors.tertiaryGray
+                    FocusedBorderThickness: =2
+                    Font: =Font.'Segoe UI'
+                    FontWeight: =If(varCurrentGLAccountSearchTab=Self.Text,FontWeight.Semibold,FontWeight.Normal)
+                    Height: =Parent.Height-Self.Y*2
+                    HoverBorderColor: =varThemeColors.tertiaryGray
+                    HoverColor: =varThemeColors.primary
+                    HoverFill: =
+                    OnSelect: =Set(varCurrentGLAccountSearchTab, Self.Text)
+                    PaddingLeft: =0
+                    PaddingRight: =0
+                    PressedBorderColor: =
+                    PressedColor: =varThemeColors.text
+                    PressedFill: =
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Size: =10.5
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {Text: "Search all"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Tooltip: =Self.Text
+                    Width: =Parent.Width-Self.X*2
+                    X: =Self.FocusedBorderThickness
+                    Y: =Self.FocusedBorderThickness
+                    ZIndex: =2
+
+            conGLAccountSearchRecentTab As groupContainer.manualLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                FillPortions: =0
+                Height: =Parent.Height
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                Width: =Len(btnGLAccountSearchRecentTab.Text)*8
+                Y: =36
+                ZIndex: =2
+
+                shpGLAccountSearchRecentTabSelected As rectangle:
+                    AccessibleLabel: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {
+                                Text: "Tab selected"
+                            },
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    DisabledFill: =varThemeColors.backgroundFillDisabled
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Fill: =varThemeColors.primary
+                    Height: =2
+                    Visible: =varCurrentGLAccountSearchTab=btnGLAccountSearchRecentTab.Text
+                    Width: =btnGLAccountSearchRecentTab.Width
+                    X: =1
+                    Y: =btnGLAccountSearchRecentTab.Y+btnGLAccountSearchRecentTab.Height
+                    ZIndex: =1
+
+                btnGLAccountSearchRecentTab As button:
+                    BorderColor: =varThemeColors.primaryGray
+                    BorderThickness: =0
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =varThemeColors.primaryGray
+                    DisabledColor: =varThemeColors.disabledText
+                    DisabledFill: =varThemeColors.backgroundFillDisabled
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Fill: =varThemeColors.backgroundFill
+                    FocusedBorderColor: =varThemeColors.tertiaryGray
+                    FocusedBorderThickness: =2
+                    Font: =Font.'Segoe UI'
+                    FontWeight: =If(varCurrentGLAccountSearchTab=Self.Text,FontWeight.Semibold,FontWeight.Normal)
+                    Height: =Parent.Height-Self.Y*2
+                    HoverBorderColor: =varThemeColors.tertiaryGray
+                    HoverColor: =varThemeColors.primary
+                    HoverFill: =
+                    OnSelect: |
+                        =Set(
+                            varCurrentGLAccountSearchTab,//Variable that drives which tab is selected control behavior
+                            Self.Text
+                        );
+                        Refresh('SAP Search Histories')
+                    PaddingLeft: =0
+                    PaddingRight: =0
+                    PressedBorderColor: =
+                    PressedColor: =varThemeColors.text
+                    PressedFill: =
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Size: =10.5
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {Text: "Recently searched"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Tooltip: =Self.Text
+                    Width: =Parent.Width-Self.X*2
+                    X: =Self.FocusedBorderThickness
+                    Y: =Self.FocusedBorderThickness
+                    ZIndex: =2
+
+        conGLAccountSearchAll As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Height: =700
+            LayoutAlignItems: =LayoutAlignItems.Stretch
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutGap: =15
+            LayoutMinHeight: =lblGLAccountsNumberOfFoundRecords.Height + conGLAccountSearchResults.LayoutMinHeight + conGLAccountSearchAllFields.Height + conGLAccountSearchButtons.Height + Self.PaddingTop + Self.PaddingBottom + Self.LayoutGap * 2 + 10
+            LayoutMinWidth: =conGLAccountSearchResults.LayoutMinWidth  + Self.PaddingLeft + Self.PaddingRight
+            LayoutMode: =LayoutMode.Auto
+            PaddingBottom: =10
+            PaddingLeft: =32
+            PaddingRight: =32
+            PaddingTop: =25
+            Visible: =varCurrentGLAccountSearchTab=btnGLAccountSearchAllTab.Text
+            Width: =Parent.Width
+            ZIndex: =3
+
+            conGLAccountSearchAllFields As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                BorderColor: =RGBA(0, 0, 0, 0)
+                BorderStyle: =BorderStyle.None
+                FillPortions: =0
+                Height: |-
+                    =With(
+                        {defaultHeight: 64},
+                        Switch(
+                            true,
+                            Self.Width <= 500,
+                            3 * defaultHeight + 2 * Self.LayoutGap,
+                            Self.Width <= 750,
+                            2 * defaultHeight + Self.LayoutGap,
+                            defaultHeight
+                        )
+                    )
+                LayoutGap: =10
+                LayoutMinHeight: =
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                LayoutWrap: =true
+                Width: =
+                ZIndex: =1
+
+                conGLAccountSearchName As groupContainer.manualLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    FillPortions: =0
+                    Height: =64
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    Width: |-
+                        =Max(
+                            244,
+                            Len(txtGLAccountSearchName.HintText) * 10
+                        )
+                    X: =40
+                    ZIndex: =1
+
+                    txtGLAccountSearchName As text:
+                        AccessibleLabel: =Self.HintText
+                        BorderColor: =varThemeColors.primaryGray
+                        BorderThickness: =1
+                        Clear: =true
+                        Color: =varThemeColors.text
+                        Default: =If(GLAccountSearch.ResetSearch,"")
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayMode: |-
+                            =If(
+                                varIsProcessing,
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HintText: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Enter account"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        HoverBorderColor: =Self.BorderColor
+                        HoverColor: =varThemeColors.text
+                        HoverFill: =varThemeColors.backgroundFill
+                        MaxLength: =70
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        PressedBorderColor: =Self.BorderColor
+                        PressedColor: =varThemeColors.text
+                        PressedFill: =varThemeColors.backgroundFill
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =10.5
+                        Tooltip: |-
+                            =Coalesce(
+                                Self.Text,
+                                Self.HintText
+                            )
+                        Width: =lblGLAccountSearchName.Width
+                        X: =Self.FocusedBorderThickness
+                        Y: =lblGLAccountSearchName.Y+lblGLAccountSearchName.Height
+                        ZIndex: =2
+
+                    lblGLAccountSearchName As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        Size: =10.5
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Account"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Width: =Parent.Width-Self.FocusedBorderThickness*2
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =3
+
+                conGLAccountSearchDescription As groupContainer.manualLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    FillPortions: =0
+                    Height: =64
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    Width: |-
+                        =Max(
+                            244,
+                            Len(txtGLAccountSearchDescription.HintText) * 10
+                        )
+                    X: =40
+                    ZIndex: =2
+
+                    txtGLAccountSearchDescription As text:
+                        AccessibleLabel: =Self.HintText
+                        BorderColor: =varThemeColors.primaryGray
+                        BorderThickness: =1
+                        Clear: =true
+                        Color: =varThemeColors.text
+                        Default: =If(GLAccountSearch.ResetSearch,"")
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayMode: |-
+                            =If(
+                                varIsProcessing,
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HintText: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Enter description"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        HoverBorderColor: =Self.BorderColor
+                        HoverColor: =varThemeColors.text
+                        HoverFill: =varThemeColors.backgroundFill
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        PressedBorderColor: =Self.BorderColor
+                        PressedColor: =varThemeColors.text
+                        PressedFill: =varThemeColors.backgroundFill
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =10.5
+                        Tooltip: |-
+                            =Coalesce(
+                                Self.Text,
+                                Self.HintText
+                            )
+                        Width: =lblGLAccountSearchDescription.Width
+                        X: =Self.FocusedBorderThickness
+                        Y: =lblGLAccountSearchDescription.Y+lblGLAccountSearchDescription.Height
+                        ZIndex: =2
+
+                    lblGLAccountSearchDescription As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        Size: =10.5
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Description"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Width: =Parent.Width-Self.FocusedBorderThickness*2
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =3
+
+                conGLAccountSearchChartOfAccounts As groupContainer.manualLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    FillPortions: =0
+                    Height: =64
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    Width: |-
+                        =Max(
+                            224,
+                            Len(cmbGLAccountSearchChartOfAccounts.AccessibleLabel) * 10
+                        )
+                    X: =40
+                    ZIndex: =5
+
+                    cmbGLAccountSearchChartOfAccounts As combobox:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Select chart of accounts"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: =varThemeColors.primaryGray
+                        BorderThickness: =1
+                        ChevronBackground: =varThemeColors.backgroundFill
+                        ChevronDisabledBackground: =varThemeColors.backgroundFillDisabled
+                        ChevronDisabledFill: |
+                            =varThemeColors.text
+                        ChevronFill: =varThemeColors.text
+                        ChevronHoverBackground: =varThemeColors.secondaryGray
+                        ChevronHoverFill: |
+                            =varThemeColors.text
+                        Color: =varThemeColors.text
+                        DefaultSelectedItems: |-
+                            =If(
+                                GLAccountSearch.ResetSearch,
+                                Defaults('SAP List of Values')
+                            )
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayFields: =["mpa_value","mpa_valuecode"]
+                        DisplayMode: |-
+                            =If(
+                                varIsProcessing,
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HoverBorderColor: =Self.BorderColor
+                        HoverColor: =varThemeColors.text
+                        HoverFill: =varThemeColors.secondaryGray
+                        InputTextPlaceholder: =Self.AccessibleLabel
+                        Items: |-
+                            =//Filter possible list of values according to mapped domain and language field
+                            Sort(
+                                Filter(
+                                    'SAP List of Values',
+                                    Status = 'Status (SAP List of Values)'.Active,
+                                    Domain = 'Domain (SAP List of Values)'.'Chart Of Account',
+                                    Language = varISOUserLanguageCode
+                                ),
+                                'Display Value'
+                            )
+                        NoSelectionText: =Self.AccessibleLabel
+                        OnChange: =
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        PressedBorderColor: =Self.BorderColor
+                        PressedColor: =varThemeColors.altText
+                        PressedFill: =varThemeColors.backgroundFill
+                        SearchFields: =["mpa_value","mpa_valuecode"]
+                        SearchItems: |-
+                            =Search(//Filter possible list of values according to mapped domain and language field
+                            Sort(
+                                Filter(
+                                    'SAP List of Values',
+                                    Status = 'Status (SAP List of Values)'.Active,
+                                    Domain = 'Domain (SAP List of Values)'.'Chart Of Account',
+                                    Language = varISOUserLanguageCode
+                                ),
+                                'Display Value'
+                            ),cmbGLAccountSearchChartOfAccounts.SearchText,"mpa_value","mpa_valuecode")
+                        SelectionColor: =varThemeColors.altText
+                        SelectionFill: =varThemeColors.primaryGray
+                        SelectionTagColor: =varThemeColors.text
+                        SelectionTagFill: =varThemeColors.backgroundFill
+                        SelectMultiple: =false
+                        Size: =10.5
+                        Template: =ListItemTemplate.Double
+                        Tooltip: |-
+                            =Coalesce(
+                                Self.Selected.'Display Value',
+                                Self.AccessibleLabel
+                            )
+                        Width: =lblGLAccountSearchChartOfAccounts.Width
+                        X: =lblGLAccountSearchChartOfAccounts.X
+                        Y: =lblGLAccountSearchChartOfAccounts.Y+lblGLAccountSearchChartOfAccounts.Height
+                        ZIndex: =1
+
+                    lblGLAccountSearchChartOfAccounts As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        Size: =10.5
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Chart of accounts"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Width: =Parent.Width-Self.FocusedBorderThickness*2
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =2
+
+            conGLAccountSearchButtons As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                BorderColor: =RGBA(0, 0, 0, 0)
+                BorderStyle: =BorderStyle.None
+                FillPortions: =0
+                Height: =42
+                LayoutAlignItems: =LayoutAlignItems.Center
+                LayoutGap: =20
+                LayoutMinHeight: =
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                PaddingLeft: =2
+                PaddingRight: =2
+                Width: =
+                ZIndex: =2
+
+                btnGLAccountSearch As button:
+                    BorderColor: =varThemeColors.primary
+                    BorderThickness: =1
+                    Color: =varThemeColors.altText
+                    DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                    DisabledColor: =varThemeColors.disabledText
+                    DisabledFill: =varThemeColors.backgroundFillDisabled
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Fill: =varThemeColors.primary
+                    FocusedBorderColor: =varThemeColors.tertiaryGray
+                    FocusedBorderThickness: =2
+                    Font: =Font.'Segoe UI'
+                    HoverBorderColor: =varThemeColors.primary
+                    HoverColor: =varThemeColors.altText
+                    HoverFill: =varThemeColors.tertiary
+                    OnSelect: |
+                        =Reset(txtGLAccountSearchResultsFilter);
+                        Set(
+                            varIsProcessing,
+                            true
+                        );
+                        Set(
+                            varFooterMessage,
+                            "Searching"
+                        );
+                        ClearCollect(
+                            colGLAccountSearchResults,
+                            ReadGLAccountList.Run(
+                                Substitute(//Remove any null values from the JSON function and convert to empty strings
+                                    JSON(
+                                        {
+                                            Account: Trim(txtGLAccountSearchName.Text),
+                                            Description: Trim(txtGLAccountSearchDescription.Text),
+                                            Chart: cmbGLAccountSearchChartOfAccounts.Selected.'Value Code'
+                                        },
+                                        JSONFormat.IndentFour
+                                    ),
+                                    "null",
+                                    """"""
+                                )
+                            )
+                        );
+                        //Evaluate return statuses to determine what type of notification
+                        With(
+                            {
+                                Text: Switch(
+                                    First(colGLAccountSearchResults).Status,
+                                    "Information",
+                                    "No general ledger accounts found based upon your search criteria",
+                                    "Warning",
+                                    "The maximum number of search results were found based upon your criteria and some records may be missing. Please try changing your search criteria.",
+                                    "Error",
+                                    Concat(
+                                        First(colGLAccountSearchResults).Messages,
+                                        Message,
+                                        " "
+                                    ),
+                                    "general ledger accounts found based upon your search criteria"
+                                ),
+                                Status: First(colGLAccountSearchResults).Status
+                            },
+                            Notify(
+                                //Append record count to message if success
+                                Concatenate(
+                                    If(
+                                        Status = "Success",
+                                        CountRows(First(colGLAccountSearchResults).List)
+                                    ) & " ",
+                                    If(
+                                // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                ),
+                                    //Set the notification type
+                                Switch(
+                                    Status,
+                                    "Information",
+                                    NotificationType.Information,
+                                    "Warning",
+                                    NotificationType.Warning,
+                                    "Error",
+                                    NotificationType.Error,
+                                    NotificationType.Success
+                                ),
+                                If(
+                                    Status = "Error",
+                                    0,
+                                    7000
+                                )
+                            )
+                        );
+                        Reset(galGLAccountSearchResults);
+                        Set(
+                            varIsProcessing,
+                            false
+                        );
+                        Set(
+                            varFooterMessage,
+                            Blank()
+                        );
+                    PressedBorderColor: =varThemeColors.primary
+                    PressedColor: =varThemeColors.altText
+                    PressedFill: =varThemeColors.primary
+                    RadiusBottomLeft: =4
+                    RadiusBottomRight: =4
+                    RadiusTopLeft: =4
+                    RadiusTopRight: =4
+                    Size: =10.5
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {Text: "Search"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Tooltip: =Self.Text
+                    Width: =150
+                    X: =1
+                    Y: =1
+                    ZIndex: =1
+
+                btnGLAccountClear As button:
+                    BorderColor: =varThemeColors.primary
+                    BorderThickness: =1
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                    DisabledColor: =varThemeColors.disabledText
+                    DisabledFill: =varThemeColors.backgroundFillDisabled
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Fill: =varThemeColors.backgroundFill
+                    FocusedBorderColor: =varThemeColors.tertiaryGray
+                    FocusedBorderThickness: =2
+                    Font: =Font.'Segoe UI'
+                    HoverBorderColor: =varThemeColors.primary
+                    HoverColor: =varThemeColors.altText
+                    HoverFill: =varThemeColors.tertiary
+                    OnSelect: |
+                        =Reset(GLAccountSearch);
+                        Reset(txtGLAccountSearchName);
+                        Reset(txtGLAccountSearchDescription);
+                        Reset(cmbGLAccountSearchChartOfAccounts);
+                        Reset(txtGLAccountSearchResultsFilter)
+                    PressedBorderColor: =varThemeColors.primary
+                    PressedColor: =varThemeColors.altText
+                    PressedFill: =varThemeColors.primary
+                    RadiusBottomLeft: =4
+                    RadiusBottomRight: =4
+                    RadiusTopLeft: =4
+                    RadiusTopRight: =4
+                    Size: =10.5
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {Text: "Clear"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Tooltip: =Self.Text
+                    Width: =150
+                    X: =btnGLAccountSearch.X+btnGLAccountSearch.Width+20
+                    Y: =1
+                    ZIndex: =2
+
+            conGLAccountSearchResults As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                Fill: =RGBA(255, 255, 255, 1)
+                Height: =43
+                LayoutAlignItems: =LayoutAlignItems.Stretch
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutMinHeight: =conGLAccountSearchResultsTable.LayoutMinHeight + conGLAccountSearchAllCommandBar.Height + shpGLAccountSearchResultsDivider_1.Height
+                LayoutMinWidth: =conGLAccountSearchResultsTable.LayoutMinWidth + Self.PaddingLeft + Self.PaddingRight + 150
+                LayoutMode: =LayoutMode.Auto
+                Width: =
+                ZIndex: =3
+
+                conGLAccountSearchAllCommandBar As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    Fill: =RGBA(255, 255, 255, 1)
+                    FillPortions: =0
+                    Height: =42
+                    LayoutAlignItems: =LayoutAlignItems.Center
+                    LayoutGap: =20
+                    LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+                    LayoutMinHeight: =
+                    LayoutMinWidth: =
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingLeft: =12
+                    PaddingRight: =2
+                    Width: =
+                    ZIndex: =1
+
+                    lblGLAccountSearchAllCommandBar As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =Parent.Height
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        PaddingTop: =0
+                        Role: =TextRole.Heading2
+                        Size: =10.5
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {
+                                    Text: "Search results"
+                                },
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Width: =Len(Self.Text)*9
+                        ZIndex: =1
+
+                    conGLAccountSearchFilter As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        FillPortions: =0
+                        Height: =Parent.Height
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        Width: =txtGLAccountSearchResultsFilter.X+txtGLAccountSearchResultsFilter.Width+txtGLAccountSearchResultsFilter.FocusedBorderThickness
+                        ZIndex: =5
+
+                        txtGLAccountSearchResultsFilter As text:
+                            AccessibleLabel: =Self.HintText
+                            BorderColor: =varThemeColors.primaryGray
+                            BorderThickness: =1
+                            Clear: =true
+                            Color: =varThemeColors.text
+                            Default: =""
+                            DelayOutput: =true
+                            DisabledBorderColor: =varThemeColors.primaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    Or(
+                                        IsEmpty(colGLAccountSearchResults),
+                                        varIsProcessing
+                                    ),
+                                    DisplayMode.Disabled,
+                                    DisplayMode.Edit
+                                )
+                            Fill: =varThemeColors.backgroundFill
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =32
+                            HintText: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Filter general ledger accounts"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            HoverBorderColor: =Self.BorderColor
+                            HoverColor: =varThemeColors.text
+                            HoverFill: =varThemeColors.backgroundFill
+                            MaxLength: =70
+                            OnChange: =
+                            PaddingBottom: =6
+                            PaddingLeft: =8
+                            PaddingRight: =8
+                            PaddingTop: =6
+                            PressedBorderColor: =Self.BorderColor
+                            PressedColor: =
+                            PressedFill: =varThemeColors.backgroundFill
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Reset: =true
+                            Size: =10.5
+                            Tooltip: |-
+                                =Coalesce(
+                                    Self.Text,
+                                    Self.HintText
+                                )
+                            Width: =250
+                            X: =shpGLAccountSearchCommandBarSearchDivider.X+shpGLAccountSearchCommandBarSearchDivider.Width+7
+                            Y: =Parent.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        shpGLAccountSearchCommandBarSearchDivider As rectangle:
+                            Fill: =varThemeColors.secondaryGray
+                            Height: =30
+                            OnSelect: =
+                            Width: =2
+                            Y: =6
+                            ZIndex: =2
+
+                shpGLAccountSearchResultsDivider_1 As rectangle:
+                    Fill: =varThemeColors.secondaryGray
+                    Height: =1
+                    LayoutMinHeight: =
+                    LayoutMinWidth: =
+                    Width: =
+                    ZIndex: =2
+
+                conGLAccountSearchResultsTable As groupContainer.verticalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    Height: =257
+                    LayoutAlignItems: =LayoutAlignItems.Stretch
+                    LayoutDirection: =LayoutDirection.Vertical
+                    LayoutMinHeight: |-
+                        =conGLAccountSearchResultsTableHeader.Height + shpGLAccountSearchResultsDivider.Height + If(galGLAccountSearchResults.Visible,
+                            galGLAccountSearchResults.LayoutMinHeight,
+                            conGLAccountSearchNoResults.LayoutMinHeight
+                        ) + Self.PaddingBottom + Self.PaddingTop
+                    LayoutMinWidth: =conGLAccountSearchResultsTableHeader.LayoutMinWidth + Self.PaddingLeft + Self.PaddingRight
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingBottom: =2
+                    PaddingLeft: =16
+                    PaddingRight: =16
+                    Width: =
+                    ZIndex: =3
+
+                    conGLAccountSearchResultsTableHeader As groupContainer.horizontalAutoLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Fill: =RGBA(255, 255, 255, 1)
+                        FillPortions: =0
+                        Height: =43
+                        LayoutAlignItems: =LayoutAlignItems.Center
+                        LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+                        LayoutMinHeight: =
+                        LayoutMinWidth: =conGLAccountSearchResultsTabelHeaderAccount.LayoutMinWidth + conGLAccountSearchResultsTabelHeaderDescription.LayoutMinWidth + conGLAccountSearchResultsTabelHeaderAccount.LayoutMinWidth
+                        LayoutMode: =LayoutMode.Auto
+                        Width: =
+                        ZIndex: =2
+
+                        conGLAccountSearchResultsTabelHeaderAccount As groupContainer.manualLayoutContainer:
+                            AlignInContainer: =AlignInContainer.SetByContainer
+                            BorderColor: =RGBA(0, 0, 0, 0)
+                            BorderStyle: =BorderStyle.None
+                            Height: =44
+                            LayoutMinHeight: =100
+                            LayoutMinWidth: =icoGLAccountSearchResultsTabelHeaderAccount.X+icoGLAccountSearchResultsTabelHeaderAccount.Width+10
+                            Width: |-
+                                =Max(
+                                    Len(btnGLAccountSearchResultsTabelHeaderAccount.Text) * 10,
+                                    164
+                                )
+                            Y: =37
+                            ZIndex: =1
+
+                            icoGLAccountSearchResultsTabelHeaderAccount As icon.Save:
+                                AccessibleLabel: |-
+                                    =// Define a variable named "Text" with the value "{value}"
+                                    With(
+                                        {
+                                            Text: If(
+                                                Self.Icon = Icon.ArrowUp,
+                                                "Sorted ascending",
+                                                "Sorted descending"
+                                            )
+                                        },
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Color: =varThemeColors.tertiaryGray
+                                DisabledColor: =varThemeColors.disabledText
+                                DisplayMode: =btnGLAccountSearchResultsTabelHeaderAccount.DisplayMode
+                                FocusedBorderColor: =varThemeColors.primary
+                                Height: =12
+                                Icon: |-
+                                    =If(
+                                        varGLAccountSearchAllSortOrder = SortOrder.Ascending,
+                                        Icon.ArrowUp,
+                                        Icon.ArrowDown
+                                    )
+                                Visible: =varGLAccountSearchAllSortByColumn=btnGLAccountSearchResultsTabelHeaderAccount.Text && galGLAccountSearchResults.Visible
+                                Width: =12
+                                X: =Len(btnGLAccountSearchResultsTabelHeaderAccount.Text)*9.5+8
+                                Y: =btnGLAccountSearchResultsTabelHeaderAccount.Y+btnGLAccountSearchResultsTabelHeaderAccount.Height/2-Self.Height/2
+                                ZIndex: =1
+
+                            btnGLAccountSearchResultsTabelHeaderAccount As button:
+                                Align: =Align.Left
+                                BorderColor: =RGBA(0,0,0,0)
+                                BorderThickness: =1
+                                Color: =varThemeColors.text
+                                DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                                DisabledColor: =varThemeColors.disabledText
+                                DisabledFill: =varThemeColors.backgroundFillDisabled
+                                DisplayMode: =If(galGLAccountSearchResults.Visible,DisplayMode.Edit,DisplayMode.View)
+                                Fill: =RGBA(0,0,0,0)
+                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderThickness: =2
+                                Font: =Font.'Segoe UI'
+                                Height: =Parent.Height-Self.Y*2
+                                HoverBorderColor: =
+                                HoverColor: =varThemeColors.primary
+                                HoverFill: =
+                                OnSelect: |-
+                                    =Set(//Stores which column is currently being sorted
+                                        varGLAccountSearchAllSortByColumn,
+                                        Self.Text
+                                    );
+                                    If(//Stores the sort order of that column
+                                        And(
+                                            varGLAccountSearchAllSortOrder = SortOrder.Ascending,
+                                            varGLAccountSearchAllSortByColumn = Self.Text
+                                        ),
+                                        Set(
+                                            varGLAccountSearchAllSortOrder,
+                                            SortOrder.Descending
+                                        ),
+                                        Set(
+                                            varGLAccountSearchAllSortOrder,
+                                            SortOrder.Ascending
+                                        )
+                                    );
+                                    
+                                    Reset(galGLAccountSearchResults)//Resets the gallery to move the scrollbar to the top
+                                PaddingLeft: =12
+                                PressedBorderColor: =
+                                PressedColor: =varThemeColors.text
+                                PressedFill: =
+                                RadiusBottomLeft: =0
+                                RadiusBottomRight: =0
+                                RadiusTopLeft: =0
+                                RadiusTopRight: =0
+                                Size: =10.5
+                                Text: |-
+                                    =// Define a variable named "Text" with the value "{value}"
+                                    With(
+                                        {Text: "Account"},
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Tooltip: =Self.Text
+                                Width: =Parent.Width-Self.X*2
+                                X: =Self.FocusedBorderThickness
+                                Y: =Self.FocusedBorderThickness
+                                ZIndex: =2
+
+                        conGLAccountSearchResultsTabelHeaderDescription As groupContainer.manualLayoutContainer:
+                            AlignInContainer: =AlignInContainer.SetByContainer
+                            BorderColor: =RGBA(0, 0, 0, 0)
+                            BorderStyle: =BorderStyle.None
+                            Height: =44
+                            LayoutMinHeight: =100
+                            LayoutMinWidth: =icoGLAccountSearchResultsTabelHeaderDescription.X+icoGLAccountSearchResultsTabelHeaderDescription.Width+10
+                            Width: |-
+                                =Max(
+                                    Len(btnGLAccountSearchResultsTabelHeaderDescription.Text) * 10,
+                                    344
+                                )
+                            Y: =37
+                            ZIndex: =2
+
+                            icoGLAccountSearchResultsTabelHeaderDescription As icon.Save:
+                                AccessibleLabel: |-
+                                    =// Define a variable named "Text" with the value "{value}"
+                                    With(
+                                        {
+                                            Text: If(
+                                                Self.Icon = Icon.ArrowUp,
+                                                "Sorted ascending",
+                                                "Sorted descending"
+                                            )
+                                        },
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Color: =varThemeColors.tertiaryGray
+                                DisabledColor: =varThemeColors.disabledText
+                                DisplayMode: =btnGLAccountSearchResultsTabelHeaderDescription.DisplayMode
+                                FocusedBorderColor: =varThemeColors.primary
+                                Height: =12
+                                Icon: |-
+                                    =If(
+                                        varGLAccountSearchAllSortOrder = SortOrder.Ascending,
+                                        Icon.ArrowUp,
+                                        Icon.ArrowDown
+                                    )
+                                Visible: =varGLAccountSearchAllSortByColumn=btnGLAccountSearchResultsTabelHeaderDescription.Text && galGLAccountSearchResults.Visible
+                                Width: =12
+                                X: =Len(btnGLAccountSearchResultsTabelHeaderDescription.Text)*8+8
+                                Y: =btnGLAccountSearchResultsTabelHeaderDescription.Y+btnGLAccountSearchResultsTabelHeaderDescription.Height/2-Self.Height/2
+                                ZIndex: =1
+
+                            btnGLAccountSearchResultsTabelHeaderDescription As button:
+                                Align: =Align.Left
+                                BorderColor: =RGBA(0,0,0,0)
+                                BorderThickness: =1
+                                Color: =varThemeColors.text
+                                DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                                DisabledColor: =varThemeColors.disabledText
+                                DisabledFill: =varThemeColors.backgroundFillDisabled
+                                DisplayMode: =If(galGLAccountSearchResults.Visible,DisplayMode.Edit,DisplayMode.View)
+                                Fill: =RGBA(0,0,0,0)
+                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderThickness: =2
+                                Font: =Font.'Segoe UI'
+                                Height: =Parent.Height-Self.Y*2
+                                HoverBorderColor: =
+                                HoverColor: =varThemeColors.primary
+                                HoverFill: =
+                                OnSelect: |-
+                                    =Set(//Stores which column is currently being sorted
+                                        varGLAccountSearchAllSortByColumn,
+                                        Self.Text
+                                    );
+                                    If(//Stores the sort order of that column
+                                        And(
+                                            varGLAccountSearchAllSortOrder = SortOrder.Ascending,
+                                            varGLAccountSearchAllSortByColumn = Self.Text
+                                        ),
+                                        Set(
+                                            varGLAccountSearchAllSortOrder,
+                                            SortOrder.Descending
+                                        ),
+                                        Set(
+                                            varGLAccountSearchAllSortOrder,
+                                            SortOrder.Ascending
+                                        )
+                                    );
+                                    Reset(galGLAccountSearchResults)//Resets the gallery to move the scrollbar to the top
+                                PaddingLeft: =8
+                                PressedBorderColor: =
+                                PressedColor: =varThemeColors.text
+                                PressedFill: =
+                                RadiusBottomLeft: =0
+                                RadiusBottomRight: =0
+                                RadiusTopLeft: =0
+                                RadiusTopRight: =0
+                                Size: =10.5
+                                Text: |-
+                                    =// Define a variable named "Text" with the value "{value}"
+                                    With(
+                                        {Text: "Description"},
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Tooltip: =Self.Text
+                                Width: =Parent.Width-Self.X*2
+                                X: =Self.FocusedBorderThickness
+                                Y: =Self.FocusedBorderThickness
+                                ZIndex: =2
+
+                        conGLAccountSearchResultsTabelHeaderChartOfAccounts As groupContainer.manualLayoutContainer:
+                            AlignInContainer: =AlignInContainer.SetByContainer
+                            BorderColor: =RGBA(0, 0, 0, 0)
+                            BorderStyle: =BorderStyle.None
+                            Height: =44
+                            LayoutMinHeight: =100
+                            LayoutMinWidth: =icoGLAccountSearchResultsTabelHeaderChartOfAccounts.X+icoGLAccountSearchResultsTabelHeaderChartOfAccounts.Width+10
+                            Width: |-
+                                =Max(
+                                    Len(btnGLAccountSearchResultsTabelHeaderChartOfAccounts.Text) * 10,
+                                    244
+                                )
+                            Y: =37
+                            ZIndex: =3
+
+                            icoGLAccountSearchResultsTabelHeaderChartOfAccounts As icon.Save:
+                                AccessibleLabel: |-
+                                    =// Define a variable named "Text" with the value "{value}"
+                                    With(
+                                        {
+                                            Text: If(
+                                                Self.Icon = Icon.ArrowUp,
+                                                "Sorted ascending",
+                                                "Sorted descending"
+                                            )
+                                        },
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Color: =varThemeColors.tertiaryGray
+                                DisabledColor: =varThemeColors.disabledText
+                                DisplayMode: =btnGLAccountSearchResultsTabelHeaderChartOfAccounts.DisplayMode
+                                FocusedBorderColor: =varThemeColors.primary
+                                Height: =12
+                                Icon: |-
+                                    =If(
+                                        varGLAccountSearchAllSortOrder = SortOrder.Ascending,
+                                        Icon.ArrowUp,
+                                        Icon.ArrowDown
+                                    )
+                                Visible: =varGLAccountSearchAllSortByColumn=btnGLAccountSearchResultsTabelHeaderChartOfAccounts.Text && galGLAccountSearchResults.Visible
+                                Width: =12
+                                X: =Len(btnGLAccountSearchResultsTabelHeaderChartOfAccounts.Text)*7.5+8
+                                Y: =btnGLAccountSearchResultsTabelHeaderChartOfAccounts.Y+btnGLAccountSearchResultsTabelHeaderChartOfAccounts.Height/2-Self.Height/2
+                                ZIndex: =1
+
+                            btnGLAccountSearchResultsTabelHeaderChartOfAccounts As button:
+                                Align: =Align.Left
+                                BorderColor: =RGBA(0,0,0,0)
+                                BorderThickness: =1
+                                Color: =varThemeColors.text
+                                DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                                DisabledColor: =varThemeColors.disabledText
+                                DisabledFill: =varThemeColors.backgroundFillDisabled
+                                DisplayMode: =If(galGLAccountSearchResults.Visible,DisplayMode.Edit,DisplayMode.View)
+                                Fill: =RGBA(0,0,0,0)
+                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderThickness: =2
+                                Font: =Font.'Segoe UI'
+                                Height: =Parent.Height-Self.Y*2
+                                HoverBorderColor: =
+                                HoverColor: =varThemeColors.primary
+                                HoverFill: =
+                                OnSelect: |-
+                                    =Set(//Stores which column is currently being sorted
+                                        varGLAccountSearchAllSortByColumn,
+                                        Self.Text
+                                    );
+                                    If(//Stores the sort order of that column
+                                        And(
+                                            varGLAccountSearchAllSortOrder = SortOrder.Ascending,
+                                            varGLAccountSearchAllSortByColumn = Self.Text
+                                        ),
+                                        Set(
+                                            varGLAccountSearchAllSortOrder,
+                                            SortOrder.Descending
+                                        ),
+                                        Set(
+                                            varGLAccountSearchAllSortOrder,
+                                            SortOrder.Ascending
+                                        )
+                                    );
+                                    Reset(galGLAccountSearchResults)//Resets the gallery to move the scrollbar to the top
+                                PaddingLeft: =8
+                                PressedBorderColor: =
+                                PressedColor: =varThemeColors.text
+                                PressedFill: =
+                                RadiusBottomLeft: =0
+                                RadiusBottomRight: =0
+                                RadiusTopLeft: =0
+                                RadiusTopRight: =0
+                                Size: =10.5
+                                Text: |-
+                                    =// Define a variable named "Text" with the value "{value}"
+                                    With(
+                                        {Text: "Chart of accounts"},
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Tooltip: =Self.Text
+                                Width: =Parent.Width-Self.X*2
+                                X: =Self.FocusedBorderThickness
+                                Y: =Self.FocusedBorderThickness
+                                ZIndex: =2
+
+                    shpGLAccountSearchResultsDivider As rectangle:
+                        AccessibleLabel: ="N/A"
+                        Fill: =varThemeColors.secondaryGray
+                        Height: =1
+                        LayoutMinHeight: =
+                        LayoutMinWidth: =
+                        Width: =
+                        ZIndex: =3
+
+                    galGLAccountSearchResults As gallery.galleryVertical:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Search results"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        FocusedBorderColor: =varThemeColors.tertiaryGray
+                        FocusedBorderThickness: =2
+                        Height: =
+                        ItemAccessibleLabel: =ThisItem.Account
+                        Items: |-
+                            =//Display GL account search result items for collection cached
+                            With(
+                                {
+                                    searchResults: If(
+                                        IsBlank(txtGLAccountSearchResultsFilter.Text),//Show all results if no filtered text entered
+                                        First(colGLAccountSearchResults).List,
+                                        Search(//Otherwise, search on the results further using entered filtered text
+                                            First(colGLAccountSearchResults).List,
+                                            txtGLAccountSearchResultsFilter.Text,
+                                            "Account",
+                                            "Chart",
+                                            "Description"
+                                        )
+                                    )
+                                },
+                                SortByColumns(
+                                    searchResults,
+                                    Switch(
+                                        varGLAccountSearchAllSortByColumn,//determine which field to sort by based upon the tabel header column value selected and stored in variable
+                                        btnGLAccountSearchResultsTabelHeaderAccount.Text,
+                                        "Account",
+                                        btnGLAccountSearchResultsTabelHeaderDescription.Text,
+                                        "Description",
+                                        btnGLAccountSearchResultsTabelHeaderChartOfAccounts.Text,
+                                        "Chart"
+                                    ),
+                                    varGLAccountSearchAllSortOrder//sort ascending or descending based upon value stored in variable
+                                )
+                            )
+                        Layout: =Layout.Vertical
+                        LayoutMinHeight: =Self.TemplateHeight * 6
+                        LayoutMinWidth: =
+                        TabIndex: =0
+                        TemplateFill: =RGBA(255, 255, 255, 1)
+                        TemplatePadding: =0
+                        TemplateSize: =43
+                        Visible: =!IsEmpty(colGLAccountSearchResults)
+                        Width: =
+                        ZIndex: =4
+
+                        shpGLAccountSearchResultsTableDivider As rectangle:
+                            Fill: =varThemeColors.secondaryGray
+                            Height: =1
+                            Width: =Parent.Width
+                            Y: =Parent.TemplateHeight-Self.Height
+                            ZIndex: =1
+
+                        lblGLAccountSearchResultsChartOfAccounts As label:
+                            BorderColor: =RGBA(0, 0, 0, 0)
+                            BorderStyle: =BorderStyle.None
+                            BorderThickness: =2
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                            FocusedBorderColor: =varThemeColors.primary
+                            FocusedBorderThickness: =4
+                            Font: =Font.'Segoe UI'
+                            Height: =43
+                            PaddingBottom: =0
+                            PaddingLeft: =12
+                            PaddingTop: =0
+                            Size: =10.5
+                            Text: =ThisItem.Chart
+                            Tooltip: =Self.Text
+                            Width: =conGLAccountSearchResultsTabelHeaderChartOfAccounts.Width
+                            Wrap: =false
+                            X: =lblGLAccountSearchResultsDescription.X+lblGLAccountSearchResultsDescription.Width
+                            ZIndex: =5
+
+                        lblGLAccountSearchResultsDescription As label:
+                            BorderColor: =RGBA(0, 0, 0, 0)
+                            BorderStyle: =BorderStyle.None
+                            BorderThickness: =2
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                            FocusedBorderColor: =varThemeColors.primary
+                            FocusedBorderThickness: =4
+                            Font: =Font.'Segoe UI'
+                            Height: =43
+                            PaddingBottom: =0
+                            PaddingLeft: =12
+                            PaddingTop: =0
+                            Size: =10.5
+                            Text: =ThisItem.Description
+                            Tooltip: =Self.Text
+                            Width: =conGLAccountSearchResultsTabelHeaderDescription.Width
+                            Wrap: =false
+                            X: =btnGLAccountSearchResultsAccountSelect.X+btnGLAccountSearchResultsAccountSelect.Width
+                            ZIndex: =6
+
+                        btnGLAccountSearchResultsAccountSelect As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            Color: =varThemeColors.primary
+                            DisabledBorderColor: =
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =
+                            DisplayMode: |-
+                                =/*If(
+                                    Or(
+                                        IsBlank(txtInputVendor.Text),
+                                        IsBlank(cmbPOOrderType.Selected),
+                                        IsBlank(cmbPOPurchOrg.Selected),
+                                        IsBlank(cmbPOPurchGroup.Selected)
+                                    ),
+                                    DisplayMode.Disabled,
+                                    DisplayMode.Edit
+                                )*/
+                            Fill: =RGBA(0, 0, 0, 0)
+                            FocusedBorderColor: =varThemeColors.tertiaryGray
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            FontWeight: =FontWeight.Normal
+                            Height: =Parent.TemplateHeight-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |
+                                =Select(Parent);
+                                Set(
+                                    varSelectedGLAccount,
+                                    ThisItem
+                                );
+                                Select(icoGLAccountSearchBack);
+                                Select(btnGLAccountSearchHistoryCreateUpdateHidden);
+                            PaddingLeft: =12
+                            PressedColor: =Self.Color
+                            PressedFill: =Color.Transparent
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: =ThisItem.Account
+                            Tooltip: =Self.Text
+                            Width: =conGLAccountSearchResultsTabelHeaderAccount.Width - Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =7
+
+                    conGLAccountSearchNoResults As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        Fill: =RGBA(255, 255, 255, 2)
+                        FillPortions: =0
+                        Height: =215
+                        LayoutMinHeight: =
+                        LayoutMinWidth: =
+                        Visible: =!galGLAccountSearchResults.Visible
+                        Width: =
+                        ZIndex: =5
+
+                        icoGLAccountSearchNoResults As icon.ListScrollEmpty:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: "No items"
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.disabledText
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =DisplayMode.View
+                            Height: =38
+                            Icon: =Icon.ListScrollEmpty
+                            Visible: =!varIsProcessing
+                            Width: =46
+                            X: =Parent.Width/2-Self.Width/2
+                            Y: =lblGLAccountSearchNoResults.Y-lblGLAccountSearchNoResults.Height-30
+                            ZIndex: =1
+
+                        lblGLAccountSearchNoResults As label:
+                            Align: =Align.Center
+                            BorderColor: =RGBA(0, 0, 0, 0)
+                            BorderStyle: =BorderStyle.None
+                            BorderThickness: =2
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                            FocusedBorderColor: =varThemeColors.primary
+                            FocusedBorderThickness: =4
+                            Font: =Font.'Segoe UI'
+                            FontWeight: =FontWeight.Semibold
+                            Height: =34
+                            PaddingBottom: =0
+                            PaddingLeft: =0
+                            PaddingTop: =0
+                            Size: =13.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "No items"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Visible: =!varIsProcessing
+                            Width: =Parent.Width
+                            Y: =Parent.Height-40
+                            ZIndex: =2
+
+                        imgGLAccountSearchLoadingSubGrid As image:
+                            Height: =46
+                            Image: ='loading-grey'
+                            Visible: =varIsProcessing
+                            Width: =46
+                            X: =Parent.Width/2-Self.Width/2
+                            Y: =lblGLAccountSearchNoResults.Y-lblGLAccountSearchNoResults.Height-33
+                            ZIndex: =3
+
+            conGLAccountSearchAllFooter As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                FillPortions: =0
+                Height: =30
+                LayoutAlignItems: =LayoutAlignItems.Center
+                LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                ZIndex: =6
+
+                lblGLAccountsNumberOfFoundRecords As label:
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    BorderThickness: =2
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                    FillPortions: =1
+                    FocusedBorderColor: =varThemeColors.primary
+                    FocusedBorderThickness: =4
+                    Font: =Font.'Segoe UI'
+                    FontWeight: =FontWeight.Lighter
+                    Height: =30
+                    LayoutMinHeight: =
+                    Live: =Live.Polite
+                    PaddingLeft: =btnGLAccountSearchResultsTabelHeaderAccount.PaddingLeft
+                    Size: =10.5
+                    Text: |-
+                        =//Show how many rows are returned in the results
+                        CountRows(galGLAccountSearchResults.AllItems) & " " &//Count the rows in the gallery
+                        // Define a variable named "Text" with the value "{value}"
+                         With(
+                            {Text: "record(s)"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Visible: =galGLAccountSearchResults.Visible
+                    Width: =
+                    X: =1
+                    ZIndex: =1
+
+                lblGLAccountSearchFooterMessage As label:
+                    Align: =Align.Right
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    BorderThickness: =2
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                    FillPortions: =1
+                    FocusedBorderColor: =varThemeColors.primary
+                    FocusedBorderThickness: =4
+                    Font: =Font.'Segoe UI'
+                    Height: =34
+                    Italic: =true
+                    LayoutMinHeight: =
+                    LayoutMinWidth: =
+                    Live: =Live.Assertive
+                    PaddingBottom: =0
+                    PaddingLeft: =32
+                    PaddingRight: =32
+                    PaddingTop: =0
+                    Role: =TextRole.Heading2
+                    Size: =10.5
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {Text: varFooterMessage},
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        ) & If(varIsProcessing, "...")
+                    Visible: =!IsBlank(varFooterMessage)
+                    Width: =
+                    ZIndex: =2
+
+        conGLAccountRecentlySearched As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            Height: =600
+            LayoutAlignItems: =LayoutAlignItems.Stretch
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutMinHeight: =conGLAccountRecentlySearchedResults.LayoutMinHeight + lblNumberOfRecentlySearchedRecords_1.Height + Self.PaddingBottom + Self.PaddingTop
+            LayoutMinWidth: =conGLAccountRecentlySearchedResults.LayoutMinWidth + Self.PaddingLeft + Self.PaddingRight + 125
+            LayoutMode: =LayoutMode.Auto
+            PaddingBottom: =10
+            PaddingLeft: =32
+            PaddingRight: =32
+            PaddingTop: =24
+            Visible: =varCurrentGLAccountSearchTab=btnGLAccountSearchRecentTab.Text
+            Width: =
+            X: =40
+            Y: =40
+            ZIndex: =4
+
+            conGLAccountRecentlySearchedResults As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                LayoutAlignItems: =LayoutAlignItems.Stretch
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutMinHeight: =conGLAccountRecentlySearchTable.LayoutMinHeight + shpGLAccountRecentlySearchedDivider.Height + conGLAccountRecentlySearchedCommandBar.Height
+                LayoutMinWidth: =conGLAccountRecentlySearchTable.LayoutMinWidth + Parent.PaddingLeft + Parent.PaddingRight
+                LayoutMode: =LayoutMode.Auto
+                PaddingLeft: =2
+                PaddingRight: =2
+                Width: =
+                ZIndex: =6
+
+                conGLAccountRecentlySearchedCommandBar As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    Fill: =RGBA(255, 255, 255, 1)
+                    FillPortions: =0
+                    Height: =42
+                    LayoutAlignItems: =LayoutAlignItems.Center
+                    LayoutGap: =20
+                    LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+                    LayoutMinHeight: =
+                    LayoutMinWidth: =
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingLeft: =12
+                    PaddingRight: =2
+                    Width: =
+                    ZIndex: =1
+
+                    lblGLAccountRecentSearchCommandBar As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =Parent.Height
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        PaddingTop: =0
+                        Role: =TextRole.Heading2
+                        Size: =10.5
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {
+                                    Text: "Recent records"
+                                },
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Width: =Len(Self.Text)*9
+                        ZIndex: =1
+
+                    conGLAccountRecentlySearchedCommandBarFilter As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        FillPortions: =0
+                        Height: =Parent.Height
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        Width: =txtGLAccountRecentlySearchedCommandBarFilter.X+txtGLAccountRecentlySearchedCommandBarFilter.Width+txtGLAccountRecentlySearchedCommandBarFilter.FocusedBorderThickness
+                        ZIndex: =2
+
+                        txtGLAccountRecentlySearchedCommandBarFilter As text:
+                            AccessibleLabel: =Self.HintText
+                            BorderColor: =varThemeColors.primaryGray
+                            BorderThickness: =1
+                            Clear: =true
+                            Color: =varThemeColors.text
+                            Default: =
+                            DelayOutput: =true
+                            DisabledBorderColor: =varThemeColors.primaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    galRecentlySearchedGLAccounts.Visible,
+                                    DisplayMode.Edit,
+                                     DisplayMode.Disabled
+                                )
+                            Fill: =varThemeColors.backgroundFill
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =32
+                            HintText: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Filter general ledger accounts"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            HoverBorderColor: =Self.BorderColor
+                            HoverColor: =varThemeColors.text
+                            HoverFill: =varThemeColors.backgroundFill
+                            MaxLength: =70
+                            OnChange: =
+                            PaddingBottom: =6
+                            PaddingLeft: =8
+                            PaddingRight: =8
+                            PaddingTop: =6
+                            PressedBorderColor: =Self.BorderColor
+                            PressedColor: =
+                            PressedFill: =varThemeColors.backgroundFill
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Reset: =true
+                            Size: =10.5
+                            Tooltip: |-
+                                =Coalesce(
+                                    Self.Text,
+                                    Self.HintText
+                                )
+                            Width: =248
+                            X: =shpGLAccountRecentlySearchedCommandBarFilterDivider.X+shpGLAccountRecentlySearchedCommandBarFilterDivider.Width+7
+                            Y: =Parent.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        shpGLAccountRecentlySearchedCommandBarFilterDivider As rectangle:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: "Divider"
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Fill: =varThemeColors.secondaryGray
+                            Height: =30
+                            OnSelect: =
+                            Width: =2
+                            Y: =6
+                            ZIndex: =2
+
+                shpGLAccountRecentlySearchedDivider As rectangle:
+                    Fill: =varThemeColors.secondaryGray
+                    Height: =1
+                    LayoutMinHeight: =
+                    LayoutMinWidth: =
+                    Width: =
+                    ZIndex: =2
+
+                conGLAccountRecentlySearchTable As groupContainer.verticalAutoLayoutContainer:
+                    Fill: =RGBA(255, 255, 255, 1)
+                    LayoutAlignItems: =LayoutAlignItems.Stretch
+                    LayoutDirection: =LayoutDirection.Vertical
+                    LayoutMinHeight: |-
+                        =conGLAccountRecentlySearchedResultsHeader.Height + shpGLAccountRecentlySearchedResultsHeaderDivider.Height + If(galRecentlySearchedGLAccounts.Visible,
+                            galRecentlySearchedGLAccounts.LayoutMinHeight,
+                            conGLAccountsNoRecentlySearchedResults.LayoutMinHeight
+                        ) + Self.PaddingTop + Self.PaddingBottom
+                    LayoutMinWidth: =conGLAccountRecentlySearchedResultsHeader.LayoutMinWidth + Self.PaddingLeft + Self.PaddingRight
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingBottom: =2
+                    PaddingLeft: =16
+                    PaddingRight: =16
+                    ZIndex: =7
+
+                    conGLAccountRecentlySearchedResultsHeader As groupContainer.horizontalAutoLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        Fill: =RGBA(255, 255, 255, 1)
+                        FillPortions: =0
+                        Height: =43
+                        LayoutAlignItems: =LayoutAlignItems.Center
+                        LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+                        LayoutMinHeight: =
+                        LayoutMinWidth: =conGLAccountRecentlySearchedResultsHeaderAccount.LayoutMinWidth + conGLAccountRecentlySearchedResultsHeaderDescription.LayoutMinWidth + conGLAccountRecentlySearchedResultsHeaderChartOfAccounts.LayoutMinWidth + conGLAccountRecentlySearchedResultsHeaderLastSearched.LayoutMinWidth
+                        LayoutMode: =LayoutMode.Auto
+                        Width: =
+                        ZIndex: =1
+
+                        conGLAccountRecentlySearchedResultsHeaderAccount As groupContainer.manualLayoutContainer:
+                            AlignInContainer: =AlignInContainer.SetByContainer
+                            Height: =44
+                            LayoutMinHeight: =100
+                            LayoutMinWidth: =icoGLAccountRecentlySearchedResultsHeaderAccount.X+icoGLAccountRecentlySearchedResultsHeaderAccount.Width+10
+                            Width: |-
+                                =Max(
+                                    Len(btnGLAccountRecentlySearchedResultsHeaderAccount.Text) * 10,
+                                    164
+                                )
+                            Y: =37
+                            ZIndex: =1
+
+                            icoGLAccountRecentlySearchedResultsHeaderAccount As icon.Save:
+                                AccessibleLabel: |-
+                                    =// Define a variable named "Text" with the value "{value}"
+                                    With(
+                                        {
+                                            Text: If(
+                                                Self.Icon = Icon.ArrowUp,
+                                                "Sorted ascending",
+                                                "Sorted descending"
+                                            )
+                                        },
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Color: =varThemeColors.tertiaryGray
+                                DisabledColor: =varThemeColors.disabledText
+                                DisplayMode: =btnGLAccountRecentlySearchedResultsHeaderAccount.DisplayMode
+                                FocusedBorderColor: =varThemeColors.primary
+                                Height: =12
+                                Icon: |-
+                                    =If(
+                                        varRecentlySearchedSortOrder = SortOrder.Ascending,
+                                        Icon.ArrowUp,
+                                        Icon.ArrowDown
+                                    )
+                                Visible: =varRecentlySearchedSortByColumn=btnGLAccountRecentlySearchedResultsHeaderAccount.Text && galRecentlySearchedGLAccounts.Visible
+                                Width: =12
+                                X: =Len(btnGLAccountRecentlySearchedResultsHeaderAccount.Text)*9.5+8
+                                Y: =btnGLAccountRecentlySearchedResultsHeaderAccount.Y+btnGLAccountRecentlySearchedResultsHeaderAccount.Height/2-Self.Height/2
+                                ZIndex: =1
+
+                            btnGLAccountRecentlySearchedResultsHeaderAccount As button:
+                                Align: =Align.Left
+                                BorderColor: =RGBA(0,0,0,0)
+                                BorderThickness: =1
+                                Color: =varThemeColors.text
+                                DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                                DisabledColor: =varThemeColors.disabledText
+                                DisabledFill: =varThemeColors.backgroundFillDisabled
+                                DisplayMode: =If(galRecentlySearchedGLAccounts.Visible,DisplayMode.Edit,DisplayMode.View)
+                                Fill: =RGBA(0,0,0,0)
+                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderThickness: =2
+                                Font: =Font.'Segoe UI'
+                                Height: =Parent.Height-Self.Y*2
+                                HoverBorderColor: =
+                                HoverColor: =varThemeColors.primary
+                                HoverFill: =
+                                OnSelect: |-
+                                    =If(//Stores the sort order of that column
+                                        And(
+                                            varRecentlySearchedSortOrder = SortOrder.Ascending,
+                                            varRecentlySearchedSortByColumn = Self.Text
+                                        ),
+                                        Set(
+                                            varRecentlySearchedSortOrder,
+                                            SortOrder.Descending
+                                        ),
+                                        Set(
+                                            varRecentlySearchedSortOrder,
+                                            SortOrder.Ascending
+                                        )
+                                    );
+                                    Set(//Stores which column is currently being sorted
+                                        varRecentlySearchedSortByColumn,
+                                        Self.Text
+                                    );
+                                    Reset(galRecentlySearchedGLAccounts)//Resets the gallery to move the scrollbar to the top
+                                PaddingLeft: =12
+                                PressedBorderColor: =
+                                PressedColor: =varThemeColors.text
+                                PressedFill: =
+                                RadiusBottomLeft: =0
+                                RadiusBottomRight: =0
+                                RadiusTopLeft: =0
+                                RadiusTopRight: =0
+                                Size: =10.5
+                                Text: |-
+                                    =// Define a variable named "Text" with the value "{value}"
+                                    With(
+                                        {Text: "Account"},
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Tooltip: =Self.Text
+                                Width: =Parent.Width-Self.X*2
+                                X: =Self.FocusedBorderThickness
+                                Y: =Self.FocusedBorderThickness
+                                ZIndex: =2
+
+                        conGLAccountRecentlySearchedResultsHeaderDescription As groupContainer.manualLayoutContainer:
+                            AlignInContainer: =AlignInContainer.SetByContainer
+                            Height: =44
+                            LayoutMinHeight: =100
+                            LayoutMinWidth: =icoGLAccountRecentlySearchedResultsHeaderDescription.X+icoGLAccountRecentlySearchedResultsHeaderDescription.Width+10
+                            Width: |-
+                                =Max(
+                                    Len(btnGLAccountRecentlySearchedResultsHeaderDescription.Text) * 10,
+                                    344
+                                )
+                            Y: =37
+                            ZIndex: =2
+
+                            icoGLAccountRecentlySearchedResultsHeaderDescription As icon.Save:
+                                AccessibleLabel: |-
+                                    =// Define a variable named "Text" with the value "{value}"
+                                    With(
+                                        {
+                                            Text: If(
+                                                Self.Icon = Icon.ArrowUp,
+                                                "Sorted ascending",
+                                                "Sorted descending"
+                                            )
+                                        },
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Color: =varThemeColors.tertiaryGray
+                                DisabledColor: =varThemeColors.disabledText
+                                DisplayMode: =btnGLAccountRecentlySearchedResultsHeaderDescription.DisplayMode
+                                FocusedBorderColor: =varThemeColors.primary
+                                Height: =12
+                                Icon: |-
+                                    =If(
+                                        varRecentlySearchedSortOrder = SortOrder.Ascending,
+                                        Icon.ArrowUp,
+                                        Icon.ArrowDown
+                                    )
+                                Visible: =varRecentlySearchedSortByColumn=btnGLAccountRecentlySearchedResultsHeaderDescription.Text && galRecentlySearchedGLAccounts.Visible
+                                Width: =12
+                                X: =Len(btnGLAccountRecentlySearchedResultsHeaderDescription.Text)*8+8
+                                Y: =btnGLAccountRecentlySearchedResultsHeaderDescription.Y+btnGLAccountRecentlySearchedResultsHeaderDescription.Height/2-Self.Height/2
+                                ZIndex: =1
+
+                            btnGLAccountRecentlySearchedResultsHeaderDescription As button:
+                                Align: =Align.Left
+                                BorderColor: =RGBA(0,0,0,0)
+                                BorderThickness: =1
+                                Color: =varThemeColors.text
+                                DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                                DisabledColor: =varThemeColors.disabledText
+                                DisabledFill: =varThemeColors.backgroundFillDisabled
+                                DisplayMode: =If(galRecentlySearchedGLAccounts.Visible,DisplayMode.Edit,DisplayMode.View)
+                                Fill: =RGBA(0,0,0,0)
+                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderThickness: =2
+                                Font: =Font.'Segoe UI'
+                                Height: =Parent.Height-Self.Y*2
+                                HoverBorderColor: =
+                                HoverColor: =varThemeColors.primary
+                                HoverFill: =
+                                OnSelect: |-
+                                    =Set(//Stores which column is currently being sorted
+                                        varRecentlySearchedSortByColumn,
+                                        Self.Text
+                                    );
+                                    If(//Stores the sort order of that column
+                                        And(
+                                            varRecentlySearchedSortOrder = SortOrder.Ascending,
+                                            varRecentlySearchedSortByColumn = Self.Text
+                                        ),
+                                        Set(
+                                            varRecentlySearchedSortOrder,
+                                            SortOrder.Descending
+                                        ),
+                                        Set(
+                                            varRecentlySearchedSortOrder,
+                                            SortOrder.Ascending
+                                        )
+                                    );
+                                    Reset(galRecentlySearchedGLAccounts)//Resets the gallery to move the scrollbar to the top
+                                PaddingLeft: =10
+                                PressedBorderColor: =
+                                PressedColor: =varThemeColors.text
+                                PressedFill: =
+                                RadiusBottomLeft: =0
+                                RadiusBottomRight: =0
+                                RadiusTopLeft: =0
+                                RadiusTopRight: =0
+                                Size: =10.5
+                                Text: |-
+                                    =// Define a variable named "Text" with the value "{value}"
+                                    With(
+                                        {Text: "Description"},
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Tooltip: =Self.Text
+                                Width: =Parent.Width-Self.X*2
+                                X: =Self.FocusedBorderThickness
+                                Y: =Self.FocusedBorderThickness
+                                ZIndex: =2
+
+                        conGLAccountRecentlySearchedResultsHeaderChartOfAccounts As groupContainer.manualLayoutContainer:
+                            AlignInContainer: =AlignInContainer.SetByContainer
+                            Height: =44
+                            LayoutMinHeight: =100
+                            LayoutMinWidth: =icoGLAccountRecentlySearchedResultsHeaderChartOfAccounts.X+icoGLAccountRecentlySearchedResultsHeaderChartOfAccounts.Width+10
+                            Width: =242
+                            Y: =37
+                            ZIndex: =3
+
+                            icoGLAccountRecentlySearchedResultsHeaderChartOfAccounts As icon.Save:
+                                AccessibleLabel: |-
+                                    =// Define a variable named "Text" with the value "{value}"
+                                    With(
+                                        {
+                                            Text: If(
+                                                Self.Icon = Icon.ArrowUp,
+                                                "Sorted ascending",
+                                                "Sorted descending"
+                                            )
+                                        },
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Color: =varThemeColors.tertiaryGray
+                                DisabledColor: =varThemeColors.disabledText
+                                DisplayMode: =btnGLAccountRecentlySearchedResultsHeaderChartOfAccounts.DisplayMode
+                                FocusedBorderColor: =varThemeColors.primary
+                                Height: =12
+                                Icon: |-
+                                    =If(
+                                        varRecentlySearchedSortOrder = SortOrder.Ascending,
+                                        Icon.ArrowUp,
+                                        Icon.ArrowDown
+                                    )
+                                Visible: =varRecentlySearchedSortByColumn=btnGLAccountRecentlySearchedResultsHeaderChartOfAccounts.Text && galRecentlySearchedGLAccounts.Visible
+                                Width: =12
+                                X: =Len(btnGLAccountRecentlySearchedResultsHeaderChartOfAccounts.Text)*8+8
+                                Y: =btnGLAccountRecentlySearchedResultsHeaderChartOfAccounts.Y+btnGLAccountRecentlySearchedResultsHeaderChartOfAccounts.Height/2-Self.Height/2
+                                ZIndex: =1
+
+                            btnGLAccountRecentlySearchedResultsHeaderChartOfAccounts As button:
+                                Align: =Align.Left
+                                BorderColor: =RGBA(0,0,0,0)
+                                BorderThickness: =1
+                                Color: =varThemeColors.text
+                                DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                                DisabledColor: =varThemeColors.disabledText
+                                DisabledFill: =varThemeColors.backgroundFillDisabled
+                                DisplayMode: =If(galRecentlySearchedGLAccounts.Visible,DisplayMode.Edit,DisplayMode.View)
+                                Fill: =RGBA(0,0,0,0)
+                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderThickness: =2
+                                Font: =Font.'Segoe UI'
+                                Height: =Parent.Height-Self.Y*2
+                                HoverBorderColor: =
+                                HoverColor: =varThemeColors.primary
+                                HoverFill: =
+                                OnSelect: |-
+                                    =Set(//Stores which column is currently being sorted
+                                        varRecentlySearchedSortByColumn,
+                                        Self.Text
+                                    );
+                                    If(//Stores the sort order of that column
+                                        And(
+                                            varRecentlySearchedSortOrder = SortOrder.Ascending,
+                                            varRecentlySearchedSortByColumn = Self.Text
+                                        ),
+                                        Set(
+                                            varRecentlySearchedSortOrder,
+                                            SortOrder.Descending
+                                        ),
+                                        Set(
+                                            varRecentlySearchedSortOrder,
+                                            SortOrder.Ascending
+                                        )
+                                    );
+                                    Reset(galRecentlySearchedGLAccounts)//Resets the gallery to move the scrollbar to the top
+                                PaddingLeft: =10
+                                PressedBorderColor: =
+                                PressedColor: =varThemeColors.text
+                                PressedFill: =
+                                RadiusBottomLeft: =0
+                                RadiusBottomRight: =0
+                                RadiusTopLeft: =0
+                                RadiusTopRight: =0
+                                Size: =10.5
+                                Text: |-
+                                    =// Define a variable named "Text" with the value "{value}"
+                                    With(
+                                        {Text: "Chart of accounts"},
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Tooltip: =Self.Text
+                                Width: =Parent.Width-Self.X*2
+                                X: =Self.FocusedBorderThickness
+                                Y: =Self.FocusedBorderThickness
+                                ZIndex: =2
+
+                        conGLAccountRecentlySearchedResultsHeaderLastSearched As groupContainer.manualLayoutContainer:
+                            AlignInContainer: =AlignInContainer.SetByContainer
+                            Height: =44
+                            LayoutMinHeight: =100
+                            LayoutMinWidth: =icoGLAccountRecentlySearchedResultsHeaderLastSearched.X+icoGLAccountRecentlySearchedResultsHeaderLastSearched.Width+10
+                            Width: =242
+                            Y: =37
+                            ZIndex: =4
+
+                            icoGLAccountRecentlySearchedResultsHeaderLastSearched As icon.Save:
+                                AccessibleLabel: |-
+                                    =// Define a variable named "Text" with the value "{value}"
+                                    With(
+                                        {
+                                            Text: If(
+                                                Self.Icon = Icon.ArrowUp,
+                                                "Sorted ascending",
+                                                "Sorted descending"
+                                            )
+                                        },
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Color: =varThemeColors.tertiaryGray
+                                DisabledColor: =varThemeColors.disabledText
+                                DisplayMode: =btnGLAccountRecentlySearchedResultsHeaderLastSearched.DisplayMode
+                                FocusedBorderColor: =varThemeColors.primary
+                                Height: =12
+                                Icon: |-
+                                    =If(
+                                        varRecentlySearchedSortOrder = SortOrder.Ascending,
+                                        Icon.ArrowUp,
+                                        Icon.ArrowDown
+                                    )
+                                Visible: =varRecentlySearchedSortByColumn=btnGLAccountRecentlySearchedResultsHeaderLastSearched.Text && galRecentlySearchedGLAccounts.Visible
+                                Width: =12
+                                X: =Len(btnGLAccountRecentlySearchedResultsHeaderLastSearched.Text)*8+8
+                                Y: =btnGLAccountRecentlySearchedResultsHeaderLastSearched.Y+btnGLAccountRecentlySearchedResultsHeaderLastSearched.Height/2-Self.Height/2
+                                ZIndex: =1
+
+                            btnGLAccountRecentlySearchedResultsHeaderLastSearched As button:
+                                Align: =Align.Left
+                                BorderColor: =RGBA(0,0,0,0)
+                                BorderThickness: =1
+                                Color: =varThemeColors.text
+                                DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                                DisabledColor: =varThemeColors.disabledText
+                                DisabledFill: =varThemeColors.backgroundFillDisabled
+                                DisplayMode: =If(galRecentlySearchedGLAccounts.Visible,DisplayMode.Edit,DisplayMode.View)
+                                Fill: =RGBA(0,0,0,0)
+                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderThickness: =2
+                                Font: =Font.'Segoe UI'
+                                Height: =Parent.Height-Self.Y*2
+                                HoverBorderColor: =
+                                HoverColor: =varThemeColors.primary
+                                HoverFill: =
+                                OnSelect: |-
+                                    =Set(//Stores which column is currently being sorted
+                                        varRecentlySearchedSortByColumn,
+                                        Self.Text
+                                    );
+                                    If(//Stores the sort order of that column
+                                        And(
+                                            varRecentlySearchedSortOrder = SortOrder.Ascending,
+                                            varRecentlySearchedSortByColumn = Self.Text
+                                        ),
+                                        Set(
+                                            varRecentlySearchedSortOrder,
+                                            SortOrder.Descending
+                                        ),
+                                        Set(
+                                            varRecentlySearchedSortOrder,
+                                            SortOrder.Ascending
+                                        )
+                                    );
+                                    Reset(galRecentlySearchedGLAccounts)//Resets the gallery to move the scrollbar to the top
+                                PaddingLeft: =10
+                                PressedBorderColor: =
+                                PressedColor: =varThemeColors.text
+                                PressedFill: =
+                                RadiusBottomLeft: =0
+                                RadiusBottomRight: =0
+                                RadiusTopLeft: =0
+                                RadiusTopRight: =0
+                                Size: =10.5
+                                Text: |-
+                                    =// Define a variable named "Text" with the value "{value}"
+                                    With(
+                                        {Text: "Last searched"},
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Tooltip: =Self.Text
+                                Width: =Parent.Width-Self.X*2
+                                X: =Self.FocusedBorderThickness
+                                Y: =Self.FocusedBorderThickness
+                                ZIndex: =2
+
+                    shpGLAccountRecentlySearchedResultsHeaderDivider As rectangle:
+                        Fill: =varThemeColors.secondaryGray
+                        Height: =1
+                        LayoutMinHeight: =
+                        LayoutMinWidth: =
+                        Width: =
+                        ZIndex: =2
+
+                    galRecentlySearchedGLAccounts As gallery.galleryVertical:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Vendors recently search"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        FocusedBorderColor: =varThemeColors.tertiaryGray
+                        FocusedBorderThickness: =2
+                        Height: =
+                        Items: |-
+                            =//Display recent search result items for collection sorting according to table header buttons selected
+                            With(
+                                {
+                                    recentItems: If(
+                                        IsBlank(txtGLAccountRecentlySearchedCommandBarFilter.Text),//Show all results if no filter text entered
+                                        Filter(
+                                            'SAP Search Histories',
+                                            'SAP Search Histories (Views)'.'My Recent SAP Search History',//Entity view that has filter logic to return user's search history records
+                                            'Object Type' = 'Object Type (SAP Search Histories)'.'GL Account'//Filter on object type vendor
+                                        ),
+                                        Search(//Otherwise, search results based upon filtered text entered
+                                            Filter(
+                                                'SAP Search Histories',
+                                                'SAP Search Histories (Views)'.'My Recent SAP Search History',//Entity view that has filter logic to return user's search history records
+                                                'Object Type' = 'Object Type (SAP Search Histories)'.'GL Account'//Filter on object type vendor
+                                            ),
+                                            txtGLAccountRecentlySearchedCommandBarFilter.Text,
+                                            "mpa_name",
+                                            "mpa_objectid"
+                                        )
+                                    )
+                                },
+                                SortByColumns(
+                                    recentItems,
+                                    Switch(
+                                        varRecentlySearchedSortByColumn,//determine which field to sort by based upon the tabel header column value selected and stored in variable
+                                        btnGLAccountRecentlySearchedResultsHeaderAccount.Text,
+                                        "mpa_objectid",
+                                        btnGLAccountRecentlySearchedResultsHeaderDescription.Text,
+                                        "mpa_name",
+                                        btnGLAccountRecentlySearchedResultsHeaderChartOfAccounts.Text,
+                                        "mpa_attribute1",
+                                        btnGLAccountRecentlySearchedResultsHeaderLastSearched.Text,
+                                        "mpa_lastsearchedon"
+                                    ),
+                                    varRecentlySearchedSortOrder//sort ascending or descending based upon value stored in variable
+                                )
+                            )
+                        Layout: =Layout.Vertical
+                        LayoutMinHeight: =Self.TemplateHeight * 6
+                        LayoutMinWidth: =
+                        TabIndex: =0
+                        TemplateFill: =RGBA(255, 255, 255, 1)
+                        TemplatePadding: =0
+                        TemplateSize: =43
+                        Visible: |-
+                            =!IsEmpty(
+                                Filter(
+                                    'SAP Search Histories',
+                                    'SAP Search Histories (Views)'.'My Recent SAP Search History',//Entity view that has filter logic to return user's search history records
+                                    'Object Type' = 'Object Type (SAP Search Histories)'.'GL Account'//Filter on object type vendor
+                                )
+                            )
+                        Width: =
+                        ZIndex: =3
+
+                        recGLAccountsRecentlySearchedDivider As rectangle:
+                            Fill: =varThemeColors.secondaryGray
+                            Height: =1
+                            Width: =Parent.Width
+                            Y: =Parent.TemplateHeight-Self.Height
+                            ZIndex: =1
+
+                        lblRecentlySearchedGLAccountsLastSearched As label:
+                            BorderColor: =RGBA(0, 0, 0, 0)
+                            BorderStyle: =BorderStyle.None
+                            BorderThickness: =2
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                            FocusedBorderColor: =varThemeColors.primary
+                            FocusedBorderThickness: =4
+                            Font: =Font.'Segoe UI'
+                            Height: =43
+                            PaddingBottom: =0
+                            PaddingLeft: =12
+                            PaddingTop: =0
+                            Size: =10.5
+                            Text: =Text(ThisItem.'Last Searched On',DateTimeFormat.ShortDateTime)
+                            Width: =btnGLAccountRecentlySearchedResultsHeaderLastSearched.Width
+                            Wrap: =false
+                            X: =lblRecentlySearchedGLAccountsChartOfAccounts.X+lblRecentlySearchedGLAccountsChartOfAccounts.Width
+                            ZIndex: =2
+
+                        lblRecentlySearchedGLAccountsChartOfAccounts As label:
+                            BorderColor: =RGBA(0, 0, 0, 0)
+                            BorderStyle: =BorderStyle.None
+                            BorderThickness: =2
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                            FocusedBorderColor: =varThemeColors.primary
+                            FocusedBorderThickness: =4
+                            Font: =Font.'Segoe UI'
+                            Height: =43
+                            PaddingBottom: =0
+                            PaddingLeft: =12
+                            PaddingTop: =0
+                            Size: =10.5
+                            Text: =ThisItem.'Attribute 1'
+                            Width: =conGLAccountRecentlySearchedResultsHeaderChartOfAccounts.Width
+                            Wrap: =false
+                            X: =lblRecentlySearchedGLAccountsDecsiption.X+lblRecentlySearchedGLAccountsDecsiption.Width
+                            ZIndex: =3
+
+                        lblRecentlySearchedGLAccountsDecsiption As label:
+                            BorderColor: =RGBA(0, 0, 0, 0)
+                            BorderStyle: =BorderStyle.None
+                            BorderThickness: =2
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                            FocusedBorderColor: =varThemeColors.primary
+                            FocusedBorderThickness: =4
+                            Font: =Font.'Segoe UI'
+                            Height: =43
+                            PaddingBottom: =0
+                            PaddingLeft: =12
+                            PaddingTop: =0
+                            Size: =10.5
+                            Text: =ThisItem.Name
+                            Width: =conGLAccountRecentlySearchedResultsHeaderDescription.Width
+                            Wrap: =false
+                            X: =btnSelectRecentlySearchedGLAccounts.X*2+btnSelectRecentlySearchedGLAccounts.Width
+                            ZIndex: =4
+
+                        btnSelectRecentlySearchedGLAccounts As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            Color: =varThemeColors.primary
+                            DisabledBorderColor: =
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =
+                            DisplayMode: |-
+                                =/*If(
+                                    Or(
+                                        IsBlank(txtInputVendor.Text),
+                                        IsBlank(cmbPOOrderType.Selected),
+                                        IsBlank(cmbPOPurchOrg.Selected),
+                                        IsBlank(cmbPOPurchGroup.Selected)
+                                    ),
+                                    DisplayMode.Disabled,
+                                    DisplayMode.Edit
+                                )*/
+                            Fill: =RGBA(0, 0, 0, 0)
+                            FocusedBorderColor: =varThemeColors.tertiaryGray
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            FontWeight: =FontWeight.Normal
+                            Height: =43
+                            HoverBorderColor: =
+                            HoverColor: =Self.Color
+                            HoverFill: =Color.Transparent
+                            OnSelect: |-
+                                =Set(
+                                    varSelectedGLAccount,
+                                    {
+                                        Account: ThisItem.'Object ID',
+                                        Description: ThisItem.Name,
+                                        Chart: ThisItem.'Attribute 1'
+                                    }
+                                );
+                                Select(icoGLAccountSearchBack);
+                                Select(btnGLAccountSearchHistoryCreateUpdateHidden)
+                            PaddingLeft: =12
+                            PressedColor: =Self.Color
+                            PressedFill: =Color.Transparent
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: =ThisItem.'Object ID'
+                            Tooltip: =Self.Text
+                            Width: =conGLAccountRecentlySearchedResultsHeaderAccount.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            ZIndex: =5
+
+                    conGLAccountsNoRecentlySearchedResults As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        Fill: =RGBA(255, 255, 255, 2)
+                        FillPortions: =0
+                        Height: =215
+                        LayoutMinHeight: =
+                        LayoutMinWidth: =
+                        Visible: =!galRecentlySearchedGLAccounts.Visible
+                        Width: =
+                        ZIndex: =4
+
+                        icoGLAccountsNoRecentlySearchedResults As icon.ListScrollEmpty:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: "No results"
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.disabledText
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =DisplayMode.View
+                            Height: =38
+                            Icon: =Icon.ListScrollEmpty
+                            OnSelect: =
+                            Width: =46
+                            X: =Parent.Width/2-Self.Width/2
+                            Y: =lblGLAccountsNoRecentlySearchedResults.Y-lblGLAccountsNoRecentlySearchedResults.Height-30
+                            ZIndex: =1
+
+                        lblGLAccountsNoRecentlySearchedResults As label:
+                            Align: =Align.Center
+                            BorderColor: =RGBA(0, 0, 0, 0)
+                            BorderStyle: =BorderStyle.None
+                            BorderThickness: =2
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                            FocusedBorderColor: =varThemeColors.primary
+                            FocusedBorderThickness: =4
+                            Font: =Font.'Segoe UI'
+                            FontWeight: =FontWeight.Semibold
+                            Height: =34
+                            PaddingBottom: =0
+                            PaddingLeft: =0
+                            PaddingTop: =0
+                            Size: =13.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "No items"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Width: =Parent.Width
+                            Y: =Parent.Height-40
+                            ZIndex: =2
+
+            lblNumberOfRecentlySearchedRecords_1 As label:
+                BorderColor: =RGBA(0, 0, 0, 0)
+                BorderStyle: =BorderStyle.None
+                BorderThickness: =2
+                Color: =varThemeColors.text
+                DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                FocusedBorderColor: =varThemeColors.primary
+                FocusedBorderThickness: =4
+                Font: =Font.'Segoe UI'
+                FontWeight: =FontWeight.Lighter
+                Height: =30
+                LayoutMinWidth: =
+                Live: =Live.Polite
+                PaddingBottom: =0
+                PaddingLeft: =btnGLAccountSearchResultsTabelHeaderAccount.PaddingLeft
+                Size: =10.5
+                Text: |-
+                    =//Show how many rows are returned in the results
+                    CountRows(galRecentlySearchedGLAccounts.AllItems) & " "& //Count the rows in the gallery
+                    // Define a variable named "Text" with the value "{value}"
+                    With(
+                        {Text: "record(s)"},
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Visible: =galRecentlySearchedGLAccounts.Visible
+                Width: =
+                X: =1
+                ZIndex: =7
+
+    btnGLAccountSearchHistoryCreateUpdateHidden As button:
+        OnSelect: |
+            =//Create or update GL ccounts search history record
+            Patch(
+                'SAP Search Histories',
+                Coalesce(
+                    LookUp(
+                        'SAP Search Histories',
+                        And(
+                            'Object ID' = varSelectedGLAccount.Account,
+                            'Attribute 1' = varSelectedGLAccount.Chart,
+                            'Object Type' = 'Object Type (SAP Search Histories)'.'GL Account',
+                            'Created By'.User = varSystemUserID
+                        )
+                    ),
+                    Defaults('SAP Search Histories')
+                ),
+                {
+                    'Object ID': varSelectedGLAccount.Account,
+                    'Object Type': 'Object Type (SAP Search Histories)'.'GL Account',
+                    Name: varSelectedGLAccount.Description,
+                    'Attribute 1': varSelectedGLAccount.Chart,
+                    'Last Searched On': Now()
+                }
+            );
+            //Assess patch for errors and notify appropriately
+            If(
+                !IsEmpty(Errors('SAP Search Histories')),
+                Notify(
+                    First(Errors('SAP Search Histories')).Message,
+                    NotificationType.Error,
+                    0
+                ),
+                Refresh('SAP Search Histories')
+            );
+        Text: ="Button"
+        Visible: =false
+        X: =1080
+        ZIndex: =3
+

@@ -1,0 +1,2062 @@
+"'Vendor Purchase Orders Screen' As screen":
+    Fill: =varThemeColors.background
+    LoadingSpinner: =LoadingSpinner.Data
+    LoadingSpinnerColor: =varThemeColors.primary
+    OnHidden: =
+    OnVisible: |-
+        =Reset(txtVendorPurchaseOrdersFilter);
+        //Set default sort variable
+        Set(
+            varVendorPurchaseOrdersSortByColumn,//default sort by column of vendor purchase orders gallery
+            btnVendorPurchaseOrdersTableHeaderCreatedOn.Text
+        );
+        Set(
+            varVendorPurchaseOrdersSortOrder,//default sort order of vendor purchase orders gallery
+            SortOrder.Descending
+        );
+        //Collection that tracks cross screen navigation thread and allows to back out in reverse sequence, remove from "thread" if navigating back to this screen
+        RemoveIf(
+            colAppNavigationThreads,
+            Screen = App.ActiveScreen
+        );
+        //If first time user is clicking on the tab since last purchase order search, then query list of purchase orders
+        If(
+            IsEmpty(colVendorPurchaseOrders),
+            Reset(dteVendorPurchaseOrdersDateFieldFrom);
+            Reset(dteVendorPurchaseOrdersDateFieldTo);
+            Set(
+                varShowPurchaseOrdersRefresh,//Variable that shows refresh button if user changes purchase order from/to date controls
+                false
+            );
+            //Execute flow to query purchase orders for given vendor
+        Select(icoVendorPurchaseOrdersDateRefresh)
+        )
+
+    conVendorPurchaseOrdersMain As groupContainer.verticalAutoLayoutContainer:
+        Height: =App.Height-Self.Y
+        LayoutAlignItems: =LayoutAlignItems.Stretch
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutMode: =LayoutMode.Auto
+        LayoutOverflowX: =LayoutOverflow.Scroll
+        LayoutOverflowY: =LayoutOverflow.Scroll
+        Width: =App.Width-Self.X
+        X: =cmpVendorPurchaseOrdersLeftNavigation.Width
+        Y: =cmpVendorPurchaseOrdersHeader.Height
+        ZIndex: =4
+
+        cmpVendorPurchaseOrdersCommandBar As CommandBar:
+            Fill: =RGBA(255, 255, 255, 1)
+            Height: =45
+            LayoutMinHeight: =640
+            LayoutMinWidth: =conVendorPurchaseOrdersData.LayoutMinWidth
+
+        shpVendorPurchaseOrdersCommandBarDivider As rectangle:
+            AccessibleLabel: |-
+                =// Define a variable named "Text" with the value "{value}"
+                With(
+                    {
+                        Text: "Divider"
+                    },
+                    If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colUserLocalizedStrings,
+                            'English Value' = Text
+                        ).'Localized Value'
+                    )
+                )
+            Fill: =varThemeColors.secondaryGray
+            Height: =1
+            LayoutMinWidth: =conVendorPurchaseOrdersData.LayoutMinWidth
+            Width: =1692
+            ZIndex: =2
+
+        lblVendorPurchaseOrdersName As label:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =varThemeColors.text
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            Fill: =RGBA(255, 255, 255, 1)
+            FocusedBorderColor: =varThemeColors.primary
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Semibold
+            Height: =37
+            LayoutMinWidth: =conVendorPurchaseOrdersData.LayoutMinWidth
+            PaddingBottom: =15
+            PaddingLeft: =32
+            PaddingRight: =32
+            PaddingTop: =22
+            Role: =TextRole.Heading1
+            Size: =14.5
+            Text: |-
+                =// Define a variable named "Text" with the value "{value}"
+                If(
+                    !varIsNew && !IsBlank(varVendorHeader),
+                    varVendorHeader.FullName,
+                    With(
+                        {
+                            Text: If(
+                                varIsNew,
+                                "New vendor",
+                                "Vendor"
+                            )
+                        },
+                      If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colUserLocalizedStrings,
+                            'English Value' = Text 
+                        ).'Localized Value'
+                    )
+                ))
+            Width: =1692
+            Wrap: =false
+            ZIndex: =3
+
+        cmpVendorPurchaseOrdersTabs As ScreenTabs:
+            LayoutMinHeight: =640
+            LayoutMinWidth: =conVendorPurchaseOrdersData.LayoutMinWidth
+            Width: =1692
+            ZIndex: =4
+
+        conVendorPurchaseOrdersData As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Height: =257
+            LayoutAlignItems: =LayoutAlignItems.Stretch
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutMinHeight: =
+            LayoutMinWidth: =conVendorPurchaseOrdersCommandBar.LayoutMinWidth + Self.PaddingLeft + Self.PaddingRight
+            LayoutMode: =LayoutMode.Auto
+            LayoutOverflowY: =LayoutOverflow.Scroll
+            PaddingBottom: =20
+            PaddingLeft: =32
+            PaddingRight: =32
+            PaddingTop: =20
+            Width: =Parent.Width-Parent.PaddingLeft-Parent.PaddingRight
+            ZIndex: =9
+
+            conVendorPurchaseOrdersCommandBar As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                Fill: =RGBA(255, 255, 255, 1)
+                FillPortions: =0
+                Height: =39
+                LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+                LayoutMinHeight: =
+                LayoutMinWidth: =lblVendorPurchaseOrdersTableHeader.Width + conVendorPurchaseOrdersNewButton.Width + conVendorPurchaseOrdersCommandBarFilterFields.LayoutMinWidth + Self.PaddingLeft + Self.PaddingRight
+                LayoutMode: =LayoutMode.Auto
+                PaddingRight: =2
+                Width: =
+                ZIndex: =1
+
+                lblVendorPurchaseOrdersTableHeader As label:
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    BorderThickness: =2
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                    Fill: =RGBA(255, 255, 255, 1)
+                    FocusedBorderColor: =varThemeColors.primary
+                    FocusedBorderThickness: =4
+                    Font: =Font.'Segoe UI'
+                    FontWeight: =FontWeight.Semibold
+                    Height: =Parent.Height
+                    LayoutMinHeight: =
+                    LayoutMinWidth: =
+                    PaddingBottom: =0
+                    PaddingLeft: =8
+                    PaddingRight: =0
+                    PaddingTop: =0
+                    Role: =TextRole.Heading2
+                    Size: =10.5
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {
+                                Text: "Related purchase orders"
+                            },
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Width: =Len(Self.Text)*8
+                    ZIndex: =1
+
+                conVendorPurchaseOrdersNewButton As groupContainer.manualLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    FillPortions: =0
+                    Height: =Parent.Height
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    Visible: =!IsBlank(varPurchaseOrderAccess)
+                    Width: =Len(btnVendorPurchaseOrdersNewButton.Text) * 12 + btnVendorPurchaseOrdersNewButton.PaddingLeft + btnVendorPurchaseOrdersNewButton.PaddingRight
+                    ZIndex: =2
+
+                    icoVendorPurchaseOrdersNewButton As icon.Save:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Add"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Color: =varThemeColors.primary
+                        DisabledColor: =varThemeColors.disabledText
+                        DisplayMode: |-
+                            =If(
+                                varIsProcessing,
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )
+                        FocusedBorderColor: =varThemeColors.primary
+                        Height: =16
+                        Icon: =Icon.Add
+                        Width: =16
+                        X: =5
+                        Y: =btnVendorPurchaseOrdersNewButton.Y+btnVendorPurchaseOrdersNewButton.Height/2-Self.Height/2
+                        ZIndex: =1
+
+                    btnVendorPurchaseOrdersNewButton As button:
+                        Align: =Align.Left
+                        BorderColor: =RGBA(0,0,0,0)
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =
+                        DisplayMode: |-
+                            =If(
+                                varIsProcessing,
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )
+                        Fill: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.tertiaryGray
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Normal
+                        Height: =Parent.Height-Self.Y*2
+                        HoverBorderColor: =
+                        HoverColor: =varThemeColors.primary
+                        HoverFill: =Color.Transparent
+                        OnSelect: |-
+                            =Launch(
+                                varPurchaseOrderAccess.'Application URL',
+                                {
+                                    mode: "new",
+                                    vendor: varVendorHeader.Vendor
+                                }
+                            )
+                        PaddingLeft: =icoVendorPurchaseOrdersNewButton.X + icoVendorPurchaseOrdersNewButton.Width + 8
+                        PressedColor: =Color.Black
+                        PressedFill: =Color.Transparent
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =10.5
+                        Text: |-
+                            =With(
+                                {Text: "New"},
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Tooltip: =Self.Text
+                        Width: =Parent.Width-Self.X*2
+                        X: =Self.FocusedBorderThickness
+                        Y: =Self.FocusedBorderThickness
+                        ZIndex: =2
+
+                conVendorPurchaseOrdersCommandBarFilterFields As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    Height: =Parent.Height
+                    LayoutAlignItems: =LayoutAlignItems.Center
+                    LayoutGap: =10
+                    LayoutJustifyContent: =LayoutJustifyContent.End
+                    LayoutMinHeight: =43
+                    LayoutMinWidth: |-
+                        =conVendorPurchaseOrdersCommandBarFilter.Width + lblVendorPurchaseOrdersCommandBarFilterFrom.Width + dteVendorPurchaseOrdersDateFieldFrom.Width + lblVendorPurchaseOrdersCommandBarFilterTo.Width + dteVendorPurchaseOrdersDateFieldTo.Width + If(
+                            icoVendorPurchaseOrdersDateRefresh.Visible,
+                            icoVendorPurchaseOrdersDateRefresh.Width
+                        ) + Self.LayoutGap * 6
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingRight: =2
+                    Width: =
+                    ZIndex: =3
+
+                    conVendorPurchaseOrdersCommandBarFilter As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        FillPortions: =0
+                        Height: =Parent.Height
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        Width: =txtVendorPurchaseOrdersFilter.X+txtVendorPurchaseOrdersFilter.Width+txtVendorPurchaseOrdersFilter.FocusedBorderThickness
+                        ZIndex: =1
+
+                        txtVendorPurchaseOrdersFilter As text:
+                            AccessibleLabel: =Self.HintText
+                            BorderColor: =varThemeColors.primaryGray
+                            BorderThickness: =1
+                            Clear: =true
+                            Color: =varThemeColors.text
+                            Default: =
+                            DelayOutput: =true
+                            DisabledBorderColor: =varThemeColors.primaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    Or(
+                                        IsEmpty(First(colVendorPurchaseOrders).List),
+                                        varIsProcessing
+                                    ),
+                                    DisplayMode.Disabled,
+                                    DisplayMode.Edit
+                                )
+                            Fill: =varThemeColors.backgroundFill
+                            FocusedBorderColor: =varThemeColors.tertiaryGray
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =32
+                            HintText: |-
+                                =With(
+                                    {Text: "Filter purchase orders"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            HoverBorderColor: =varThemeColors.tertiaryGray
+                            HoverColor: =varThemeColors.text
+                            HoverFill: =varThemeColors.backgroundFill
+                            MaxLength: =70
+                            OnChange: =
+                            PaddingBottom: =6
+                            PaddingLeft: =8
+                            PaddingRight: =8
+                            PaddingTop: =6
+                            PressedBorderColor: =varThemeColors.tertiaryGray
+                            PressedColor: =
+                            PressedFill: =varThemeColors.backgroundFill
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Reset: =true
+                            Size: =10.5
+                            Tooltip: |-
+                                =Coalesce(
+                                    Self.Text,
+                                    Self.HintText
+                                )
+                            Width: =248
+                            X: =shpVendorPurchaseOrdersCommandBarFilterDivider.X+shpVendorPurchaseOrdersCommandBarFilterDivider.Width+7
+                            Y: =Parent.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        shpVendorPurchaseOrdersCommandBarFilterDivider As rectangle:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: "Divider"
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Fill: =varThemeColors.secondaryGray
+                            Height: =30
+                            OnSelect: =
+                            Width: =2
+                            Y: =6
+                            ZIndex: =2
+
+                    lblVendorPurchaseOrdersCommandBarFilterFrom As label:
+                        Align: =Align.Right
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: |-
+                            =With(
+                                {Text: "From"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            ) & If(
+                                Or(
+                                    !IsBlank(dteVendorPurchaseOrdersDateFieldFrom.SelectedDate),
+                                    !IsBlank(dteVendorPurchaseOrdersDateFieldTo.SelectedDate)
+                                ),
+                                " *"
+                            )
+                        Width: =Len(Self.Text)*10
+                        X: =dteVendorPurchaseOrdersDateFieldFrom.X
+                        ZIndex: =2
+
+                    dteVendorPurchaseOrdersDateFieldFrom As datepicker:
+                        AccessibleLabel: =Self.InputTextPlaceholder
+                        BorderColor: |-
+                            =If(
+                                And(
+                                    IsBlank(Self.SelectedDate),
+                                    !IsBlank(dteVendorPurchaseOrdersDateFieldTo.SelectedDate)
+                                ),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
+                        BorderThickness: =1
+                        CalendarHeaderFill: =ColorFade(RGBA(105, 121, 126, 1), -30%)
+                        Color: =varThemeColors.text
+                        DefaultDate: =DateAdd(Today(),-1,TimeUnit.Years)
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayMode: |-
+                            =If(
+                                And(IsBlank(varVendorHeader),varIsProcessing),
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )
+                        EndYear: =2025
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HoverDateFill: =RGBA(200, 200, 200, 1)
+                        IconBackground: =varThemeColors.backgroundFill
+                        IconFill: =varThemeColors.text
+                        InputTextPlaceholder: |-
+                            =With(
+                                {Text: "Select from date"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        OnChange: =Set(varShowPurchaseOrdersRefresh,true)
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        SelectedDateFill: =RGBA(105, 121, 126, 1)
+                        Size: =10.5
+                        StartYear: =2016
+                        Tooltip: |-
+                            =If(
+                                IsBlank(Self.SelectedDate),
+                                Self.InputTextPlaceholder,
+                                Self.SelectedDate
+                            )
+                        Width: =125
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =3
+
+                    lblVendorPurchaseOrdersCommandBarFilterTo As label:
+                        Align: =Align.Right
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: |-
+                            =With(
+                                {Text: "To"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            ) & If(
+                                Or(
+                                    !IsBlank(dteVendorPurchaseOrdersDateFieldFrom.SelectedDate),
+                                    !IsBlank(dteVendorPurchaseOrdersDateFieldTo.SelectedDate)
+                                ),
+                                " *"
+                            )
+                        Width: =Len(Self.Text)*12
+                        X: =dteVendorPurchaseOrdersDateFieldTo.X
+                        ZIndex: =4
+
+                    dteVendorPurchaseOrdersDateFieldTo As datepicker:
+                        AccessibleLabel: =Self.InputTextPlaceholder
+                        BorderColor: |-
+                            =If(
+                                And(
+                                    IsBlank(Self.SelectedDate),
+                                    !IsBlank(dteVendorPurchaseOrdersDateFieldFrom.SelectedDate)
+                                ),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
+                        BorderThickness: =1
+                        CalendarHeaderFill: =ColorFade(RGBA(105, 121, 126, 1), -30%)
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayMode: |-
+                            =If(
+                                And(IsBlank(varVendorHeader),varIsProcessing),
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )
+                        EndYear: =2025
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HoverDateFill: =RGBA(200, 200, 200, 1)
+                        IconBackground: =varThemeColors.backgroundFill
+                        IconFill: =varThemeColors.text
+                        InputTextPlaceholder: |-
+                            =With(
+                                {Text: "Select to date"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        OnChange: =Set(varShowPurchaseOrdersRefresh,true)
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        SelectedDateFill: =RGBA(105, 121, 126, 1)
+                        Size: =10.5
+                        StartYear: =2016
+                        Tooltip: |-
+                            =If(
+                                IsBlank(Self.SelectedDate),
+                                Self.InputTextPlaceholder,
+                                Self.SelectedDate
+                            )
+                        Width: =125
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =5
+
+                    "icoVendorPurchaseOrdersDateRefresh As icon.'3DPrinting'":
+                        AccessibleLabel: =Self.Tooltip
+                        BorderColor: =varThemeColors.primary
+                        Color: =varThemeColors.primary
+                        DisabledBorderColor: =varThemeColors.disabledText
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =RGBA(0,0,0,0)
+                        DisplayMode: |-
+                            =If(
+                                varIsProcessing,
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )
+                        Fill: =RGBA(0,0,0,0)
+                        FocusedBorderColor: =varThemeColors.tertiaryGray
+                        Height: =30
+                        HoverBorderColor: =
+                        HoverColor: =varThemeColors.primary
+                        HoverFill: =RGBA(0,0,0,0)
+                        Icon: =Icon.Reload
+                        OnSelect: |-
+                            =//Check if required search fields and store missing fields in a collection
+                            Clear(colRequiredFieldsTemp);
+                            If(
+                                And(
+                                    IsBlank(dteVendorPurchaseOrdersDateFieldFrom.SelectedDate),
+                                    !IsBlank(dteVendorPurchaseOrdersDateFieldTo.SelectedDate)
+                                ),
+                                Collect(
+                                    colRequiredFieldsTemp,
+                                    lblVendorPurchaseOrdersCommandBarFilterFrom.Text
+                                )
+                            );
+                            If(
+                                And(
+                                    !IsBlank(dteVendorPurchaseOrdersDateFieldFrom.SelectedDate),
+                                    IsBlank(dteVendorPurchaseOrdersDateFieldTo.SelectedDate)
+                                ),
+                                Collect(
+                                    colRequiredFieldsTemp,
+                                    lblVendorPurchaseOrdersCommandBarFilterTo.Text
+                                )
+                            );
+                            //Check to see if required fields collection, notify which fields are missing if so
+                            If(
+                                !IsEmpty(colRequiredFieldsTemp),
+                                Notify(
+                                    Substitute(
+                                        With(
+                                            {Text: "The following information is required before searching"},
+                                            If(
+                                    // If the localized text is blank, return the default text
+                                                IsBlank(
+                                                    LookUp(
+                                                        colUserLocalizedStrings,
+                                                        'English Value' = Text
+                                                    ).'Localized Value'
+                                                ),
+                                                Text,
+                                    // If a localized text is found, return that instead of the default text
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            )
+                                        ) & ": " & Concat(
+                                            colRequiredFieldsTemp,
+                                            Value,
+                                            ", "
+                                        ),
+                                        " *",
+                                        ""
+                                    ),
+                                    NotificationType.Error,
+                                    0
+                                );
+                                ,
+                                Reset(txtVendorPurchaseOrdersFilter);
+                                Set(
+                                    varVendorPurchaseOrdersSortByColumn,//default sort by column of vendor purchase orders gallery
+                                    btnVendorPurchaseOrdersTableHeaderCreatedOn.Text
+                                );
+                                Set(
+                                    varVendorPurchaseOrdersSortOrder,//default sort order of vendor purchase orders gallery
+                                    SortOrder.Descending
+                                );
+                                Set(
+                                    varIsProcessing,
+                                    true
+                                );
+                                Set(
+                                    varFooterMessage,
+                                    "Loading"
+                                );
+                                ClearCollect(
+                                    colVendorPurchaseOrders,
+                                    ReadPurchaseOrderList.Run(
+                                        Substitute(
+                                            JSON(
+                                                {
+                                                    Vendor: varVendorHeader.Vendor,
+                                                    DateTo: Text(
+                                                        dteVendorPurchaseOrdersDateFieldTo.SelectedDate,
+                                                        "yyyymmdd",
+                                                        "en-US"
+                                                    ),
+                                                    DateFrom: Text(
+                                                        dteVendorPurchaseOrdersDateFieldFrom.SelectedDate,
+                                                        "yyyymmdd",
+                                                        "en-US"
+                                                    )
+                                                },
+                                                JSONFormat.IndentFour
+                                            ),
+                                            "null",
+                                            """"""
+                                        )
+                                    )
+                                );
+                                 //Evaluate return statuses to determine what type of notification
+                            With(
+                                    {
+                                        Text: Switch(
+                                            First(colVendorPurchaseOrders).Status,
+                                            "Information",
+                                            "No purchase orders were found based on your search criteria",
+                                            "Warning",
+                                            "The maximum number of search results were found based upon your criteria and some records may be missing. Please try changing your search criteria.",
+                                            "Error",
+                                            Concat(
+                                                First(colVendorPurchaseOrders).Messages,
+                                                Message,
+                                                " "
+                                            ),
+                                            "purchase orders found based upon your search criteria"
+                                        ),
+                                        Status: First(colVendorPurchaseOrders).Status
+                                    },
+                                    If(
+                                        Status <> "Error",
+                                        Set(
+                                            varShowPurchaseOrdersRefresh,
+                                            false
+                                        );
+                                    );
+                                    Notify(
+                                    //Append record count to message if success
+                                        Concatenate(
+                                            If(
+                                                Status = "Success",
+                                                CountRows(First(colVendorPurchaseOrders).List)
+                                            ) & " ",
+                                            If(
+                                    // If the localized text is blank, return the default text
+                                                IsBlank(
+                                                    LookUp(
+                                                        colUserLocalizedStrings,
+                                                        'English Value' = Text
+                                                    ).'Localized Value'
+                                                ),
+                                                Text,
+                                    // If a localized text is found, return that instead of the default text
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            )
+                                        ),
+                                        //Set the notification type
+                                        Switch(
+                                            Status,
+                                            "Information",
+                                            NotificationType.Information,
+                                            "Warning",
+                                            NotificationType.Warning,
+                                            "Error",
+                                            NotificationType.Error,
+                                            NotificationType.Success
+                                        ),
+                                        If(
+                                            Status = "Error",
+                                            0,
+                                            7000
+                                        )
+                                    );
+                                );
+                                
+                            );
+                            Reset(galVendorPurchaseOrders);
+                            Clear(colRequiredFieldsTemp);
+                            Set(
+                                varIsProcessing,
+                                false
+                            );
+                            Set(
+                                varFooterMessage,
+                                Blank()
+                            );
+                            //Set the focus on the filter field if results returned
+                            If(
+                                !IsEmpty(colVendorPurchaseOrders),
+                                SetFocus(txtVendorPurchaseOrdersFilter)
+                            )
+                        PaddingBottom: =5
+                        PaddingLeft: =5
+                        PaddingRight: =5
+                        PaddingTop: =5
+                        PressedBorderColor: =
+                        PressedColor: =
+                        PressedFill: =RGBA(0,0,0,0)
+                        TabIndex: =0
+                        Tooltip: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Refresh vendor purchase orders"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Visible: =varShowPurchaseOrdersRefresh
+                        Width: =30
+                        X: =
+                        Y: =6
+                        ZIndex: =6
+
+            shpVendorPurchaseOrdersTableHeaderDivider As rectangle:
+                AccessibleLabel: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {
+                            Text: "Divider"
+                        },
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Fill: =varThemeColors.secondaryGray
+                Height: =1
+                LayoutMinHeight: =
+                LayoutMinWidth: =conVendorPurchaseOrdersCommandBar.LayoutMinWidth
+                Width: =
+                ZIndex: =3
+
+            conVendorPurchaseOrdersTable As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                Fill: =RGBA(255, 255, 255, 1)
+                LayoutAlignItems: =LayoutAlignItems.Stretch
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutMinHeight: |-
+                    =conVendorRequistionsTableHeader.Height + shpVendorRequisitionsTabelHeaderDivider.Height + If(
+                        galVendorPurchaseOrders.Visible,
+                        galVendorPurchaseOrders.LayoutMinHeight,
+                        cmpVendorPurchaseOrdersNoResults.Height
+                    ) + Self.PaddingTop + Self.PaddingBottom
+                LayoutMinWidth: =conVendorPurchaseOrdersCommandBar.LayoutMinWidth
+                LayoutMode: =LayoutMode.Auto
+                PaddingBottom: =2
+                PaddingLeft: =16
+                PaddingRight: =16
+                ZIndex: =8
+
+                conVendorPurchaseOrdersTableHeader As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    Fill: =RGBA(255, 255, 255, 1)
+                    FillPortions: =0
+                    Height: =43
+                    LayoutAlignItems: =LayoutAlignItems.Center
+                    LayoutMinHeight: =
+                    LayoutMinWidth: =conVendorPurchaseOrdersTableHeaderPurchaseOrder.LayoutMinWidth + conVendorPurchaseOrdersTableHeaderCreatedOn.LayoutMinWidth + conVendorPurchaseOrdersTableHeaderCompanyCode.LayoutMinWidth + conVendorPurchaseOrdersTableHeaderOrganization.LayoutMinWidth + conVendorPurchaseOrdersTableHeaderGroup.LayoutMinWidth
+                    LayoutMode: =LayoutMode.Auto
+                    Width: =
+                    ZIndex: =1
+
+                    conVendorPurchaseOrdersTableHeaderPurchaseOrder As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Height: =44
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =icoVendorPurchaseOrdersTableHeaderPurchaseOrder.X+icoVendorPurchaseOrdersTableHeaderPurchaseOrder.Width+10
+                        Width: =
+                        Y: =37
+                        ZIndex: =1
+
+                        icoVendorPurchaseOrdersTableHeaderPurchaseOrder As icon.Save:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: If(
+                                            Self.Icon = Icon.ArrowUp,
+                                            "Sorted ascending",
+                                            "Sorted descending"
+                                        )
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.tertiaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =btnVendorPurchaseOrdersTableHeaderPurchaseOrder.DisplayMode
+                            FocusedBorderColor: =varThemeColors.primary
+                            Height: =12
+                            Icon: |-
+                                =If(
+                                    varVendorPurchaseOrdersSortOrder = SortOrder.Ascending,
+                                    Icon.ArrowUp,
+                                    Icon.ArrowDown
+                                )
+                            Visible: =varVendorPurchaseOrdersSortByColumn = btnVendorPurchaseOrdersTableHeaderPurchaseOrder.Text && galVendorPurchaseOrders.Visible
+                            Width: =12
+                            X: =Len(btnVendorPurchaseOrdersTableHeaderPurchaseOrder.Text)*7.5+8
+                            Y: =btnVendorPurchaseOrdersTableHeaderPurchaseOrder.Y+btnVendorPurchaseOrdersTableHeaderPurchaseOrder.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        btnVendorPurchaseOrdersTableHeaderPurchaseOrder As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            BorderThickness: =1
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        galVendorPurchaseOrders.Visible,
+                                        !varIsProcessing
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.View
+                                )
+                            Fill: =RGBA(0,0,0,0)
+                            FocusedBorderColor: =varThemeColors.tertiaryGray
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =Parent.Height-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |-
+                                =If(//Stores the sort order of that column
+                                    And(varVendorPurchaseOrdersSortOrder = SortOrder.Ascending,varVendorPurchaseOrdersSortByColumn=Self.Text),
+                                    Set(
+                                        varVendorPurchaseOrdersSortOrder,
+                                        SortOrder.Descending
+                                    ),
+                                    Set(
+                                        varVendorPurchaseOrdersSortOrder,
+                                        SortOrder.Ascending
+                                    )
+                                );
+                                Set(//Stores which column is currently being sorted
+                                    varVendorPurchaseOrdersSortByColumn,
+                                    Self.Text
+                                );
+                                Reset(galVendorPurchaseOrders)//Resets the gallery to move the scrollbar to the top
+                            PaddingLeft: =12
+                            PressedBorderColor: =
+                            PressedColor: =varThemeColors.text
+                            PressedFill: =
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Purchase order"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =2
+
+                    conVendorPurchaseOrdersTableHeaderCreatedOn As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Height: =44
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =icoVendorPurchaseOrdersTableHeaderCreatedOn.X+icoVendorPurchaseOrdersTableHeaderCreatedOn.Width+10
+                        Width: =
+                        Y: =37
+                        ZIndex: =2
+
+                        icoVendorPurchaseOrdersTableHeaderCreatedOn As icon.Save:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: If(
+                                            Self.Icon = Icon.ArrowUp,
+                                            "Sorted ascending",
+                                            "Sorted descending"
+                                        )
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.tertiaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =btnVendorPurchaseOrdersTableHeaderCreatedOn.DisplayMode
+                            FocusedBorderColor: =varThemeColors.primary
+                            Height: =12
+                            Icon: |-
+                                =If(
+                                    varVendorPurchaseOrdersSortOrder = SortOrder.Ascending,
+                                    Icon.ArrowUp,
+                                    Icon.ArrowDown
+                                )
+                            Visible: =varVendorPurchaseOrdersSortByColumn=btnVendorPurchaseOrdersTableHeaderCreatedOn.Text && galVendorPurchaseOrders.Visible
+                            Width: =12
+                            X: =Len(btnVendorPurchaseOrdersTableHeaderCreatedOn.Text)*8+8
+                            Y: =btnVendorPurchaseOrdersTableHeaderCreatedOn.Y+btnVendorPurchaseOrdersTableHeaderCreatedOn.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        btnVendorPurchaseOrdersTableHeaderCreatedOn As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            BorderThickness: =1
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        galVendorPurchaseOrders.Visible,
+                                        !varIsProcessing
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.View
+                                )
+                            Fill: =RGBA(0,0,0,0)
+                            FocusedBorderColor: =varThemeColors.tertiaryGray
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =Parent.Height-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |-
+                                =Set(//Stores which column is currently being sorted
+                                    varVendorPurchaseOrdersSortByColumn,
+                                    Self.Text
+                                );
+                                If(//Stores the sort order of that column
+                                    And(
+                                        varVendorPurchaseOrdersSortOrder = SortOrder.Ascending,
+                                        varVendorPurchaseOrdersSortByColumn = Self.Text
+                                    ),
+                                    Set(
+                                        varVendorPurchaseOrdersSortOrder,
+                                        SortOrder.Descending
+                                    ),
+                                    Set(
+                                        varVendorPurchaseOrdersSortOrder,
+                                        SortOrder.Ascending
+                                    )
+                                );
+                                Reset(galVendorPurchaseOrders)//Resets the gallery to move the scrollbar to the top
+                            PaddingLeft: =10
+                            PressedBorderColor: =
+                            PressedColor: =varThemeColors.text
+                            PressedFill: =
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Created on"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =2
+
+                    conVendorPurchaseOrdersTableHeaderCompanyCode As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Height: =44
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =icoVendorPurchaseOrdersTableHeaderCompanyCode.X+icoVendorPurchaseOrdersTableHeaderCompanyCode.Width+10
+                        Width: =
+                        X: =icoVendorPurchaseOrdersTableHeaderCompanyCode.X+icoVendorPurchaseOrdersTableHeaderCompanyCode.Width+10
+                        Y: =37
+                        ZIndex: =3
+
+                        icoVendorPurchaseOrdersTableHeaderCompanyCode As icon.Save:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: If(
+                                            Self.Icon = Icon.ArrowUp,
+                                            "Sorted ascending",
+                                            "Sorted descending"
+                                        )
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.tertiaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =btnVendorPurchaseOrdersTableHeaderCompanyCode.DisplayMode
+                            FocusedBorderColor: =varThemeColors.primary
+                            Height: =12
+                            Icon: |-
+                                =If(
+                                    varVendorPurchaseOrdersSortOrder = SortOrder.Ascending,
+                                    Icon.ArrowUp,
+                                    Icon.ArrowDown
+                                )
+                            Visible: =varVendorPurchaseOrdersSortByColumn=btnVendorPurchaseOrdersTableHeaderCompanyCode.Text && galVendorPurchaseOrders.Visible
+                            Width: =12
+                            X: =Len(btnVendorPurchaseOrdersTableHeaderCompanyCode.Text)*9+8
+                            Y: =btnVendorPurchaseOrdersTableHeaderCompanyCode.Y+btnVendorPurchaseOrdersTableHeaderCompanyCode.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        btnVendorPurchaseOrdersTableHeaderCompanyCode As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            BorderThickness: =1
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        galVendorPurchaseOrders.Visible,
+                                        !varIsProcessing
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.View
+                                )
+                            Fill: =RGBA(0,0,0,0)
+                            FocusedBorderColor: =varThemeColors.tertiaryGray
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =Parent.Height-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |-
+                                =Set(//Stores which column is currently being sorted
+                                    varVendorPurchaseOrdersSortByColumn,
+                                    Self.Text
+                                );
+                                If(//Stores the sort order of that column
+                                    And(
+                                        varVendorPurchaseOrdersSortOrder = SortOrder.Ascending,
+                                        varVendorPurchaseOrdersSortByColumn = Self.Text
+                                    ),
+                                    Set(
+                                        varVendorPurchaseOrdersSortOrder,
+                                        SortOrder.Descending
+                                    ),
+                                    Set(
+                                        varVendorPurchaseOrdersSortOrder,
+                                        SortOrder.Ascending
+                                    )
+                                );
+                                Reset(galVendorPurchaseOrders)//Resets the gallery to move the scrollbar to the top
+                            PaddingLeft: =10
+                            PressedBorderColor: =
+                            PressedColor: =varThemeColors.text
+                            PressedFill: =
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Company code"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =2
+
+                    conVendorPurchaseOrdersTableHeaderOrganization As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Height: =44
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =icoVendorPurchaseOrdersTableHeaderOrganization.X+icoVendorPurchaseOrdersTableHeaderOrganization.Height
+                        Width: =
+                        Y: =37
+                        ZIndex: =4
+
+                        icoVendorPurchaseOrdersTableHeaderOrganization As icon.Save:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: If(
+                                            Self.Icon = Icon.ArrowUp,
+                                            "Sorted ascending",
+                                            "Sorted descending"
+                                        )
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.tertiaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =btnVendorPurchaseOrdersTableHeaderOrganization.DisplayMode
+                            FocusedBorderColor: =varThemeColors.primary
+                            Height: =12
+                            Icon: |-
+                                =If(
+                                    varVendorPurchaseOrdersSortOrder = SortOrder.Ascending,
+                                    Icon.ArrowUp,
+                                    Icon.ArrowDown
+                                )
+                            Visible: =varVendorPurchaseOrdersSortByColumn=btnVendorPurchaseOrdersTableHeaderOrganization.Text && galVendorPurchaseOrders.Visible
+                            Width: =12
+                            X: =Len(btnVendorPurchaseOrdersTableHeaderOrganization.Text)*7.5+8
+                            Y: =btnVendorPurchaseOrdersTableHeaderOrganization.Y+btnVendorPurchaseOrdersTableHeaderOrganization.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        btnVendorPurchaseOrdersTableHeaderOrganization As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            BorderThickness: =1
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        galVendorPurchaseOrders.Visible,
+                                        !varIsProcessing
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.View
+                                )
+                            Fill: =RGBA(0,0,0,0)
+                            FocusedBorderColor: =varThemeColors.tertiaryGray
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =Parent.Height-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |-
+                                =Set(//Stores which column is currently being sorted
+                                    varVendorPurchaseOrdersSortByColumn,
+                                    Self.Text
+                                );
+                                If(//Stores the sort order of that column
+                                    And(
+                                        varVendorPurchaseOrdersSortOrder = SortOrder.Ascending,
+                                        varVendorPurchaseOrdersSortByColumn = Self.Text
+                                    ),
+                                    Set(
+                                        varVendorPurchaseOrdersSortOrder,
+                                        SortOrder.Descending
+                                    ),
+                                    Set(
+                                        varVendorPurchaseOrdersSortOrder,
+                                        SortOrder.Ascending
+                                    )
+                                );
+                                Reset(galVendorPurchaseOrders)//Resets the gallery to move the scrollbar to the top
+                            PaddingLeft: =10
+                            PressedBorderColor: =
+                            PressedColor: =varThemeColors.text
+                            PressedFill: =
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Purchasing organization"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =2
+
+                    conVendorPurchaseOrdersTableHeaderGroup As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Height: =44
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =icoVendorPurchaseOrdersTableHeaderGroup.X+icoVendorPurchaseOrdersTableHeaderGroup.Width+10
+                        Width: =
+                        Y: =37
+                        ZIndex: =5
+
+                        icoVendorPurchaseOrdersTableHeaderGroup As icon.Save:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: If(
+                                            Self.Icon = Icon.ArrowUp,
+                                            "Sorted ascending",
+                                            "Sorted descending"
+                                        )
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.tertiaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =btnVendorPurchaseOrdersTableHeaderGroup.DisplayMode
+                            FocusedBorderColor: =varThemeColors.primary
+                            Height: =12
+                            Icon: |-
+                                =If(
+                                    varVendorPurchaseOrdersSortOrder = SortOrder.Ascending,
+                                    Icon.ArrowUp,
+                                    Icon.ArrowDown
+                                )
+                            Visible: =varVendorPurchaseOrdersSortByColumn=btnVendorPurchaseOrdersTableHeaderGroup.Text && galVendorPurchaseOrders.Visible
+                            Width: =12
+                            X: =Len(btnVendorPurchaseOrdersTableHeaderGroup.Text)*8+8
+                            Y: =btnVendorPurchaseOrdersTableHeaderGroup.Y+btnVendorPurchaseOrdersTableHeaderGroup.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        btnVendorPurchaseOrdersTableHeaderGroup As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            BorderThickness: =1
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        galVendorPurchaseOrders.Visible,
+                                        !varIsProcessing
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.View
+                                )
+                            Fill: =RGBA(0,0,0,0)
+                            FocusedBorderColor: =varThemeColors.tertiaryGray
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =Parent.Height-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |-
+                                =Set(//Stores which column is currently being sorted
+                                    varVendorPurchaseOrdersSortByColumn,
+                                    Self.Text
+                                );
+                                If(//Stores the sort order of that column
+                                    And(
+                                        varVendorPurchaseOrdersSortOrder = SortOrder.Ascending,
+                                        varVendorPurchaseOrdersSortByColumn = Self.Text
+                                    ),
+                                    Set(
+                                        varVendorPurchaseOrdersSortOrder,
+                                        SortOrder.Descending
+                                    ),
+                                    Set(
+                                        varVendorPurchaseOrdersSortOrder,
+                                        SortOrder.Ascending
+                                    )
+                                );
+                                Reset(galVendorPurchaseOrders)//Resets the gallery to move the scrollbar to the top
+                            PaddingLeft: =10
+                            PressedBorderColor: =
+                            PressedColor: =varThemeColors.text
+                            PressedFill: =
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Purchasing group"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =2
+
+                shpVendorPurchaseOrdersTabelHeaderDivider As rectangle:
+                    AccessibleLabel: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {
+                                Text: "Divider"
+                            },
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Fill: =varThemeColors.secondaryGray
+                    Height: =1
+                    LayoutMinHeight: =
+                    Width: =
+                    ZIndex: =2
+
+                galVendorPurchaseOrders As gallery.galleryVertical:
+                    AccessibleLabel: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {Text: "Vendor requisitions"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    FocusedBorderColor: =varThemeColors.tertiaryGray
+                    FocusedBorderThickness: =2
+                    Height: =Self.TemplateHeight * 6
+                    ItemAccessibleLabel: =Concatenate(ThisItem.OrderNumber," - ",ThisItem.Vendor)
+                    Items: |-
+                        =//Display vendor purchae orders items for collection previously cached and according to sorting and filtering conditions
+                        SortByColumns(
+                            If(
+                                !IsBlank(txtVendorPurchaseOrdersFilter.Text),//Filter text data is entered so search the collection based upon entered text
+                                Search(
+                                    First(colVendorPurchaseOrders).List,
+                                    txtVendorPurchaseOrdersFilter.Text,
+                                    "OrderNumber",
+                                    "Type",
+                                    "CompanyCode",
+                                    "PurchasingOrganization",
+                                    "PurchasingGroup"
+                                ),
+                                First(colVendorPurchaseOrders).List//otherwise, just display all items in the cached collection
+                            ),
+                            Switch(//determine which field to sort by based upon the tabel header column value selected and stored in variable
+                                varVendorPurchaseOrdersSortByColumn,
+                                btnVendorPurchaseOrdersTableHeaderPurchaseOrder.Text,
+                                "OrderNumber",
+                                btnVendorPurchaseOrdersTableHeaderCreatedOn.Text,
+                                "CreatedOn",
+                                btnVendorPurchaseOrdersTableHeaderCompanyCode.Text,
+                                "CompanyCode",
+                                btnVendorPurchaseOrdersTableHeaderOrganization.Text,
+                                "PurchasingOrganization",
+                                btnVendorPurchaseOrdersTableHeaderGroup.Text,
+                                "PurchasingGroup"
+                            ),
+                            varVendorPurchaseOrdersSortOrder//finally, sort ascending or descending based upon value stored in variable
+                        )
+                    Layout: =Layout.Vertical
+                    LayoutMinHeight: =Self.TemplateHeight * 6
+                    LayoutMinWidth: =320
+                    TabIndex: =0
+                    TemplateFill: =RGBA(255, 255, 255, 1)
+                    TemplatePadding: =0
+                    TemplateSize: =43
+                    Visible: =CountRows(First(colVendorPurchaseOrders).List) > 0
+                    Width: =
+                    ZIndex: =3
+
+                    shpVendorPurchaseOrdersTableDivider As rectangle:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {
+                                    Text: "Divider"
+                                },
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Fill: =varThemeColors.secondaryGray
+                        Height: =1
+                        Width: =Parent.Width
+                        Y: =Parent.TemplateHeight-Self.Height
+                        ZIndex: =1
+
+                    lblVendorPurchaseOrdersGroup As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        Height: =43
+                        PaddingBottom: =0
+                        PaddingLeft: =12
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: =ThisItem.PurchasingGroup
+                        Width: =conVendorPurchaseOrdersTableHeaderGroup.Width
+                        X: =conVendorPurchaseOrdersTableHeaderGroup.X
+                        ZIndex: =2
+
+                    lblVendorPurchaseOrdersOrganization As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        Height: =43
+                        PaddingBottom: =0
+                        PaddingLeft: =12
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: =ThisItem.PurchasingOrganization
+                        Width: =conVendorPurchaseOrdersTableHeaderOrganization.Width
+                        X: =conVendorPurchaseOrdersTableHeaderOrganization.X
+                        ZIndex: =3
+
+                    lblVendorPurchaseOrdersCompanyCode As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        Height: =43
+                        PaddingBottom: =0
+                        PaddingLeft: =12
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: =ThisItem.CompanyCode
+                        Width: =conVendorPurchaseOrdersTableHeaderCompanyCode.Width
+                        X: =conVendorPurchaseOrdersTableHeaderCompanyCode.X
+                        ZIndex: =4
+
+                    lblVendorPurchaseOrdersCreatedOn As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        Height: =43
+                        PaddingBottom: =0
+                        PaddingLeft: =12
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: |-
+                            =Text(
+                                DateValue(ThisItem.CreatedOn),
+                                DateTimeFormat.ShortDate
+                            )
+                        Width: =conVendorPurchaseOrdersTableHeaderCreatedOn.Width
+                        X: =conVendorPurchaseOrdersTableHeaderCreatedOn.X
+                        ZIndex: =5
+
+                    lblVendorPurchaseOrder As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        Height: =43
+                        PaddingBottom: =0
+                        PaddingLeft: =12
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: =ThisItem.OrderNumber
+                        Visible: =IsBlank(varPurchaseOrderAccess)
+                        Width: =conVendorPurchaseOrdersTableHeaderPurchaseOrder.Width
+                        X: =conVendorPurchaseOrdersTableHeaderPurchaseOrder.X
+                        ZIndex: =6
+
+                    btnVendorPurchaseOrdersSelect As button:
+                        Align: =Align.Left
+                        BorderColor: =RGBA(0,0,0,0)
+                        Color: =varThemeColors.lookupBlue
+                        DisabledBorderColor: =
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =
+                        DisplayMode: |-
+                            =/*If(
+                                Or(
+                                    IsBlank(txtVendor.Text),
+                                    IsBlank(cmbPOOrderType.Selected),
+                                    IsBlank(cmbPOPurchOrg.Selected),
+                                    IsBlank(cmbPOPurchGroup.Selected)
+                                ),
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )*/
+                        Fill: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.tertiaryGray
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Normal
+                        Height: =Parent.TemplateHeight-Self.Y*2
+                        HoverBorderColor: =
+                        HoverColor: =varThemeColors.primary
+                        HoverFill: =
+                        OnSelect: |-
+                            =Launch(
+                                varPurchaseOrderAccess.'Application URL',
+                                {purchaseorder: Self.Text}
+                            )
+                        PaddingLeft: =12
+                        PressedColor: =Self.Color
+                        PressedFill: =Color.Transparent
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =10.5
+                        Text: =ThisItem.OrderNumber
+                        Tooltip: =Self.Text
+                        Visible: =!IsBlank(varPurchaseOrderAccess)
+                        Width: =conVendorPurchaseOrdersTableHeaderPurchaseOrder.Width-Self.X
+                        X: =2
+                        Y: =Self.FocusedBorderThickness
+                        ZIndex: =7
+
+                cmpVendorPurchaseOrdersNoResults As NoItemsDisplay:
+                    LayoutMinHeight: =
+                    LayoutMinWidth: =640
+                    Visible: =!galVendorPurchaseOrders.Visible
+                    Width: =
+                    ZIndex: =4
+
+            conVendorPurchaseOrdersDataFooter As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                FillPortions: =0
+                Height: =30
+                LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                ZIndex: =10
+
+                lblVendorPurchaseOrderNumberOfRecords As label:
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    BorderThickness: =2
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                    FillPortions: =1
+                    FocusedBorderColor: =varThemeColors.primary
+                    FocusedBorderThickness: =4
+                    Font: =Font.'Segoe UI'
+                    FontWeight: =FontWeight.Lighter
+                    Height: =30
+                    LayoutMinWidth: =
+                    PaddingLeft: =btnVendorRequistionsTableHeaderRequisition.PaddingLeft
+                    Size: =10.5
+                    Text: |-
+                        =//Show how many rows are returned in the results
+                        CountRows(galVendorPurchaseOrders.AllItems) & " " &//Count the rows in the gallery
+                        // Define a variable named "Text" with the value "{value}"
+                         With(
+                            {Text: "record(s)"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Visible: |+
+                        =galVendorRequisitions.Visible
+                        
+                    Width: =
+                    X: =1
+                    ZIndex: =1
+
+                lblVendorPurchaseOrdersFooterMessage As label:
+                    Align: =Align.Right
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    BorderThickness: =2
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                    FillPortions: =1
+                    FocusedBorderColor: =varThemeColors.primary
+                    FocusedBorderThickness: =4
+                    Font: =Font.'Segoe UI'
+                    Height: =34
+                    Italic: =true
+                    LayoutMinHeight: =
+                    LayoutMinWidth: =
+                    Live: =Live.Assertive
+                    PaddingBottom: =0
+                    PaddingLeft: =32
+                    PaddingRight: =32
+                    PaddingTop: =0
+                    Role: =TextRole.Heading2
+                    Size: =10.5
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {Text: varFooterMessage},
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        ) & If(varIsProcessing, "...")
+                    Width: =
+                    ZIndex: =2
+
+    cmpVendorPurchaseOrdersLeftNavigation As LeftNavigation:
+        Height: =App.Height-Self.Y
+        Width: =cmpVendorPurchaseOrdersLeftNavigation.MenuWidth
+        Y: =cmpVendorPurchaseOrdersHeader.Height
+        ZIndex: =5
+
+    cmpVendorPurchaseOrdersHeader As ScreenHeader:
+        Width: =App.Width
+        ZIndex: =6
+
