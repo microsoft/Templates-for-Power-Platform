@@ -1,0 +1,1671 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps_1": {
+        "impersonation": {
+          "source": "invoker"
+        },
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_SAPDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      },
+      "shared_saperp_1": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_SAPERP"
+        },
+        "api": {
+          "name": "shared_saperp"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "SAP Application Server (mpa_SAPApplicationServer)": {
+          "defaultValue": "{\"AppServerHost\":\"sap.clearsoftware.com\",\"Client\":\"100\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_SAPApplicationServer"
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "1cb6d9a6-ad57-42bf-bcb0-1bf46d3b7b77"
+          },
+          "type": "Request",
+          "kind": "PowerAppV2",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "JSON",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Catch": {
+          "actions": {
+            "Filter_array": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "e4ff6915-74dd-4ad8-aeb5-69689f7cd846"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@result('Try')",
+                "where": "@or(equals(item()?['Status'], 'Failed'), equals(item()?['Status'], 'TimedOut'))"
+              }
+            },
+            "ErrorTable": {
+              "runAfter": {
+                "Filter_array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "a4543bb1-084d-4bd9-865a-d59ec8caa8fc"
+              },
+              "type": "Table",
+              "inputs": {
+                "from": "@body('Filter_array')",
+                "format": "HTML",
+                "columns": [
+                  {
+                    "header": "Step",
+                    "value": "@item()?['name']"
+                  },
+                  {
+                    "header": "Status",
+                    "value": "@item()?['Status']"
+                  },
+                  {
+                    "header": "Code",
+                    "value": "@item()?['code']"
+                  },
+                  {
+                    "header": "InnerErrorMessage",
+                    "value": "@{item()?['outputs']?['body']?['error']?['innerError']?['error']?['message']}@{item()?['error']?['message']}\n@{variables('SAPErrorMessage')}"
+                  },
+                  {
+                    "header": "Input",
+                    "value": "@triggerBody()"
+                  }
+                ]
+              }
+            },
+            "ErrorReturn": {
+              "runAfter": {
+                "ErrorTable": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6ea00725-e758-40bb-9cc7-b69d0a65d01b"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Filter_array')",
+                "select": {
+                  "Step": "@item()?['name']",
+                  "Status": "@item()?['Status']",
+                  "Code": "@item()?['code']",
+                  "InnerErrorMessage": "@{item()?['outputs']?['body']?['error']?['innerError']?['error']?['message']} @{item()?['error']?['message']}  @{variables('SAPErrorMessage')}",
+                  "Input": "@triggerBody()",
+                  "FlowName": "@workflow()?['tags']['flowDisplayName']",
+                  "URL": "@concat('https://flow.microsoft.com/manage/environments/', workflow()?['tags']['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']['name'])"
+                }
+              }
+            },
+            "Create_Integration_Log_Error": {
+              "runAfter": {
+                "ErrorReturn": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "65c53a8f-bba5-4aee-a2c2-1bbea7395180"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "CreateRecord"
+                },
+                "parameters": {
+                  "entityName": "mpa_saperrors",
+                  "item/mpa_name": "@outputs('ErrorReturn')?['body'][0]['FlowName']",
+                  "item/mpa_action": "@outputs('ErrorReturn')?['body'][0]['Step']",
+                  "item/mpa_additionalinformation": "@triggerBody()['text']",
+                  "item/mpa_errormessage": "@outputs('ErrorReturn')?['body'][0]['InnerErrorMessage']",
+                  "item/mpa_sourcetype": 865420000,
+                  "item/mpa_workflowinstanceurl": "@outputs('ErrorReturn')?['body'][0]['URL']",
+                  "item/mpa_workflowstatus": "@If(equals(item()?['Status'], 'Failed'), '865420001', '865420000')"
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Response_3": {
+              "runAfter": {
+                "Create_Integration_Log_Error": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "1a07fe00-c854-4b19-9f61-ff2091a0b894"
+              },
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "Status": "Error",
+                  "Messages": [
+                    {
+                      "Message": "@outputs('Create_Integration_Log_Error')?['body/mpa_errormessage']"
+                    }
+                  ]
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "OrderNumber": {
+                      "type": "string"
+                    },
+                    "Header": {
+                      "type": "object",
+                      "properties": {
+                        "PurchasingOrganization": {
+                          "type": "string"
+                        },
+                        "Released": {
+                          "type": "string"
+                        },
+                        "PurchasingGroup": {
+                          "type": "string"
+                        },
+                        "VendorName": {
+                          "type": "string"
+                        },
+                        "Vendor": {
+                          "type": "string"
+                        },
+                        "Currency": {
+                          "type": "string"
+                        },
+                        "HeaderText": {
+                          "type": "string"
+                        },
+                        "CreatedOn": {
+                          "type": "string"
+                        },
+                        "CreatedBy": {
+                          "type": "string"
+                        },
+                        "ApprovedBy": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "Items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ItemNumber": {
+                            "type": "string"
+                          },
+                          "MaterialNumber": {
+                            "type": "string"
+                          },
+                          "Description": {
+                            "type": "string"
+                          },
+                          "Location": {
+                            "type": "string"
+                          },
+                          "Quantity": {
+                            "type": "number"
+                          },
+                          "UnitOfMeasure": {
+                            "type": "string"
+                          },
+                          "UnitPrice": {
+                            "type": "number"
+                          },
+                          "CrudType": {
+                            "type": "string"
+                          },
+                          "AssignmentCategory": {
+                            "type": "string"
+                          },
+                          "TotalPrice": {
+                            "type": "number"
+                          },
+                          "PurchaseRequisitionNumber": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "ItemNumber",
+                          "MaterialNumber",
+                          "Description",
+                          "Location",
+                          "Quantity",
+                          "UnitOfMeasure",
+                          "UnitPrice",
+                          "CrudType",
+                          "AssignmentCategory",
+                          "TotalPrice",
+                          "Requisition"
+                        ]
+                      }
+                    },
+                    "Invoices": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ItemNumber": {
+                            "type": "string"
+                          },
+                          "Document": {
+                            "type": "string"
+                          },
+                          "Quantity": {
+                            "type": "string"
+                          },
+                          "Amount": {
+                            "type": "string"
+                          },
+                          "Process": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "ItemNumber",
+                          "Document",
+                          "Process"
+                        ]
+                      }
+                    },
+                    "ParkedInvoices": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ItemNumber": {
+                            "type": "string"
+                          },
+                          "Document": {
+                            "type": "string"
+                          },
+                          "Quantity": {
+                            "type": "string"
+                          },
+                          "Amount": {
+                            "type": "string"
+                          },
+                          "Process": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "ItemNumber",
+                          "Document",
+                          "Process"
+                        ]
+                      }
+                    },
+                    "GoodsReceipts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ItemNumber": {
+                            "type": "string"
+                          },
+                          "Document": {
+                            "type": "string"
+                          },
+                          "Quantity": {
+                            "type": "string"
+                          },
+                          "Process": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "ItemNumber",
+                          "Document",
+                          "Process"
+                        ]
+                      }
+                    },
+                    "Payments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Payment": {
+                            "type": "integer"
+                          },
+                          "ItemNumber": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Payment",
+                          "ItemNumber"
+                        ]
+                      }
+                    },
+                    "Status": {
+                      "type": "string"
+                    },
+                    "Messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Message"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "acddc208-94dd-4daf-9177-fa386ba1baec"
+          },
+          "type": "Scope"
+        },
+        "Initialize_SAPErrorMessage": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "6a6087f9-b1aa-4966-9ea5-0f695d638f87"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "SAPErrorMessage",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Try": {
+          "actions": {
+            "Set_History": {
+              "runAfter": {
+                "Set_SAPErrorMessage": [
+                  "Skipped"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "3e393528-ab47-4427-9d04-0cca85e05c3c"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "History",
+                "value": "@if(equals('',outputs('PO_Detail')?['body/POHISTORY']), json('[]'), outputs('PO_Detail')?['body/POHISTORY'])"
+              }
+            },
+            "Set_POTEXTHEADER": {
+              "runAfter": {
+                "Set_History": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "e4f7743c-e41b-4206-bb9e-a404f936579f"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "POTEXTHEADER",
+                "value": "@if(equals('',outputs('PO_Detail')?['body/POTEXTHEADER']), json('[]'), outputs('PO_Detail')?['body/POTEXTHEADER'])"
+              }
+            },
+            "Set_Messages": {
+              "runAfter": {
+                "Set_POTEXTHEADER": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "cdbfd59d-05eb-40d3-9a41-4164dadaf9c9"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "Messages",
+                "value": "@if(equals('',outputs('PO_Detail')?['body/RETURN']), json('[]'), outputs('PO_Detail')?['body/RETURN'])"
+              }
+            },
+            "Filter_Messages_for_Errors": {
+              "runAfter": {
+                "Set_Messages": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "314738ec-9d05-4ae3-b089-64259885fb43"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@variables('Messages')",
+                "where": "@equals(item()?['TYPE'], 'E')"
+              }
+            },
+            "Existence_Check": {
+              "actions": {
+                "Check_Approval": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "5e652b46-e9eb-49e6-ba9d-cb4c7799685b"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp",
+                      "connectionName": "shared_saperp_1",
+                      "operationId": "ReadTableVersion3"
+                    },
+                    "parameters": {
+                      "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                      "inputParameters/tableName": "CDPOS",
+                      "inputParameters/FieldNames": [
+                        "CHANGENR:Change Number of Document"
+                      ],
+                      "inputParameters/RowCount": 10,
+                      "inputParameters/WhereFilters": [
+                        "OBJECTID = '@{variables('Order')}'",
+                        "AND OBJECTCLAS = 'EINKBELEG'",
+                        "AND FNAME = 'FRGKE'"
+                      ]
+                    },
+                    "retryPolicy": {
+                      "type": "none"
+                    },
+                    "authentication": {
+                      "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']",
+                      "type": "Raw"
+                    }
+                  }
+                },
+                "If_Approval_Exists,_Get_Approver": {
+                  "actions": {
+                    "Update_Approval": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "a5b0b923-1f23-4556-aa93-27bf33eb9677"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "Approval",
+                        "value": "@{outputs('Check_Approval')?['body/Rows'][0]['CHANGENR']}"
+                      }
+                    },
+                    "Update_Approved_By": {
+                      "runAfter": {
+                        "Approved_By": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "a5b0b923-1f23-4556-aa93-27bf33eb9677"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "ApprovedBy",
+                        "value": "@{outputs('Approved_By')?['body/Rows'][0]['USERNAME']}"
+                      }
+                    },
+                    "Approved_By": {
+                      "runAfter": {
+                        "Update_Approval": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "14ef6edb-0dec-40c7-bc93-f43aed149b17"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp",
+                          "connectionName": "shared_saperp_1",
+                          "operationId": "ReadTableVersion3"
+                        },
+                        "parameters": {
+                          "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                          "inputParameters/tableName": "CDHDR",
+                          "inputParameters/FieldNames": [
+                            "USERNAME:User name of the person responsible in change document"
+                          ],
+                          "inputParameters/RowCount": 1,
+                          "inputParameters/WhereFilters": [
+                            "CHANGENR = '@{variables('Approval')}'"
+                          ]
+                        },
+                        "retryPolicy": {
+                          "type": "none"
+                        },
+                        "authentication": {
+                          "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']",
+                          "type": "Raw"
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Set_SAPErrorMessage_2": [
+                      "Skipped"
+                    ]
+                  },
+                  "expression": {
+                    "greater": [
+                      "@length(outputs('Check_Approval')?['body/Rows'])",
+                      0
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "c74b328c-2fb0-4e70-adbe-c4cf6846e8fb"
+                  },
+                  "type": "If"
+                },
+                "Parse_Items": {
+                  "runAfter": {
+                    "If_Approval_Exists,_Get_Approver": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "15a99d38-7c48-4ed6-9275-7ae4c8e05d54"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@outputs('PO_Detail')?['body/POITEM']",
+                    "select": {
+                      "ItemNumber": "@if(isInt(item()?['PO_ITEM']), string(int(item()?['PO_ITEM'])), item()?['PO_ITEM'])",
+                      "MaterialNumber": "@if(isInt(item()?['MATERIAL']), string(int(item()?['MATERIAL'])), item()?['MATERIAL'])",
+                      "Description": "@item()?['SHORT_TEXT']",
+                      "Location": "@item()?['PLANT']",
+                      "Quantity": "@if(equals(0, item()?['QUANTITY']), float(item()?['QUANTITY']), float(item()?['QUANTITY']))",
+                      "UnitOfMeasure": "@item()?['PO_UNIT']",
+                      "UnitPrice": "@float(item()?['NET_PRICE'])",
+                      "CrudType": "R",
+                      "AssignmentCategory": "@item()?['ACCTASSCAT']",
+                      "TotalPrice": "@mul(float(item()?['QUANTITY']),float(item()?['NET_PRICE']))",
+                      "PurchaseRequisitionNumber": "@if(isInt(item()?['PREQ_NO']), string(int(item()?['PREQ_NO'])), item()?['PREQ_NO'])",
+                      "DeleteIndicator": "@item()?['DELETE_IND']"
+                    }
+                  }
+                },
+                "Parse_History": {
+                  "runAfter": {
+                    "Filter_Items": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "15a99d38-7c48-4ed6-9275-7ae4c8e05d54"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@variables('History')",
+                    "select": {
+                      "ItemNumber": "@if(isInt(item()?['PO_ITEM']), string(int(item()?['PO_ITEM'])), item()?['PO_ITEM'])",
+                      "Document": "@item()?['MAT_DOC']",
+                      "Process": "@if(isInt(item()?['PROCESS_ID']), int(item()?['PROCESS_ID']), item()?['PROCESS_ID'])",
+                      "Quantity": "@if(equals(1,2),string(item()?['QUANTITY']),string(item()?['QUANTITY']))",
+                      "Amount": "@if(equals(1,2),string(item()?['VAL_FORCUR']),string(item()?['VAL_FORCUR']))"
+                    }
+                  }
+                },
+                "Filter_Goods_Receipts": {
+                  "runAfter": {
+                    "Parse_History": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "4d7a8e32-0801-4ee5-8bf3-e772a49e29da"
+                  },
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@body('Parse_History')",
+                    "where": "@equals(item()?['Process'], 1)"
+                  }
+                },
+                "Filter_Parked_Invoices": {
+                  "runAfter": {
+                    "Filter_Goods_Receipts": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "0a417d6f-39f6-4711-a985-f20877869a0d"
+                  },
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@body('Parse_History')",
+                    "where": "@equals(item()?['Process'], 'P')"
+                  }
+                },
+                "Filter_Invoices": {
+                  "runAfter": {
+                    "Filter_Parked_Invoices": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "0a417d6f-39f6-4711-a985-f20877869a0d"
+                  },
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@body('Parse_History')",
+                    "where": "@equals(item()?['Process'], 2)"
+                  }
+                },
+                "If_Invoices_Exist,_Check_for_Payments": {
+                  "actions": {
+                    "Parse_Payments": {
+                      "runAfter": {
+                        "Read_Payments": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+                      },
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@outputs('Read_Payments')?['body/Rows']",
+                        "select": {
+                          "Payment": "@int(trim(substring(item()?['WA'], 0, 10)))",
+                          "ItemNumber": "@substring(item()?['WA'], 10, 5)"
+                        }
+                      }
+                    },
+                    "Assign_to_Payments_Variable": {
+                      "runAfter": {
+                        "Parse_Payments": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "98c7c3ef-5fc7-4231-b58f-0424e4e24b1d"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "Payments",
+                        "value": "@body('Parse_Payments')"
+                      }
+                    },
+                    "Read_Payments": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "944bcfac-cda4-4c42-ae5b-da33d1de8c82"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp",
+                          "connectionName": "shared_saperp_1",
+                          "operationId": "ReadTableVersion3"
+                        },
+                        "parameters": {
+                          "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                          "inputParameters/tableName": "BSEG",
+                          "inputParameters/FieldNames": [
+                            "EBELP:Item Number of Purchasing Document",
+                            "BELNR:Accounting Document Number"
+                          ],
+                          "inputParameters/RowCount": 9999,
+                          "inputParameters/WhereFilters": [
+                            "BSCHL IN ('86','89') AND EBELN = ''"
+                          ]
+                        },
+                        "retryPolicy": {
+                          "type": "none"
+                        },
+                        "authentication": {
+                          "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']",
+                          "type": "Raw"
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Filter_Invoices": [
+                      "Succeeded"
+                    ]
+                  },
+                  "expression": {
+                    "or": [
+                      {
+                        "greater": [
+                          "@length(body('Filter_Invoices'))",
+                          0
+                        ]
+                      },
+                      {
+                        "greater": [
+                          "@length(body('Filter_Parked_Invoices'))",
+                          0
+                        ]
+                      }
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "c74b328c-2fb0-4e70-adbe-c4cf6846e8fb"
+                  },
+                  "type": "If"
+                },
+                "Loop_Over_Text_Lines_and_Append_to_Header_Text": {
+                  "foreach": "@variables('POTEXTHEADER')",
+                  "actions": {
+                    "Append_to_string_variable": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "c8822b49-188a-4724-9d72-6f67610d99c8"
+                      },
+                      "type": "AppendToStringVariable",
+                      "inputs": {
+                        "name": "HeaderText",
+                        "value": "@item()?['TEXT_LINE']"
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "If_Invoices_Exist,_Check_for_Payments": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "d2eac89b-8910-4fc2-b64d-1d660e7934d3"
+                  },
+                  "type": "Foreach"
+                },
+                "Vendors_Name": {
+                  "runAfter": {
+                    "Loop_Over_Text_Lines_and_Append_to_Header_Text": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "583f59b9-91ab-4b81-9e48-70ad19aa9e69"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp",
+                      "connectionName": "shared_saperp_1",
+                      "operationId": "ReadTableVersion3"
+                    },
+                    "parameters": {
+                      "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                      "inputParameters/tableName": "LFA1",
+                      "inputParameters/FieldNames": [
+                        "NAME1:Name 1"
+                      ],
+                      "inputParameters/WhereFilters": [
+                        "LIFNR = '@{outputs('PO_Detail')?['body/POHEADER/VENDOR']}'"
+                      ]
+                    },
+                    "retryPolicy": {
+                      "type": "none"
+                    },
+                    "authentication": {
+                      "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']",
+                      "type": "Raw"
+                    }
+                  }
+                },
+                "Parse_Header": {
+                  "runAfter": {
+                    "Vendors_Name": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "cfcbecd1-fd23-4b3b-b834-6357bfe1a2f8"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "Header",
+                    "value": {
+                      "OrderType": "@outputs('PO_Detail')['body/POHEADER']['DOC_TYPE']",
+                      "PurchasingOrganization": "@outputs('PO_Detail')['body/POHEADER']['PURCH_ORG']",
+                      "PurchasingGroup": "@outputs('PO_Detail')['body/POHEADER']['PUR_GROUP']",
+                      "VendorName": "@outputs('Vendors_Name')['body/Rows'][0]['NAME1']",
+                      "Vendor": "@if(isInt(outputs('PO_Detail')['body/POHEADER']['VENDOR']), string(int(outputs('PO_Detail')['body/POHEADER']['VENDOR'])), outputs('PO_Detail')['body/POHEADER']['VENDOR'])",
+                      "Currency": "@outputs('PO_Detail')['body/POHEADER']['CURRENCY']",
+                      "HeaderText": "@variables('HeaderText')",
+                      "Released": "@if(equals(outputs('PO_Detail')['body/POHEADER']['PO_REL_IND'], 'B'), '', 'X')",
+                      "Approval": "@variables('Approval')",
+                      "ApprovedBy": "@variables('ApprovedBy')",
+                      "CreatedBy": "@outputs('PO_Detail')['body/POHEADER']['CREATED_BY']",
+                      "CreatedOn": "@outputs('PO_Detail')['body/POHEADER']['CREAT_DATE']"
+                    }
+                  }
+                },
+                "Response": {
+                  "runAfter": {
+                    "Parse_Header": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "3acb6b71-7516-4f46-82a7-fe87c0f4120b"
+                  },
+                  "type": "Response",
+                  "kind": "Http",
+                  "inputs": {
+                    "statusCode": 200,
+                    "body": {
+                      "Status": "Success",
+                      "OrderNumber": "@variables('Order')",
+                      "Header": "@variables('Header')",
+                      "Items": "@body('Filter_Items')",
+                      "Invoices": "@body('Filter_Invoices')",
+                      "ParkedInvoices": "@body('Filter_Parked_Invoices')",
+                      "GoodsReceipts": "@body('Filter_Goods_Receipts')",
+                      "Payments": "@variables('Payments')"
+                    },
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "OrderNumber": {
+                          "type": "string"
+                        },
+                        "Header": {
+                          "type": "object",
+                          "properties": {
+                            "PurchasingOrganization": {
+                              "type": "string"
+                            },
+                            "Released": {
+                              "type": "string"
+                            },
+                            "PurchasingGroup": {
+                              "type": "string"
+                            },
+                            "VendorName": {
+                              "type": "string"
+                            },
+                            "Vendor": {
+                              "type": "string"
+                            },
+                            "Currency": {
+                              "type": "string"
+                            },
+                            "HeaderText": {
+                              "type": "string"
+                            },
+                            "CreatedOn": {
+                              "type": "string"
+                            },
+                            "CreatedBy": {
+                              "type": "string"
+                            },
+                            "ApprovedBy": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "Items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ItemNumber": {
+                                "type": "string"
+                              },
+                              "MaterialNumber": {
+                                "type": "string"
+                              },
+                              "Description": {
+                                "type": "string"
+                              },
+                              "Location": {
+                                "type": "string"
+                              },
+                              "Quantity": {
+                                "type": "number"
+                              },
+                              "UnitOfMeasure": {
+                                "type": "string"
+                              },
+                              "UnitPrice": {
+                                "type": "number"
+                              },
+                              "CrudType": {
+                                "type": "string"
+                              },
+                              "AssignmentCategory": {
+                                "type": "string"
+                              },
+                              "TotalPrice": {
+                                "type": "number"
+                              },
+                              "PurchaseRequisitionNumber": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "ItemNumber",
+                              "MaterialNumber",
+                              "Description",
+                              "Location",
+                              "Quantity",
+                              "UnitOfMeasure",
+                              "UnitPrice",
+                              "CrudType",
+                              "AssignmentCategory",
+                              "TotalPrice",
+                              "Requisition"
+                            ]
+                          }
+                        },
+                        "Invoices": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ItemNumber": {
+                                "type": "string"
+                              },
+                              "Document": {
+                                "type": "string"
+                              },
+                              "Quantity": {
+                                "type": "string"
+                              },
+                              "Amount": {
+                                "type": "string"
+                              },
+                              "Process": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "ItemNumber",
+                              "Document",
+                              "Process"
+                            ]
+                          }
+                        },
+                        "ParkedInvoices": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ItemNumber": {
+                                "type": "string"
+                              },
+                              "Document": {
+                                "type": "string"
+                              },
+                              "Quantity": {
+                                "type": "string"
+                              },
+                              "Amount": {
+                                "type": "string"
+                              },
+                              "Process": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "ItemNumber",
+                              "Document",
+                              "Process"
+                            ]
+                          }
+                        },
+                        "GoodsReceipts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ItemNumber": {
+                                "type": "string"
+                              },
+                              "Document": {
+                                "type": "string"
+                              },
+                              "Quantity": {
+                                "type": "string"
+                              },
+                              "Process": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "ItemNumber",
+                              "Document",
+                              "Process"
+                            ]
+                          }
+                        },
+                        "Payments": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Payment": {
+                                "type": "integer"
+                              },
+                              "ItemNumber": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "Payment",
+                              "ItemNumber"
+                            ]
+                          }
+                        },
+                        "Status": {
+                          "type": "string"
+                        },
+                        "Messages": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "Message"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "Set_SAPErrorMessage_2": {
+                  "runAfter": {
+                    "Check_Approval": [
+                      "Failed",
+                      "TimedOut"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "8a70d4b9-a001-4eef-9471-3ac46453ca9f"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "SAPErrorMessage",
+                    "value": "@{body('Check_Approval')['error']['innerError']['error']['message']}"
+                  }
+                },
+                "Filter_Items": {
+                  "runAfter": {
+                    "Parse_Items": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "a87a4820-6571-4e58-8f57-4ce07d802059"
+                  },
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@body('Parse_Items')",
+                    "where": "@not(equals(item()?['DeleteIndicator'], 'L'))"
+                  }
+                }
+              },
+              "runAfter": {
+                "Filter_Messages_for_Errors": [
+                  "Succeeded",
+                  "Skipped"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Error_Response": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "82907482-26b4-4dff-ae95-1760a81b31e1"
+                    },
+                    "type": "Response",
+                    "kind": "Http",
+                    "inputs": {
+                      "statusCode": 200,
+                      "body": {
+                        "Status": "Information",
+                        "Messages": [
+                          {
+                            "Message": "Purchase Order @{variables('Order')} does not exist."
+                          }
+                        ]
+                      },
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "OrderNumber": {
+                            "type": "string"
+                          },
+                          "Header": {
+                            "type": "object",
+                            "properties": {
+                              "PurchasingOrganization": {
+                                "type": "string"
+                              },
+                              "Released": {
+                                "type": "string"
+                              },
+                              "PurchasingGroup": {
+                                "type": "string"
+                              },
+                              "VendorName": {
+                                "type": "string"
+                              },
+                              "Vendor": {
+                                "type": "string"
+                              },
+                              "Currency": {
+                                "type": "string"
+                              },
+                              "HeaderText": {
+                                "type": "string"
+                              },
+                              "CreatedOn": {
+                                "type": "string"
+                              },
+                              "CreatedBy": {
+                                "type": "string"
+                              },
+                              "ApprovedBy": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "Items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "ItemNumber": {
+                                  "type": "string"
+                                },
+                                "MaterialNumber": {
+                                  "type": "string"
+                                },
+                                "Description": {
+                                  "type": "string"
+                                },
+                                "Location": {
+                                  "type": "string"
+                                },
+                                "Quantity": {
+                                  "type": "number"
+                                },
+                                "UnitOfMeasure": {
+                                  "type": "string"
+                                },
+                                "UnitPrice": {
+                                  "type": "number"
+                                },
+                                "CrudType": {
+                                  "type": "string"
+                                },
+                                "AssignmentCategory": {
+                                  "type": "string"
+                                },
+                                "TotalPrice": {
+                                  "type": "number"
+                                },
+                                "PurchaseRequisitionNumber": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "ItemNumber",
+                                "MaterialNumber",
+                                "Description",
+                                "Location",
+                                "Quantity",
+                                "UnitOfMeasure",
+                                "UnitPrice",
+                                "CrudType",
+                                "AssignmentCategory",
+                                "TotalPrice",
+                                "Requisition"
+                              ]
+                            }
+                          },
+                          "Invoices": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "ItemNumber": {
+                                  "type": "string"
+                                },
+                                "Document": {
+                                  "type": "string"
+                                },
+                                "Quantity": {
+                                  "type": "string"
+                                },
+                                "Amount": {
+                                  "type": "string"
+                                },
+                                "Process": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "ItemNumber",
+                                "Document",
+                                "Process"
+                              ]
+                            }
+                          },
+                          "ParkedInvoices": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "ItemNumber": {
+                                  "type": "string"
+                                },
+                                "Document": {
+                                  "type": "string"
+                                },
+                                "Quantity": {
+                                  "type": "string"
+                                },
+                                "Amount": {
+                                  "type": "string"
+                                },
+                                "Process": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "ItemNumber",
+                                "Document",
+                                "Process"
+                              ]
+                            }
+                          },
+                          "GoodsReceipts": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "ItemNumber": {
+                                  "type": "string"
+                                },
+                                "Document": {
+                                  "type": "string"
+                                },
+                                "Quantity": {
+                                  "type": "string"
+                                },
+                                "Process": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "ItemNumber",
+                                "Document",
+                                "Process"
+                              ]
+                            }
+                          },
+                          "Payments": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "Payment": {
+                                  "type": "integer"
+                                },
+                                "ItemNumber": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "Payment",
+                                "ItemNumber"
+                              ]
+                            }
+                          },
+                          "Status": {
+                            "type": "string"
+                          },
+                          "Messages": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "Message": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "Message"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "equals": [
+                  "@length(body('Filter_Messages_for_Errors'))",
+                  0
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "7f0a5b13-412f-49ca-bf31-ff6f8ce04ef1"
+              },
+              "type": "If"
+            },
+            "Set_SAPErrorMessage": {
+              "runAfter": {
+                "PO_Detail": [
+                  "Failed",
+                  "TimedOut"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "8a70d4b9-a001-4eef-9471-3ac46453ca9f"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "SAPErrorMessage",
+                "value": "@{body('PO_DETAIL')['error']['message']}"
+              }
+            },
+            "PO_Detail": {
+              "runAfter": {
+                "Order": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "e4d0406a-5170-4e6c-9d3b-046950bca69c"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp",
+                  "connectionName": "shared_saperp_1",
+                  "operationId": "CallRfcJson"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                  "rfcName": "BAPI_PO_GETDETAIL1",
+                  "rfcGroupFilter": "*",
+                  "autoCommit": false,
+                  "rfcInputs/PURCHASEORDER": "@variables('Order')",
+                  "rfcInputs/ACCOUNT_ASSIGNMENT": "X",
+                  "rfcInputs/HEADER_TEXT": "X",
+                  "rfcInputs/ITEM_TEXT": "X"
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": {
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']",
+                  "type": "Raw"
+                }
+              }
+            },
+            "Order": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "b368fc2c-55a7-4668-a72e-10d37bc18361"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "Order",
+                "value": "@triggerBody()['text']"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_Order": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3d663993-468b-4b8f-aa6e-005ed58bf162"
+          },
+          "type": "Scope"
+        },
+        "Initialize_Header": {
+          "runAfter": {
+            "Initialize_SAPErrorMessage": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3ca9d172-3dad-4359-9b26-263658faca63"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Header",
+                "type": "object",
+                "value": {}
+              }
+            ]
+          }
+        },
+        "Initialize_Approval": {
+          "runAfter": {
+            "Initialize_Header": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "1762f515-ae98-44d9-8f43-b1acae2b01d5"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Approval",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_Approved_By": {
+          "runAfter": {
+            "Initialize_Approval": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "f4092086-0755-4c70-a705-5bdd45d41a6a"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "ApprovedBy",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Payments": {
+          "runAfter": {
+            "Initialize_Approved_By": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3ca9d172-3dad-4359-9b26-263658faca63"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Payments",
+                "type": "array",
+                "value": []
+              }
+            ]
+          }
+        },
+        "Header_Text": {
+          "runAfter": {
+            "Payments": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "55803a84-63dc-4930-89f3-e965a7a5d9b9"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "HeaderText",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_History": {
+          "runAfter": {
+            "Header_Text": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "4169d35d-1c08-45db-ba33-96060e1e1b7b"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "History",
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "Initialize_POTEXTHEADER": {
+          "runAfter": {
+            "Initialize_History": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3ca9d172-3dad-4359-9b26-263658faca63"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "POTEXTHEADER",
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "Initialize_Messages": {
+          "runAfter": {
+            "Initialize_POTEXTHEADER": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3ca9d172-3dad-4359-9b26-263658faca63"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Messages",
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "Initialize_Order": {
+          "runAfter": {
+            "Initialize_Messages": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "2fa3c66d-654c-40d6-8a74-f7f4c647cdcc"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Order",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

@@ -1,0 +1,693 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_saperp_1": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_SAPERP"
+        },
+        "api": {
+          "name": "shared_saperp"
+        }
+      },
+      "shared_commondataserviceforapps_1": {
+        "impersonation": {
+          "source": "invoker"
+        },
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_SAPDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "SAP Application Server (mpa_SAPApplicationServer)": {
+          "defaultValue": "{\"AppServerHost\":\"sap.clearsoftware.com\",\"Client\":\"100\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_SAPApplicationServer",
+            "description": "JSON string that contains system parameters, host, system number, client, etc."
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "72f06697-7dc2-4662-85f3-d38a9ab4ae4f"
+          },
+          "type": "Request",
+          "kind": "PowerAppV2",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "JSON",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Try": {
+          "actions": {
+            "Items_X_(PRITEMX)": {
+              "runAfter": {
+                "Items_(PRITEM)": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "67b60224-0f7c-4338-b520-808a2181795b"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Parse_JSON')?['Items']",
+                "select": {
+                  "PREQ_ITEM": "@if(isInt(item()?['ItemNumber']), formatNumber(int(item()?['ItemNumber']), 'D5'), item()?['ItemNumber'])",
+                  "MATERIAL": "X",
+                  "SHORT_TEXT": "X",
+                  "PURCH_ORG": "X",
+                  "PUR_GROUP": "X",
+                  "DES_VENDOR": "X",
+                  "REL_DATE": "X",
+                  "PLANT": "X",
+                  "QUANTITY": "X",
+                  "PREQ_PRICE": "X",
+                  "UNIT": "X",
+                  "DELETE_IND": "X"
+                }
+              }
+            },
+            "BAPI_PR_CHANGE": {
+              "runAfter": {
+                "Create_stateful_session": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "40ec8005-cb32-4a66-9b0b-9f35f6b21031"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp_1",
+                  "operationId": "CallRfcJson",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                  "rfcName": "BAPI_PR_CHANGE:Change Enjoy Purchase Requisition:2105",
+                  "rfcGroupFilter": "*",
+                  "autoCommit": true,
+                  "sessionId": "@outputs('Create_stateful_session')?['body/SessionId']",
+                  "rfcInputs/NUMBER": "@if(isInt(variables('Header')?['PurchaseRequisitionNumber']), formatNumber(int(variables('Header')?['PurchaseRequisitionNumber']), 'D10'), variables('Header')?['PurchaseRequisitionNumber'])",
+                  "rfcInputs/PRHEADER/PR_TYPE": "NB",
+                  "rfcInputs/PRHEADERX/PR_TYPE": "X",
+                  "rfcInputs/PRITEM": "@body('Items_(PRITEM)')",
+                  "rfcInputs/PRITEMX": "@body('Items_X_(PRITEMX)')"
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              }
+            },
+            "Filter_Messages_for_Errors": {
+              "runAfter": {
+                "Set_SAPErrorMessage": [
+                  "Skipped"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "314738ec-9d05-4ae3-b089-64259885fb43"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@outputs('BAPI_PR_CHANGE')?['body/RETURN']",
+                "where": "@equals(item()?['TYPE'], 'E')"
+              }
+            },
+            "Success_Check": {
+              "actions": {
+                "Commit": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "99371d12-595c-4549-b4b4-7716080e8417"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_saperp_1",
+                      "operationId": "CallRfcJson",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                    },
+                    "parameters": {
+                      "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                      "rfcName": "BAPI_TRANSACTION_COMMIT:Execute external Commit when using BAPIs:BAPT",
+                      "rfcGroupFilter": "*",
+                      "autoCommit": false,
+                      "sessionId": "@outputs('Create_stateful_session')?['body/SessionId']"
+                    },
+                    "authentication": "@parameters('$authentication')",
+                    "retryPolicy": {
+                      "type": "none"
+                    }
+                  }
+                },
+                "Success_Response": {
+                  "runAfter": {
+                    "Commit": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "88ce5aac-9ebe-41ab-87a6-dea14c80f06e"
+                  },
+                  "type": "Response",
+                  "kind": "Http",
+                  "inputs": {
+                    "statusCode": 200,
+                    "body": {
+                      "Status": "Success",
+                      "PurchaseRequisitionNumber": "@variables('Header')?['PurchaseRequisitionNumber']",
+                      "Messages": [
+                        {
+                          "Message": "Requisition @{variables('Header')?['PurchaseRequisitionNumber']} was successfully updated."
+                        }
+                      ]
+                    },
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "Status": {
+                          "type": "string"
+                        },
+                        "PurchaseRequisitionNumber": {
+                          "type": "string"
+                        },
+                        "Messages": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "Message"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Filter_Messages_for_Errors": [
+                  "Succeeded",
+                  "Failed"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Clean_Up_Error_Messages": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "3ac4404f-21c4-4bae-bac7-2525e23d910f"
+                    },
+                    "type": "Select",
+                    "inputs": {
+                      "from": "@body('Filter_Messages_for_Errors')",
+                      "select": {
+                        "Message": "@item()?['MESSAGE']"
+                      }
+                    }
+                  },
+                  "Failure_Response": {
+                    "runAfter": {
+                      "Clean_Up_Error_Messages": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "0364356b-c5f6-40d1-89d8-d1e42b0df753"
+                    },
+                    "type": "Response",
+                    "kind": "Http",
+                    "inputs": {
+                      "statusCode": 200,
+                      "body": {
+                        "Status": "Error",
+                        "PurchaseRequisitionNumber": "@variables('Header')?['Requisition']",
+                        "Messages": "@body('Clean_Up_Error_Messages')"
+                      },
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "Status": {
+                            "type": "string"
+                          },
+                          "PurchaseRequisitionNumber": {
+                            "type": "string"
+                          },
+                          "Messages": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "Message": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "Message"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "equals": [
+                  "@length(outputs('Filter_Messages_for_Errors')?['body'])",
+                  0
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "e9efd70f-e739-4ab6-ad9b-90b1e544b087"
+              },
+              "type": "If"
+            },
+            "Set_SAPErrorMessage": {
+              "runAfter": {
+                "BAPI_PR_CHANGE": [
+                  "Failed",
+                  "TimedOut"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "16d6c283-fb33-493b-b678-6fef7442b1d5"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "SAPErrorMessage",
+                "value": "@{outputs('BAPI_PR_CHANGE')?['body']['error']['message']}"
+              }
+            },
+            "Create_stateful_session": {
+              "runAfter": {
+                "Items_X_(PRITEMX)": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "b24d06d9-644e-4bd6-8a2c-1691ad62b97e"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp_1",
+                  "operationId": "CreateSession",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')"
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              }
+            },
+            "Items_(PRITEM)": {
+              "runAfter": {
+                "Header": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "67b60224-0f7c-4338-b520-808a2181795b"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Parse_JSON')?['Items']",
+                "select": {
+                  "PREQ_ITEM": "@if(isInt(item()?['ItemNumber']), formatNumber(int(item()?['ItemNumber']), 'D5'), item()?['ItemNumber'])",
+                  "MATERIAL": "@if(isInt(item()?['MaterialNumber']), formatNumber(int(item()?['MaterialNumber']), 'D18'), item()?['MaterialNumber'])",
+                  "SHORT_TEXT": "@item()?['Description']",
+                  "PURCH_ORG": "@variables('Header')?['PurchasingOrganization']",
+                  "PUR_GROUP": "@variables('Header')?['PurchasingGroup']",
+                  "DES_VENDOR": "@if(isInt(variables('Header')?['Vendor']), formatNumber(int(variables('Header')?['Vendor']), 'D10'), variables('Header')?['Vendor'])",
+                  "REL_DATE": "@body('Parse_JSON')?['Header']?['ReleaseDate']",
+                  "PLANT": "@item()?['Location']",
+                  "QUANTITY": "@item()?['Quantity']",
+                  "PREQ_PRICE": "@item()?['UnitPrice']",
+                  "UNIT": "@item()?['UnitOfMeasure']",
+                  "DELETE_IND": "@if(equals(item()?['CrudType'],'D'),'X','')"
+                }
+              }
+            },
+            "Parse_JSON": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "12f0f586-4295-4bdd-8329-522cf48feb2c"
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@triggerBody()['text']",
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Header": {
+                      "type": "object",
+                      "properties": {
+                        "PurchaseRequisitionNumber": {
+                          "type": "string"
+                        },
+                        "PurchasingOrganization": {
+                          "type": "string"
+                        },
+                        "PurchasingGroup": {
+                          "type": "string"
+                        },
+                        "Vendor": {
+                          "type": "string"
+                        },
+                        "Currency": {
+                          "type": "string"
+                        },
+                        "ReleaseDate": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "PurchaseRequisitionNumber",
+                        "PurchasingOrganization",
+                        "PurchasingGroup",
+                        "Vendor"
+                      ]
+                    },
+                    "Items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Location": {
+                            "type": "string"
+                          },
+                          "MaterialNumber": {
+                            "type": "string"
+                          },
+                          "Description": {
+                            "type": "string"
+                          },
+                          "Quantity": {
+                            "type": "integer"
+                          },
+                          "ItemNumber": {
+                            "type": "string"
+                          },
+                          "UnitPrice": {
+                            "type": "string"
+                          },
+                          "UnitOfMeasure": {
+                            "type": "string"
+                          },
+                          "CrudType": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Location",
+                          "MaterialNumber",
+                          "Description",
+                          "Quantity",
+                          "ItemNumber",
+                          "UnitPrice",
+                          "CrudType"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "Header": {
+              "runAfter": {
+                "Parse_JSON": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "f950ebfb-3f64-4b0a-8124-c37977566483"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "Header",
+                "value": "@body('Parse_JSON')?['Header']"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_Header": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "e97947fb-de8a-49db-a0d9-3bd9c4557871"
+          },
+          "type": "Scope"
+        },
+        "Catch": {
+          "actions": {
+            "Filter_array": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "e4ff6915-74dd-4ad8-aeb5-69689f7cd846"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@result('Try')",
+                "where": "@or(equals(item()?['Status'], 'Failed'), equals(item()?['Status'], 'TimedOut'))"
+              }
+            },
+            "ErrorTable": {
+              "runAfter": {
+                "Filter_array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "a4543bb1-084d-4bd9-865a-d59ec8caa8fc"
+              },
+              "type": "Table",
+              "inputs": {
+                "from": "@body('Filter_array')",
+                "format": "HTML",
+                "columns": [
+                  {
+                    "header": "Step",
+                    "value": "@item()?['name']"
+                  },
+                  {
+                    "header": "Status",
+                    "value": "@item()?['Status']"
+                  },
+                  {
+                    "header": "Code",
+                    "value": "@item()?['code']"
+                  },
+                  {
+                    "header": "InnerErrorMessage",
+                    "value": "@{item()?['outputs']?['body']?['error']?['innerError']?['error']?['message']}@{item()?['error']?['message']}@{variables('SAPErrorMessage')}"
+                  },
+                  {
+                    "header": "Input",
+                    "value": "@triggerBody()"
+                  }
+                ]
+              }
+            },
+            "ErrorReturn": {
+              "runAfter": {
+                "ErrorTable": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6ea00725-e758-40bb-9cc7-b69d0a65d01b"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Filter_array')",
+                "select": {
+                  "Step": "@item()?['name']",
+                  "Status": "@item()?['Status']",
+                  "Code": "@item()?['code']",
+                  "InnerErrorMessage": "@{item()?['outputs']?['body']?['error']?['innerError']?['error']?['message']} @{item()?['error']?['message']} @{variables('SAPErrorMessage')}",
+                  "Input": "@triggerBody()",
+                  "FlowName": "@workflow()?['tags']['flowDisplayName']",
+                  "URL": "@concat('https://flow.microsoft.com/manage/environments/', workflow()?['tags']['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']['name'])"
+                }
+              }
+            },
+            "Create_Integration_Log_Error": {
+              "runAfter": {
+                "ErrorReturn": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "65c53a8f-bba5-4aee-a2c2-1bbea7395180"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "CreateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_saperrors",
+                  "item/mpa_name": "@outputs('ErrorReturn')?['body'][0]['FlowName']",
+                  "item/mpa_action": "@outputs('ErrorReturn')?['body'][0]['Step']",
+                  "item/mpa_additionalinformation": "@triggerBody()['text']",
+                  "item/mpa_errormessage": "@outputs('ErrorReturn')?['body'][0]['InnerErrorMessage']",
+                  "item/mpa_sourcetype": 865420000,
+                  "item/mpa_workflowinstanceurl": "@outputs('ErrorReturn')?['body'][0]['URL']",
+                  "item/mpa_workflowstatus": "@If(equals(item()?['Status'], 'Failed'), '865420001', '865420000')"
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              }
+            },
+            "Response_3": {
+              "runAfter": {
+                "Create_Integration_Log_Error": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "1a07fe00-c854-4b19-9f61-ff2091a0b894"
+              },
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "Status": "Error",
+                  "Messages": [
+                    {
+                      "Message": "@outputs('Create_Integration_Log_Error')?['body/mpa_errormessage']"
+                    }
+                  ]
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Status": {
+                      "type": "string"
+                    },
+                    "PurchaseRequisitionNumber": {
+                      "type": "string"
+                    },
+                    "Messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Message"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "acddc208-94dd-4daf-9177-fa386ba1baec"
+          },
+          "type": "Scope"
+        },
+        "Initialize_SAPErrorMessage": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "2b636f01-cc77-4597-8568-34d9469487c7"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "SAPErrorMessage",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_Header": {
+          "runAfter": {
+            "Initialize_SAPErrorMessage": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "7c41d58c-a97b-49b9-8695-97bd1dbc0086"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Header",
+                "type": "object"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}
