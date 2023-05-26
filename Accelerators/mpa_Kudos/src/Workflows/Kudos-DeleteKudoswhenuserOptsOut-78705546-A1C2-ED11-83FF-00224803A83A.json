@@ -1,0 +1,110 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_KudosDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "User_is_added_on_the_OptOut_list": {
+          "metadata": {
+            "operationMetadataId": "f54e1370-5abf-4dd2-ae9a-4698f1099eb3"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "SubscribeWebhookTrigger",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 1,
+              "subscriptionRequest/entityname": "mpa_optoutuser",
+              "subscriptionRequest/scope": 4
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      },
+      "actions": {
+        "Kudos_where_Recipient_=_Optout_User": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "910f0e28-4edb-45f3-b43e-d09b2e746ef6"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "mpa_kudos",
+              "$select": "mpa_kudoid",
+              "$filter": "(_mpa_recipientid_value eq @{triggerOutputs()?['body/_mpa_userid_value']})"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Get the list of all kudos where the Recipient is the user that opted out"
+        },
+        "Iterate_through_the_kudos": {
+          "foreach": "@outputs('Kudos_where_Recipient_=_Optout_User')?['body/value']",
+          "actions": {
+            "Delete_Kudo": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "110b415e-1c5c-44c6-96c3-168047f81def"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "DeleteRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_kudos",
+                  "recordId": "@items('Iterate_through_the_kudos')?['mpa_kudoid']"
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": "Delete Kudo from the system"
+            }
+          },
+          "runAfter": {
+            "Kudos_where_Recipient_=_Optout_User": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "a1566d7e-60ac-411a-ac36-43dc8fbd5e7f"
+          },
+          "type": "Foreach",
+          "description": "Process each kudo on the list of kudos where Recipient = Opted Out User"
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

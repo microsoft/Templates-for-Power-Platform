@@ -1,0 +1,2038 @@
+"'Submission Screen' As screen":
+    Fill: =ColorValue(varThemeColors.background)
+    OnVisible: |
+        =/*Set common variables that will be used during the validation and submission*/
+        Concurrent(
+            Set(
+                varSenderEmail,
+                Office365Users.UserProfile(User().Email).UserPrincipalName
+            ), /*Primary email of the Sender (Logged user)*/
+            Set(
+                varCurrentMonth,
+                Month(Now())
+            ),
+            Set(
+                varNewSubmission,
+                First(colNewSubmission)
+            ); /*Create a variable with the first element of our collection (which should always be 1)*/
+            
+        );
+        Set(
+            varSenderProfile,
+            If(
+                !IsBlank(varSenderEmail),
+                Office365Users.UserProfile(varSenderEmail),
+                Blank()
+            )
+        ); /*O365 Profile of the Sender (Logged user)*/
+        Set(
+            varRecipientProfile,
+            If(
+                !IsBlank(varNewSubmission.RecipientEmail),
+                Office365Users.UserProfile(varNewSubmission.RecipientEmail),
+                Blank()
+            )
+        );
+        /*O365 Profile of the Recipient (Selected user)*/
+        Set(
+            varRecipientId,
+            If(
+                !IsBlank(varRecipientProfile.Id),
+                varRecipientProfile.Id,
+                Blank()
+            )
+        );//*O365 Id of the Recipient (Selected user)*/
+        
+        /*Validates if the recipient has a manager. If it does, store the Manager name and email in a variable so it can be used in the notification email and in the creation of the kudo.*/
+        If(
+            And(
+                !IsBlank(varRecipientId),
+                !IsBlankOrError(Office365Users.ManagerV2(varRecipientId))
+            ),
+            Set(
+                varManagerEmail,
+                If(
+                    !IsBlankOrError(Office365Users.ManagerV2(varRecipientId).userPrincipalName),
+                    Office365Users.ManagerV2(varRecipientId).userPrincipalName,
+                    Blank()
+                )
+            );
+            Set(
+                varManagerName,
+                If(
+                    !IsBlankOrError(Office365Users.ManagerV2(varRecipientId).displayName),
+                    Office365Users.ManagerV2(varRecipientId).displayName,
+                    Blank()
+                )
+            ),
+            Set(
+                varManagerEmail,
+                Blank());
+                Set(
+                    varManagerName,
+                    Blank()
+                )
+            )
+
+    conContent_Submission As groupContainer.verticalAutoLayoutContainer:
+        ContentLanguage: ="0"
+        Height: =Parent.Height - conHeader_Submission.Height
+        LayoutAlignItems: =LayoutAlignItems.Stretch
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutGap: =20
+        LayoutMode: =LayoutMode.Auto
+        LayoutOverflowY: =LayoutOverflow.Scroll
+        PaddingBottom: =15
+        PaddingLeft: |-
+            =Switch(App.ActiveScreen.Size,
+            5, (Parent.Width - 1450)/2,
+            4, 75,
+            3, 50,
+            2, 25,
+            1, 10
+            )
+        PaddingRight: =Self.PaddingLeft
+        Width: =Parent.Width
+        Y: =conHeader_Submission.Y+conHeader_Submission.Height
+        ZIndex: =1
+
+        conPrompt_Submission As groupContainer.manualLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            ContentLanguage: ="0"
+            FillPortions: =0
+            Height: =lblPromptTitle_Submission.Height+lblPrompt_Submission.Height+3
+            LayoutMinHeight: =112
+            LayoutMinWidth: =250
+            Width: =Parent.Width
+            ZIndex: =2
+
+            lblPrompt_Submission As label:
+                AutoHeight: =true
+                BorderColor: =RGBA(0, 0, 0, 0)
+                BorderStyle: =BorderStyle.None
+                BorderThickness: =2
+                Color: =ColorValue(varThemeColors.tertiaryGray)
+                DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                FocusedBorderColor: =ColorValue(varThemeColors.primary)
+                FocusedBorderThickness: =4
+                Font: =varThemeFont.H3.face
+                FontWeight: =varThemeFont.H3.weight
+                Italic: =varThemeFont.H3.italic
+                PaddingBottom: =0
+                PaddingLeft: =10
+                PaddingRight: =0
+                PaddingTop: =0
+                Role: =TextRole.Heading3
+                Size: =varThemeFont.H3.size
+                Text: |-
+                    =// Lookup the appropriately localized text
+                    With(
+                        {Text: "Make sure everything looks right"},
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                VerticalAlign: =VerticalAlign.Top
+                Width: =Parent.Width
+                Y: =lblPromptTitle_Submission.Height+2
+                ZIndex: =1
+
+            lblPromptTitle_Submission As label:
+                BorderColor: =RGBA(0, 0, 0, 0)
+                BorderStyle: =BorderStyle.None
+                BorderThickness: =2
+                Color: =ColorValue(varThemeColors.text)
+                DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                FocusedBorderColor: =ColorValue(varThemeColors.primary)
+                FocusedBorderThickness: =4
+                Font: =varThemeFont.H1.face
+                FontWeight: =varThemeFont.H1.weight
+                Height: =Self.Size*2
+                Italic: =varThemeFont.H1.italic
+                PaddingBottom: =0
+                PaddingLeft: =10
+                PaddingRight: =50
+                PaddingTop: =0
+                Role: =TextRole.Heading1
+                Size: =varThemeFont.H1.size
+                Text: |
+                    =// Lookup the appropriately localized text
+                    With(
+                        {Text: "Review & Submit"},
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Width: =Parent.Width
+                ZIndex: =2
+
+        conRecipient_Submission As groupContainer.manualLayoutContainer:
+            AlignInContainer: =AlignInContainer.Center
+            Fill: =ColorValue(varThemeColors.backgroundFill)
+            Height: =152
+            LayoutMinHeight: =112
+            LayoutMinWidth: =250
+            PaddingBottom: =5
+            PaddingLeft: =5
+            PaddingRight: =5
+            PaddingTop: =5
+            RadiusBottomLeft: =16
+            RadiusBottomRight: =16
+            RadiusTopLeft: =16
+            RadiusTopRight: =16
+            Width: =Parent.Width*.96
+            X: =Parent.Width*.02
+            ZIndex: =3
+
+            conSubmit_Submission As groupContainer.verticalAutoLayoutContainer:
+                ContentLanguage: ="0"
+                Height: =113
+                LayoutAlignItems: =LayoutAlignItems.End
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutMode: =LayoutMode.Auto
+                PaddingBottom: =5
+                PaddingRight: =50
+                PaddingTop: =5
+                Width: =601
+                X: =Parent.X
+                Y: =frmSubmitKudo_Submission.Y+frmSubmitKudo_Submission.Height+20
+                ZIndex: =1
+
+                btnSubmitKudo_Submission As button:
+                    BorderColor: =ColorValue(varThemeColors.primary)
+                    BorderThickness: =1
+                    Color: =ColorValue(varThemeColors.altText)
+                    DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                    DisabledColor: =ColorValue(varThemeColors.disabledText)
+                    DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                    DisplayMode: =If(frmSubmitKudo_Submission.Valid,DisplayMode.Edit,DisplayMode.Disabled)
+                    Fill: =ColorValue(varThemeColors.primary)
+                    FocusedBorderColor: =ColorValue(varThemeColors.info)
+                    Font: =varThemeFont.button.face
+                    FontWeight: =varThemeFont.button.weight
+                    HoverBorderColor: =ColorValue(varThemeColors.primary)
+                    HoverColor: =ColorValue(varThemeColors.altText)
+                    HoverFill: =ColorValue(varThemeColors.tertiary)
+                    Italic: =varThemeFont.button.italic
+                    LayoutMinHeight: =70
+                    LayoutMinWidth: =280
+                    OnSelect: |-
+                        =/*Submit form to dataverse and reset the people selector, message and title fields*/
+                        SubmitForm(frmSubmitKudo_Submission);
+                        Reset(txtSubject_Message);
+                        Reset(txtMessage_Message);
+                        Reset(cmbPeoplePicker_MainPage);
+                    PressedBorderColor: =ColorValue(varThemeColors.primary)
+                    PressedColor: =ColorValue(varThemeColors.altText)
+                    PressedFill: =ColorValue(varThemeColors.primary)
+                    RadiusBottomLeft: =4
+                    RadiusBottomRight: =4
+                    RadiusTopLeft: =4
+                    RadiusTopRight: =4
+                    Size: =varThemeFont.button.size
+                    Text: |
+                        =// Lookup the appropriately localized text
+                        With(
+                            {Text: "Submit"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Width: =150
+                    X: =40
+                    Y: =20
+                    ZIndex: =1
+
+            frmSubmitKudo_Submission As form:
+                BorderColor: =RGBA(0, 0, 0, 1)
+                DataSource: =Kudos
+                DefaultMode: =FormMode.New
+                Fill: =ColorValue(varThemeColors.backgroundFill)
+                Height: =579
+                Item: =Defaults(Kudos)
+                NumberOfColumns: =1
+                OnFailure: |-
+                    =/*If Formsubmit fails, Navigate to the error screen. We are showing a generic message so we are not passing any parameter.*/
+                    Navigate('Error Screen')
+                OnSuccess: |-
+                    =/*When submission is sucessfull, run 2 flows:
+                    1. KudoApp-ShareKudowithSender,AssigntoRecipient: Flow to assign the Kudo to the Recipient, and add Sender and Manager (if applies) to the access team to give them tead access. Receives: The newly created Kudo's guid.
+                    
+                    2. KudosApp-Notificationemail: Flow that sends a notification email to the Recipient and their manager (if applies).
+                    */
+                    'KudoApp-ShareKudowithSender,AssigntoRecipient'.Run(frmSubmitKudo_Submission.LastSubmit.Kudo);
+                    'KudosApp-Notificationemail'.Run(
+                       varNewSubmission.RecipientEmail,                     /*Recipient email (To)*/
+                        "You've recevied a new Kudo!",                      /*Subject*/
+                        "",                                                 /*Body*/
+                         If(!IsBlank(varManagerEmail),varManagerEmail,""),  /*Recipient Manager Email (Cc)*/
+                        varNewSubmission.Recipient.DisplayName,             /*Recipient Name*/
+                        varSenderProfile.DisplayName,                       /*Sender Name*/
+                        varNewSubmission.Title,                             /*Kudo Title*/
+                        varNewSubmission.Message,                           /*Kudo Message*/
+                        varSenderProfile.Mail                               /*Sender Email (From)*/,
+                        Text(Now(),"mm/dd/yyyy hh:mm")                      /*Kudo Date Time*/
+                    );
+                    ResetForm(frmSubmitKudo_Submission);
+                    Navigate('Success Screen');
+                Width: =Parent.Width
+                Y: =240
+                ZIndex: =3
+
+                crdSubject_Submission As typedDataCard.textualEditCard:
+                    BorderStyle: =BorderStyle.Solid
+                    DataField: ="mpa_title"
+                    Default: |-
+                        =varNewSubmission.Title
+                        /*Typed title from the Message screen*/
+                    DisplayMode: |-
+                        =//Parent.DisplayMode
+                        DisplayMode.View
+                    DisplayName: |-
+                        =//DataSourceInfo([@Kudos],DataSourceInfo.DisplayName,"mpa_title")
+                        // Lookup the appropriately localized text
+                        With(
+                            {Text: "Subject"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Fill: =RGBA(0, 0, 0, 0)
+                    Height: =50
+                    MaxLength: =DataSourceInfo([@Kudos], DataSourceInfo.MaxLength, "mpa_title")
+                    Required: =true
+                    Update: =txtSubject_crdSubject_Submission.Text
+                    Width: =614
+                    X: =0
+                    Y: =0
+                    ZIndex: =1
+
+                    lblSubject_crdSubject_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        FocusedBorderColor: =ColorValue(varThemeColors.primary)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =48
+                        Italic: =varThemeFont.H3.italic
+                        Role: =TextRole.Heading2
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.DisplayName
+                        Width: =Parent.Width - 60
+                        Wrap: =false
+                        X: =30
+                        ZIndex: =1
+
+                    txtSubject_crdSubject_Submission As text:
+                        AccessibleLabel: ="Subject for this Kudo"
+                        BorderColor: =If(IsBlank(Parent.Error), Parent.BorderColor, Color.Red)
+                        Color: =ColorValue(varThemeColors.text)
+                        Default: =Parent.Default
+                        DelayOutput: =true
+                        DisabledBorderColor: =ColorValue(varThemeColors.disabledText)
+                        DisplayMode: =Parent.DisplayMode
+                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                        Font: =varThemeFont.paragraph.face
+                        FontWeight: =varThemeFont.paragraph.weight
+                        Height: =25
+                        HoverBorderColor: =ColorValue(varThemeColors.disabledText)
+                        Italic: =varThemeFont.paragraph.italic
+                        MaxLength: =Parent.MaxLength
+                        PaddingLeft: =5
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =varThemeFont.paragraph.size
+                        TabIndex: |-
+                            =-1
+                            /*The form is to review the data only. Fields are read only and non interactive*/
+                        Tooltip: =Parent.DisplayName
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =39
+                        ZIndex: =2
+
+                    lblError_crdSubject_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =10
+                        Italic: =varThemeFont.H3.italic
+                        Live: =Live.Assertive
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.Error
+                        Visible: =Parent.DisplayMode=DisplayMode.Edit
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =txtSubject_crdSubject_Submission.Y + txtSubject_crdSubject_Submission.Height
+                        ZIndex: =3
+
+                    lblRequired_crdSubject_Submission As label:
+                        Align: =Align.Center
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =lblSubject_crdSubject_Submission.Height
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: ="*"
+                        Visible: =And(Parent.Required, Parent.DisplayMode=DisplayMode.Edit)
+                        Width: =30
+                        Wrap: =false
+                        Y: =lblSubject_crdSubject_Submission.Y
+                        ZIndex: =4
+
+                crdRecipientId_Submission As typedDataCard.comboBoxEditCard:
+                    BorderStyle: =BorderStyle.Solid
+                    DataField: ="mpa_recipientid"
+                    Default: |-
+                        =/*Look for the Dataverse's SystemUser.SystemUserId based on the user's email*/
+                        With({RecipientEmail: varNewSubmission.RecipientEmail},
+                        LookUp(Users,internalemailaddress = RecipientEmail))
+                    DisplayMode: =Parent.DisplayMode
+                    DisplayName: =DataSourceInfo([@Kudos],DataSourceInfo.DisplayName,"mpa_recipientid")
+                    Fill: =RGBA(0, 0, 0, 0)
+                    Height: =50
+                    Required: =false
+                    Update: =txtRecipientId_crdRecipientId_Submission.Selected
+                    Visible: =false
+                    Width: =614
+                    X: =0
+                    Y: =2
+                    ZIndex: =1
+
+                    lblRecipientId_crdRecipientId_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        FocusedBorderColor: =ColorValue(varThemeColors.primary)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =48
+                        Italic: =varThemeFont.H3.italic
+                        Role: =TextRole.Heading2
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.DisplayName
+                        Width: =Parent.Width - 60
+                        Wrap: =false
+                        X: =30
+                        Y: =10
+                        ZIndex: =1
+
+                    txtRecipientId_crdRecipientId_Submission As combobox:
+                        AccessibleLabel: ="Dataverse Id of the Recipient of the Kudo"
+                        BorderColor: =If(IsBlank(Parent.Error), Parent.BorderColor, Color.Red)
+                        Color: =ColorValue(varThemeColors.text)
+                        DefaultSelectedItems: =Parent.Default
+                        DisplayFields: =["fullname"]
+                        DisplayMode: =Parent.DisplayMode
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.paragraph.weight
+                        Height: =70
+                        IsSearchable: =false
+                        Items: =Choices([@Kudos].Recipient)
+                        PaddingLeft: =If(Self.DisplayMode = DisplayMode.Edit, 5, 0)
+                        SearchFields: =["fullname"]
+                        SearchItems: =[]
+                        SelectMultiple: =false
+                        Size: =varThemeFont.H3.size
+                        TabIndex: =-1/*The form is to review the data only. Fields are read only and non interactive*/
+                        Tooltip: =Parent.DisplayName
+                        Visible: =false
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =lblRecipientId_crdRecipientId_Submission.Y + lblRecipientId_crdRecipientId_Submission.Height + 5
+                        ZIndex: =2
+
+                    lblError_crdRecipientId_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =10
+                        Italic: =varThemeFont.H3.italic
+                        Live: =Live.Assertive
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.Error
+                        Visible: =Parent.DisplayMode=DisplayMode.Edit
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =txtRecipientId_crdRecipientId_Submission.Y + txtRecipientId_crdRecipientId_Submission.Height
+                        ZIndex: =3
+
+                    lblRequired_crdRecipientId_Submission As label:
+                        Align: =Align.Center
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =lblRecipientId_crdRecipientId_Submission.Height
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: ="*"
+                        Visible: =And(Parent.Required, Parent.DisplayMode=DisplayMode.Edit)
+                        Width: =30
+                        Wrap: =false
+                        Y: =lblRecipientId_crdRecipientId_Submission.Y
+                        ZIndex: =4
+
+                crdRecipientName_Submission As typedDataCard.textualEditCard:
+                    BorderStyle: =BorderStyle.Solid
+                    DataField: ="mpa_recipientname"
+                    Default: |-
+                        =varNewSubmission.Recipient.DisplayName
+                        /*Selected user display name*/
+                    DisplayMode: =Parent.DisplayMode
+                    DisplayName: =DataSourceInfo([@Kudos],DataSourceInfo.DisplayName,"mpa_recipientname")
+                    Fill: =RGBA(0, 0, 0, 0)
+                    Height: =50
+                    MaxLength: =DataSourceInfo([@Kudos], DataSourceInfo.MaxLength, "mpa_recipientname")
+                    Required: =false
+                    Update: =txtRecipientName_crdRecipientName_Submission.Text
+                    Visible: =false
+                    Width: =614
+                    X: =0
+                    Y: =3
+                    ZIndex: =1
+
+                    lblRecipientName_crdRecipientName_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        FocusedBorderColor: =ColorValue(varThemeColors.primary)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =48
+                        Italic: =varThemeFont.H3.italic
+                        Role: =TextRole.Heading2
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.DisplayName
+                        Width: =Parent.Width - 60
+                        Wrap: =false
+                        X: =30
+                        Y: =10
+                        ZIndex: =1
+
+                    txtRecipientName_crdRecipientName_Submission As text:
+                        AccessibleLabel: ="Name of the Recipient of the Kudo"
+                        BorderColor: =If(IsBlank(Parent.Error), Parent.BorderColor, Color.Red)
+                        Color: =ColorValue(varThemeColors.text)
+                        Default: =Parent.Default
+                        DelayOutput: =true
+                        DisplayMode: =Parent.DisplayMode
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.paragraph.weight
+                        Height: =70
+                        MaxLength: =Parent.MaxLength
+                        PaddingLeft: =5
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =varThemeFont.H3.size
+                        Tooltip: =Parent.DisplayName
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =lblRecipientName_crdRecipientName_Submission.Y + lblRecipientName_crdRecipientName_Submission.Height + 5
+                        ZIndex: =2
+
+                    lblError_crdRecipientName_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =10
+                        Italic: =varThemeFont.H3.italic
+                        Live: =Live.Assertive
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.Error
+                        Visible: =Parent.DisplayMode=DisplayMode.Edit
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =txtRecipientName_crdRecipientName_Submission.Y + txtRecipientName_crdRecipientName_Submission.Height
+                        ZIndex: =3
+
+                    lblRequired_crdRecipientName_Submission As label:
+                        Align: =Align.Center
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =lblRecipientName_crdRecipientName_Submission.Height
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: ="*"
+                        Visible: =And(Parent.Required, Parent.DisplayMode=DisplayMode.Edit)
+                        Width: =30
+                        Wrap: =false
+                        Y: =lblRecipientName_crdRecipientName_Submission.Y
+                        ZIndex: =4
+
+                crdSenderId_Submission As typedDataCard.comboBoxEditCard:
+                    BorderStyle: =BorderStyle.Solid
+                    DataField: ="mpa_senderid"
+                    Default: |-
+                        =/*Look for the Dataverse's SystemUser.SystemUserId based on the user's email*/
+                        With({SenderEmail: varSenderEmail},
+                        LookUp(Users,internalemailaddress = SenderEmail))
+                    DisplayMode: =Parent.DisplayMode
+                    DisplayName: =DataSourceInfo([@Kudos],DataSourceInfo.DisplayName,"mpa_senderid")
+                    Fill: =RGBA(0, 0, 0, 0)
+                    Height: =50
+                    Required: =false
+                    Update: =txtSenderId_crdSenderId_Submission.Selected
+                    Visible: =false
+                    Width: =614
+                    X: =0
+                    Y: =4
+                    ZIndex: =1
+
+                    lblSenderId_crdSenderId_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        FocusedBorderColor: =ColorValue(varThemeColors.primary)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =48
+                        Italic: =varThemeFont.H3.italic
+                        Role: =TextRole.Heading2
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.DisplayName
+                        Width: =Parent.Width - 60
+                        Wrap: =false
+                        X: =30
+                        Y: =10
+                        ZIndex: =1
+
+                    txtSenderId_crdSenderId_Submission As combobox:
+                        AccessibleLabel: ="Dataverse Id of the Sender of the Kudo"
+                        BorderColor: =If(IsBlank(Parent.Error), Parent.BorderColor, Color.Red)
+                        Color: =ColorValue(varThemeColors.text)
+                        DefaultSelectedItems: =Parent.Default
+                        DisplayFields: =["fullname"]
+                        DisplayMode: =Parent.DisplayMode
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.paragraph.weight
+                        Height: =70
+                        IsSearchable: =false
+                        Items: =Choices([@Kudos].Sender)
+                        PaddingLeft: =If(Self.DisplayMode = DisplayMode.Edit, 5, 0)
+                        SearchFields: =["fullname"]
+                        SearchItems: =[]
+                        SelectMultiple: =false
+                        Size: =varThemeFont.H3.size
+                        TabIndex: =-1/*The form is to review the data only. Fields are read only and non interactive*/
+                        Tooltip: =Parent.DisplayName
+                        Visible: =false
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =lblSenderId_crdSenderId_Submission.Y + lblSenderId_crdSenderId_Submission.Height + 5
+                        ZIndex: =2
+
+                    lblError_crdSenderId_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =10
+                        Italic: =varThemeFont.H3.italic
+                        Live: =Live.Assertive
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.Error
+                        Visible: =Parent.DisplayMode=DisplayMode.Edit
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =txtSenderId_crdSenderId_Submission.Y + txtSenderId_crdSenderId_Submission.Height
+                        ZIndex: =3
+
+                    lblRequired_crdSenderId_Submission As label:
+                        Align: =Align.Center
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =lblSenderId_crdSenderId_Submission.Height
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: ="*"
+                        Visible: =And(Parent.Required, Parent.DisplayMode=DisplayMode.Edit)
+                        Width: =30
+                        Wrap: =false
+                        Y: =lblSenderId_crdSenderId_Submission.Y
+                        ZIndex: =4
+
+                crdSenderName_Submission As typedDataCard.textualEditCard:
+                    BorderStyle: =BorderStyle.Solid
+                    DataField: ="mpa_sendername"
+                    Default: |-
+                        =Left(varSenderProfile.DisplayName,500)
+                        /*Sender's name from O365, topped to 500 characters (max lenght in dataverse)*/
+                    DisplayMode: =Parent.DisplayMode
+                    DisplayName: =DataSourceInfo([@Kudos],DataSourceInfo.DisplayName,"mpa_sendername")
+                    Fill: =RGBA(0, 0, 0, 0)
+                    Height: =50
+                    MaxLength: =DataSourceInfo([@Kudos], DataSourceInfo.MaxLength, "mpa_sendername")
+                    Required: =false
+                    Update: =txtSenderName_crdSenderName_Submission.Text
+                    Visible: =false
+                    Width: =614
+                    X: =0
+                    Y: =5
+                    ZIndex: =1
+
+                    lblSenderName_crdSenderName_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        FocusedBorderColor: =ColorValue(varThemeColors.primary)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =48
+                        Italic: =varThemeFont.H3.italic
+                        Role: =TextRole.Heading2
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.DisplayName
+                        Width: =Parent.Width - 60
+                        Wrap: =false
+                        X: =30
+                        Y: =10
+                        ZIndex: =1
+
+                    txtSenderName_crdSenderName_Submission As text:
+                        AccessibleLabel: ="Name of the Sender of the Kudo"
+                        BorderColor: =If(IsBlank(Parent.Error), Parent.BorderColor, Color.Red)
+                        Color: =ColorValue(varThemeColors.text)
+                        Default: =Parent.Default
+                        DelayOutput: =true
+                        DisplayMode: =Parent.DisplayMode
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.paragraph.weight
+                        Height: =70
+                        MaxLength: =Parent.MaxLength
+                        PaddingLeft: =5
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =varThemeFont.H3.size
+                        TabIndex: =-1/*The form is to review the data only. Fields are read only and non interactive*/
+                        Tooltip: =Parent.DisplayName
+                        Visible: =false
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =lblSenderName_crdSenderName_Submission.Y + lblSenderName_crdSenderName_Submission.Height + 5
+                        ZIndex: =2
+
+                    lblError_crdSenderName_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =10
+                        Italic: =varThemeFont.H3.italic
+                        Live: =Live.Assertive
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.Error
+                        Visible: =Parent.DisplayMode=DisplayMode.Edit
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =txtSenderName_crdSenderName_Submission.Y + txtSenderName_crdSenderName_Submission.Height
+                        ZIndex: =3
+
+                    lblRequired_crdSenderName_Submission As label:
+                        Align: =Align.Center
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =lblSenderName_crdSenderName_Submission.Height
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: ="*"
+                        Visible: =And(Parent.Required, Parent.DisplayMode=DisplayMode.Edit)
+                        Width: =30
+                        Wrap: =false
+                        Y: =lblSenderName_crdSenderName_Submission.Y
+                        ZIndex: =4
+
+                crdSDpto_Submission As typedDataCard.textualEditCard:
+                    BorderStyle: =BorderStyle.Solid
+                    DataField: ="mpa_senderdepartment"
+                    Default: |-
+                        = /*Senders's Department, from O365. Dataverse field length is 200*/
+                        
+                        If(
+                            !IsBlank(varSenderProfile.Department),
+                            Left(varSenderProfile.Department,200)
+                        )
+                    DisplayMode: =DisplayMode.View
+                    DisplayName: =DataSourceInfo([@Kudos],DataSourceInfo.DisplayName,"mpa_senderdepartment")
+                    Fill: =RGBA(0, 0, 0, 0)
+                    Height: =50
+                    MaxLength: =DataSourceInfo([@Kudos], DataSourceInfo.MaxLength, "mpa_senderdepartment")
+                    Required: =false
+                    Update: =txtSDpto_crdSDpto_Submission.Text
+                    Visible: =false
+                    Width: =614
+                    X: =0
+                    Y: =6
+                    ZIndex: =1
+
+                    lblSDpto_crdSDpto_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =48
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.DisplayName
+                        Width: =Parent.Width - 60
+                        Wrap: =false
+                        X: =30
+                        Y: =10
+                        ZIndex: =1
+
+                    txtSDpto_crdSDpto_Submission As text:
+                        AccessibleLabel: ="Senders Department"
+                        BorderColor: =If(IsBlank(Parent.Error), Parent.BorderColor, Color.Red)
+                        Color: =ColorValue(varThemeColors.text)
+                        Default: =Parent.Default
+                        DelayOutput: =true
+                        DisplayMode: =Parent.DisplayMode
+                        Height: =70
+                        MaxLength: =Parent.MaxLength
+                        PaddingLeft: =5
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =21
+                        TabIndex: =-1/*The form is to review the data only. Fields are read only and non interactive*/
+                        Tooltip: =Parent.DisplayName
+                        Visible: =false
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =lblSDpto_crdSDpto_Submission.Y + lblSDpto_crdSDpto_Submission.Height + 5
+                        ZIndex: =2
+
+                    lblErrorcrdSDpto_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =10
+                        Italic: =varThemeFont.H3.italic
+                        Live: =Live.Assertive
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.Error
+                        Visible: =Parent.DisplayMode=DisplayMode.Edit
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =txtSDpto_crdSDpto_Submission.Y + txtSDpto_crdSDpto_Submission.Height
+                        ZIndex: =3
+
+                    lblRequired_crdSDpto_Submission As label:
+                        Align: =Align.Center
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =lblSDpto_crdSDpto_Submission.Height
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: ="*"
+                        Visible: =And(Parent.Required, Parent.DisplayMode=DisplayMode.Edit)
+                        Width: =30
+                        Wrap: =false
+                        Y: =lblSDpto_crdSDpto_Submission.Y
+                        ZIndex: =4
+
+                crdYear_Submission As typedDataCard.textualEditCard:
+                    BorderStyle: =BorderStyle.Solid
+                    DataField: ="mpa_year"
+                    Default: |-
+                        =/*Current Year*/
+                        Year(Now())
+                    DisplayMode: =DisplayMode.View
+                    DisplayName: =DataSourceInfo([@Kudos],DataSourceInfo.DisplayName,"mpa_year")
+                    Fill: =RGBA(0, 0, 0, 0)
+                    Height: =50
+                    MaxLength: =DataSourceInfo([@Kudos], DataSourceInfo.MaxLength, "mpa_year")
+                    Required: =true
+                    Update: =txtYear_crdYear_Submission.Text
+                    Visible: =false
+                    Width: =614
+                    X: =0
+                    Y: =7
+                    ZIndex: =1
+
+                    lblYear_crdYear_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =48
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.DisplayName
+                        Width: =Parent.Width - 60
+                        Wrap: =false
+                        X: =30
+                        Y: =10
+                        ZIndex: =1
+
+                    txtYear_crdYear_Submission As text:
+                        AccessibleLabel: ="Year when the kudo was sent"
+                        BorderColor: =If(IsBlank(Parent.Error), Parent.BorderColor, Color.Red)
+                        Color: =ColorValue(varThemeColors.text)
+                        Default: =Parent.Default
+                        DelayOutput: =true
+                        DisplayMode: =Parent.DisplayMode
+                        Height: =70
+                        MaxLength: =Parent.MaxLength
+                        PaddingLeft: =5
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =21
+                        TabIndex: =-1/*The form is to review the data only. Fields are read only and non interactive*/
+                        Tooltip: =Parent.DisplayName
+                        Visible: =false
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =lblYear_crdYear_Submission.Y + lblYear_crdYear_Submission.Height + 5
+                        ZIndex: =2
+
+                    lblError_crdYear_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =10
+                        Italic: =varThemeFont.H3.italic
+                        Live: =Live.Assertive
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.Error
+                        Visible: =Parent.DisplayMode=DisplayMode.Edit
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =txtYear_crdYear_Submission.Y + txtYear_crdYear_Submission.Height
+                        ZIndex: =3
+
+                    lblRequired_crdYear_Submission As label:
+                        Align: =Align.Center
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =lblYear_crdYear_Submission.Height
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: ="*"
+                        Visible: =And(Parent.Required, Parent.DisplayMode=DisplayMode.Edit)
+                        Width: =30
+                        Wrap: =false
+                        Y: =lblYear_crdYear_Submission.Y
+                        ZIndex: =4
+
+                crdMonth_Submission As typedDataCard.numberEditCard:
+                    BorderStyle: =BorderStyle.Solid
+                    DataField: ="mpa_monthnumber"
+                    Default: =varCurrentMonth /*Numeric value of the current month*/
+                    DisplayMode: =DisplayMode.View
+                    DisplayName: =DataSourceInfo([@Kudos],DataSourceInfo.DisplayName,"mpa_monthnumber")
+                    Fill: =RGBA(0, 0, 0, 0)
+                    Height: =50
+                    Required: =true
+                    Update: =Value(txtMonth_Submission.Text)
+                    Visible: =false
+                    Width: =614
+                    X: =0
+                    Y: =8
+                    ZIndex: =1
+
+                    lblMonth_Submission As label:
+                        AutoHeight: =true
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =48
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.DisplayName
+                        Width: =Parent.Width - 60
+                        Wrap: =false
+                        X: =30
+                        Y: =10
+                        ZIndex: =1
+
+                    txtMonth_Submission As text:
+                        AccessibleLabel: ="Current Month number"
+                        BorderColor: =If(IsBlank(Parent.Error), Parent.BorderColor, Color.Red)
+                        Default: =Parent.Default
+                        DelayOutput: =true
+                        DisplayMode: =Parent.DisplayMode
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Format: =TextFormat.Number
+                        Height: =70
+                        Italic: =varThemeFont.H3.italic
+                        PaddingLeft: =5
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =varThemeFont.H3.size
+                        TabIndex: =-1/*The form is to review the data only. Fields are read only and non interactive*/
+                        Tooltip: =Parent.DisplayName
+                        Visible: =false
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =lblMonth_Submission.Y + lblMonth_Submission.Height + 5
+                        ZIndex: =2
+
+                    lblMonthError_Submission As label:
+                        AutoHeight: =true
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =10
+                        Italic: =varThemeFont.H3.italic
+                        Live: =Live.Assertive
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.Error
+                        Visible: =Parent.DisplayMode=DisplayMode.Edit
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =txtMonth_Submission.Y + txtMonth_Submission.Height
+                        ZIndex: =3
+
+                    lblMonthRequired_Submission As label:
+                        Align: =Align.Center
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =lblMonth_Submission.Height
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: ="*"
+                        Visible: =And(Parent.Required, Parent.DisplayMode=DisplayMode.Edit)
+                        Width: =30
+                        Wrap: =false
+                        Y: =lblMonth_Submission.Y
+                        ZIndex: =4
+
+                crdRCountry_Submission As typedDataCard.textualEditCard:
+                    BorderStyle: =BorderStyle.Solid
+                    DataField: ="mpa_recipientcountry"
+                    Default: |-
+                        =/*Recipient's country, from O365. Dataverse field length is 200*/
+                        If(
+                            !IsBlank(varRecipientProfile),
+                            If(
+                                 !IsBlank(varRecipientProfile.Country),
+                                Left(varRecipientProfile.Country,200)
+                            )
+                        )
+                    DisplayMode: =DisplayMode.View
+                    DisplayName: =DataSourceInfo([@Kudos],DataSourceInfo.DisplayName,"mpa_recipientcountry")
+                    Fill: =RGBA(0, 0, 0, 0)
+                    Height: =50
+                    MaxLength: =DataSourceInfo([@Kudos], DataSourceInfo.MaxLength, "mpa_recipientcountry")
+                    Required: =false
+                    Update: =txtRCountry_crdRCountry_Submission.Text
+                    Visible: =false
+                    Width: =614
+                    X: =0
+                    Y: =9
+                    ZIndex: =1
+
+                    lblRCountry_crdRCountry_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =48
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.DisplayName
+                        Width: =Parent.Width - 60
+                        Wrap: =false
+                        X: =30
+                        Y: =10
+                        ZIndex: =1
+
+                    txtRCountry_crdRCountry_Submission As text:
+                        AccessibleLabel: ="Recipients Country"
+                        BorderColor: =If(IsBlank(Parent.Error), Parent.BorderColor, Color.Red)
+                        Color: =ColorValue(varThemeColors.text)
+                        Default: =Parent.Default
+                        DelayOutput: =true
+                        DisplayMode: =Parent.DisplayMode
+                        Height: =70
+                        MaxLength: =Parent.MaxLength
+                        PaddingLeft: =5
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =21
+                        TabIndex: =-1/*The form is to review the data only. Fields are read only and non interactive*/
+                        Tooltip: =Parent.DisplayName
+                        Visible: =false
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =lblRCountry_crdRCountry_Submission.Y + lblRCountry_crdRCountry_Submission.Height + 5
+                        ZIndex: =2
+
+                    lblErrror_crdRCountry_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =10
+                        Italic: =varThemeFont.H3.italic
+                        Live: =Live.Assertive
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.Error
+                        Visible: =Parent.DisplayMode=DisplayMode.Edit
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =txtRCountry_crdRCountry_Submission.Y + txtRCountry_crdRCountry_Submission.Height
+                        ZIndex: =3
+
+                    lblRequired_crdRCountry_Submission As label:
+                        Align: =Align.Center
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =lblRCountry_crdRCountry_Submission.Height
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: ="*"
+                        Visible: =And(Parent.Required, Parent.DisplayMode=DisplayMode.Edit)
+                        Width: =30
+                        Wrap: =false
+                        Y: =lblRCountry_crdRCountry_Submission.Y
+                        ZIndex: =4
+
+                crdRDepto_Submission As typedDataCard.textualEditCard:
+                    BorderStyle: =BorderStyle.Solid
+                    DataField: ="mpa_recipientdepartment"
+                    Default: |
+                        = /*Recipient's Department, from O365.  Dataverse field length is 200*/
+                        
+                        If(
+                            !IsBlank(varRecipientProfile.Department),
+                            Left(varRecipientProfile.Department,200)
+                        )
+                    DisplayMode: =DisplayMode.View
+                    DisplayName: =DataSourceInfo([@Kudos],DataSourceInfo.DisplayName,"mpa_recipientdepartment")
+                    Fill: =RGBA(0, 0, 0, 0)
+                    Height: =50
+                    MaxLength: =DataSourceInfo([@Kudos], DataSourceInfo.MaxLength, "mpa_recipientdepartment")
+                    Required: =false
+                    Update: =txtRDpto_crdRDepto_Submission.Text
+                    Visible: =false
+                    Width: =614
+                    X: =0
+                    Y: =10
+                    ZIndex: =1
+
+                    lblRDpto_crdRDepto_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =48
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.DisplayName
+                        Width: =Parent.Width - 60
+                        Wrap: =false
+                        X: =30
+                        Y: =10
+                        ZIndex: =1
+
+                    txtRDpto_crdRDepto_Submission As text:
+                        AccessibleLabel: ="Recipients Department"
+                        BorderColor: =If(IsBlank(Parent.Error), Parent.BorderColor, Color.Red)
+                        Color: =ColorValue(varThemeColors.text)
+                        Default: =Parent.Default
+                        DelayOutput: =true
+                        DisplayMode: =Parent.DisplayMode
+                        Height: =70
+                        MaxLength: =Parent.MaxLength
+                        PaddingLeft: =5
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =21
+                        TabIndex: =-1
+                        Tooltip: =Parent.DisplayName
+                        Visible: =false
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =lblRDpto_crdRDepto_Submission.Y + lblRDpto_crdRDepto_Submission.Height + 5
+                        ZIndex: =2
+
+                    lblError_crdRDepto_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =10
+                        Italic: =varThemeFont.H3.italic
+                        Live: =Live.Assertive
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.Error
+                        Visible: =Parent.DisplayMode=DisplayMode.Edit
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =txtRDpto_crdRDepto_Submission.Y + txtRDpto_crdRDepto_Submission.Height
+                        ZIndex: =3
+
+                    lblRequired_crdRDepto_Submission As label:
+                        Align: =Align.Center
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =lblRDpto_crdRDepto_Submission.Height
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: ="*"
+                        Visible: =And(Parent.Required, Parent.DisplayMode=DisplayMode.Edit)
+                        Width: =30
+                        Wrap: =false
+                        Y: =lblRDpto_crdRDepto_Submission.Y
+                        ZIndex: =4
+
+                crdRTitle_Submission As typedDataCard.textualEditCard:
+                    BorderStyle: =BorderStyle.Solid
+                    DataField: ="mpa_recipientjobtitle"
+                    Default: |-
+                        = /*Recipient's Job Title, from O365.  Dataverse field length  is 200*/
+                        
+                        If(
+                            !IsBlank(varRecipientProfile.JobTitle),
+                            Left(varRecipientProfile.JobTitle,200)
+                        )
+                    DisplayMode: =DisplayMode.View
+                    DisplayName: =DataSourceInfo([@Kudos],DataSourceInfo.DisplayName,"mpa_recipientjobtitle")
+                    Fill: =RGBA(0, 0, 0, 0)
+                    Height: =50
+                    MaxLength: =DataSourceInfo([@Kudos], DataSourceInfo.MaxLength, "mpa_recipientjobtitle")
+                    Required: =false
+                    Update: =txtRTitlecrdRTitle_Submission.Text
+                    Visible: =false
+                    Width: =614
+                    X: =0
+                    Y: =11
+                    ZIndex: =1
+
+                    lblRTitlecrdRTitle_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =48
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.DisplayName
+                        Width: =Parent.Width - 60
+                        Wrap: =false
+                        X: =30
+                        Y: =10
+                        ZIndex: =1
+
+                    txtRTitlecrdRTitle_Submission As text:
+                        AccessibleLabel: ="Recipients Job Title"
+                        BorderColor: =If(IsBlank(Parent.Error), Parent.BorderColor, Color.Red)
+                        Color: =ColorValue(varThemeColors.text)
+                        Default: =Parent.Default
+                        DelayOutput: =true
+                        DisplayMode: =Parent.DisplayMode
+                        Height: =70
+                        MaxLength: =Parent.MaxLength
+                        PaddingLeft: =5
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =21
+                        TabIndex: =-1/*The form is to review the data only. Fields are read only and non interactive*/
+                        Tooltip: =Parent.DisplayName
+                        Visible: =false
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =lblRTitlecrdRTitle_Submission.Y + lblRTitlecrdRTitle_Submission.Height + 5
+                        ZIndex: =2
+
+                    lblErrorcrdRTitle_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =10
+                        Italic: =varThemeFont.H3.italic
+                        Live: =Live.Assertive
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.Error
+                        Visible: =Parent.DisplayMode=DisplayMode.Edit
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =txtRTitlecrdRTitle_Submission.Y + txtRTitlecrdRTitle_Submission.Height
+                        ZIndex: =3
+
+                    lblRequiredcrdRTitle_Submission As label:
+                        Align: =Align.Center
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =lblRTitlecrdRTitle_Submission.Height
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: ="*"
+                        Visible: =And(Parent.Required, Parent.DisplayMode=DisplayMode.Edit)
+                        Width: =30
+                        Wrap: =false
+                        Y: =lblRTitlecrdRTitle_Submission.Y
+                        ZIndex: =4
+
+                crdRManager_Submission As typedDataCard.textualEditCard:
+                    BorderStyle: =BorderStyle.Solid
+                    DataField: ="mpa_recipientmanager"
+                    Default: |-
+                        =/*Recipient's Manager Name, from O365.  Dataverse field length is 500 */
+                        If(
+                            !IsBlank(varManagerName),
+                            Left(varManagerName,500)
+                        )
+                    DisplayMode: =DisplayMode.View
+                    DisplayName: =DataSourceInfo([@Kudos],DataSourceInfo.DisplayName,"mpa_recipientmanager")
+                    Fill: =RGBA(0, 0, 0, 0)
+                    Height: =50
+                    MaxLength: =DataSourceInfo([@Kudos], DataSourceInfo.MaxLength, "mpa_recipientmanager")
+                    Required: =false
+                    Update: =txtRManager_crdRManager_Submission.Text
+                    Visible: =false
+                    Width: =614
+                    X: =0
+                    Y: =12
+                    ZIndex: =1
+
+                    lblRManager_crdRManager_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =48
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.DisplayName
+                        Width: =Parent.Width - 60
+                        Wrap: =false
+                        X: =30
+                        Y: =10
+                        ZIndex: =1
+
+                    txtRManager_crdRManager_Submission As text:
+                        AccessibleLabel: ="Recipients Manager"
+                        BorderColor: =If(IsBlank(Parent.Error), Parent.BorderColor, Color.Red)
+                        Color: =ColorValue(varThemeColors.text)
+                        Default: =Parent.Default
+                        DelayOutput: =true
+                        DisplayMode: =Parent.DisplayMode
+                        Height: =70
+                        MaxLength: =Parent.MaxLength
+                        PaddingLeft: =5
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =21
+                        TabIndex: =-1/*The form is to review the data only. Fields are read only and non interactive*/
+                        Tooltip: =Parent.DisplayName
+                        Visible: =false
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =lblRManager_crdRManager_Submission.Y + lblRManager_crdRManager_Submission.Height + 5
+                        ZIndex: =2
+
+                    lblError_crdRManager_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =10
+                        Italic: =varThemeFont.H3.italic
+                        Live: =Live.Assertive
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.Error
+                        Visible: =Parent.DisplayMode=DisplayMode.Edit
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =txtRManager_crdRManager_Submission.Y + txtRManager_crdRManager_Submission.Height
+                        ZIndex: =3
+
+                    lblRequiredcrdRManager_Submission As label:
+                        Align: =Align.Center
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =lblRManager_crdRManager_Submission.Height
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: ="*"
+                        Visible: =And(Parent.Required, Parent.DisplayMode=DisplayMode.Edit)
+                        Width: =30
+                        Wrap: =false
+                        Y: =lblRManager_crdRManager_Submission.Y
+                        ZIndex: =4
+
+                crdRManagerEmail_Submission As typedDataCard.textualEditCard:
+                    BorderStyle: =BorderStyle.Solid
+                    DataField: ="mpa_recipientmanageremail"
+                    Default: |+
+                        =/*Recipient's Manager Email, from O365.  Dataverse field length is 500  */
+                        If(
+                            !IsBlank(varManagerEmail),
+                            Left(varManagerEmail,500)
+                        )
+                        
+                    DisplayMode: =DisplayMode.View
+                    DisplayName: =DataSourceInfo([@Kudos],DataSourceInfo.DisplayName,"mpa_recipientmanageremail")
+                    Fill: =RGBA(0, 0, 0, 0)
+                    Height: =50
+                    MaxLength: =DataSourceInfo([@Kudos], DataSourceInfo.MaxLength, "mpa_recipientmanageremail")
+                    Required: =false
+                    Update: =txtManagerEMail_crdRManagerEmail_Submission.Text
+                    Visible: =false
+                    Width: =614
+                    X: =0
+                    Y: =13
+                    ZIndex: =1
+
+                    lblManagerEmail_crdRManagerEmail_Submission As label:
+                        AutoHeight: =true
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H3.weight
+                        Height: =48
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.DisplayName
+                        Width: =Parent.Width - 60
+                        Wrap: =false
+                        X: =30
+                        Y: =10
+                        ZIndex: =1
+
+                    txtManagerEMail_crdRManagerEmail_Submission As text:
+                        AccessibleLabel: ="Email of the recipient's manager"
+                        BorderColor: =If(IsBlank(Parent.Error), Parent.BorderColor, Color.Red)
+                        Default: =Parent.Default
+                        DelayOutput: =true
+                        DisplayMode: =Parent.DisplayMode
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H3.weight
+                        Height: =70
+                        Italic: =varThemeFont.H3.italic
+                        MaxLength: =Parent.MaxLength
+                        PaddingLeft: =5
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =varThemeFont.H3.size
+                        TabIndex: =-1/*The form is to review the data only. Fields are read only and non interactive*/
+                        Tooltip: =Parent.DisplayName
+                        Visible: =false
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =lblManagerEmail_crdRManagerEmail_Submission.Y + lblManagerEmail_crdRManagerEmail_Submission.Height + 5
+                        ZIndex: =2
+
+                    lblError_crdRManagerEmail_Submission As label:
+                        AutoHeight: =true
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H3.weight
+                        Height: =10
+                        Italic: =varThemeFont.H3.italic
+                        Live: =Live.Assertive
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.Error
+                        Visible: =Parent.DisplayMode=DisplayMode.Edit
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =txtManagerEMail_crdRManagerEmail_Submission.Y + txtManagerEMail_crdRManagerEmail_Submission.Height
+                        ZIndex: =3
+
+                    lblRequired_crdRManagerEmail_Submission As label:
+                        Align: =Align.Center
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H3.weight
+                        Height: =lblManagerEmail_crdRManagerEmail_Submission.Height
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: ="*"
+                        Visible: =And(Parent.Required, Parent.DisplayMode=DisplayMode.Edit)
+                        Width: =30
+                        Wrap: =false
+                        Y: =lblManagerEmail_crdRManagerEmail_Submission.Y
+                        ZIndex: =4
+
+                Badge_DataCard1 As typedDataCard.comboBoxEditCard:
+                    BorderStyle: =BorderStyle.Solid
+                    DataField: ="mpa_Badge"
+                    Default: =varNewSubmission.SelectedBadge
+                    DisplayMode: =Parent.DisplayMode
+                    DisplayName: =DataSourceInfo([@Kudos],DataSourceInfo.DisplayName,"mpa_Badge")
+                    Fill: =RGBA(0, 0, 0, 0)
+                    Height: =50
+                    Required: =false
+                    Update: =DataCardValue1.Selected
+                    Visible: =false
+                    Width: =614
+                    X: =0
+                    Y: =14
+                    ZIndex: =1
+
+                    DataCardKey1 As label:
+                        AutoHeight: =true
+                        Height: =48
+                        Size: =21
+                        Text: =Parent.DisplayName
+                        Width: =Parent.Width - 60
+                        Wrap: =false
+                        X: =30
+                        Y: =10
+                        ZIndex: =1
+
+                    DataCardValue1 As combobox:
+                        AccessibleLabel: ="Badge"
+                        BorderColor: =If(IsBlank(Parent.Error), Parent.BorderColor, Color.Red)
+                        DefaultSelectedItems: =Parent.Default
+                        DisplayFields: =["mpa_name"]
+                        DisplayMode: =Parent.DisplayMode
+                        Height: =70
+                        Items: =Choices([@Kudos].Badge)
+                        PaddingLeft: =If(Self.DisplayMode = DisplayMode.Edit, 5, 0)
+                        SearchFields: =["mpa_name"]
+                        SearchItems: =Search(Choices([@Kudos].Badge),DataCardValue1.SearchText,"mpa_name")
+                        SelectMultiple: =false
+                        Size: =21
+                        Tooltip: =Parent.DisplayName
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =DataCardKey1.Y + DataCardKey1.Height + 5
+                        ZIndex: =2
+
+                    ErrorMessage1 As label:
+                        AutoHeight: =true
+                        Height: =10
+                        Live: =Live.Assertive
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        PaddingTop: =0
+                        Size: =24
+                        Text: =Parent.Error
+                        Visible: =Parent.DisplayMode=DisplayMode.Edit
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =DataCardValue1.Y + DataCardValue1.Height
+                        ZIndex: =3
+
+                    StarVisible1 As label:
+                        Align: =Align.Center
+                        Height: =DataCardKey1.Height
+                        Size: =21
+                        Text: ="*"
+                        Visible: =And(Parent.Required, Parent.DisplayMode=DisplayMode.Edit)
+                        Width: =30
+                        Wrap: =false
+                        Y: =DataCardKey1.Y
+                        ZIndex: =4
+
+                crdMessage_Submission As typedDataCard.textualMultiLineEditCard:
+                    BorderStyle: =BorderStyle.Solid
+                    DataField: ="mpa_message"
+                    Default: |-
+                        =varNewSubmission.Message
+                        /*Types message from the Message screen*/
+                    DisplayMode: |-
+                        =//Parent.DisplayMode
+                        DisplayMode.View
+                    DisplayName: |-
+                        =//DataSourceInfo([@Kudos],DataSourceInfo.DisplayName,"mpa_message")
+                        // Lookup the appropriately localized text
+                        With(
+                            {Text: "Message"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Fill: =RGBA(0, 0, 0, 0)
+                    Height: =497
+                    Required: =true
+                    Update: =txtMessage_crdMessage_Submission.Text
+                    Width: =614
+                    X: =0
+                    Y: =1
+                    ZIndex: =2
+
+                    lblMessage_crdMessage_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        FocusedBorderColor: =ColorValue(varThemeColors.primary)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =48
+                        Italic: =varThemeFont.H3.italic
+                        Role: =TextRole.Heading2
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.DisplayName
+                        Width: =Parent.Width - 60
+                        Wrap: =false
+                        X: =30
+                        Y: =30
+                        ZIndex: =1
+
+                    txtMessage_crdMessage_Submission As text:
+                        AccessibleLabel: ="Message for this Kudo."
+                        BorderColor: =If(IsBlank(Parent.Error), Parent.BorderColor, Color.Red)
+                        Color: =ColorValue(varThemeColors.text)
+                        Default: =Parent.Default
+                        DelayOutput: =true
+                        DisplayMode: =Parent.DisplayMode
+                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                        Font: =varThemeFont.paragraph.face
+                        FontWeight: =varThemeFont.paragraph.weight
+                        Height: =398
+                        Italic: =varThemeFont.paragraph.italic
+                        Mode: =TextMode.MultiLine
+                        PaddingLeft: =5
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =varThemeFont.paragraph.size
+                        TabIndex: =-1/*The form is to review the data only. Fields are read only and non interactive*/
+                        Tooltip: =Parent.DisplayName
+                        Width: =484
+                        X: =30
+                        Y: =69
+                        ZIndex: =2
+
+                    lblError_crdMessage_Submission As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =10
+                        Italic: =varThemeFont.H3.italic
+                        Live: =Live.Assertive
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.H3.size
+                        Text: =Parent.Error
+                        Visible: =Parent.DisplayMode=DisplayMode.Edit
+                        Width: =Parent.Width - 60
+                        X: =30
+                        Y: =357
+                        ZIndex: =3
+
+                    lblRequired_crdMessage_Submission As label:
+                        Align: =Align.Center
+                        Color: =ColorValue(varThemeColors.text)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.H2.weight
+                        Height: =lblMessage_crdMessage_Submission.Height
+                        Italic: =varThemeFont.H3.italic
+                        Size: =varThemeFont.H3.size
+                        Text: ="*"
+                        Visible: =And(Parent.Required, Parent.DisplayMode=DisplayMode.Edit)
+                        Width: =30
+                        Wrap: =false
+                        Y: =lblMessage_crdMessage_Submission.Y
+                        ZIndex: =4
+
+            lblRecipientEmail_Submission As label:
+                AutoHeight: =true
+                BorderColor: =RGBA(0, 0, 0, 0)
+                BorderStyle: =BorderStyle.None
+                BorderThickness: =2
+                Color: =ColorValue(varThemeColors.text)
+                DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                FocusedBorderColor: =ColorValue(varThemeColors.primary)
+                FocusedBorderThickness: =4
+                Font: =varThemeFont.paragraph.face
+                Height: =Parent.Height
+                Italic: =varThemeFont.paragraph.italic
+                PaddingBottom: =0
+                PaddingLeft: =10
+                PaddingTop: =
+                Size: =varThemeFont.paragraph.size
+                Text: =varNewSubmission.RecipientEmail
+                Tooltip: =Self.Text
+                Width: =Parent.Width *.85
+                X: |
+                    =lblRecipientName_Submission.X
+                Y: =lblRecipientName_Submission.Y+lblRecipientName_Submission.Height
+                ZIndex: =5
+
+            lblRecipientName_Submission As label:
+                BorderColor: =RGBA(0, 0, 0, 0)
+                BorderStyle: =BorderStyle.None
+                BorderThickness: =2
+                Color: =ColorValue(varThemeColors.text)
+                DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                FocusedBorderColor: =ColorValue(varThemeColors.primary)
+                FocusedBorderThickness: =4
+                Font: =varThemeFont.paragraph.face
+                FontWeight: =varThemeFont.H2.weight
+                Height: =Self.Size * 2.5    
+                Italic: =varThemeFont.paragraph.italic
+                PaddingBottom: =0
+                PaddingLeft: =10
+                PaddingTop: =10
+                Role: =TextRole.Heading3
+                Size: =varThemeFont.paragraph.size
+                Text: =varNewSubmission.Recipient.DisplayName
+                Tooltip: =Self.Text
+                VerticalAlign: =VerticalAlign.Top
+                Width: =Parent.Width *.85
+                X: =imgRecipient_Submission.X+imgRecipient_Submission.Width
+                Y: =40
+                ZIndex: =6
+
+            imgRecipient_Submission As image:
+                AccessibleLabel: ="Recipient"
+                Height: =45
+                Image: |-
+                    =If(
+                        !IsBlank(varNewSubmission.RecipientEmail) && Office365Users.UserPhotoMetadata(varNewSubmission.RecipientEmail).HasPhoto,
+                        Office365Users.UserPhotoV2(varNewSubmission.RecipientEmail),
+                        DefaultPFP
+                    )
+                ImagePosition: =ImagePosition.Fill
+                RadiusBottomLeft: =100
+                RadiusBottomRight: =100
+                RadiusTopLeft: =100
+                RadiusTopRight: =100
+                Width: =Self.Height
+                X: =30
+                Y: =45
+                ZIndex: =7
+
+            imgSelectedBadge_Submission As image:
+                Height: =90
+                Image: =First(colNewSubmission).SelectedBadge.'Badge Image'
+                RadiusBottomLeft: =100
+                RadiusBottomRight: =100
+                RadiusTopLeft: =100
+                RadiusTopRight: =100
+                Width: =90
+                X: =25
+                Y: =imgRecipient_Submission.Y+imgRecipient_Submission.Height+30
+                ZIndex: =8
+
+            lblBadgeSubTitle_Submission As label:
+                Color: =ColorValue(varThemeColors.text)
+                Font: =varThemeFont.paragraph.face
+                FontWeight: =varThemeFont.paragraph.weight
+                Height: =81
+                Italic: =varThemeFont.paragraph.italic
+                Size: =varThemeFont.paragraph.size
+                Text: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {Text: First(colNewSubmission).SelectedBadge.SubTitle},
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                VerticalAlign: =VerticalAlign.Top
+                Width: =466
+                X: =imgSelectedBadge_Submission.X+imgSelectedBadge_Submission.Width+16
+                Y: =lblBadgeName_Submission.Y+lblBadgeName_Submission.Height-5
+                ZIndex: =9
+
+            lblBadgeName_Submission As label:
+                Color: =ColorValue(varThemeColors.text)
+                Font: =varThemeFont.H2.face
+                FontWeight: =varThemeFont.H2.weight
+                Height: =42
+                Italic: =varThemeFont.H2.italic
+                Size: =varThemeFont.H2.size
+                Text: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {Text: First(colNewSubmission).SelectedBadge.Name},
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Width: =427
+                X: =imgSelectedBadge_Submission.X+imgSelectedBadge_Submission.Width+14
+                Y: =imgSelectedBadge_Submission.Y
+                ZIndex: =10
+
+    conHeader_Submission As groupContainer.horizontalAutoLayoutContainer:
+        Fill: =ColorValue(varThemeColors.primary)
+        Height: =75
+        LayoutAlignItems: =LayoutAlignItems.Stretch
+        LayoutMode: =LayoutMode.Auto
+        PaddingLeft: |-
+            =Switch(App.ActiveScreen.Size,
+            5, (Parent.Width - 1450)/2,
+            4, 75,
+            3, 50,
+            2, 25,
+            1, 10
+            )
+        PaddingRight: =Self.PaddingLeft
+        Width: =Parent.Width
+        ZIndex: =2
+
+        conLeftHeaderContent_Submission As groupContainer.manualLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            Height: =Parent.Height
+            LayoutMinHeight: =Parent.Height
+            LayoutMinWidth: =10
+            Width: =100
+            ZIndex: =1
+
+            icoHeaderBack_BadgeSelection_1 As icon.BackArrow:
+                AccessibleLabel: ="Back"
+                BorderColor: =ColorValue(varThemeColors.primary)
+                Color: =ColorValue(varThemeColors.altText)
+                DisabledBorderColor: =ColorValue(varThemeColors.disabledText)
+                DisabledColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                DisabledFill: =RGBA(0,0,0,0)
+                FocusedBorderColor: =ColorValue(varThemeColors.info)
+                FocusedBorderThickness: =4
+                Height: =60
+                HoverBorderColor: =ColorValue(varThemeColors.primary)
+                HoverColor: =ColorValue(varThemeColors.altText)
+                HoverFill: =RGBA(0,0,0,0)
+                Icon: =Icon.BackArrow
+                OnSelect: =Back()
+                PaddingBottom: =6
+                PaddingLeft: =6
+                PaddingRight: =6
+                PaddingTop: =6
+                PressedBorderColor: =ColorValue(varThemeColors.primary)
+                PressedColor: =ColorValue(varThemeColors.primary)
+                PressedFill: =RGBA(0,0,0,0)
+                TabIndex: =0
+                Width: =60
+                Y: =(Parent.Height/2)-(Self.Height/2)
+                ZIndex: =1
+
+        conCenterHeaderContent_Submission As groupContainer.manualLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            Height: =Parent.Height
+            LayoutMinHeight: =50
+            LayoutMinWidth: =50
+            ZIndex: =2
+
+            imgMicrosoftLogo_BadgeSelection_1 As image:
+                AccessibleLabel: ="Home"
+                FocusedBorderColor: =ColorValue(varThemeColors.info)
+                Height: =Parent.Height
+                Image: =varThemeColors.iconimg
+                OnSelect: =Navigate('Main Page Screen')
+                Width: =Self.Height * 2
+                X: =(Parent.Width/2)-(Self.Width/2)
+                ZIndex: =1
+
+        conRightHeaderContent_Submission As groupContainer.manualLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            Height: =Parent.Height
+            LayoutMinHeight: =Parent.Height
+            LayoutMinWidth: =50
+            Width: =250
+            ZIndex: =3
+
+            imgCurrentUser_BadgeSelection_1 As image:
+                AccessibleLabel: ="Logged In User"
+                Height: =50
+                Image: =If(!IsBlank(User().Email)&& Office365Users.UserPhotoMetadata(User().Email).HasPhoto, Office365Users.UserPhotoV2(User().Email), DefaultPFP)
+                RadiusBottomLeft: =50
+                RadiusBottomRight: =50
+                RadiusTopLeft: =50
+                RadiusTopRight: =50
+                Width: =50
+                X: =Parent.Width-Self.Width
+                Y: =12
+                ZIndex: =4
+
+            "icoSettings_BadgeSelection_1 As icon.'3DPrinting'":
+                AccessibleLabel: ="Settings"
+                BorderColor: =ColorValue(varThemeColors.primary)
+                Color: =ColorValue(varThemeColors.altText)
+                DisabledBorderColor: =ColorValue(varThemeColors.disabledText)
+                DisabledColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                DisabledFill: =RGBA(0,0,0,0)
+                Fill: =RGBA(0,0,0,0)
+                FocusedBorderColor: =ColorValue(varThemeColors.info)
+                FocusedBorderThickness: =4
+                Height: =60
+                HoverBorderColor: =ColorValue(varThemeColors.primary)
+                HoverColor: =ColorValue(varThemeColors.altText)
+                HoverFill: =RGBA(0,0,0,0)
+                Icon: =Icon.Settings
+                OnSelect: =Navigate('Settings Screen')
+                PaddingBottom: =8
+                PaddingLeft: =8
+                PaddingRight: =8
+                PaddingTop: =8
+                PressedBorderColor: =ColorValue(varThemeColors.primary)
+                PressedColor: =ColorValue(varThemeColors.primary)
+                PressedFill: =RGBA(0,0,0,0)
+                TabIndex: =0
+                Tooltip: ="Settings"
+                Width: =60
+                X: =imgCurrentUser_BadgeSelection_1.X-Self.Width-10
+                Y: =(Parent.Height/2)-(Self.Height/2)
+                ZIndex: =5
+

@@ -1,0 +1,115 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_KudosDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "User_gets_deleted_or_deactivated": {
+          "metadata": {
+            "operationMetadataId": "a951477f-1e17-4f89-be7c-4dbed8d00b7b"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "SubscribeWebhookTrigger",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 6,
+              "subscriptionRequest/entityname": "systemuser",
+              "subscriptionRequest/scope": 4,
+              "subscriptionRequest/filteringattributes": "isdisabled",
+              "subscriptionRequest/filterexpression": "isdisabled eq true"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Trigger: When a User is deactivated or deleted"
+        }
+      },
+      "actions": {
+        "Get_all_Kudos_received_by_the_user": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "78ac92f6-0866-41ca-8836-f44205aa4348"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "mpa_kudos",
+              "$select": "mpa_kudoid",
+              "$filter": "(_mpa_recipientid_value eq @{triggerOutputs()?['body/systemuserid']}  and statecode eq 0)"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Get the list of all Active Kudos where the Recipient = Inactive user "
+        },
+        "Iterate_through_the_kudos": {
+          "foreach": "@outputs('Get_all_Kudos_received_by_the_user')?['body/value']",
+          "actions": {
+            "Deactivate_Kudo": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "0c7ac95d-f5fc-4c18-a006-6411da7274e7"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "UpdateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_kudos",
+                  "recordId": "@items('Iterate_through_the_kudos')?['mpa_kudoid']",
+                  "item/statecode": 1,
+                  "item/statuscode": 2
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": "Deactivate each Kudo"
+            }
+          },
+          "runAfter": {
+            "Get_all_Kudos_received_by_the_user": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b8c2db25-dc18-4b2a-944c-40e909172de5"
+          },
+          "type": "Foreach",
+          "description": "Iterate through all the kudos where Recipient = Inactive User"
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}
