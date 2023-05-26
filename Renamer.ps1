@@ -101,7 +101,7 @@ foreach($key in $replacementDict.Keys) {
     }
 }
 
-Repack the canvas apps.
+# Repack the canvas apps.
 $msappFolders = Get-ChildItem -Path $rootDir -Recurse -Filter "*Unpacked"
 foreach ($folder in $msappFolders) {
     $fileName = $folder.FullName.Replace("Unpacked", ".msapp")
