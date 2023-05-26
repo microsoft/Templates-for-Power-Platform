@@ -52,8 +52,8 @@ pac package init --outputDirectory mpa_KudosAccelerator.DeploymentPackage
 #### Add solution
 
 ```
-pac package add-solution --path ..\mpa_EmployeeExperienceBaseAccelerator\bin\Release\mpa_EmployeeExperienceBaseAccelerator.zip
-pac package add-solution --path ..\mpa_KudosAccelerator\bin\Release\mpa_KudosAccelerator.zip
+pac package add-solution --path ..\mpa_EmployeeExperienceBaseAccelerator\bin\Release\mpa_EmployeeExperienceBase.zip
+pac package add-solution --path ..\mpa_KudosAccelerator\bin\Release\mpa_Kudos.zip
 ```
 
 #### Build

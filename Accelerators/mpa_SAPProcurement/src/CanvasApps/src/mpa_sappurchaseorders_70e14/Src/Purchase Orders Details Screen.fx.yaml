@@ -131,6 +131,9 @@
         );
         Reset(chbPurchaseOrderDetailsItemsSelectAll);
         Reset(txtPurchaseOrderDetailsItemsFilter);
+        //Reset all search controls in the component
+        UpdateContext({_resetCommandBar:false});
+        UpdateContext({_resetCommandBar:true});
         //Collection that tracks cross screen navigation thread and allows to back out in reverse sequence, remove from "thread" if navigating back to this screen
         RemoveIf(
             colAppNavigationThreads,
@@ -154,9 +157,10 @@
         Y: =cmpPurchaseOrderDetailsHeader.Height
         ZIndex: =1
 
-        conPurchaseOrderDetailsMainCommandBar As CommandBar:
+        cmpPurchaseOrderDetailsMainCommandBar As CommandBar:
             LayoutMinHeight: =
             LayoutMinWidth: =conPurchaseOrderDetailsData.LayoutMinWidth
+            ResetCommandBar: =_resetCommandBar
             Width: =
 
         conPurchaseOrderDetailsScreenTabs As ScreenTabs:
@@ -2677,7 +2681,7 @@
                                 OnSelect: |-
                                     =RemoveIf(
                                         colPurchaseOrderItems,
-                                       And(
+                                        And(
                                             ItemNumber in Filter(
                                                 galPurchaseOrderItems.AllItems,
                                                 chbPurchaseOrderDetailsItemSelectRow.Value = true
@@ -2687,11 +2691,24 @@
                                     );
                                     UpdateIf(
                                         colPurchaseOrderItems,
-                                        ItemNumber in Filter(
-                                            galPurchaseOrderItems.AllItems,
-                                            chbPurchaseOrderDetailsItemSelectRow.Value = true
-                                        ).ItemNumber,
+                                        And(
+                                            ItemNumber in Filter(
+                                                galPurchaseOrderItems.AllItems,
+                                                chbPurchaseOrderDetailsItemSelectRow.Value = true
+                                            ).ItemNumber,
+                                            CrudType <> "C"
+                                        ),
                                         {CrudType: "D"}
+                                    );
+                                    Reset(chbPurchaseOrderDetailsItemsSelectAll);
+                                    //work around to reset gallery select row checkbox and selected row highlighted
+                                    Set(
+                                        varResetSelectRows,
+                                        true
+                                    );
+                                    Set(
+                                        varResetSelectRows,
+                                        false
                                     );
                                 PaddingLeft: =icoPurchaseOrderDetailsItemsDeleteButton.X+icoPurchaseOrderDetailsItemsDeleteButton.Width+8
                                 PressedColor: =Color.Black
@@ -5062,6 +5079,7 @@
                         First(colReadPurchaseOrderResponseTemp).Status = "Success",
                         !IsBlank(First(colReadPurchaseOrderResponseTemp).OrderNumber)
                     ),
+                    Reset(cmpPurchaseOrderDetailsMainCommandBar);
                     Set(
                         varPurchaseOrderNumber,//Variable that stores the returned main purchase order data
                         First(colReadPurchaseOrderResponseTemp).OrderNumber
@@ -5138,7 +5156,6 @@
                             NotificationType.Error,
                             0
                         ),
-                        Reset(conPurchaseOrderDetailsMainCommandBar);
                         Refresh('SAP Search Histories')
                     );
                 //End if ReadPurchaseOrder Power Automate call was success

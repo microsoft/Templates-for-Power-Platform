@@ -11,6 +11,8 @@ if(Get-Process -Name msbuild -ErrorAction SilentlyContinue) {
     throw "The msbuild process is currently running. Cannot run script."
 }
 
+throw "Remove me before running. Set-Location and replaceDict need updated."
+
 Set-Location -Path .\Accelerators\mpa_SAPProcurementAccelerator\
 
 $replacementDict = @{
