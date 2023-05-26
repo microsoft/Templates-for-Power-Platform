@@ -39,14 +39,16 @@
           "defaultValue": "{\"AppServerHost\":\"sap.clearsoftware.com\",\"Client\":\"100\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
           "type": "String",
           "metadata": {
-            "schemaName": "mpa_SAPApplicationServer"
+            "schemaName": "mpa_SAPApplicationServer",
+            "description": "JSON string that contains system parameters, host, system number, client, etc."
           }
         },
         "SAP Count of Rows To Read (mpa_SAPCountofRowsToRead)": {
           "defaultValue": 1000,
           "type": "Int",
           "metadata": {
-            "schemaName": "mpa_SAPCountofRowsToRead"
+            "schemaName": "mpa_SAPCountofRowsToRead",
+            "description": "Sets the maximum number of records to be returned on any search query and helps to alleviate performance concerns"
           }
         }
       },
@@ -133,14 +135,15 @@
                     "PREIS:Price in Purchase Requisition",
                     "WERKS:Plant",
                     "WAERS:Currency Key",
-                    "ERDAT:Changed On"
+                    "BADAT:Requisition (Request) Date",
+                    "MENGE:Purchase Requisition Quantity"
                   ],
                   "inputParameters/RowCount": "@parameters('SAP Count of Rows To Read (mpa_SAPCountofRowsToRead)')",
                   "inputParameters/WhereFilters": [
                     "BSART = 'NB'",
                     "AND LIFNR LIKE '%@{body('Parse_JSON')?['Vendor']}%'",
                     "AND BANFN LIKE '%@{body('Parse_JSON')?['PurchaseRequisitionNumber']}%'",
-                    "AND ERDAT BETWEEN '@{if(equals(body('Parse_JSON')?['DateFrom'],''),'19000101',body('Parse_JSON')?['DateFrom'])}' AND '@{if(equals(body('Parse_JSON')?['DateTo'],''),'99991231',body('Parse_JSON')?['DateTo'])}'"
+                    "AND BADAT BETWEEN '@{if(equals(body('Parse_JSON')?['DateFrom'],''),'19000101',body('Parse_JSON')?['DateFrom'])}' AND '@{if(equals(body('Parse_JSON')?['DateTo'],''),'99991231',body('Parse_JSON')?['DateTo'])}'"
                   ]
                 },
                 "authentication": "@parameters('$authentication')",
@@ -161,14 +164,15 @@
                     "from": "@outputs('EBAN')?['body/Rows']",
                     "select": {
                       "Vendor": "@if(isInt(item()?['LIFNR']), string(int(item()?['LIFNR'])), item()?['LIFNR'])",
-                      "CreatedOn": "@item()?['ERDAT']",
+                      "RequestDate": "@item()?['BADAT']",
                       "VendorRaw": "@item()?['LIFNR']",
                       "PurchaseRequisitionNumber": "@if(isInt(item()?['BANFN']), string(int(item()?['BANFN'])), item()?['BANFN'])",
                       "PurchasingOrganization": "@item()?['EKORG']",
                       "PurchasingGroup": "@item()?['EKGRP']",
-                      "Amount": "@float(item()?['PREIS'])",
+                      "UnitPrice": "@float(item()?['PREIS'])",
                       "Location": "@item()?['WERKS']",
-                      "Currency": "@item()?['WAERS']"
+                      "Currency": "@item()?['WAERS']",
+                      "Quantity": "@float(item()?['MENGE'])"
                     }
                   }
                 },
@@ -311,7 +315,10 @@
                                   "PurchasingGroup": {
                                     "type": "string"
                                   },
-                                  "Amount": {
+                                  "UnitPrice": {
+                                    "type": "number"
+                                  },
+                                  "Quantity": {
                                     "type": "number"
                                   },
                                   "Currency": {
@@ -320,15 +327,14 @@
                                   "Location": {
                                     "type": "string"
                                   },
-                                  "CreatedOn": {
+                                  "RequestDate": {
                                     "type": "string"
                                   }
                                 },
                                 "required": [
                                   "PurchaseRequisitionNumber",
                                   "Type",
-                                  "Vendor",
-                                  "CreatedOn"
+                                  "Vendor"
                                 ]
                               }
                             },
@@ -421,7 +427,10 @@
                                     "PurchasingGroup": {
                                       "type": "string"
                                     },
-                                    "Amount": {
+                                    "UnitPrice": {
+                                      "type": "number"
+                                    },
+                                    "Quantity": {
                                       "type": "number"
                                     },
                                     "Currency": {
@@ -430,15 +439,14 @@
                                     "Location": {
                                       "type": "string"
                                     },
-                                    "CreatedOn": {
+                                    "RequestDate": {
                                       "type": "string"
                                     }
                                   },
                                   "required": [
                                     "PurchaseRequisitionNumber",
                                     "Type",
-                                    "Vendor",
-                                    "CreatedOn"
+                                    "Vendor"
                                   ]
                                 }
                               },
@@ -545,7 +553,10 @@
                                 "PurchasingGroup": {
                                   "type": "string"
                                 },
-                                "Amount": {
+                                "UnitPrice": {
+                                  "type": "number"
+                                },
+                                "Quantity": {
                                   "type": "number"
                                 },
                                 "Currency": {
@@ -554,15 +565,14 @@
                                 "Location": {
                                   "type": "string"
                                 },
-                                "CreatedOn": {
+                                "RequestDate": {
                                   "type": "string"
                                 }
                               },
                               "required": [
                                 "PurchaseRequisitionNumber",
                                 "Type",
-                                "Vendor",
-                                "CreatedOn"
+                                "Vendor"
                               ]
                             }
                           },
@@ -793,7 +803,10 @@
                           "PurchasingGroup": {
                             "type": "string"
                           },
-                          "Amount": {
+                          "UnitPrice": {
+                            "type": "number"
+                          },
+                          "Quantity": {
                             "type": "number"
                           },
                           "Currency": {
@@ -802,15 +815,14 @@
                           "Location": {
                             "type": "string"
                           },
-                          "CreatedOn": {
+                          "RequestDate": {
                             "type": "string"
                           }
                         },
                         "required": [
                           "PurchaseRequisitionNumber",
                           "Type",
-                          "Vendor",
-                          "CreatedOn"
+                          "Vendor"
                         ]
                       }
                     },
