@@ -8,7 +8,7 @@
         //Set default sort variable
         Set(
             varVendorRequisitionsSortByColumn,//default sort by column of vendor requisitions gallery
-            btnVendorRequistionsTableHeaderCreatedOn.Text
+            btnVendorRequistionsTableHeaderRequestedOn.Text
         );
         Set(
             varVendorRequisitionsSortOrder,//default sort order of vendor requisitions gallery
@@ -31,7 +31,10 @@
             );
             //Execute flow to query requisitions for given vendor requisitions
             Select(icoVendorRequisitionsDateRefresh)
-        )
+        );
+        //Workaround for resetting components
+        UpdateContext({_resetCommandBar:false});
+        UpdateContext({_resetCommandBar:true});
 
     conVendorRequisitionsMain As groupContainer.verticalAutoLayoutContainer:
         Height: =App.Height-Self.Y
@@ -49,6 +52,7 @@
             Height: =45
             LayoutMinHeight: =640
             LayoutMinWidth: =conVendorRequistionsData.LayoutMinWidth
+            ResetCommandBar: =_resetCommandBar
 
         shpVendorRequisitionsCommandBarSeperator As rectangle:
             AccessibleLabel: |-
@@ -363,7 +367,7 @@
                             DisplayMode: |-
                                 =If(
                                     Or(
-                                        IsEmpty(First(colVendorRequisitions).List),
+                                        IsEmpty(colVendorRequisitions),
                                         varIsProcessing
                                     ),
                                     DisplayMode.Disabled,
@@ -470,7 +474,7 @@
                         Size: =10.5
                         Text: |-
                             =With(
-                                {Text: "From"},
+                                {Text: "Requested from"},
                                 // Check if a localized text exists for "Text" in the user's preferred language
                                 If(
                                     // If the localized text is blank, return the default text
@@ -494,7 +498,7 @@
                                 ),
                                 " *"
                             )
-                        Width: =Len(Self.Text)*10
+                        Width: =Len(Self.Text)*8
                         X: =dteVendorRequisitionsDateFieldFrom.X
                         ZIndex: =2
 
@@ -578,7 +582,7 @@
                         Size: =10.5
                         Text: |-
                             =With(
-                                {Text: "To"},
+                                {Text: "Requested to"},
                                 // Check if a localized text exists for "Text" in the user's preferred language
                                 If(
                                     // If the localized text is blank, return the default text
@@ -602,7 +606,7 @@
                                 ),
                                 " *"
                             )
-                        Width: =Len(Self.Text)*12
+                        Width: =Len(Self.Text)*8
                         X: =dteVendorRequisitionsDateFieldTo.X
                         ZIndex: =4
 
@@ -689,7 +693,7 @@
                         Icon: =Icon.Reload
                         OnSelect: |-
                             =//Check if required search fields and store missing fields in a collection
-                            Clear(colRequiredFieldsTemp);
+                            Clear(colVendorRequisitions);
                             If(
                                 And(
                                     IsBlank(dteVendorRequisitionsDateFieldFrom.SelectedDate),
@@ -747,7 +751,7 @@
                                 Reset(txtVendorRequisitionsFilter);
                                 Set(
                                     varVendorRequisitionsSortByColumn,//default sort by column of vendor requisitions gallery
-                                    btnVendorRequistionsTableHeaderCreatedOn.Text
+                                    btnVendorRequistionsTableHeaderRequestedOn.Text
                                 );
                                 Set(
                                     varVendorRequisitionsSortOrder,//default sort order of vendor requisitions gallery
@@ -762,7 +766,7 @@
                                     true
                                 );
                                 ClearCollect(
-                                    colVendorRequisitions,
+                                    colVendorRequisitionsTemp,
                                     ReadRequisitionList.Run(
                                         Substitute(
                                             JSON(
@@ -791,21 +795,22 @@
                             With(
                                     {
                                         Text: Switch(
-                                            First(colVendorRequisitions).Status,
+                                            First(colVendorRequisitionsTemp).Status,
                                             "Information",
                                             "No requisitions were found based on your search criteria",
                                             "Warning",
                                             "The maximum number of search results were found based upon your criteria and some records may be missing. Please try changing your search criteria.",
                                             "Error",
                                             Concat(
-                                                First(colVendorRequisitions).Messages,
+                                                First(colVendorRequisitionsTemp).Messages,
                                                 Message,
                                                 " "
                                             ),
                                             "requisitions found based upon your search criteria"
                                         ),
-                                        Status: First(colVendorRequisitions).Status
+                                        Status: First(colVendorRequisitionsTemp).Status
                                     },
+                                    //Keep showing the refreshing button if status is error to allow the user to try again
                                     If(
                                         Status <> "Error",
                                         Set(
@@ -813,12 +818,24 @@
                                             false
                                         );
                                     );
+                                    //If success then, build results collection
+                            If(
+                                        Status = "Success",
+                                        ClearCollect(
+                                            colVendorRequisitions,
+                                            AddColumns(
+                                                First(colVendorRequisitionsTemp).List,
+                                                "_TotalAmount",
+                                                Quantity * UnitPrice
+                                            )
+                                        );
+                                    );
                                     Notify(
                                     //Append record count to message if success
                                         Concatenate(
                                             If(
                                                 Status = "Success",
-                                                CountRows(First(colVendorRequisitions).List)
+                                                CountRows(First(colVendorRequisitionsTemp).List)
                                             ) & " ",
                                             If(
                                     // If the localized text is blank, return the default text
@@ -857,6 +874,7 @@
                                 
                             );
                             Clear(colRequiredFieldsTemp);
+                            Clear(colVendorRequisitionsTemp);
                             //Done processing
                             Set(
                                 varIsProcessing,
@@ -962,7 +980,7 @@
                     Height: =43
                     LayoutAlignItems: =LayoutAlignItems.Center
                     LayoutMinHeight: =
-                    LayoutMinWidth: =conVendorRequistionsTableHeaderRequisition.LayoutMinWidth + conVendorRequistionsTableHeaderCreatedOn.LayoutMinWidth + conVendorRequistionsTableHeaderOrganization.LayoutMinWidth + conVendorRequistionsTableHeaderGroup.LayoutMinWidth + conVendorRequistionsTableHeaderAmount.LayoutMinWidth
+                    LayoutMinWidth: =conVendorRequistionsTableHeaderRequisition.LayoutMinWidth + conVendorRequistionsTableHeaderRequestedOn.LayoutMinWidth + conVendorRequistionsTableHeaderOrganization.LayoutMinWidth + conVendorRequistionsTableHeaderGroup.LayoutMinWidth + conVendorRequistionsTableHeaderAmount.LayoutMinWidth
                     LayoutMode: =LayoutMode.Auto
                     Width: =
                     ZIndex: =1
@@ -1100,19 +1118,19 @@
                             Y: =Self.FocusedBorderThickness
                             ZIndex: =2
 
-                    conVendorRequistionsTableHeaderCreatedOn As groupContainer.manualLayoutContainer:
+                    conVendorRequistionsTableHeaderRequestedOn As groupContainer.manualLayoutContainer:
                         AlignInContainer: =AlignInContainer.SetByContainer
                         BorderColor: =RGBA(0, 0, 0, 0)
                         BorderStyle: =BorderStyle.None
                         Height: =44
                         LayoutMinHeight: =100
-                        LayoutMinWidth: =icoVendorRequistionsTableHeaderCreatedOn.X+icoVendorRequistionsTableHeaderCreatedOn.Width+10
+                        LayoutMinWidth: =icoVendorRequistionsTableHeaderRequestedOn.X+icoVendorRequistionsTableHeaderRequestedOn.Width+10
                         Width: =
-                        X: =icoVendorRequistionsTableHeaderCreatedOn.Width+icoVendorRequistionsTableHeaderCreatedOn.X+10
+                        X: =icoVendorRequistionsTableHeaderRequestedOn.Width+icoVendorRequistionsTableHeaderRequestedOn.X+10
                         Y: =37
                         ZIndex: =2
 
-                        icoVendorRequistionsTableHeaderCreatedOn As icon.Save:
+                        icoVendorRequistionsTableHeaderRequestedOn As icon.Save:
                             AccessibleLabel: |-
                                 =// Define a variable named "Text" with the value "{value}"
                                 With(
@@ -1141,7 +1159,7 @@
                                 )
                             Color: =varThemeColors.tertiaryGray
                             DisabledColor: =varThemeColors.disabledText
-                            DisplayMode: =btnVendorRequistionsTableHeaderCreatedOn.DisplayMode
+                            DisplayMode: =btnVendorRequistionsTableHeaderRequestedOn.DisplayMode
                             FocusedBorderColor: =varThemeColors.primary
                             Height: =12
                             Icon: |-
@@ -1150,13 +1168,13 @@
                                     Icon.ArrowUp,
                                     Icon.ArrowDown
                                 )
-                            Visible: =varVendorRequisitionsSortByColumn=btnVendorRequistionsTableHeaderCreatedOn.Text && galVendorRequisitions.Visible
+                            Visible: =varVendorRequisitionsSortByColumn=btnVendorRequistionsTableHeaderRequestedOn.Text && galVendorRequisitions.Visible
                             Width: =12
-                            X: =Len(btnVendorRequistionsTableHeaderCreatedOn.Text)*8+8
-                            Y: =btnVendorRequistionsTableHeaderCreatedOn.Y+btnVendorRequistionsTableHeaderCreatedOn.Height/2-Self.Height/2
+                            X: =Len(btnVendorRequistionsTableHeaderRequestedOn.Text)*8+8
+                            Y: =btnVendorRequistionsTableHeaderRequestedOn.Y+btnVendorRequistionsTableHeaderRequestedOn.Height/2-Self.Height/2
                             ZIndex: =1
 
-                        btnVendorRequistionsTableHeaderCreatedOn As button:
+                        btnVendorRequistionsTableHeaderRequestedOn As button:
                             Align: =Align.Left
                             BorderColor: =RGBA(0,0,0,0)
                             BorderThickness: =1
@@ -1213,7 +1231,7 @@
                             Text: |-
                                 =// Define a variable named "Text" with the value "{value}"
                                 With(
-                                    {Text: "Created on"},
+                                    {Text: "Requested on"},
                                     // Check if a localized text exists for "Text" in the user's preferred language
                                     If(
                                         // If the localized text is blank, return the default text
@@ -1621,7 +1639,7 @@
                             Text: |-
                                 =// Define a variable named "Text" with the value "{value}"
                                 With(
-                                    {Text: "Amount"},
+                                    {Text: "Total"},
                                     // Check if a localized text exists for "Text" in the user's preferred language
                                     If(
                                         // If the localized text is blank, return the default text
@@ -1714,27 +1732,27 @@
                             If(
                                 !IsBlank(txtVendorRequisitionsFilter.Text),//Filter text data is entered so search the collection based upon entered text
                                 Search(
-                                    First(colVendorRequisitions).List,
+                                    colVendorRequisitions,
                                     txtVendorRequisitionsFilter.Text,
                                     "PurchaseRequisitionNumber",
                                     "Type",
                                     "PurchasingOrganization",
                                     "PurchasingGroup"
                                 ),
-                                First(colVendorRequisitions).List//otherwise, just display all items in the cached collection
+                                colVendorRequisitions//otherwise, just display all items in the cached collection
                             ),
                             Switch(//determine which field to sort by based upon the tabel header column value selected and stored in variable
                                 varVendorRequisitionsSortByColumn,
                                 btnVendorRequistionsTableHeaderRequisition.Text,
                                 "PurchaseRequisitionNumber",
-                                btnVendorRequistionsTableHeaderCreatedOn.Text,
-                                "CreatedOn",
+                                btnVendorRequistionsTableHeaderRequestedOn.Text,
+                                "RequestDate",
                                 btnVendorRequistionsTableHeaderOrganization.Text,
                                 "PurchasingOrganization",
                                 btnVendorRequistionsTableHeaderGroup.Text,
                                 "PurchasingGroup",
                                 btnVendorRequistionsTableHeaderAmount.Text,
-                                "Amount"
+                                "_TotalAmount"
                             ),
                             varVendorRequisitionsSortOrder//finally, sort ascending or descending based upon value stored in variable
                         )
@@ -1746,7 +1764,7 @@
                     TemplatePadding: =0
                     TemplateSize: =43
                     Visible: |
-                        =CountRows(First(colVendorRequisitions).List)>0
+                        =!IsEmpty(colVendorRequisitions)
                     Width: =
                     ZIndex: =3
 
@@ -1794,7 +1812,7 @@
                         PaddingTop: =0
                         Size: =10.5
                         Text: |-
-                            =Text(ThisItem.Amount,"[$-en-US]#,###.00")
+                            =Text(ThisItem._TotalAmount,"[$-en-US]#,###.00")
                         Width: =conVendorRequistionsTableHeaderAmount.Width
                         X: =conVendorRequistionsTableHeaderAmount.X
                         ZIndex: =2
@@ -1854,13 +1872,13 @@
                         Text: |-
                             =Text(
                                 DateValue(
-                                    ThisItem.CreatedOn,"en-US"
+                                    ThisItem.RequestDate,"en-US"
                                 ),
                                 DateTimeFormat.ShortDate
                             )
                         Tooltip: =Self.Text
-                        Width: =conVendorRequistionsTableHeaderCreatedOn.Width
-                        X: =conVendorRequistionsTableHeaderCreatedOn.X
+                        Width: =conVendorRequistionsTableHeaderRequestedOn.Width
+                        X: =conVendorRequistionsTableHeaderRequestedOn.X
                         ZIndex: =5
 
                     lblVendorRequisitions As label:

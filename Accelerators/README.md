@@ -52,8 +52,8 @@ pac package init --outputDirectory mpa_KudosAccelerator.DeploymentPackage
 #### Add solution
 
 ```
-pac package add-solution --path ..\mpa_EmployeeExperienceBaseAccelerator\bin\Release\mpa_EmployeeExperienceBaseAccelerator.zip
-pac package add-solution --path ..\mpa_KudosAccelerator\bin\Release\mpa_KudosAccelerator.zip
+pac package add-solution --path ..\mpa_EmployeeExperienceBaseAccelerator\bin\Release\mpa_EmployeeExperienceBase.zip
+pac package add-solution --path ..\mpa_KudosAccelerator\bin\Release\mpa_Kudos.zip
 ```
 
 #### Build
@@ -70,10 +70,6 @@ Navigate into the `*.DeploymentPackage/bin/Debug/net472/pdpublish` folder and co
 
 
 #### To Deploy a Package Deployer Package.
-
-```
-pac package deploy --package .\bin\Debug\mpa_SAPProcurement.DeploymentPackage.1.0.0.pdpkg.zip --logConsole
-```
 
 #### Helpful links:
 

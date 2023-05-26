@@ -131,6 +131,9 @@
         Reset(chbRequisitionsDetailsItemsSelectAll);
         Reset(txtRequisitionDetailsItemsFilter);
         Reset(galRequisitionItems);
+        //Reset all search controls in the component
+        UpdateContext({_resetCommandBar:false});
+        UpdateContext({_resetCommandBar:true});
         //Collection that tracks cross screen navigation thread and allows to back out in reverse sequence, remove from "thread" if navigating back to this screen
         RemoveIf(
             colAppNavigationThreads,
@@ -156,6 +159,7 @@
         conRequisitionDetailsMainCommandBar As CommandBar:
             LayoutMinHeight: =
             LayoutMinWidth: =conRequisitionDetailsData.LayoutMinWidth
+            ResetCommandBar: =_resetCommandBar
             Width: =
 
         conRequisitionDetailsScreenTabs As ScreenTabs:
@@ -275,7 +279,7 @@
                 FillPortions: =0
                 Height: |-
                     =If(
-                        Self.Width <= 1450,
+                        Self.Width <= 1650,
                         128 + Self.LayoutGap,
                         64
                     )
@@ -2181,7 +2185,7 @@
                                 OnSelect: |-
                                     =RemoveIf(
                                         colRequisitionItems,
-                                       And(
+                                        And(
                                             ItemNumber in Filter(
                                                 galRequisitionItems.AllItems,
                                                 chbRequisitionDetailsItemSelectRow.Value = true
@@ -2191,11 +2195,24 @@
                                     );
                                     UpdateIf(
                                         colRequisitionItems,
-                                        ItemNumber in Filter(
-                                            galRequisitionItems.AllItems,
-                                            chbRequisitionDetailsItemSelectRow.Value = true
-                                        ).ItemNumber,
+                                        And(
+                                            ItemNumber in Filter(
+                                                galRequisitionItems.AllItems,
+                                                chbRequisitionDetailsItemSelectRow.Value = true
+                                            ).ItemNumber,
+                                            CrudType <> "C"
+                                        ),
                                         {CrudType: "D"}
+                                    );
+                                    Reset(chbRequisitionsDetailsItemsSelectAll);
+                                    //work around to reset gallery select row checkbox and selected row highlighted
+                                    Set(
+                                        varResetSelectRows,
+                                        true
+                                    );
+                                    Set(
+                                        varResetSelectRows,
+                                        false
                                     );
                                 PaddingLeft: =icoRequisitionDetailsItemsDeleteButton.X+icoRequisitionDetailsItemsDeleteButton.Width+8
                                 PressedColor: =Color.Black
@@ -4408,6 +4425,7 @@
                         First(colReadRequisitionResponseTemp).Status = "Success",
                         !IsBlank(First(colReadRequisitionResponseTemp).PurchaseRequisitionNumber)
                     ),
+                    Reset(conRequisitionDetailsMainCommandBar);
                     Set(
                         varRequisition,//Variable that stores the returned main requisition data
                         First(colReadRequisitionResponseTemp).PurchaseRequisitionNumber
