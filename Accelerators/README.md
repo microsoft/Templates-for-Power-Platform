@@ -34,10 +34,18 @@ Test out the build. Should have both unmanaged and managed .zip files.
 msbuild *.csproj
 ```
 
+
+#### Clean
+
+```
+msbuild /t:clean .\Accelerators\solutions.proj
+msbuild /p:configuration=Release /t:clean .\Accelerators\solutions.proj
+```
+
 #### Generate Release Solutions
 
 ```
-msbuild /p:configuration=Release .\solutions.proj
+msbuild /p:configuration=Release .\Accelerators\solutions.proj
 ```
 
 ### Deployment Package
