@@ -38,8 +38,8 @@ msbuild *.csproj
 #### Clean
 
 ```
-msbuild /t:clean .\Accelerators\solutions.proj
-msbuild /p:configuration=Release /t:clean .\Accelerators\solutions.proj
+msbuild /t:clean .\Solutions\solutions.proj
+msbuild /p:configuration=Release /t:clean .\Solutions\solutions.proj
 ```
 
 #### Generate Release Solutions

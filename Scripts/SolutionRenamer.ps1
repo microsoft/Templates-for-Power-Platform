@@ -13,7 +13,7 @@ if(Get-Process -Name msbuild -ErrorAction SilentlyContinue) {
 
 throw "Remove me before running. Set-Location and replaceDict need updated."
 
-Set-Location -Path .\Accelerators\mpa_SAPProcurementAccelerator\
+Set-Location -Path .\Solutions\mpa_SAPProcurementAccelerator\
 
 $replacementDict = @{
     # mpa_SAPAcceleratorAdministrator = "mpa_SAPAdministrator";
