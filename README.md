@@ -2,20 +2,20 @@
 
 ## Folder Structure
 
-AppSourcePackages
- - This folder contains subfolders that names match their counterparts across the DeploymentPackages & Solutions folders which encompas file requirements used to deploy Solutions from AppSource.
+#### /AppSourcePackages:
+AppSource packages that are used to publish solutions for easy install.
 
-DeploymentPackages
- - Under this folder is our Dynamics 356 packages that are used to install Solutions into a Microsoft Dataverse instance.
+#### /DeploymentPackages
+Dynamics 356 packages that are used to install Solutions into a Microsoft Dataverse instance.
 
-SampleData
- - This folder contains sample data that can be imported into specific Power Apps after they have been installed into a Power Platform Environment.
+#### /SampleData
+This folder contains sample data that can be imported into specific Power Apps after they have been installed into a Power Platform Environment.
 
-Scripts
- - Contains helpful scripts usually written in PowerShell.
+#### /Scripts
+Helpful scripts usually written in PowerShell.
 
-Solutions
- - Contains unpackaged Power Platform Solutions.
+#### /Solutions
+Unpackaged Power Platform Solutions.
 
 ## Contributing
 
