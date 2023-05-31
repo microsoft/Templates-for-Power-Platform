@@ -1,4 +1,4 @@
-# Accelerators for Power Platform 
+# Templates for Power Platform 
 
 Solutions designed to expedite the implementation of the Power Platform within large-scale enterprises.
 
