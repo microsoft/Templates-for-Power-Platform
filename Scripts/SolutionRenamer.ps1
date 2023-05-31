@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 # Rename an entity across solutions.
 
 # $sourceName = "mpa_SAPPackAdministration"
