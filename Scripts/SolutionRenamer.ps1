@@ -11,28 +11,30 @@ if(Get-Process -Name msbuild -ErrorAction SilentlyContinue) {
     throw "The msbuild process is currently running. Cannot run script."
 }
 
-throw "Remove me before running. Set-Location and replaceDict need updated."
+#throw "Remove me before running. Set-Location and replaceDict need updated."
 
-Set-Location -Path .\Accelerators\mpa_SAPProcurementAccelerator\
+Set-Location -Path ..\Accelerators\Wave11SAPProcurementIntegration\
 
 $replacementDict = @{
-    # mpa_SAPAcceleratorAdministrator = "mpa_SAPAdministrator";
-    mpa_SAPAcceleratorDataverse = "mpa_SAPDataverse";
-    mpa_SAPAcceleratorERP = "mpa_SAPERP";
-    mpa_SAPAcceleratorError = "mpa_SAPError";
-    # mpa_SAPAcceleratorErrorId = "mpa_SAPErrorId";
-    mpa_SAPAcceleratorListofValue = "mpa_SAPListofValue";
-    # mpa_SAPAcceleratorListofValueId = "mpa_SAPListofValueId";
-    mpa_SAPAcceleratorLocalization = "mpa_SAPLocalization";
-    # mpa_SAPAcceleratorLocalizationId = "mpa_SAPLocalizationId";
-    mpa_SAPAcceleratorMenuItem = "mpa_SAPMenuItem";
-    # mpa_SAPAcceleratorMenuItemId = "mpa_SAPMenuItemId";
-    mpa_SAPAcceleratorOffice365Users = "mpa_SAPOffice365Users";
-    mpa_SAPAcceleratorSearchHistory = "mpa_SAPSearchHistory";
-    # mpa_SAPAcceleratorSearchHistoryId = "mpa_SAPSearchHistoryId";
-    mpa_SAPBaseAccelerator = "mpa_SAPBase"; 
-    mpa_SAPProcurementAccelerator = "mpa_SAPProcurement";
-    # mpa_sapvendormanagement_42919 = "mpa_sapvendormanagement_42919";
+    # *****Things That We Reference From The Base Pack*****
+
+    # Tables
+    mpa_ERPBaseListofValue = "mpa_SAPListofValue";
+    mpa_ERPBaseMenuItem = "mpa_SAPMenuItem";
+    mpa_SAPErrorLog = "mpa_SAPError";
+    
+    # Environment Variables
+    sap_SAPDevelopment = "mpa_SAPApplicationServer";
+
+    # *****Solution Specific Entities*****
+    # Solution
+    Wave11SAPProcurementIntegration = "mpa_SAPGoodsReceipt";
+    # App
+    mpa_sapgoodsreceipts_c8083 = "mpa_SAPGoodsReceiptApp";
+
+    # Connection References
+    new_sharedsaperp_14775 = "mpa_SAPGoodsReceiptSAPERP";
+    new_sharedcommondataserviceforapps_44f2a = "mpa_SAPGoodsReceiptDataverse";
 }
 
 # Unpack all .msapp files.
