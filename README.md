@@ -1,20 +1,31 @@
 # Accelerators for Power Platform 
 
+Solutions designed to expedite the implementation of the Power Platform within large-scale enterprises.
+
+## Currently Offered Solutions
+
+### SAP Procurement
+This solution allows you to extend your core procure-to-pay business processes enabled within SAP. The accelerator contains the building blocks necessary to streamline all the SAP screens and attributes related to a core procure-to-pay process into one simple screen in Power Apps. The Power Apps are supported by further automation of processes behind the scenes using Power Automate flows, SAP ERP Connector and Microsoft Dataverse. These components are fully extensible to rapidly deploy and meet your business requirements including connecting into additional line of business systems and workflows.
+
+### Employee Kudos
+
+Enables individual teammates to celebrate co-workers for their contributions. There are many more exciting solutions on the roadmap such as Awards & Recognitions which enables employees to nominate individuals & teams for awards and Employee Onboarding which partners new employees with current employees and mentors to facilitate new employee onboarding, especially in a hybrid work environment. All with easy to use interface with data stored in Microsoft Dataverse. Available for both web and mobile devices.
+
 ## Folder Structure
 
-#### /AppSourcePackages:
+#### AppSourcePackages:
 AppSource packages that are used to publish solutions for easy install.
 
-#### /DeploymentPackages
+#### DeploymentPackages
 Dynamics 356 packages that are used to install Solutions into a Microsoft Dataverse instance.
 
-#### /SampleData
+#### SampleData
 This folder contains sample data that can be imported into specific Power Apps after they have been installed into a Power Platform Environment.
 
-#### /Scripts
+#### Scripts
 Helpful scripts usually written in PowerShell.
 
-#### /Solutions
+#### Solutions
 Unpackaged Power Platform Solutions.
 
 ## Contributing
