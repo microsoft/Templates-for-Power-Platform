@@ -14,19 +14,19 @@ Enables individual teammates to celebrate co-workers for their contributions. Th
 ## Folder Structure
 
 #### AppSourcePackages:
-AppSource packages that are used to publish solutions for easy install.
+    AppSource packages that are used to publish solutions for easy install.
 
 #### DeploymentPackages
-Dynamics 356 packages that are used to install Solutions into a Microsoft Dataverse instance.
+    Dynamics 356 packages that are used to install Solutions into a Microsoft Dataverse instance.
 
 #### SampleData
-This folder contains sample data that can be imported into specific Power Apps after they have been installed into a Power Platform Environment.
+    This folder contains sample data that can be imported into specific Power Apps after they have been installed into a Power Platform Environment.
 
 #### Scripts
-Helpful scripts usually written in PowerShell.
+    Helpful scripts usually written in PowerShell.
 
 #### Solutions
-Unpackaged Power Platform Solutions.
+    Unpackaged Power Platform Solutions.
 
 ## Contributing
 
