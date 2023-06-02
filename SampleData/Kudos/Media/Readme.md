@@ -1,1 +1,1 @@
-## This folder is for media
+## This folder is only for screenshots for the install instructions
