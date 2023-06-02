@@ -11,13 +11,15 @@ There are two data files
     pac tool cmt
     ```
 3. This will bring up the following window. Select "Import data" and hit "Continue".
-![alt text](\Media\CMT1.png "Configuration Migration Tool")
+![alt text](CMTScreenshot1.png "Configuration Migration Tool")
 4. On the next screen, Select how you want to sign in.
-    4.1 Most Deployment Types will be "Office 365".
-    4.2 Select to Sign in as current user if you don't use different credentials to access Power Apps
-![alt text](\Media\CMT2.png "Configuration Migration Tool")
+    - Most Deployment Types will be "Office 365".
+    - Select to Sign in as current user if you don't use different credentials to access Power Apps
+![alt text](CMTScreenshot2.png "Configuration Migration Tool")
 5. Select the environment that has the solutions installed
-6. Select the sampled data zip file and Import the data
+6. Select the sample data zip file that you want to import and Import the data
+    - Select *BadgeData.zip* for Kudos Sample Badge data
+    - Select *LocalizationData.zip* to import the english strings for Kudos to support localization into other languages
 7. Exit and repeat from Step #3 if you have additional data files to install
 
 ## Additional Related Resources
