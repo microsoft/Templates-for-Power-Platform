@@ -5,6 +5,7 @@ There are two data files available for the Kudos solution:
 2. [BadgeData.zip](BadgeData.zip) - Install this to get sample badge data 
 
 ## Sample Data Installation Instructions
+After you've donwloaded one or more of the data files listed above in the overview, follow these instructions to install that data in the environment that you've already installed the Kudos solution into:
 1. Install the Microsoft Power Platform Command Line Interface (CLI). Follow the instructions here: [Microsoft CLI Introduction and Install Instructions](https://learn.microsoft.com/en-us/power-platform/developer/cli/introduction)
 2. Once installed, type the following into the command line interface and hit ENTER.
     ```
