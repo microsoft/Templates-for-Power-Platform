@@ -11,6 +11,16 @@ This solution allows you to extend your core procure-to-pay business processes e
 
 Enables individual teammates to celebrate co-workers for their contributions. There are many more exciting solutions on the roadmap such as Awards & Recognitions which enables employees to nominate individuals & teams for awards and Employee Onboarding which partners new employees with current employees and mentors to facilitate new employee onboarding, especially in a hybrid work environment. All with easy to use interface with data stored in Microsoft Dataverse. Available for both web and mobile devices.
 
+## Documentation
+
+#### [Employee Kudos Template](https://aka.ms/LearnEmployeeKudosTemplate)
+
+#### [SAP Procurement Template](https://aka.ms/LearnSAPProcurementTemplate)
+
+#### [General Documenatation](https://aka.ms/LearnTemplatesForPowerPlatform)
+
+# Advanced:
+
 ## Folder Structure
 
 #### [AppSourcePackages](./AppSourcePackages/README.md)
