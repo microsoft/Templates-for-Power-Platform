@@ -1,7 +1,7 @@
 # Kudos Sample Data Installation Instructions
 ## Overview
 There are two data files
-1. LocalizationData.zip - Install this to get all the english strings that can be localized into other languages. This data will be uploaded to the Employee Experience Localization table that supports localization of strings for multiple Power Platform templates, including Kudos.
+1. [LocalizationData.zip](LocalizationData.zip) - Install this to get all the english strings that can be localized into other languages. This data will be uploaded to the Employee Experience Localization table that supports localization of strings for multiple Power Platform templates, including Kudos.
 2. BadgeData.zip - Install this to get sample badge data 
 
 ## Sample Data Installation Instructions
