@@ -1,8 +1,8 @@
 # Kudos Sample Data Installation Instructions
 ## Overview
-There are two data files
+There are two data files available for the Kudos solution:
 1. [LocalizationData.zip](LocalizationData.zip) - Install this to get all the english strings that can be localized into other languages. This data will be uploaded to the Employee Experience Localization table that supports localization of strings for multiple Power Platform templates, including Kudos.
-2. BadgeData.zip - Install this to get sample badge data 
+2. [BadgeData.zip](BadgeData.zip) - Install this to get sample badge data 
 
 ## Sample Data Installation Instructions
 1. Install the Microsoft Power Platform Command Line Interface (CLI). Follow the instructions here: [Microsoft CLI Introduction and Install Instructions](https://learn.microsoft.com/en-us/power-platform/developer/cli/introduction)
