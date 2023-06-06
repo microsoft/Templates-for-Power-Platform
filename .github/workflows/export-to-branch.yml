@@ -12,6 +12,10 @@ jobs:
     runs-on: windows-latest
 
     steps:
+      - name: Get current date
+        id: date
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+
       - name: Checkout code
         uses: actions/checkout@v2
 
@@ -32,6 +36,31 @@ jobs:
           POWERPLATFORM_USERNAME: ${{ secrets.POWERPLATFORM_USERNAME }}
           POWERPLATFORM_PASSWORD: ${{ secrets.POWERPLATFORM_PASSWORD }}
 
-      - name: Run Org Who
+      - name: Initialize Solution If DNE
         run: |
-          pac org who
+          if [[ ! -d "./Solutions/${{ github.event.inputs.solution_name }}" ]]; then
+            pac solution init --publisher-name PowerAccelerator --publisher-prefix mpa --outputDirectory ./YOURNAMEHERE
+            $cdsprojFilePath = "./Solutions/${{ github.event.inputs.solution_name }}/${{ github.event.inputs.solution_name }}.cdsproj"
+            [xml]$xmlDoc = Get-Content $cdsprojFilePath
+            $propertyGroup = $xmlContent.CreateElement("PropertyGroup")
+            $solutionPackageType = $xmlContent.CreateElement("SolutionPackageType")
+            $solutionPackageType.InnerText = 'Both'
+            $propertyGroup.AppendChild($solutionPackageType)
+            $xmlContent.Project.AppendChild($propertyGroup)
+            $xmlDoc.Save($cdsprojFilePath)
+          fi
+
+      - name: Sync Solution from Environment
+        run: |
+          cd ./Solutions/${{ github.event.inputs.solution_name }}
+          pac solution sync --processCanvasApps
+          cd ../../
+
+      - name: Create and push to new branch
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "github-actions@github.com"
+          git checkout -b "${{ github.event.inputs.solution_name }}-${{ steps.date.outputs.date }}"
+          git add .
+          git commit -m "Synced ${{ github.event.inputs.solution_name }} Power Platform Solution"
+          git push --set-upstream origin "${{ github.event.inputs.solution_name }}-${{ steps.date.outputs.date }}"
