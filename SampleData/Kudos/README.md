@@ -2,7 +2,7 @@
 ## Overview
 There are two data files available for the Kudos solution:
 1. [LocalizationData.zip](LocalizationData.zip) - Install this to get all the english strings that can be localized into other languages. This data will be uploaded to the Employee Experience Localization table that supports localization of strings for multiple Power Platform templates, including Kudos.
-2. [BadgeData.zip](BadgeData.zip) - Install this to get sample badge data 
+2. [BadgeData.zip](BadgeData.zip) - Install this to get sample badge data for the Kudus app, including badge images. This data will be uploaded into the Badge table.
 
 ## Sample Data Installation Instructions
 After you've donwloaded one or more of the data files listed above in the overview, follow these instructions to install that data in the environment that you've already installed the Kudos solution into:
