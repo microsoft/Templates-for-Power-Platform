@@ -1,0 +1,43 @@
+name: Build and Check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-check:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup .NET Core environment 
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '6.0'
+
+      - name: Install PAC CLI
+        run: |
+          dotnet tool install --global Microsoft.PowerApps.CLI.Tool
+
+      - name: Auth
+        run: |
+          pac auth create --kind CDS --url ${{ secrets.POWERPLATFORM_URL }} --username ${{ secrets.POWERPLATFORM_USERNAME }} --password ${{ secrets.POWERPLATFORM_PASSWORD }}
+        env:
+          POWERPLATFORM_URL: ${{ secrets.POWERPLATFORM_URL }}
+          POWERPLATFORM_USERNAME: ${{ secrets.POWERPLATFORM_USERNAME }}
+          POWERPLATFORM_PASSWORD: ${{ secrets.POWERPLATFORM_PASSWORD }}
+
+      - name: Build projects
+        run: |
+          FOR /R %%F IN (*.cdsproj) DO (
+            msbuild "%%F"
+          )
+
+      - name: Publish artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: release-artifacts
+          path: '**/bin/Release/*.zip'
