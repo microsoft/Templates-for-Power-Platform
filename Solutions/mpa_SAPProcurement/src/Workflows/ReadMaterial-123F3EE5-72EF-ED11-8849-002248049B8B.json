@@ -11,9 +11,6 @@
         }
       },
       "shared_commondataserviceforapps": {
-        "impersonation": {
-          "source": "invoker"
-        },
         "runtimeSource": "embedded",
         "connection": {
           "connectionReferenceLogicalName": "mpa_SAPDataverse"
@@ -39,7 +36,8 @@
           "defaultValue": "{\"AppServerHost\":\"sap.clearsoftware.com\",\"Client\":\"100\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
           "type": "String",
           "metadata": {
-            "schemaName": "mpa_SAPApplicationServer"
+            "schemaName": "mpa_SAPApplicationServer",
+            "description": "JSON string that contains system parameters, host, system number, client, etc."
           }
         },
         "SAP SPRAS (mpa_SAPSPRAS)": {
@@ -54,7 +52,7 @@
       "triggers": {
         "manual": {
           "metadata": {
-            "operationMetadataId": "88e97e56-0a7b-4091-968c-619a2a43e9a4"
+            "operationMetadataId": "0b14826f-248f-4bf7-84f8-63e743ee1870"
           },
           "type": "Request",
           "kind": "PowerAppV2",
@@ -137,9 +135,9 @@
               "type": "OpenApiConnection",
               "inputs": {
                 "host": {
-                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp",
                   "connectionName": "shared_saperp",
-                  "operationId": "ReadTableVersion3"
+                  "operationId": "ReadTableVersion3",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
                 },
                 "parameters": {
                   "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
@@ -155,12 +153,9 @@
                     "AND SPRAS = '@{parameters('SAP SPRAS (mpa_SAPSPRAS)')}'"
                   ]
                 },
+                "authentication": "@parameters('$authentication')",
                 "retryPolicy": {
                   "type": "none"
-                },
-                "authentication": {
-                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']",
-                  "type": "Raw"
                 }
               }
             },
@@ -423,24 +418,23 @@
               "type": "OpenApiConnection",
               "inputs": {
                 "host": {
-                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                   "connectionName": "shared_commondataserviceforapps",
-                  "operationId": "CreateRecord"
+                  "operationId": "CreateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                 },
                 "parameters": {
                   "entityName": "mpa_saperrors",
                   "item/mpa_name": "@outputs('ErrorReturn')?['body'][0]['FlowName']",
                   "item/mpa_action": "@outputs('ErrorReturn')?['body'][0]['Step']",
-                  "item/mpa_additionalinformation": "@triggerBody()['text']",
                   "item/mpa_errormessage": "@outputs('ErrorReturn')?['body'][0]['InnerErrorMessage']",
                   "item/mpa_sourcetype": 865420000,
                   "item/mpa_workflowinstanceurl": "@outputs('ErrorReturn')?['body'][0]['URL']",
                   "item/mpa_workflowstatus": "@If(equals(item()?['Status'], 'Failed'), '865420001', '865420000')"
                 },
+                "authentication": "@parameters('$authentication')",
                 "retryPolicy": {
                   "type": "none"
-                },
-                "authentication": "@parameters('$authentication')"
+                }
               }
             },
             "Response_3": {
@@ -522,7 +516,7 @@
         }
       }
     },
-    "templateName": null
+    "templateName": ""
   },
   "schemaVersion": "1.0.0.0"
 }
