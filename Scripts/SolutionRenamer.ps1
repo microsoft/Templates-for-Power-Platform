@@ -13,28 +13,44 @@ if(Get-Process -Name msbuild -ErrorAction SilentlyContinue) {
     throw "The msbuild process is currently running. Cannot run script."
 }
 
-throw "Remove me before running. Set-Location and replaceDict need updated."
+# throw "Remove me before running. Set-Location and replaceDict need updated."
 
-Set-Location -Path .\Solutions\mpa_SAPProcurementAccelerator\
+Set-Location -Path .\Solutions\PowerCoffeeTest\
 
 $replacementDict = @{
-    # mpa_SAPAcceleratorAdministrator = "mpa_SAPAdministrator";
-    mpa_SAPAcceleratorDataverse = "mpa_SAPDataverse";
-    mpa_SAPAcceleratorERP = "mpa_SAPERP";
-    mpa_SAPAcceleratorError = "mpa_SAPError";
-    # mpa_SAPAcceleratorErrorId = "mpa_SAPErrorId";
-    mpa_SAPAcceleratorListofValue = "mpa_SAPListofValue";
-    # mpa_SAPAcceleratorListofValueId = "mpa_SAPListofValueId";
-    mpa_SAPAcceleratorLocalization = "mpa_SAPLocalization";
-    # mpa_SAPAcceleratorLocalizationId = "mpa_SAPLocalizationId";
-    mpa_SAPAcceleratorMenuItem = "mpa_SAPMenuItem";
-    # mpa_SAPAcceleratorMenuItemId = "mpa_SAPMenuItemId";
-    mpa_SAPAcceleratorOffice365Users = "mpa_SAPOffice365Users";
-    mpa_SAPAcceleratorSearchHistory = "mpa_SAPSearchHistory";
-    # mpa_SAPAcceleratorSearchHistoryId = "mpa_SAPSearchHistoryId";
-    mpa_SAPBaseAccelerator = "mpa_SAPBase"; 
-    mpa_SAPProcurementAccelerator = "mpa_SAPProcurement";
-    # mpa_sapvendormanagement_42919 = "mpa_sapvendormanagement_42919";
+    # Tables:
+    cr771_MatchHistory = "mpa_CoffeeConnectMatch";
+    cr771_Suggestion = "mpa_CoffeeConnectSuggestion";
+    cr771_PowerCoffeeSignup = "mpa_CoffeeConnectSignUp";
+    cr771_Location = "mpa_CoffeeConnectLocation";
+    cr771_PowerCoffeeRing = "mpa_CoffeeConnectRing";
+
+    # Choices
+    cr771_meetingfrequencypreference = "mpa_CoffeeConnectMeetingFrequencyPreference"
+    cr771_ringtype = "mpa_CoffeeConnectRingType";
+    cr771_suggestionstatus = "mpa_CoffeeConnectSuggestionStatus";
+    cr771_suggestiontype = "mpa_CoffeeConnectSuggestionType";
+
+    # *****Solution Specific Entities*****
+
+    # Canvas App
+    cr771_powercoffee_0a1d0 = "mpa_CoffeeConnectApp";
+
+    # Model App + Sitemaps
+    cr771_PowerCoffeeAdmin = "mpa_CoffeeConnectAdminApp";
+
+    # Connection References
+    cr771_sharedcommaondataserviceforapps_6a295 = "mpa_CoffeeConnectDataverse";
+    new_sharedteams_8c88b = "mpa_CoffeeConnectTeams";
+    new_sharedoffice365_f2661 = "mpa_CoffeeConnectOfficeOutlook";
+
+    # Solution
+    PowerCoffeeTest = "mpa_CoffeeConnect";
+
+    # Coffee Connect - Admin = "Coffee Connect - Admin";
+    # Coffee Connect - User = "Coffee Connect - User";
+    # Power Coffee Matching Flow = "Power Coffee Matching Flow";
+    # Schedule Outlook Meeting = "Schedule Outlook Meeting";
 }
 
 # Unpack all .msapp files.
