@@ -26,10 +26,10 @@ $replacementDict = @{
     cr771_PowerCoffeeRing = "mpa_CoffeeConnectRing";
 
     # Choices
-    cr771_meetingfrequencypreference = "mpa_CoffeeConnectMeetingFrequencyPreference"
-    cr771_ringtype = "mpa_CoffeeConnectRingType";
-    cr771_suggestionstatus = "mpa_CoffeeConnectSuggestionStatus";
-    cr771_suggestiontype = "mpa_CoffeeConnectSuggestionType";
+    cr771_meetingfrequencypreference = "mpa_coffeeconnect_meetingfrequencypreference"
+    cr771_ringtype = "mpa_coffeeconnect_ringtype";
+    cr771_suggestionstatus = "mpa_coffeeconnect_suggestionstatus";
+    cr771_suggestiontype = "mpa_coffeeconnect_suggestiontype";
 
     # *****Solution Specific Entities*****
 
