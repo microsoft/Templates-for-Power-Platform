@@ -1,0 +1,290 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_office365": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_CoffeeConnectOfficeOutlook"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      },
+      "shared_teams": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_CoffeeConnectTeams"
+        },
+        "api": {
+          "name": "shared_teams"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "5cf8f428-e08c-480e-abe1-8bfc1e82ae50"
+          },
+          "type": "Request",
+          "kind": "PowerApp",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "InitializeUser1EmailVariable_Value": {
+                  "type": "string",
+                  "description": "Enter initial value",
+                  "x-ms-powerflows-param-ispartial": false
+                },
+                "InitializeUser1NameVariable_Value": {
+                  "type": "string",
+                  "description": "Enter initial value",
+                  "x-ms-powerflows-param-ispartial": false
+                },
+                "InitializeUser2EmailVariable_Value": {
+                  "type": "string",
+                  "description": "Enter initial value",
+                  "x-ms-powerflows-param-ispartial": false
+                },
+                "InitializeUser2NameVariable_Value": {
+                  "type": "string",
+                  "description": "Enter initial value",
+                  "x-ms-powerflows-param-ispartial": false
+                }
+              },
+              "required": [
+                "InitializeUser1EmailVariable_Value",
+                "InitializeUser1NameVariable_Value",
+                "InitializeUser2EmailVariable_Value",
+                "InitializeUser2NameVariable_Value"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Initialize_User_1_Email_Variable": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "e8cc0736-e286-4fa0-8570-920907ecc72f"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "str_email_user_1",
+                "type": "string",
+                "value": "@{triggerBody()['InitializeUser1EmailVariable_Value']}"
+              }
+            ]
+          }
+        },
+        "Initialize_User_2_Email_Variable": {
+          "runAfter": {
+            "Initialize_User_1_Name_Variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "68697e5f-aa60-469b-a5ef-533cd8c7600a"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "str_email_user_2",
+                "type": "string",
+                "value": "@{triggerBody()['InitializeUser2EmailVariable_Value']}"
+              }
+            ]
+          }
+        },
+        "Initialize_User_1_Name_Variable": {
+          "runAfter": {
+            "Initialize_User_1_Email_Variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "191d9a54-cb30-438c-84a8-93896600c4ce"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "str_name_user_1",
+                "type": "string",
+                "value": "@{triggerBody()['InitializeUser1NameVariable_Value']}"
+              }
+            ]
+          }
+        },
+        "Initialize_User_2_Name_Variable": {
+          "runAfter": {
+            "Initialize_User_2_Email_Variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c93bd980-6f2f-4aff-9da5-cef66eae80e4"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "str_name_user_2",
+                "type": "string",
+                "value": "@{triggerBody()['InitializeUser2NameVariable_Value']}"
+              }
+            ]
+          }
+        },
+        "Find_Meeting_Time": {
+          "runAfter": {
+            "Initialize_User_2_Name_Variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "54941b48-e7ac-46fc-942f-e22bd2405f6b"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "FindMeetingTimes_V2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "body/RequiredAttendees": "@{variables('str_email_user_1')};@{variables('str_email_user_2')}",
+              "body/MeetingDuration": 30,
+              "body/Start": "@startOfDay(addDays(utcNow(),1))",
+              "body/End": "@addDays(utcNow(),30)",
+              "body/MaxCandidates": 1,
+              "body/MinimumAttendeePercentage": "100",
+              "body/ActivityDomain": "Work"
+            },
+            "authentication": {
+              "type": "Raw",
+              "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+            }
+          }
+        },
+        "Create_Teams_Meeting": {
+          "runAfter": {
+            "Find_Meeting_Time": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "5ccffb80-5e36-4af1-a3c1-13f610a3a6d5"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_teams",
+              "operationId": "CreateTeamsMeeting",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams"
+            },
+            "parameters": {
+              "calendarid": "Calendar",
+              "item/subject": "Coffee Chat with @{variables('str_name_user_1')} and @{variables('str_name_user_2')}",
+              "item/body/content": "Coffee Connect invites you to have a coffee chat with your match!",
+              "item/timeZone": "Pacific Standard Time",
+              "item/start/dateTime": "@ConvertTimeZone(first(outputs('Find_Meeting_Time')?['body/meetingTimeSuggestions'])?['meetingTimeSlot/start/dateTime'], 'UTC', 'Pacific Standard Time')",
+              "item/end/dateTime": "@ConvertTimeZone(first(outputs('Find_Meeting_Time')?['body/meetingTimeSuggestions'])?['meetingTimeSlot/end/dateTime'], 'UTC', 'Pacific Standard Time')",
+              "item/requiredAttendees": "@{variables('str_email_user_1')};@{variables('str_email_user_2')}"
+            },
+            "authentication": {
+              "type": "Raw",
+              "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+            }
+          }
+        },
+        "Send_an_email_(V2)": {
+          "runAfter": {
+            "Parse_Meeting_End_DateTime": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "cb5433c2-b9c9-4340-bea9-4940e068ae14"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "SendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "emailMessage/To": "@{variables('str_email_user_1')};@{variables('str_email_user_2')}",
+              "emailMessage/Subject": "Coffee Connect Scheduled a Meeting!",
+              "emailMessage/Body": "<p>Hello!<br>\n<br>\nCoffee Connect has scheduled a Teams meeting between @{variables('str_name_user_1')} and @{variables('str_name_user_2')} at the next available time on both calendars. Please review the placement of the event on your Outlook calendar and make adjustments if necessary.<br>\n<br>\nDate: @{variables('arr_meeting_start')?[0]}<br>\nTime: @{variables('arr_meeting_start')?[1]} to @{variables('arr_meeting_end')?[1]}<br>\n<br>\nSincerely,<br>\nCoffee Connect</p>",
+              "emailMessage/Importance": "Normal"
+            },
+            "authentication": {
+              "type": "Raw",
+              "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+            }
+          }
+        },
+        "Parse_Meeting_Start_DateTime": {
+          "runAfter": {
+            "Create_Teams_Meeting": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "1320700c-38b9-4c42-88eb-bc997e973842"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "arr_meeting_start",
+                "type": "array",
+                "value": "@split(outputs('Create_Teams_Meeting')?['body/start/dateTime'], 'T')"
+              }
+            ]
+          }
+        },
+        "Parse_Meeting_End_DateTime": {
+          "runAfter": {
+            "Parse_Meeting_Start_DateTime": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "61f1f284-dfe8-4171-a0de-01c72b18eb4a"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "arr_meeting_end",
+                "type": "array",
+                "value": "@split(outputs('Create_Teams_Meeting')?['body/end/dateTime'], 'T')"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

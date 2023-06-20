@@ -15,13 +15,13 @@ if(Get-Process -Name msbuild -ErrorAction SilentlyContinue) {
 
 # throw "Remove me before running. Set-Location and replaceDict need updated."
 
-Set-Location -Path .\Solutions\PowerCoffeeTest\
+Set-Location -Path .\Solutions\mpa_CoffeeConnect\
 
 $replacementDict = @{
     # Tables:
     cr771_MatchHistory = "mpa_CoffeeConnectMatch";
     cr771_Suggestion = "mpa_CoffeeConnectSuggestion";
-    cr771_PowerCoffeeSignup = "mpa_CoffeeConnectSignUp";
+    # cr771_PowerCoffeeSignup = "mpa_CoffeeConnectSignUp";
     cr771_Location = "mpa_CoffeeConnectLocation";
     cr771_PowerCoffeeRing = "mpa_CoffeeConnectRing";
 
@@ -31,7 +31,7 @@ $replacementDict = @{
     cr771_suggestionstatus = "mpa_coffeeconnect_suggestionstatus";
     cr771_suggestiontype = "mpa_coffeeconnect_suggestiontype";
 
-    # *****Solution Specific Entities*****
+    # # *****Solution Specific Entities*****
 
     # Canvas App
     cr771_powercoffee_0a1d0 = "mpa_CoffeeConnectApp";
