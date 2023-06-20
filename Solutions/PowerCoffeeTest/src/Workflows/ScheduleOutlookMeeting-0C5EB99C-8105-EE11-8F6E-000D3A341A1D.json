@@ -216,7 +216,7 @@
         },
         "Send_an_email_(V2)": {
           "runAfter": {
-            "Create_Teams_Meeting": [
+            "Parse_Meeting_End_DateTime": [
               "Succeeded"
             ]
           },
@@ -233,13 +233,53 @@
             "parameters": {
               "emailMessage/To": "@{variables('str_email_user_1')};@{variables('str_email_user_2')}",
               "emailMessage/Subject": "Coffee Connect Scheduled a Meeting!",
-              "emailMessage/Body": "<p>Hello!<br>\n<br>\nCoffee Connect has scheduled a Teams meeting between @{variables('str_name_user_1')} and @{variables('str_name_user_2')} at the next available time on both calendars. Please review the placement of the event on your Outlook calendar and make adjustments if necessary.<br>\n<br>\nSincerely,<br>\nCoffee Connect</p>",
+              "emailMessage/Body": "<p>Hello!<br>\n<br>\nCoffee Connect has scheduled a Teams meeting between @{variables('str_name_user_1')} and @{variables('str_name_user_2')} at the next available time on both calendars. Please review the placement of the event on your Outlook calendar and make adjustments if necessary.<br>\n<br>\nDate: @{variables('arr_meeting_start')?[0]}<br>\nTime: @{variables('arr_meeting_start')?[1]} to @{variables('arr_meeting_end')?[1]}<br>\n<br>\nSincerely,<br>\nCoffee Connect</p>",
               "emailMessage/Importance": "Normal"
             },
             "authentication": {
               "type": "Raw",
               "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
             }
+          }
+        },
+        "Parse_Meeting_Start_DateTime": {
+          "runAfter": {
+            "Create_Teams_Meeting": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "1320700c-38b9-4c42-88eb-bc997e973842"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "arr_meeting_start",
+                "type": "array",
+                "value": "@split(outputs('Create_Teams_Meeting')?['body/start/dateTime'], 'T')"
+              }
+            ]
+          }
+        },
+        "Parse_Meeting_End_DateTime": {
+          "runAfter": {
+            "Parse_Meeting_Start_DateTime": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "61f1f284-dfe8-4171-a0de-01c72b18eb4a"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "arr_meeting_end",
+                "type": "array",
+                "value": "@split(outputs('Create_Teams_Meeting')?['body/end/dateTime'], 'T')"
+              }
+            ]
           }
         }
       }
