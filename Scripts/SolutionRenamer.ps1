@@ -20,10 +20,11 @@ Set-Location -Path .\Solutions\mpa_CoffeeConnect\
 $replacementDict = @{
     # Tables:
     cr771_MatchHistory = "mpa_CoffeeConnectMatch";
+    cr771_MatchHistories = "mpa_CoffeeConnectMatches";
     cr771_Suggestion = "mpa_CoffeeConnectSuggestion";
-    # cr771_PowerCoffeeSignup = "mpa_CoffeeConnectSignUp";
     cr771_Location = "mpa_CoffeeConnectLocation";
     cr771_PowerCoffeeRing = "mpa_CoffeeConnectRing";
+    # cr771_PowerCoffeeSignUp = "mpa_CoffeeConnectSignUp";
 
     # Choices
     cr771_meetingfrequencypreference = "mpa_coffeeconnect_meetingfrequencypreference"
