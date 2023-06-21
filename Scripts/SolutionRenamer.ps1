@@ -24,7 +24,7 @@ $replacementDict = @{
     cr771_Suggestion = "mpa_CoffeeConnectSuggestion";
     cr771_Location = "mpa_CoffeeConnectLocation";
     cr771_PowerCoffeeRing = "mpa_CoffeeConnectRing";
-    # cr771_PowerCoffeeSignUp = "mpa_CoffeeConnectSignUp";
+    cr771_PowerCoffeeSignUp = "mpa_CoffeeConnectSignUp";
 
     # Choices
     cr771_meetingfrequencypreference = "mpa_coffeeconnect_meetingfrequencypreference"
@@ -41,7 +41,7 @@ $replacementDict = @{
     cr771_PowerCoffeeAdmin = "mpa_CoffeeConnectAdminApp";
 
     # Connection References
-    cr771_sharedcommaondataserviceforapps_6a295 = "mpa_CoffeeConnectDataverse";
+    cr771_sharedcommondataserviceforapps_6a295 = "mpa_CoffeeConnectDataverse";
     new_sharedteams_8c88b = "mpa_CoffeeConnectTeams";
     new_sharedoffice365_f2661 = "mpa_CoffeeConnectOfficeOutlook";
 
