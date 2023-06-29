@@ -1,0 +1,82 @@
+name: Export To Branch
+run-name: Buidling unmanaged and managed version of the ${{ github.event.inputs.solution_name }} solution.
+
+on:
+  workflow_dispatch:
+    inputs:
+      solution_name:
+        description: "Name of the Solution in Dataverse environment"
+        required: true
+      user_name: 
+        description: "User name for the commit"
+        required: true
+      source_powerplatform_environment:
+        description: "URL for the source Power Platform Environment"
+        required: true
+      target_powerplatform_environment:
+        description: "URL for the target Power Platform Environment"
+        required: true
+
+jobs:
+  export-solution:
+    runs-on: windows-latest
+
+    steps:
+      - id: date
+        name: Get current datetime
+        run: |
+          $datetime = Get-Date -Format "yyyy-MM-ddTHH:mm:ss"
+          echo "::set-output name=datetime::$datetime"
+        shell: pwshs
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup .NET Core environment 
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '6.0'
+
+      - name: Install PAC CLI
+        run: |
+          dotnet tool install --global Microsoft.PowerApps.CLI.Tool
+
+      - name: Auth with Source Environment
+        run: |
+          pac auth create --kind CDS --url ${{ secrets.POWERPLATFORM_URL }} --username ${{ secrets.POWERPLATFORM_USERNAME }} --password ${{ secrets.POWERPLATFORM_PASSWORD }}
+        env:
+          POWERPLATFORM_URL: ${{ secrets.POWERPLATFORM_URL }}
+          POWERPLATFORM_USERNAME: ${{ secrets.POWERPLATFORM_USERNAME }}
+          POWERPLATFORM_PASSWORD: ${{ secrets.POWERPLATFORM_PASSWORD }}
+
+      - id: solution_versioning
+        name: Get current version number.
+        run: |
+          # First we need to get the current online version.
+          $output = pac solution list
+          $lines = $output -split "`n"
+          $versionLine = $lines | Where-Object { $_ -match ${{ github.event.inputs.solution_name }} }
+          $version = ($versionLine -split "\s+")[4]
+          echo "::set-output name=current_version::$version"
+          # Split the version into its components
+          $versionParts = $version.Split('.')
+          # Increment the patch version
+          $patch = [int]$versionParts[3] + 1
+          # Reconstruct the version
+          $newVersion = "{0}.{1}.{2}.{3}" -f $versionParts[0], $versionParts[1], $versionParts[2], $patch
+          echo "::set-output name=new_version::$newVersion"
+
+      - name: Increment the version number.
+        run: pac solution online-version --solution-name Samplesolution --solution-version ${{ steps.solution_versioning.outputs.new_version }}
+
+      - name: Export unmanaged version of the solution.
+        run: pac solution export --path c:\Users\Documents\Solution.zip --name SampleComponentSolution --managed false --include general
+
+      - name: Export managed version of the solution.
+        run: pac solution export --path c:\Users\Documents\Solution.zip --name SampleComponentSolution --managed false --include general
+
+      - name: Publish artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: release-artifacts
+          path: '**/bin/Release/*.zip'
