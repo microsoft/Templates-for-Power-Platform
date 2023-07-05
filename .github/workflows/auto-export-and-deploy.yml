@@ -63,6 +63,8 @@ jobs:
           # Reconstruct the version
           $newVersion = "{0}.{1}.{2}.{3}" -f $versionParts[0], $versionParts[1], $versionParts[2], $patch
           echo "::set-output name=new_version::$newVersion"
+          $newVersionWithUnderscores = "{0}_{1}_{2}_{3}" -f $versionParts[0], $versionParts[1], $versionParts[2], $patch
+          echo "::set-output name=new_version_with_underscores::$newVersionWithUnderscores"
 
       - name: Increment the online version
         run: pac solution online-version --solution-name "${{ github.event.inputs.solution_name }}" --solution-version ${{ steps.solution_versioning.outputs.new_version }}
@@ -76,14 +78,14 @@ jobs:
       - name: Publish unmanaged artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ github.event.inputs.solution_name }}_unmanaged
-          path: ${{ github.event.inputs.solution_name }}_unmanaged.zip
+          name: ${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputs.new_version_with_underscores }}_unmanaged
+          path: ${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputs.new_version_with_underscores }}_unmanaged.zip
 
       - name: Publish managed artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ github.event.inputs.solution_name }}
-          path: ${{ github.event.inputs.solution_name }}.zip
+          name: ${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputs.new_version_with_underscores }}_managed
+          path: ${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputs.new_version_with_underscores }}_managed.zip
 
       - name: Deploy To Target Environment
         run: |
