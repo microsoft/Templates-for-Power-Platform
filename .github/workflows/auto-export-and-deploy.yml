@@ -1,0 +1,81 @@
+name: Export And Deploy
+run-name: Exporting ${{ github.event.inputs.solution_name }} from ${{ github.event.inputs.source_powerplatform_environment }} and deploying to ${{ github.event.inputs.target_powerplatform_environment }} environment.
+
+on:
+  workflow_dispatch:
+    inputs:
+      solution_name:
+        description: "Name of the Solution in Dataverse environment"
+        required: true
+      source_powerplatform_environment:
+        description: "URL for the source Power Platform Environment"
+        required: true
+      target_powerplatform_environment:
+        description: "URL for the target Power Platform Environment"
+        required: false
+jobs:
+  export-solution:
+    runs-on: windows-latest
+
+    steps:
+      - id: date
+        name: Get current datetime
+        run: |
+          $datetime = Get-Date -Format "yyyy-MM-ddTHH:mm:ss"
+          echo "::set-output name=datetime::$datetime"
+        shell: pwshs
+
+      - name: Setup .NET Core environment 
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '6.0'
+
+      - name: Install PAC CLI
+        run: |
+          dotnet tool install --global Microsoft.PowerApps.CLI.Tool
+
+      - name: Auth with Source Environment
+        run: |
+          pac auth create --kind CDS --url ${{ github.event.inputs.source_powerplatform_environment }} --username ${{ secrets.POWERPLATFORM_USERNAME }} --password ${{ secrets.POWERPLATFORM_PASSWORD }}
+
+      - id: solution_versioning
+        name: Get current version number
+        run: |
+          # First we need to get the current online version.
+          $output = pac solution list
+          $lines = $output -split "`n"
+          $versionLine = $lines | Where-Object { $_ -match ${{ github.event.inputs.solution_name }} }
+          $version = ($versionLine -split "\s+")[4]
+          echo "::set-output name=current_version::$version"
+          # Split the version into its components
+          $versionParts = $version.Split('.')
+          # Increment the patch version
+          $patch = [int]$versionParts[3] + 1
+          # Reconstruct the version
+          $newVersion = "{0}.{1}.{2}.{3}" -f $versionParts[0], $versionParts[1], $versionParts[2], $patch
+          echo "::set-output name=new_version::$newVersion"
+
+      - name: Increment the online version
+        run: pac solution online-version --solution-name Samplesolution --solution-version ${{ steps.solution_versioning.outputs.new_version }}
+
+      - name: Export unmanaged solution
+        run: pac solution export --path ${{ github.event.inputs.solution_name }}_unmanaged.zip --name ${{ github.event.inputs.solution_name }} --include general
+
+      - name: Export managed solution
+        run: pac solution export --path ${{ github.event.inputs.solution_name }}.zip --name ${{ github.event.inputs.solution_name }} --managed --include general
+
+      - name: Publish unmanaged artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.event.inputs.solution_name }}_unmanaged
+          path: ${{ github.event.inputs.solution_name }}_unmanaged.zip
+
+      - name: Publish managed artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.event.inputs.solution_name }}
+          path: ${{ github.event.inputs.solution_name }}.zip
+
+      - name: Deploy To Target Environment
+        run: |
+          echo "TODO: Deploy the solution to the target environment - ${{ github.event.inputs.target_powerplatform_environment }}"
