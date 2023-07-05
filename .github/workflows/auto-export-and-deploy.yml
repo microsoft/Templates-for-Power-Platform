@@ -1,5 +1,5 @@
-name: Export To Branch
-run-name: Buidling unmanaged and managed version of the ${{ github.event.inputs.solution_name }} solution.
+name: Export And Deploy
+run-name: Exporting ${{ github.event.inputs.solution_name }} from ${{ github.event.inputs.source_powerplatform_environment }} and deploying to ${{ github.event.inputs.target_powerplatform_environment }} environment.
 
 on:
   workflow_dispatch:
@@ -29,9 +29,6 @@ jobs:
           echo "::set-output name=datetime::$datetime"
         shell: pwshs
 
-      - name: Checkout code
-        uses: actions/checkout@v3
-
       - name: Setup .NET Core environment 
         uses: actions/setup-dotnet@v1
         with:
@@ -43,14 +40,10 @@ jobs:
 
       - name: Auth with Source Environment
         run: |
-          pac auth create --kind CDS --url ${{ secrets.POWERPLATFORM_URL }} --username ${{ secrets.POWERPLATFORM_USERNAME }} --password ${{ secrets.POWERPLATFORM_PASSWORD }}
-        env:
-          POWERPLATFORM_URL: ${{ secrets.POWERPLATFORM_URL }}
-          POWERPLATFORM_USERNAME: ${{ secrets.POWERPLATFORM_USERNAME }}
-          POWERPLATFORM_PASSWORD: ${{ secrets.POWERPLATFORM_PASSWORD }}
+          pac auth create --kind CDS --url ${{ github.event.inputs.source_powerplatform_environment }} --username ${{ secrets.POWERPLATFORM_USERNAME }} --password ${{ secrets.POWERPLATFORM_PASSWORD }}
 
       - id: solution_versioning
-        name: Get current version number.
+        name: Get current version number
         run: |
           # First we need to get the current online version.
           $output = pac solution list
@@ -66,17 +59,27 @@ jobs:
           $newVersion = "{0}.{1}.{2}.{3}" -f $versionParts[0], $versionParts[1], $versionParts[2], $patch
           echo "::set-output name=new_version::$newVersion"
 
-      - name: Increment the version number.
+      - name: Increment the online version
         run: pac solution online-version --solution-name Samplesolution --solution-version ${{ steps.solution_versioning.outputs.new_version }}
 
-      - name: Export unmanaged version of the solution.
-        run: pac solution export --path c:\Users\Documents\Solution.zip --name SampleComponentSolution --managed false --include general
+      - name: Export unmanaged solution
+        run: pac solution export --path ${{ github.event.inputs.solution_name }}_unmanaged.zip --name ${{ github.event.inputs.solution_name }} --include general
 
-      - name: Export managed version of the solution.
-        run: pac solution export --path c:\Users\Documents\Solution.zip --name SampleComponentSolution --managed false --include general
+      - name: Export managed solution
+        run: pac solution export --path ${{ github.event.inputs.solution_name }}.zip --name ${{ github.event.inputs.solution_name }} --managed --include general
 
-      - name: Publish artifacts
+      - name: Publish unmanaged artifact
         uses: actions/upload-artifact@v2
         with:
-          name: release-artifacts
-          path: '**/bin/Release/*.zip'
+          name: ${{ github.event.inputs.solution_name }}_unmanaged
+          path: ${{ github.event.inputs.solution_name }}_unmanaged.zip
+
+      - name: Publish managed artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.event.inputs.solution_name }}
+          path: ${{ github.event.inputs.solution_name }}.zip
+
+      - name: Deploy To Target Environment
+        run: |
+          echo "TODO: Deploy the solution to the target environment - ${{ github.event.inputs.target_powerplatform_environment }}"
