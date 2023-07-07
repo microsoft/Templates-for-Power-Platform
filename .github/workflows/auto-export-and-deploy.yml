@@ -87,6 +87,15 @@ jobs:
           name: ${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputs.new_version_with_underscores }}_managed
           path: ${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputs.new_version_with_underscores }}_managed.zip
 
-      - name: Deploy To Target Environment
+       - name: Auth with Source Environment
         run: |
-          echo "TODO: Deploy the solution to the target environment - ${{ github.event.inputs.target_powerplatform_environment }}"
+          pac auth clear
+          pac auth create --url ${{ github.event.inputs.target_powerplatform_environment }} --username ${{ secrets.POWERPLATFORM_USERNAME }} --password ${{ secrets.POWERPLATFORM_PASSWORD }}
+        env:
+          POWERPLATFORM_URL: ${{ github.event.inputs.target_powerplatform_environment }}
+          POWERPLATFORM_USERNAME: ${{ secrets.POWERPLATFORM_USERNAME }}
+          POWERPLATFORM_PASSWORD: ${{ secrets.POWERPLATFORM_PASSWORD }}
+
+      - name: Deploy Managed version To Target Environment
+        run: |
+          pac solution import -–path ${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputs.new_version_with_underscores }}_managed.zip -–activate-plugins -–publish-changes
