@@ -13,10 +13,23 @@ on:
       target_powerplatform_environment:
         description: "URL for the target Power Platform Environment"
         required: false
+      version_part_to_update:
+        type: choice
+        description: Pick what part of the version you'd like to be updated. major.minor.build.revision
+        required: true
+        default: 'revision'
+        options:
+        - major
+        - minor
+        - build
+        - revision
 
 jobs:
   export-solution:
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
 
     steps:
       - id: date
@@ -24,12 +37,11 @@ jobs:
         run: |
           $datetime = $(Get-Date -Format "yyyy-MM-ddTHH:mm:ss")
           echo "::set-output name=datetime::$datetime"
-        shell: pwsh
 
       - name: Setup .NET Core environment 
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: '6.0'
+          dotnet-version: '6.x'
 
       - name: Install PAC CLI
         run: |
@@ -37,46 +49,69 @@ jobs:
 
       - name: Auth with Source Environment
         run: |
-          pac auth create --kind CDS --url ${{ github.event.inputs.source_powerplatform_environment }} --username ${{ secrets.POWERPLATFORM_USERNAME }} --password ${{ secrets.POWERPLATFORM_PASSWORD }}
+          pac auth clear
+          pac auth create --url ${{ github.event.inputs.source_powerplatform_environment }} --username ${{ secrets.POWERPLATFORM_USERNAME }} --password ${{ secrets.POWERPLATFORM_PASSWORD }}
+        env:
+          POWERPLATFORM_URL: ${{ github.event.inputs.source_powerplatform_environment }}
+          POWERPLATFORM_USERNAME: ${{ secrets.POWERPLATFORM_USERNAME }}
+          POWERPLATFORM_PASSWORD: ${{ secrets.POWERPLATFORM_PASSWORD }}
 
       - id: solution_versioning
         name: Get current version number
         run: |
-          # First we need to get the current online version.
           $output = pac solution list
+          echo $output
           $lines = $output -split "`n"
-          $versionLine = $lines | Where-Object { $_ -match ${{ github.event.inputs.solution_name }} }
-          $version = ($versionLine -split "\s+")[4]
+          $versionLine = $lines | Where-Object { $_ -match "${{ github.event.inputs.solution_name }}" }
+          $version = ($versionLine -split "\s+")[3]
           echo "::set-output name=current_version::$version"
           # Split the version into its components
           $versionParts = $version.Split('.')
-          # Increment the patch version
-          $patch = [int]$versionParts[3] + 1
+          # Define an environment variable for the version part to increment
+          $versionPartToIncrement = "${{ github.event.inputs.version_part_to_updates }}"
+          switch ($versionPartToIncrement) {
+              "major" { $versionParts[0] = [int]$versionParts[0] + 1 }
+              "minor" { $versionParts[1] = [int]$versionParts[1] + 1 }
+              "build" { $versionParts[2] = [int]$versionParts[2] + 1 }
+              "revision" { $versionParts[3] = [int]$versionParts[3] + 1 }
+              default { throw "Invalid version part to increment: $versionPartToIncrement" }
+          }
           # Reconstruct the version
-          $newVersion = "{0}.{1}.{2}.{3}" -f $versionParts[0], $versionParts[1], $versionParts[2], $patch
+          $newVersion = "{0}.{1}.{2}.{3}" -f $versionParts[0], $versionParts[1], $versionParts[2], $versionParts[3]
           echo "::set-output name=new_version::$newVersion"
+          $newVersionWithUnderscores = "{0}_{1}_{2}_{3}" -f $versionParts[0], $versionParts[1], $versionParts[2], $versionParts[3]
+          echo "::set-output name=new_version_with_underscores::$newVersionWithUnderscores"        
 
       - name: Increment the online version
-        run: pac solution online-version --solution-name Samplesolution --solution-version ${{ steps.solution_versioning.outputs.new_version }}
+        run: pac solution online-version --solution-name "${{ github.event.inputs.solution_name }}" --solution-version ${{ steps.solution_versioning.outputs.new_version }}
 
       - name: Export unmanaged solution
-        run: pac solution export --path ${{ github.event.inputs.solution_name }}_unmanaged.zip --name ${{ github.event.inputs.solution_name }} --include general
+        run: pac solution export --path "${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputs.new_version_with_underscores }}_unmanaged.zip" --name "${{ github.event.inputs.solution_name }}" --include general
 
       - name: Export managed solution
-        run: pac solution export --path ${{ github.event.inputs.solution_name }}.zip --name ${{ github.event.inputs.solution_name }} --managed --include general
+        run: pac solution export --path "${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputs.new_version_with_underscores }}_managed.zip" --name "${{ github.event.inputs.solution_name }}" --managed --include general
 
       - name: Publish unmanaged artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ github.event.inputs.solution_name }}_unmanaged
-          path: ${{ github.event.inputs.solution_name }}_unmanaged.zip
+          name: ${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputs.new_version_with_underscores }}_unmanaged
+          path: ${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputs.new_version_with_underscores }}_unmanaged.zip
 
       - name: Publish managed artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ github.event.inputs.solution_name }}
-          path: ${{ github.event.inputs.solution_name }}.zip
+          name: ${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputs.new_version_with_underscores }}_managed
+          path: ${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputs.new_version_with_underscores }}_managed.zip
 
-      - name: Deploy To Target Environment
+      - name: Auth with Source Environment
         run: |
-          echo "TODO: Deploy the solution to the target environment - ${{ github.event.inputs.target_powerplatform_environment }}"
+          pac auth clear
+          pac auth create --url ${{ github.event.inputs.target_powerplatform_environment }} --username ${{ secrets.POWERPLATFORM_USERNAME }} --password ${{ secrets.POWERPLATFORM_PASSWORD }}
+        env:
+          POWERPLATFORM_URL: ${{ github.event.inputs.target_powerplatform_environment }}
+          POWERPLATFORM_USERNAME: ${{ secrets.POWERPLATFORM_USERNAME }}
+          POWERPLATFORM_PASSWORD: ${{ secrets.POWERPLATFORM_PASSWORD }}
+
+      - name: Deploy Managed version To Target Environment
+        run: |
+          pac solution import --path "${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputs.new_version_with_underscores }}_managed.zip" --activate-plugins --publish-changes
