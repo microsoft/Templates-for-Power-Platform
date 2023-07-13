@@ -1,0 +1,445 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_saperp": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "gilman_sharedsaperp_74c03"
+        },
+        "api": {
+          "name": "shared_saperp"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "SAP Development (mpa_SAPApplicationServer)": {
+          "defaultValue": "{\"AppServerHost\":\"sap.clearsoftware.com\",\"Client\":\"100\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_SAPApplicationServer"
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "82b540c5-caaf-44d9-90b4-a66c88f7ab11"
+          },
+          "type": "Request",
+          "kind": "PowerApp",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "ParseJSON_Content": {
+                  "type": "any",
+                  "x-ms-powerflows-param-ispartial": false
+                }
+              },
+              "required": [
+                "ParseJSON_Content"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Parse_JSON": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "12f0f586-4295-4bdd-8329-522cf48feb2c"
+          },
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@triggerBody()['ParseJSON_Content']",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "Type": {
+                  "type": "string"
+                },
+                "Order": {
+                  "type": "string"
+                },
+                "CreatedOn": {
+                  "type": "string"
+                },
+                "Customer": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "Criteria": {
+          "runAfter": {
+            "Parse_JSON": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6cbfab8f-a161-42d5-9e57-30c613507fb2"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Criteria",
+                "type": "array",
+                "value": [
+                  "TRVOG = '0'",
+                  "AND AUART LIKE '%@{body('Parse_JSON')?['Type']}%'",
+                  "AND KUNNR LIKE '%@{body('Parse_JSON')?['Customer']}%'",
+                  "AND VBELN LIKE '%@{body('Parse_JSON')?['Order']}%'",
+                  "AND ERDAT LIKE '%@{body('Parse_JSON')?['CreatedOn']}%'"
+                ]
+              }
+            ]
+          }
+        },
+        "VBAK": {
+          "runAfter": {
+            "Criteria": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "85f550b3-01a0-42b7-b6b7-38f76479a8e5"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_saperp",
+              "operationId": "ReadTableVersion3",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+            },
+            "parameters": {
+              "x-ms-sap-system": "@parameters('SAP Development (mpa_SAPApplicationServer)')",
+              "inputParameters/tableName": "VBAK",
+              "inputParameters/FieldNames": [
+                "VBELN:Sales Document",
+                "AUART:Sales Document Type",
+                "KUNNR:Sold-to party",
+                "ERDAT:Date on which the record was created",
+                "NETWR:Net Value of the Sales Order in Document Currency"
+              ],
+              "inputParameters/RowCount": 9999,
+              "inputParameters/WhereFilters": [
+                "TRVOG = '0'",
+                "AND AUART LIKE '%@{body('Parse_JSON')?['Type']}%'",
+                "AND KUNNR LIKE '%@{body('Parse_JSON')?['Customer']}%'",
+                "AND VBELN LIKE '%@{body('Parse_JSON')?['Order']}%'",
+                "AND ERDAT LIKE '%@{body('Parse_JSON')?['CreatedOn']}%'"
+              ]
+            },
+            "authentication": {
+              "type": "Raw",
+              "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+            }
+          }
+        },
+        "Condition": {
+          "actions": {
+            "Parse_List": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@outputs('VBAK')?['body/Rows']",
+                "select": {
+                  "Type": "@item()?['AUART']",
+                  "Customer": "@if(isInt(item()?['KUNNR']), string(int(item()?['KUNNR'])), item()?['KUNNR'])",
+                  "CreatedOn": "@item()?['ERDAT']",
+                  "CustomerRaw": "@item()?['KUNNR']",
+                  "Amount": "@item()?['NETWR']",
+                  "Order": "@if(isInt(item()?['VBELN']), string(int(item()?['VBELN'])), item()?['VBELN'])"
+                }
+              }
+            },
+            "Prepare_IN_Statement": {
+              "runAfter": {
+                "Parse_List": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Parse_List')",
+                "select": "@concat('''',item()?['CustomerRaw'],'''',',')"
+              }
+            },
+            "Finalize_IN_Statement": {
+              "runAfter": {
+                "Prepare_IN_Statement": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "42c0b6dd-26a1-41e9-b4a7-8d91fc33dd16"
+              },
+              "type": "Compose",
+              "inputs": "@union(json('[\"KUNNR IN (\"]'), body('Prepare_IN_Statement'), json('[\")\"]'))"
+            },
+            "Customer_Names": {
+              "runAfter": {
+                "Finalize_IN_Statement": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "116e2ff5-2f69-4e6b-a5ab-2de75d0338b8"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp",
+                  "operationId": "ReadTableVersion3",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Development (mpa_SAPApplicationServer)')",
+                  "inputParameters/tableName": "KNA1",
+                  "inputParameters/FieldNames": [
+                    "KUNNR:Customer Number",
+                    "NAME1:Name 1"
+                  ],
+                  "inputParameters/RowCount": 9999,
+                  "inputParameters/WhereFilters": "@outputs('Finalize_IN_Statement')"
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              }
+            },
+            "Parse_Customers": {
+              "runAfter": {
+                "Customer_Names": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@outputs('Customer_Names')?['body/Rows']",
+                "select": {
+                  "Customer": "@if(isInt(item()?['KUNNR']),string(int(item()?['KUNNR'])),item()?['KUNNR'])",
+                  "Name": "@item()?['NAME1']"
+                }
+              }
+            },
+            "Response": {
+              "runAfter": {
+                "Parse_Customers": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "3acb6b71-7516-4f46-82a7-fe87c0f4120b"
+              },
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "List": "@body('Parse_List')",
+                  "Names": "@body('Parse_Customers')",
+                  "Messages": [
+                    {
+                      "Message": "@{length(body('Parse_List'))} order(s) found based on your search criteria."
+                    }
+                  ]
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "List": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Order": {
+                            "type": "string"
+                          },
+                          "Type": {
+                            "type": "string"
+                          },
+                          "Customer": {
+                            "type": "string"
+                          },
+                          "CreatedOn": {
+                            "type": "string"
+                          },
+                          "Amount": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Order",
+                          "Type",
+                          "Customer",
+                          "CreatedOn",
+                          "Amount"
+                        ]
+                      }
+                    },
+                    "Names": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Customer": {
+                            "type": "string"
+                          },
+                          "Name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Customer",
+                          "Name"
+                        ]
+                      }
+                    },
+                    "Messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Message"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "VBAK": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Response_2": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "4a0c9888-dc5e-4c19-a694-a1ccd59ff29c"
+                },
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                  "statusCode": 400,
+                  "body": "No sales orders were found based on your search criteria.",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "List": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "Order": {
+                              "type": "string"
+                            },
+                            "Type": {
+                              "type": "string"
+                            },
+                            "Customer": {
+                              "type": "string"
+                            },
+                            "CreatedOn": {
+                              "type": "string"
+                            },
+                            "Amount": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "Order",
+                            "Type",
+                            "Customer",
+                            "CreatedOn",
+                            "Amount"
+                          ]
+                        }
+                      },
+                      "Names": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "Customer": {
+                              "type": "string"
+                            },
+                            "Name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "Customer",
+                            "Name"
+                          ]
+                        }
+                      },
+                      "Messages": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "Message": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "Message"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "greater": [
+              "@length(outputs('VBAK')?['body/Rows'])",
+              0
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "8fa23493-292b-4086-84f1-ff1b13a0ad4e"
+          },
+          "type": "If"
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

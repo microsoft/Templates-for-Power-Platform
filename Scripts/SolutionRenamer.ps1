@@ -13,28 +13,14 @@ if(Get-Process -Name msbuild -ErrorAction SilentlyContinue) {
     throw "The msbuild process is currently running. Cannot run script."
 }
 
-throw "Remove me before running. Set-Location and replaceDict need updated."
+# throw "Remove me before running. Set-Location and replaceDict need updated."
 
-Set-Location -Path .\Solutions\mpa_SAPProcurementAccelerator\
+Set-Location -Path .\Solutions\mpa_SAPQuoteToCash\
 
 $replacementDict = @{
-    # mpa_SAPAcceleratorAdministrator = "mpa_SAPAdministrator";
-    mpa_SAPAcceleratorDataverse = "mpa_SAPDataverse";
-    mpa_SAPAcceleratorERP = "mpa_SAPERP";
-    mpa_SAPAcceleratorError = "mpa_SAPError";
-    # mpa_SAPAcceleratorErrorId = "mpa_SAPErrorId";
-    mpa_SAPAcceleratorListofValue = "mpa_SAPListofValue";
-    # mpa_SAPAcceleratorListofValueId = "mpa_SAPListofValueId";
-    mpa_SAPAcceleratorLocalization = "mpa_SAPLocalization";
-    # mpa_SAPAcceleratorLocalizationId = "mpa_SAPLocalizationId";
-    mpa_SAPAcceleratorMenuItem = "mpa_SAPMenuItem";
-    # mpa_SAPAcceleratorMenuItemId = "mpa_SAPMenuItemId";
-    mpa_SAPAcceleratorOffice365Users = "mpa_SAPOffice365Users";
-    mpa_SAPAcceleratorSearchHistory = "mpa_SAPSearchHistory";
-    # mpa_SAPAcceleratorSearchHistoryId = "mpa_SAPSearchHistoryId";
-    mpa_SAPBaseAccelerator = "mpa_SAPBase"; 
-    mpa_SAPProcurementAccelerator = "mpa_SAPProcurement";
-    # mpa_sapvendormanagement_42919 = "mpa_sapvendormanagement_42919";
+    sap_SAPDevelopment = "mpa_SAPApplicationServer";
+    sap_SAPClientID = "mpa_SAPClientID";
+    sap_SAPSystemID = "mpa_SAPSystemID";
 }
 
 # Unpack all .msapp files.

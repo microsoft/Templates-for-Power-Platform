@@ -1,0 +1,1169 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_saperp_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "gilman_sharedsaperp_74c03"
+        },
+        "api": {
+          "name": "shared_saperp"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "SAP Development (mpa_SAPApplicationServer)": {
+          "defaultValue": "{\"AppServerHost\":\"sap.clearsoftware.com\",\"Client\":\"100\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_SAPApplicationServer"
+          }
+        },
+        "SAP System ID (mpa_SAPSystemID)": {
+          "defaultValue": "DIN",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_SAPSystemID"
+          }
+        },
+        "SAP Client ID (mpa_SAPClientID)": {
+          "defaultValue": "100",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_SAPClientID"
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "face458a-8fcb-4d41-af0c-357f0a234bca"
+          },
+          "type": "Request",
+          "kind": "Http",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "Header": {
+                  "type": "object",
+                  "properties": {
+                    "Name": {
+                      "type": "string"
+                    },
+                    "AccountGroup": {
+                      "type": "string"
+                    },
+                    "Language": {
+                      "type": "string"
+                    },
+                    "Street": {
+                      "type": "string"
+                    },
+                    "City": {
+                      "type": "string"
+                    },
+                    "State": {
+                      "type": "string"
+                    },
+                    "Country": {
+                      "type": "string"
+                    },
+                    "PostalCode": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "SalesOrganizations": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "SalesOrganization": {
+                        "type": "string"
+                      },
+                      "DistributionChannel": {
+                        "type": "string"
+                      },
+                      "Division": {
+                        "type": "string"
+                      },
+                      "Currency": {
+                        "type": "string"
+                      },
+                      "PaymentTerms": {
+                        "type": "string"
+                      },
+                      "PriceGroup": {
+                        "type": "string"
+                      },
+                      "PricingProcedure": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "SalesOrganization",
+                      "DistributionChannel",
+                      "Division",
+                      "Currency",
+                      "PaymentTerms",
+                      "PriceGroup",
+                      "PricingProcedure"
+                    ]
+                  }
+                },
+                "Companies": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "Company": {
+                        "type": "string"
+                      },
+                      "GlAccount": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "Company",
+                      "GlAccount"
+                    ]
+                  }
+                },
+                "Contacts": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "FirstName": {
+                        "type": "string"
+                      },
+                      "LastName": {
+                        "type": "string"
+                      },
+                      "Title": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "FirstName",
+                      "LastName",
+                      "Title"
+                    ]
+                  }
+                },
+                "Phones": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "Phone": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "Phone"
+                    ]
+                  }
+                },
+                "Emails": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "Email": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "Email"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": {
+        "Companies_(E1KNB1M)": {
+          "runAfter": {
+            "If_Sales_Areas_Are_Being_Created": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "67b60224-0f7c-4338-b520-808a2181795b"
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@body('Parse_JSON')?['Companies']",
+            "select": {
+              "TABNAM": "E1KNB1M",
+              "MANDT": "@parameters('SAP Client ID (mpa_SAPClientID)')",
+              "SEGNUM": "000001",
+              "SEGNAM": "E1KNB1M",
+              "SDATA": "@concat(substring(concat('001', '   '),0, 3), substring(concat(item()?['Company'], '             '),0, 13), substring(concat(formatNumber(int(item()?['GlAccount']), 'D10'), '          '),0, 10))"
+            }
+          }
+        },
+        "Parse_JSON": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "12f0f586-4295-4bdd-8329-522cf48feb2c"
+          },
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@triggerBody()",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "Header": {
+                  "type": "object",
+                  "properties": {
+                    "Name": {
+                      "type": "string"
+                    },
+                    "AccountGroup": {
+                      "type": "string"
+                    },
+                    "Language": {
+                      "type": "string"
+                    },
+                    "Street": {
+                      "type": "string"
+                    },
+                    "City": {
+                      "type": "string"
+                    },
+                    "State": {
+                      "type": "string"
+                    },
+                    "Country": {
+                      "type": "string"
+                    },
+                    "PostalCode": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "SalesOrganizations": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "SalesOrganization": {
+                        "type": "string"
+                      },
+                      "DistributionChannel": {
+                        "type": "string"
+                      },
+                      "Division": {
+                        "type": "string"
+                      },
+                      "Currency": {
+                        "type": "string"
+                      },
+                      "PaymentTerms": {
+                        "type": "string"
+                      },
+                      "PriceGroup": {
+                        "type": "string"
+                      },
+                      "PricingProcedure": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "SalesOrganization",
+                      "DistributionChannel",
+                      "Division",
+                      "Currency",
+                      "PaymentTerms",
+                      "PriceGroup",
+                      "PricingProcedure"
+                    ]
+                  }
+                },
+                "Companies": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "Company": {
+                        "type": "string"
+                      },
+                      "GlAccount": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "Company",
+                      "GlAccount"
+                    ]
+                  }
+                },
+                "Contacts": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "FirstName": {
+                        "type": "string"
+                      },
+                      "LastName": {
+                        "type": "string"
+                      },
+                      "Title": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "FirstName",
+                      "LastName",
+                      "Title"
+                    ]
+                  }
+                },
+                "Phones": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "Phone": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "Phone"
+                    ]
+                  }
+                },
+                "Emails": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "Email": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "Email"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "Header_(E1KNA1M)": {
+          "runAfter": {
+            "Parse_JSON": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "1f516210-5e61-4500-b663-ffa970e8c79e"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "E1KNA1M",
+                "type": "array",
+                "value": [
+                  {
+                    "TABNAM": "E1KNA1M",
+                    "MANDT": "@parameters('SAP Client ID (mpa_SAPClientID)')",
+                    "SEGNUM": "000001",
+                    "SEGNAM": "E1KNA1M",
+                    "SDATA": "@concat(substring(concat('001', '                                                                                                                                                   '),0, 147), substring(concat(body('Parse_JSON')?['Header']?['AccountGroup'], '      '),0, 6), substring(concat(body('Parse_JSON')?['Header']?['Country'], '                          '),0, 26), substring(concat(body('Parse_JSON')?['Header']?['Name'], '                                                                                                                                              '),0, 142), substring(concat(body('Parse_JSON')?['Header']?['City'], '                                                                                          '),0, 90), substring(concat(body('Parse_JSON')?['Header']?['PostalCode'], '          '),0, 10), substring(concat(body('Parse_JSON')?['Header']?['State'], '                          '),0, 26), substring(concat(body('Parse_JSON')?['Header']?['Language'], '                              '),0, 30), substring(concat(body('Parse_JSON')?['Header']?['Street'], '                                   '),0, 35))"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "Sales_Areas_(E1KNVVM)": {
+          "runAfter": {
+            "Header_(E1KNA1M)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "67b60224-0f7c-4338-b520-808a2181795b"
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@body('Parse_JSON')?['SalesOrganizations']",
+            "select": {
+              "TABNAM": "E1KNVVM",
+              "MANDT": "@parameters('SAP Client ID (mpa_SAPClientID)')",
+              "SEGNUM": "000001",
+              "SEGNAM": "E1KNVVM",
+              "SDATA": "@concat(\nsubstring(concat('001', '   '),0, 3),\nsubstring(concat(item()?['SalesOrganization'], '    '),0, 4),\nsubstring(concat(item()?['DistributionChannel'], '  '),0, 2),\nsubstring(concat(item()?['Division'], '          '),0, 10),\nsubstring(concat(item()?['PricingProcedure'], '         '),0, 9),\nsubstring(concat(item()?['PriceGroup'], '                                                                     '),0, 69),\nsubstring(concat(item()?['Currency'], '       '),0, 7),\nsubstring(concat(item()?['PaymentTerms'], '    '),0, 4)\n)"
+            }
+          }
+        },
+        "Contacts_(E1KNVKM)": {
+          "runAfter": {
+            "Companies_(E1KNB1M)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "67b60224-0f7c-4338-b520-808a2181795b"
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@body('Parse_JSON')?['Contacts']",
+            "select": {
+              "TABNAM": "E1KNVKM",
+              "MANDT": "@parameters('SAP Client ID (mpa_SAPClientID)')",
+              "SEGNUM": "000001",
+              "SEGNAM": "E1KNVKM",
+              "SDATA": "@concat(\nsubstring(concat('001', '             '),0, 13),\nsubstring(concat(item()?['FirstName'], '                                   '),0, 35),\nsubstring(concat(item()?['LastName'], '                                                                                                                                                                                                                                                                                                                                                                                                        '),0, 392),\nsubstring(concat(item()?['Title'], '                                   '),0, 35)\n)"
+            }
+          }
+        },
+        "If_Sales_Areas_Are_Being_Created": {
+          "actions": {
+            "Assign_First_Sales_Area": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "1cd77dab-bc53-4b46-a112-6a4eb201ac99"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "FirstSalesArea",
+                "value": [
+                  "@body('Sales_Areas_(E1KNVVM)')[0]"
+                ]
+              }
+            },
+            "If_More_Than_1_Sales_Area_Is_Being_Created": {
+              "actions": {
+                "Assign_Remaining_Sales_Areas": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "7990995b-8aad-4ba8-bd57-90e75d788e06"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "OtherSalesAreas",
+                    "value": "@skip(body('Sales_Areas_(E1KNVVM)'), 1)"
+                  }
+                }
+              },
+              "runAfter": {
+                "Assign_First_Sales_Area": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "greater": [
+                  "@length(body('Sales_Areas_(E1KNVVM)'))",
+                  1
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "fa896101-74dc-425c-bb44-7d88e0b84645"
+              },
+              "type": "If"
+            }
+          },
+          "runAfter": {
+            "Other_Sales_Areas": [
+              "Succeeded"
+            ]
+          },
+          "expression": {
+            "greater": [
+              "@length(body('Sales_Areas_(E1KNVVM)'))",
+              0
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "883b2930-7e09-4072-a42b-0789d67b9253"
+          },
+          "type": "If"
+        },
+        "First_Sales_Area": {
+          "runAfter": {
+            "Sales_Areas_(E1KNVVM)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "a3e6fff7-c2fe-4c2c-914d-f60e1ec843a0"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "FirstSalesArea",
+                "type": "array",
+                "value": []
+              }
+            ]
+          }
+        },
+        "Other_Sales_Areas": {
+          "runAfter": {
+            "First_Sales_Area": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "e4df6430-6721-4288-b0eb-46855fd6055e"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "OtherSalesAreas",
+                "type": "array",
+                "value": []
+              }
+            ]
+          }
+        },
+        "Check_IDoc_Configuration": {
+          "runAfter": {
+            "Initialize_Customer_Number_Raw": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "a7eb1cca-b5da-4e33-b255-0f09cf8f7269"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_saperp_1",
+              "operationId": "ReadTableVersion3",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+            },
+            "parameters": {
+              "x-ms-sap-system": "@parameters('SAP Development (mpa_SAPApplicationServer)')",
+              "inputParameters/tableName": "EDP21",
+              "inputParameters/FieldNames": [
+                "MESTYP:Message Type"
+              ],
+              "inputParameters/RowCount": 1,
+              "inputParameters/WhereFilters": [
+                "MESTYP = 'DEBMAS' AND SNDPRT = 'LS' AND SNDPFC = 'LS'"
+              ]
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Initialize_Customer_Number": {
+          "runAfter": {
+            "Contacts_(E1KNVKM)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6daacf6f-8991-4282-835d-8e7ea348bf22"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Customer",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "If_System_Is_Configured_Correctly": {
+          "actions": {
+            "Create_Customer": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "81ec84ea-9248-43dd-abd8-5c60ddfff82a"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp_1",
+                  "operationId": "CallRfcJson",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Development (mpa_SAPApplicationServer)')",
+                  "rfcName": "IDOC_INBOUND_SYNCHRONOUS:Call inbound processing for transferred IDoc:EDIN",
+                  "rfcGroupFilter": "*",
+                  "autoCommit": false,
+                  "rfcInputs/INT_EDIDC/TABNAM": "EDI_DC",
+                  "rfcInputs/INT_EDIDC/MANDT": "@parameters('SAP Client ID (mpa_SAPClientID)')",
+                  "rfcInputs/INT_EDIDC/STATUS": "30",
+                  "rfcInputs/INT_EDIDC/DOCTYP": "DEBMAS05",
+                  "rfcInputs/INT_EDIDC/DIRECT": "2",
+                  "rfcInputs/INT_EDIDC/RCVPRT": "LS",
+                  "rfcInputs/INT_EDIDC/RCVPRN": "@{parameters('SAP System ID (mpa_SAPSystemID)')}CLNT@{parameters('SAP Client ID (mpa_SAPClientID)')}",
+                  "rfcInputs/INT_EDIDC/SNDPOR": "@parameters('SAP System ID (mpa_SAPSystemID)')",
+                  "rfcInputs/INT_EDIDC/SNDPRT": "LS",
+                  "rfcInputs/INT_EDIDC/SNDPRN": "@{parameters('SAP System ID (mpa_SAPSystemID)')}CLNT@{parameters('SAP Client ID (mpa_SAPClientID)')}",
+                  "rfcInputs/INT_EDIDC/MESTYP": "DEBMAS",
+                  "rfcInputs/INT_EDIDC/IDOCTYP": "DEBMAS05",
+                  "rfcInputs/INT_EDIDC/SNDPFC": "LS",
+                  "rfcInputs/ONLINE": "0",
+                  "rfcInputs/INT_EDIDD": "@union(variables('E1KNA1M'),variables('FirstSalesArea'),body('Companies_(E1KNB1M)'),body('Contacts_(E1KNVKM)'))"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Messages": {
+              "runAfter": {
+                "Create_Customer": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "a7eb1cca-b5da-4e33-b255-0f09cf8f7269"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp_1",
+                  "operationId": "ReadTableVersion3",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Development (mpa_SAPApplicationServer)')",
+                  "inputParameters/tableName": "EDIDS",
+                  "inputParameters/FieldNames": [
+                    "STAPA1",
+                    "STAPA2",
+                    "STAPA3",
+                    "STAPA4",
+                    "STAMID",
+                    "STAMNO",
+                    "STATYP"
+                  ],
+                  "inputParameters/RowCount": 9999,
+                  "inputParameters/WhereFilters": [
+                    "DOCNUM = '@{outputs('Create_Customer')?['body/DOCNUM']}'"
+                  ]
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Filter_Messages_for_Errors": {
+              "runAfter": {
+                "Messages": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "314738ec-9d05-4ae3-b089-64259885fb43"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@outputs('Messages')?['body/Rows']",
+                "where": "@equals(item()?['STATYP'], 'E')"
+              }
+            },
+            "Success_Check": {
+              "actions": {
+                "Filter_Messages_for_Customer_Number": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "314738ec-9d05-4ae3-b089-64259885fb43"
+                  },
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@outputs('Messages')?['body/Rows']",
+                    "where": "@or(equals(item()?['STAMNO'], '170'), equals(item()?['STAMNO'], '171'), equals(item()?['STAMNO'], '172'), equals(item()?['STAMNO'], '174'))"
+                  }
+                },
+                "Success_Response": {
+                  "runAfter": {
+                    "If_Phones_Or_Emails_Need_to_Be_Added": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "88ce5aac-9ebe-41ab-87a6-dea14c80f06e"
+                  },
+                  "type": "Response",
+                  "kind": "Http",
+                  "inputs": {
+                    "statusCode": 200,
+                    "body": {
+                      "Status": "Success",
+                      "Customer": "@variables('Customer')",
+                      "Messages": [
+                        {
+                          "Message": "Customer @{variables('Customer')} was successfully created."
+                        }
+                      ]
+                    },
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "Status": {
+                          "type": "string"
+                        },
+                        "Order": {
+                          "type": "integer"
+                        },
+                        "Messages": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "Message"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "Update_Customer_Number": {
+                  "runAfter": {
+                    "Filter_Messages_for_Customer_Number": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "ddcdeffe-cfa7-466a-a9b9-1d5e9765d8ab"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "Customer",
+                    "value": "@{if(isInt(body('Filter_Messages_for_Customer_Number')[0]?['STAPA1']), string(int(body('Filter_Messages_for_Customer_Number')[0]?['STAPA1'])), body('Filter_Messages_for_Customer_Number')[0]?['STAPA1'])}"
+                  }
+                },
+                "Phones_(BAPIADTEL)": {
+                  "runAfter": {
+                    "Update_Customer_Number_Raw": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "67b60224-0f7c-4338-b520-808a2181795b"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Parse_JSON')?['Phones']",
+                    "select": {
+                      "TELEPHONE": "@item()?['Phone']",
+                      "COUNTRY": "US"
+                    }
+                  }
+                },
+                "Phones_X_(BAPIADTEL_X)": {
+                  "runAfter": {
+                    "Phones_(BAPIADTEL)": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "67b60224-0f7c-4338-b520-808a2181795b"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Parse_JSON')?['Phones']",
+                    "select": {
+                      "TELEPHONE": "X",
+                      "COUNTRY": "X",
+                      "UPDATEFLAG": "I"
+                    }
+                  }
+                },
+                "Emails_(BAPIADSMTP)": {
+                  "runAfter": {
+                    "Phones_X_(BAPIADTEL_X)": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "67b60224-0f7c-4338-b520-808a2181795b"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Parse_JSON')?['Emails']",
+                    "select": {
+                      "E_MAIL": "@item()?['Email']"
+                    }
+                  }
+                },
+                "Emails_X_(BAPIADSMTP_X)": {
+                  "runAfter": {
+                    "Emails_(BAPIADSMTP)": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "67b60224-0f7c-4338-b520-808a2181795b"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Parse_JSON')?['Emails']",
+                    "select": {
+                      "E_MAIL": "X",
+                      "UPDATEFLAG": "I"
+                    }
+                  }
+                },
+                "If_Phones_Or_Emails_Need_to_Be_Added": {
+                  "actions": {
+                    "Update_Customer's_Address": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "836bea2b-f72a-43c5-9cf6-b8584cfbbe5c"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_saperp_1",
+                          "operationId": "CallRfcJson",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                        },
+                        "parameters": {
+                          "x-ms-sap-system": "@parameters('SAP Development (mpa_SAPApplicationServer)')",
+                          "rfcName": "BAPI_ADDRESSORG_CHANGE:BAPI to Change Organization Addresses:SZAK",
+                          "rfcGroupFilter": "*",
+                          "autoCommit": true,
+                          "rfcInputs/OBJ_ID": "@variables('CustomerRaw')",
+                          "rfcInputs/OBJ_TYPE": "KNA1",
+                          "rfcInputs/CONTEXT": "0001",
+                          "rfcInputs/SAVE_ADDRESS": "X",
+                          "rfcInputs/BAPIADSMT_X": "@body('Emails_X_(BAPIADSMTP_X)')",
+                          "rfcInputs/BAPIADSMTP": "@body('Emails_(BAPIADSMTP)')",
+                          "rfcInputs/BAPIADTEL": "@body('Phones_(BAPIADTEL)')",
+                          "rfcInputs/BAPIADTEL_X": "@body('Phones_X_(BAPIADTEL_X)')"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "If_Additional_Sales_Areas_Need_to_Be_Added": [
+                      "Succeeded"
+                    ]
+                  },
+                  "expression": {
+                    "or": [
+                      {
+                        "greater": [
+                          "@length(body('Emails_(BAPIADSMTP)'))",
+                          0
+                        ]
+                      },
+                      {
+                        "greater": [
+                          "@length(body('Phones_(BAPIADTEL)'))",
+                          0
+                        ]
+                      }
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "e9efd70f-e739-4ab6-ad9b-90b1e544b087"
+                  },
+                  "type": "If"
+                },
+                "Update_Customer_Number_Raw": {
+                  "runAfter": {
+                    "Update_Customer_Number": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "ddcdeffe-cfa7-466a-a9b9-1d5e9765d8ab"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "CustomerRaw",
+                    "value": "@{body('Filter_Messages_for_Customer_Number')[0]?['STAPA1']}"
+                  }
+                },
+                "If_Additional_Sales_Areas_Need_to_Be_Added": {
+                  "actions": {
+                    "Update_Header_(E1KNA1M)": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "c87c29ac-f1fe-4b22-a4b3-afc03436f9f4"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "E1KNA1M",
+                        "value": [
+                          {
+                            "TABNAM": "E1KNA1M",
+                            "MANDT": "@parameters('SAP Client ID (mpa_SAPClientID)')",
+                            "SEGNUM": "000001",
+                            "SEGNAM": "E1KNA1M",
+                            "SDATA": "@concat(\nsubstring(concat('002', variables('CustomerRaw'), '                                                                                                                                                   '),0, 147), substring(concat(body('Parse_JSON')?['Header']?['AccountGroup'], '      '),0, 6), \nsubstring(concat(body('Parse_JSON')?['Header']?['Country'], '                          '),0, 26), \nsubstring(concat(body('Parse_JSON')?['Header']?['Name'], '                                                                                                                                              '),0, 142), substring(concat(body('Parse_JSON')?['Header']?['City'], '                                                                                          '),0, 90), \nsubstring(concat(body('Parse_JSON')?['Header']?['PostalCode'], '          '),0, 10), \nsubstring(concat(body('Parse_JSON')?['Header']?['State'], '                          '),0, 26), \nsubstring(concat(body('Parse_JSON')?['Header']?['Language'], '                              '),0, 30), \nsubstring(concat(body('Parse_JSON')?['Header']?['Street'], '                                   '),0, 35)\n)"
+                          }
+                        ]
+                      }
+                    },
+                    "Update_Customer": {
+                      "runAfter": {
+                        "Update_Header_(E1KNA1M)": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "81ec84ea-9248-43dd-abd8-5c60ddfff82a"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_saperp_1",
+                          "operationId": "CallRfcJson",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                        },
+                        "parameters": {
+                          "x-ms-sap-system": "@parameters('SAP Development (mpa_SAPApplicationServer)')",
+                          "rfcName": "IDOC_INBOUND_SYNCHRONOUS:Call inbound processing for transferred IDoc:EDIN",
+                          "rfcGroupFilter": "*",
+                          "autoCommit": false,
+                          "rfcInputs/INT_EDIDC/TABNAM": "EDI_DC",
+                          "rfcInputs/INT_EDIDC/MANDT": "@parameters('SAP Client ID (mpa_SAPClientID)')",
+                          "rfcInputs/INT_EDIDC/STATUS": "30",
+                          "rfcInputs/INT_EDIDC/DOCTYP": "DEBMAS05",
+                          "rfcInputs/INT_EDIDC/DIRECT": "2",
+                          "rfcInputs/INT_EDIDC/RCVPRT": "LS",
+                          "rfcInputs/INT_EDIDC/RCVPRN": "@{parameters('SAP System ID (mpa_SAPSystemID)')}CLNT@{parameters('SAP Client ID (mpa_SAPClientID)')}",
+                          "rfcInputs/INT_EDIDC/SNDPOR": "@parameters('SAP System ID (mpa_SAPSystemID)')",
+                          "rfcInputs/INT_EDIDC/SNDPRT": "LS",
+                          "rfcInputs/INT_EDIDC/SNDPRN": "@{parameters('SAP System ID (mpa_SAPSystemID)')}CLNT@{parameters('SAP Client ID (mpa_SAPClientID)')}",
+                          "rfcInputs/INT_EDIDC/MESTYP": "DEBMAS",
+                          "rfcInputs/INT_EDIDC/IDOCTYP": "DEBMAS05",
+                          "rfcInputs/INT_EDIDC/SNDPFC": "LS",
+                          "rfcInputs/ONLINE": "0",
+                          "rfcInputs/INT_EDIDD": "@union(variables('E1KNA1M'), variables('OtherSalesAreas'))"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Emails_X_(BAPIADSMTP_X)": [
+                      "Succeeded"
+                    ]
+                  },
+                  "expression": {
+                    "greater": [
+                      "@length(variables('OtherSalesAreas'))",
+                      0
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "e9efd70f-e739-4ab6-ad9b-90b1e544b087"
+                  },
+                  "type": "If"
+                }
+              },
+              "runAfter": {
+                "Filter_Messages_for_Errors": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Failure_Response": {
+                    "runAfter": {
+                      "Read_Error_Message": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "0364356b-c5f6-40d1-89d8-d1e42b0df753"
+                    },
+                    "type": "Response",
+                    "kind": "Http",
+                    "inputs": {
+                      "statusCode": 400,
+                      "body": {
+                        "Status": "Failure",
+                        "Customer": "",
+                        "Messages": [
+                          {
+                            "Message": "@outputs('Read_Error_Message')?['body/MESSAGE']"
+                          }
+                        ]
+                      },
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "Status": {
+                            "type": "string"
+                          },
+                          "Order": {
+                            "type": "integer"
+                          },
+                          "Messages": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "Message": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "Message"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "Read_Error_Message": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "a5e20049-0890-4bf5-9c17-8331286237dc"
+                    },
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_saperp_1",
+                        "operationId": "CallRfcJson",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                      },
+                      "parameters": {
+                        "x-ms-sap-system": "@parameters('SAP Development (mpa_SAPApplicationServer)')",
+                        "rfcName": "BAPI_MESSAGE_GETDETAIL:Read long text of error message:BATG",
+                        "rfcGroupFilter": "*",
+                        "autoCommit": false,
+                        "rfcInputs/ID": "@body('Filter_Messages_for_Errors')[0]?['STAMID']",
+                        "rfcInputs/NUMBER": "@body('Filter_Messages_for_Errors')[0]?['STAMNO']",
+                        "rfcInputs/TEXTFORMAT": "ASC",
+                        "rfcInputs/MESSAGE_V1": "@body('Filter_Messages_for_Errors')[0]?['STAPA1']",
+                        "rfcInputs/MESSAGE_V2": "@body('Filter_Messages_for_Errors')[0]?['STAPA2']",
+                        "rfcInputs/MESSAGE_V3": "@body('Filter_Messages_for_Errors')[0]?['STAPA3']",
+                        "rfcInputs/MESSAGE_V4": "@body('Filter_Messages_for_Errors')[0]?['STAPA4']"
+                      },
+                      "authentication": "@parameters('$authentication')"
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "equals": [
+                  "@length(outputs('Filter_Messages_for_Errors')?['body'])",
+                  0
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "e9efd70f-e739-4ab6-ad9b-90b1e544b087"
+              },
+              "type": "If"
+            }
+          },
+          "runAfter": {
+            "Check_IDoc_Configuration": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "System_Is_Not_Configured_Correctly": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "0364356b-c5f6-40d1-89d8-d1e42b0df753"
+                },
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                  "statusCode": 400,
+                  "body": {
+                    "Status": "Failure",
+                    "Customer": "",
+                    "Messages": [
+                      {
+                        "Message": "Your SAP system is not set up to maintain customers from outside SAP. Ask your SAP team to go to transaction WE20 and create a Logical System Partner Profile with Message Type DEBMAS enabled."
+                      }
+                    ]
+                  },
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "Status": {
+                        "type": "string"
+                      },
+                      "Order": {
+                        "type": "integer"
+                      },
+                      "Messages": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "Message": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "Message"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "greater": [
+              "@length(outputs('Check_IDoc_Configuration')?['body/Rows'])",
+              0
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "1cfbbf89-4a21-401d-9c57-f5292ac11acd"
+          },
+          "type": "If"
+        },
+        "Initialize_Customer_Number_Raw": {
+          "runAfter": {
+            "Initialize_Customer_Number": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6daacf6f-8991-4282-835d-8e7ea348bf22"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "CustomerRaw",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

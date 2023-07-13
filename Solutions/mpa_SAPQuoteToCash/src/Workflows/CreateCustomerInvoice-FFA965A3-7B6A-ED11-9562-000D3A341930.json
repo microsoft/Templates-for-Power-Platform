@@ -1,0 +1,283 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_saperp": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "gilman_sharedsaperp_74c03"
+        },
+        "api": {
+          "name": "shared_saperp"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "SAP Development (mpa_SAPApplicationServer)": {
+          "defaultValue": "{\"AppServerHost\":\"sap.clearsoftware.com\",\"Client\":\"100\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_SAPApplicationServer"
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "4a3d916d-d1c5-4e94-ad26-6e07af2919fc"
+          },
+          "type": "Request",
+          "kind": "Http",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "Order": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": {
+        "Filter_Messages_for_Errors": {
+          "runAfter": {
+            "Messages": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "314738ec-9d05-4ae3-b089-64259885fb43"
+          },
+          "type": "Query",
+          "inputs": {
+            "from": "@variables('Messages')",
+            "where": "@equals(item()?['TYPE'], 'E')"
+          }
+        },
+        "Success_Check": {
+          "actions": {
+            "Filter_Messages_for_Invoice_Number": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "314738ec-9d05-4ae3-b089-64259885fb43"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@variables('Messages')",
+                "where": "@and(equals(item()?['ID'], 'VF'), equals(item()?['NUMBER'], '311'))"
+              }
+            },
+            "Success_Response": {
+              "runAfter": {
+                "Filter_Messages_for_Invoice_Number": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "88ce5aac-9ebe-41ab-87a6-dea14c80f06e"
+              },
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "Status": "Success",
+                  "Invoice": "@{body('Filter_Messages_for_Invoice_Number')[0]['MESSAGE_V1']}",
+                  "Messages": [
+                    {
+                      "Message": "Invoice @{body('Filter_Messages_for_Invoice_Number')[0]['MESSAGE_V1']} was successfully created."
+                    }
+                  ]
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Status": {
+                      "type": "string"
+                    },
+                    "Receipt": {
+                      "type": "integer"
+                    },
+                    "Messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Message"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Filter_Messages_for_Errors": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Clean_Up_Error_Messages": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "3ac4404f-21c4-4bae-bac7-2525e23d910f"
+                },
+                "type": "Select",
+                "inputs": {
+                  "from": "@body('Filter_Messages_for_Errors')",
+                  "select": {
+                    "Message": "@item()?['MESSAGE']"
+                  }
+                }
+              },
+              "Failure_Response": {
+                "runAfter": {
+                  "Clean_Up_Error_Messages": [
+                    "Succeeded"
+                  ]
+                },
+                "metadata": {
+                  "operationMetadataId": "0364356b-c5f6-40d1-89d8-d1e42b0df753"
+                },
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                  "statusCode": 200,
+                  "body": {
+                    "Status": "Failure",
+                    "Receipt": "",
+                    "Messages": "@body('Clean_Up_Error_Messages')"
+                  },
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "Status": {
+                        "type": "string"
+                      },
+                      "Receipt": {
+                        "type": "integer"
+                      },
+                      "Messages": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "Message": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "Message"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "equals": [
+              "@length(outputs('Filter_Messages_for_Errors')?['body'])",
+              0
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "e9efd70f-e739-4ab6-ad9b-90b1e544b087"
+          },
+          "type": "If"
+        },
+        "Messages": {
+          "runAfter": {
+            "BAPI_BILLINGDOC_CREATEMULTIPLE": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3ca9d172-3dad-4359-9b26-263658faca63"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Messages",
+                "type": "array",
+                "value": "@if(equals('',outputs('BAPI_BILLINGDOC_CREATEMULTIPLE')?['body/RETURN']), json('[]'), outputs('BAPI_BILLINGDOC_CREATEMULTIPLE')?['body/RETURN'])"
+              }
+            ]
+          }
+        },
+        "BAPI_BILLINGDOC_CREATEMULTIPLE": {
+          "runAfter": {
+            "Order": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6375d28f-4e9d-4bb7-9a1a-3fcf40a05fb4"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_saperp",
+              "operationId": "CallRfcJson",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+            },
+            "parameters": {
+              "x-ms-sap-system": "@parameters('SAP Development (mpa_SAPApplicationServer)')",
+              "rfcName": "BAPI_BILLINGDOC_CREATEMULTIPLE:Create Individual Customer Billing Document:VBRK",
+              "rfcGroupFilter": "*",
+              "autoCommit": true,
+              "rfcInputs/BILLINGDATAIN": [
+                {
+                  "REF_DOC": "@{variables('Order')}",
+                  "DOC_NUMBER": "@{variables('Order')}",
+                  "REF_DOC_CA": "C"
+                }
+              ]
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Order": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "4b0212c7-3ffa-4661-9cb5-e4e8ac8d68e7"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Order",
+                "type": "string",
+                "value": "@{formatNumber(int(triggerBody()?['Order']), 'D10')}"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

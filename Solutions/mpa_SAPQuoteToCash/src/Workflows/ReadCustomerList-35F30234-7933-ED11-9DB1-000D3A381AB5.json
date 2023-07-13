@@ -1,0 +1,303 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_saperp": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "gilman_sharedsaperp_74c03"
+        },
+        "api": {
+          "name": "shared_saperp"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "SAP Application Server (mpa_SAPApplicationServer)": {
+          "defaultValue": "{\"AppServerHost\":\"sap.clearsoftware.com\",\"Client\":\"100\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_SAPApplicationServer"
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "c184e5e5-0ce5-4932-9b7b-4257abd8582e"
+          },
+          "type": "Request",
+          "kind": "PowerApp",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "ParseJSON_Content": {
+                  "type": "any",
+                  "x-ms-powerflows-param-ispartial": false
+                }
+              },
+              "required": [
+                "ParseJSON_Content"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Parse_List": {
+          "runAfter": {
+            "SAP_Query": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@outputs('SAP_Query')?['body/Rows']",
+            "select": {
+              "Customer": "@if(isInt(item()?['KUNNR']), string(int(item()?['KUNNR'])), item()?['KUNNR'])",
+              "Country": "@item()?['LAND1']",
+              "Name": "@item()?['NAME1']",
+              "City": "@item()?['ORT01']",
+              "PostalCode": "@item()?['PSTLZ']",
+              "Street": "@item()?['STRAS']",
+              "Region": "@item()?['REGIO']"
+            }
+          }
+        },
+        "Parse_JSON": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "12f0f586-4295-4bdd-8329-522cf48feb2c"
+          },
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@triggerBody()['ParseJSON_Content']",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "Name": {
+                  "type": "string"
+                },
+                "Street": {
+                  "type": "string"
+                },
+                "City": {
+                  "type": "string"
+                },
+                "Region": {
+                  "type": "string"
+                },
+                "PostalCode": {
+                  "type": "string"
+                },
+                "Country": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "Criteria": {
+          "runAfter": {
+            "Parse_JSON": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6cbfab8f-a161-42d5-9e57-30c613507fb2"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Criteria",
+                "type": "array",
+                "value": [
+                  "MANDT = '100'",
+                  "AND NAME1 LIKE '%@{body('Parse_JSON')?['Name']}%'",
+                  "AND STRAS LIKE '%@{body('Parse_JSON')?['Street']}%'",
+                  "AND ORT01 LIKE '%@{body('Parse_JSON')?['City']}%'",
+                  "AND REGIO LIKE '%@{body('Parse_JSON')?['Region']}%'",
+                  "AND PSTLZ LIKE '%@{body('Parse_JSON')?['PostalCode']}%'",
+                  "AND LAND1 LIKE '%@{body('Parse_JSON')?['Country']}%'"
+                ]
+              }
+            ]
+          }
+        },
+        "SAP_Query": {
+          "runAfter": {
+            "Criteria": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "71f41300-2fa1-487e-b026-512a449acecc"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_saperp",
+              "operationId": "ReadTableVersion3",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+            },
+            "parameters": {
+              "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+              "inputParameters/tableName": "KNA1",
+              "inputParameters/FieldNames": [
+                "KUNNR",
+                "LAND1",
+                "NAME1",
+                "ORT01",
+                "PSTLZ",
+                "STRAS",
+                "REGIO"
+              ],
+              "inputParameters/RowCount": 99999,
+              "inputParameters/WhereFilters": "@variables('Criteria')"
+            },
+            "authentication": {
+              "type": "Raw",
+              "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+            }
+          }
+        },
+        "Condition": {
+          "actions": {
+            "Response": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "3acb6b71-7516-4f46-82a7-fe87c0f4120b"
+              },
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "List": "@body('Parse_List')",
+                  "Messages": [
+                    {
+                      "Message": "@{length(body('Parse_List'))} customer(s) found based on your search criteria."
+                    }
+                  ]
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "List": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Customer": {
+                            "type": "string"
+                          },
+                          "Country": {
+                            "type": "string"
+                          },
+                          "Name": {
+                            "type": "string"
+                          },
+                          "City": {
+                            "type": "string"
+                          },
+                          "PostalCode": {
+                            "type": "string"
+                          },
+                          "Street": {
+                            "type": "string"
+                          },
+                          "Region": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Customer",
+                          "Country",
+                          "Name",
+                          "City",
+                          "PostalCode",
+                          "Street",
+                          "Region"
+                        ]
+                      }
+                    },
+                    "Messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Message"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Parse_List": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Response_2": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "62abf6cf-5cd0-4677-8365-cae2a56bbba7"
+                },
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                  "statusCode": 200,
+                  "body": {
+                    "Messages": [
+                      {
+                        "Message": "No customers found based on your search criteria."
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "not": {
+              "equals": [
+                "@length(outputs('SAP_Query')?['body/Rows'])",
+                0
+              ]
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "537c0aff-d7b7-4450-ba87-8657ef25ad5f"
+          },
+          "type": "If"
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

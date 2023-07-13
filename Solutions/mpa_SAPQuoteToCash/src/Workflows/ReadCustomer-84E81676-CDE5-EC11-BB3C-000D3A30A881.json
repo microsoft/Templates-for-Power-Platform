@@ -1,0 +1,812 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_saperp": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "gilman_sharedsaperp_74c03"
+        },
+        "api": {
+          "name": "shared_saperp"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "SAP Application Server (mpa_SAPApplicationServer)": {
+          "defaultValue": "{\"AppServerHost\":\"sap.clearsoftware.com\",\"Client\":\"100\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_SAPApplicationServer"
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "372b7054-7b2f-47fd-8f43-a13135106cd7"
+          },
+          "type": "Request",
+          "kind": "PowerApp",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "Customer_Value": {
+                  "type": "string",
+                  "description": "Enter initial value",
+                  "x-ms-powerflows-param-ispartial": false
+                }
+              },
+              "required": [
+                "Customer_Value"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Customer": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "4b0212c7-3ffa-4661-9cb5-e4e8ac8d68e7"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Customer",
+                "type": "string",
+                "value": "@{triggerBody()['Customer_Value']}"
+              }
+            ]
+          }
+        },
+        "Parse_Partners": {
+          "runAfter": {
+            "Partners": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@outputs('Partners')?['body/Rows']",
+            "select": {
+              "PartnerRaw": "@item()?['KUNN2']",
+              "SalesOrganization": "@item()?['VKORG']",
+              "DistributionChannel": "@item()?['VTWEG']",
+              "Division": "@item()?['SPART']",
+              "DefaultPartner": "@item()?['DEFPA']",
+              "PartnerFunction": "@item()?['PARVW']",
+              "Partner": "@if(isInt(item()?['KUNN2']), string(int(item()?['KUNN2'])), item()?['KUNN2'])"
+            }
+          }
+        },
+        "Parse_Header": {
+          "runAfter": {
+            "Header": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@outputs('Header')?['body/Rows']",
+            "select": {
+              "Customer": "@if(isInt(item()?['KUNNR']), string(int(item()?['KUNNR'])), item()?['KUNNR'])",
+              "Country": "@item()?['LAND1']",
+              "Name": "@item()?['NAME1']",
+              "City": "@item()?['ORT01']",
+              "PostalCode": "@item()?['PSTLZ']",
+              "Street": "@item()?['STRAS']",
+              "Region": "@item()?['REGIO']"
+            }
+          }
+        },
+        "Parse_Contacts": {
+          "runAfter": {
+            "Contacts": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@outputs('Contacts')?['body/Rows']",
+            "select": {
+              "Contact": "@if(isInt(item()?['PARNR']), string(int(item()?['PARNR'])), item()?['PARNR'])",
+              "FirstName": "@item()?['NAMEV']",
+              "LastName": "@item()?['NAME1']",
+              "Title": "@item()?['TITEL_AP']"
+            }
+          }
+        },
+        "Parse_Companies": {
+          "runAfter": {
+            "Companies": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@outputs('Companies')?['body/Rows']",
+            "select": {
+              "CompanyCode": "@item()?['BUKRS']",
+              "GlAccount": "@if(isInt(item()?['AKONT']), string(int(item()?['AKONT'])), item()?['AKONT'])",
+              "PaymentMethods": "@item()?['ZWELS']",
+              "InterestCalculation": "@item()?['VZSKZ']"
+            }
+          }
+        },
+        "Parse_Sales_Organizations": {
+          "runAfter": {
+            "Sales_Organizations": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@outputs('Sales_Organizations')?['body/Rows']",
+            "select": {
+              "SalesOrganization": "@item()?['VKORG']",
+              "DistributionChannel": "@item()?['VTWEG']",
+              "Division": "@item()?['SPART']",
+              "AuthorizationGroup": "@item()?['BEGRU']",
+              "PricingProcedure": "@item()?['KALKS']",
+              "PriceGroup": "@item()?['KONDA']",
+              "Currency": "@item()?['WAERS']",
+              "PaymentTerms": "@item()?['ZTERM']",
+              "DeliveringPlant": "@item()?['VWERK']"
+            }
+          }
+        },
+        "Parse_Partner_Functions": {
+          "runAfter": {
+            "Partner_Functions": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@outputs('Partner_Functions')?['body/Rows']",
+            "select": {
+              "PartnerFunction": "@item()?['PARVW']",
+              "Description": "@item()?['VTEXT']"
+            }
+          }
+        },
+        "Finalize_IN_Statement": {
+          "runAfter": {
+            "Prepare_IN_Statement": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "42c0b6dd-26a1-41e9-b4a7-8d91fc33dd16"
+          },
+          "type": "Compose",
+          "inputs": "@union(json('[\"KUNNR IN (\"]'), body('Prepare_IN_Statement'), json('[\")\"]'))"
+        },
+        "Parse_Partner_Addresses": {
+          "runAfter": {
+            "Partner_Addresses": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@outputs('Partner_Addresses')?['body/Rows']",
+            "select": {
+              "Customer": "@if(isInt(item()?['KUNNR']), string(int(item()?['KUNNR'])), item()?['KUNNR'])",
+              "Country": "@item()?['LAND1']",
+              "Name": "@item()?['NAME1']",
+              "City": "@item()?['ORT01']",
+              "PostalCode": "@item()?['PSTLZ']",
+              "Street": "@item()?['STRAS']",
+              "Region": "@item()?['REGIO']"
+            }
+          }
+        },
+        "Header": {
+          "runAfter": {
+            "Customer": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c4a951cf-cc55-4699-98c9-a587c7379ccf"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_saperp",
+              "operationId": "ReadTableVersion3",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+            },
+            "parameters": {
+              "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+              "inputParameters/tableName": "KNA1",
+              "inputParameters/FieldNames": [
+                "KUNNR",
+                "LAND1",
+                "NAME1",
+                "ORT01",
+                "PSTLZ",
+                "STRAS",
+                "REGIO"
+              ],
+              "inputParameters/RowCount": 99999,
+              "inputParameters/WhereFilters": [
+                "KUNNR = '@{if(isInt(variables('Customer')), formatNumber(int(variables('Customer')), 'D10'), variables('Customer'))}'"
+              ]
+            },
+            "authentication": {
+              "type": "Raw",
+              "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+            }
+          }
+        },
+        "Contacts": {
+          "runAfter": {
+            "Parse_Header": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "17eb13b8-250e-4046-aeb9-0ca0019482d0"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_saperp",
+              "operationId": "ReadTableVersion3",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+            },
+            "parameters": {
+              "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+              "inputParameters/tableName": "KNVK",
+              "inputParameters/FieldNames": [
+                "PARNR",
+                "NAMEV:First name",
+                "NAME1",
+                "TITEL_AP:Title of contact person (description of function)"
+              ],
+              "inputParameters/RowCount": 99999,
+              "inputParameters/WhereFilters": [
+                "KUNNR = '@{if(isInt(variables('Customer')), formatNumber(int(variables('Customer')), 'D10'), variables('Customer'))}'"
+              ]
+            },
+            "authentication": {
+              "type": "Raw",
+              "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+            }
+          }
+        },
+        "Companies": {
+          "runAfter": {
+            "Parse_Contacts": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "17eb13b8-250e-4046-aeb9-0ca0019482d0"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_saperp",
+              "operationId": "ReadTableVersion3",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+            },
+            "parameters": {
+              "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+              "inputParameters/tableName": "KNB1",
+              "inputParameters/FieldNames": [
+                "BUKRS:Company Code",
+                "AKONT:Reconciliation Account in General Ledger",
+                "ZWELS:List of the Payment Methods to be Considered",
+                "VZSKZ:Interest calculation indicator"
+              ],
+              "inputParameters/RowCount": 99999,
+              "inputParameters/WhereFilters": [
+                "KUNNR = '@{if(isInt(variables('Customer')), formatNumber(int(variables('Customer')), 'D10'), variables('Customer'))}'"
+              ]
+            },
+            "authentication": {
+              "type": "Raw",
+              "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+            }
+          }
+        },
+        "Sales_Organizations": {
+          "runAfter": {
+            "Parse_Companies": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "17eb13b8-250e-4046-aeb9-0ca0019482d0"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_saperp",
+              "operationId": "ReadTableVersion3",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+            },
+            "parameters": {
+              "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+              "inputParameters/tableName": "KNVV",
+              "inputParameters/FieldNames": [
+                "VKORG:Sales Organization",
+                "SPART:Division",
+                "VTWEG:Distribution Channel",
+                "BEGRU:Authorization Group",
+                "KALKS:Pricing procedure assigned to this customer",
+                "KONDA:Price group (customer)",
+                "WAERS:Currency",
+                "ZTERM:Terms of Payment Key",
+                "VWERK:Delivering Plant (Own or External)"
+              ],
+              "inputParameters/RowCount": 99999,
+              "inputParameters/WhereFilters": [
+                "KUNNR = '@{if(isInt(variables('Customer')), formatNumber(int(variables('Customer')), 'D10'), variables('Customer'))}'"
+              ]
+            },
+            "authentication": {
+              "type": "Raw",
+              "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+            }
+          }
+        },
+        "Partners": {
+          "runAfter": {
+            "Parse_Sales_Organizations": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "17eb13b8-250e-4046-aeb9-0ca0019482d0"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_saperp",
+              "operationId": "ReadTableVersion3",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+            },
+            "parameters": {
+              "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+              "inputParameters/tableName": "KNVP",
+              "inputParameters/FieldNames": [
+                "KUNN2:Customer number of business partner",
+                "VKORG:Sales Organization",
+                "VTWEG:Distribution Channel",
+                "SPART:Division",
+                "DEFPA:Default Partner",
+                "PARVW:Partner Function"
+              ],
+              "inputParameters/RowCount": 99999,
+              "inputParameters/WhereFilters": [
+                "KUNNR = '@{if(isInt(variables('Customer')), formatNumber(int(variables('Customer')), 'D10'), variables('Customer'))}'"
+              ]
+            },
+            "authentication": {
+              "type": "Raw",
+              "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+            }
+          }
+        },
+        "Partner_Functions": {
+          "runAfter": {
+            "Parse_Partners": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "17eb13b8-250e-4046-aeb9-0ca0019482d0"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_saperp",
+              "operationId": "ReadTableVersion3",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+            },
+            "parameters": {
+              "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+              "inputParameters/tableName": "TPART",
+              "inputParameters/FieldNames": [
+                "PARVW:Partner Function",
+                "VTEXT:Name"
+              ],
+              "inputParameters/RowCount": 99999,
+              "inputParameters/WhereFilters": [
+                "SPRAS = 'EN' AND PARVW IN ('AG','WE','RE','RG')"
+              ]
+            },
+            "authentication": {
+              "type": "Raw",
+              "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+            }
+          }
+        },
+        "Partner_Addresses": {
+          "runAfter": {
+            "Finalize_IN_Statement": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "17eb13b8-250e-4046-aeb9-0ca0019482d0"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_saperp",
+              "operationId": "ReadTableVersion3",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+            },
+            "parameters": {
+              "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+              "inputParameters/tableName": "KNA1",
+              "inputParameters/FieldNames": [
+                "KUNNR:Customer Number",
+                "NAME1:Name 1",
+                "STRAS:House number and street",
+                "ORT01:City",
+                "REGIO:Region (State, Province, County)",
+                "LAND1:Country Key",
+                "PSTLZ:Postal Code"
+              ],
+              "inputParameters/RowCount": 99999,
+              "inputParameters/WhereFilters": "@outputs('Finalize_IN_Statement')"
+            },
+            "authentication": {
+              "type": "Raw",
+              "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+            }
+          }
+        },
+        "Prepare_IN_Statement": {
+          "runAfter": {
+            "Parse_Partner_Functions": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@body('Parse_Partners')",
+            "select": "@concat('''',item()?['PartnerRaw'],'''',',')"
+          }
+        },
+        "Condition": {
+          "actions": {
+            "Response": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "3acb6b71-7516-4f46-82a7-fe87c0f4120b"
+              },
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "Header": "@body('Parse_Header')[0]",
+                  "Customer": "@body('Parse_Header')[0]['Customer']",
+                  "PartnerAddresses": "@body('Parse_Partner_Addresses')",
+                  "PartnerFunctions": "@body('Parse_Partner_Functions')",
+                  "Partners": "@body('Parse_Partners')",
+                  "SalesOrganizations": "@body('Parse_Sales_Organizations')",
+                  "Companies": "@body('Parse_Companies')",
+                  "Contacts": "@body('Parse_Contacts')",
+                  "Messages": []
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Header": {
+                      "type": "object",
+                      "properties": {
+                        "Customer": {
+                          "type": "string"
+                        },
+                        "Country": {
+                          "type": "string"
+                        },
+                        "Name": {
+                          "type": "string"
+                        },
+                        "City": {
+                          "type": "string"
+                        },
+                        "PostalCode": {
+                          "type": "string"
+                        },
+                        "Street": {
+                          "type": "string"
+                        },
+                        "Region": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "Customer": {
+                      "type": "string"
+                    },
+                    "PartnerAddresses": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Customer": {
+                            "type": "string"
+                          },
+                          "Country": {
+                            "type": "string"
+                          },
+                          "Name": {
+                            "type": "string"
+                          },
+                          "City": {
+                            "type": "string"
+                          },
+                          "PostalCode": {
+                            "type": "string"
+                          },
+                          "Street": {
+                            "type": "string"
+                          },
+                          "Region": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Customer",
+                          "Country",
+                          "Name",
+                          "City",
+                          "PostalCode",
+                          "Street",
+                          "Region"
+                        ]
+                      }
+                    },
+                    "PartnerFunctions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "PartnerFunction": {
+                            "type": "string"
+                          },
+                          "Description": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "PartnerFunction",
+                          "Description"
+                        ]
+                      }
+                    },
+                    "Partners": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "PartnerRaw": {
+                            "type": "string"
+                          },
+                          "SalesOrganization": {
+                            "type": "string"
+                          },
+                          "DistributionChannel": {
+                            "type": "string"
+                          },
+                          "Division": {
+                            "type": "string"
+                          },
+                          "DefaultPartner": {
+                            "type": "string"
+                          },
+                          "PartnerFunction": {
+                            "type": "string"
+                          },
+                          "Partner": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "PartnerRaw",
+                          "SalesOrganization",
+                          "DistributionChannel",
+                          "Division",
+                          "DefaultPartner",
+                          "PartnerFunction",
+                          "Partner"
+                        ]
+                      }
+                    },
+                    "SalesOrganizations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "SalesOrganization": {
+                            "type": "string"
+                          },
+                          "DistributionChannel": {
+                            "type": "string"
+                          },
+                          "Division": {
+                            "type": "string"
+                          },
+                          "AuthorizationGroup": {
+                            "type": "string"
+                          },
+                          "PricingProcedure": {
+                            "type": "string"
+                          },
+                          "PriceGroup": {
+                            "type": "string"
+                          },
+                          "Currency": {
+                            "type": "string"
+                          },
+                          "PaymentTerms": {
+                            "type": "string"
+                          },
+                          "DeliveringPlant": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "SalesOrganization",
+                          "DistributionChannel",
+                          "Division",
+                          "AuthorizationGroup",
+                          "PricingProcedure",
+                          "PriceGroup",
+                          "Currency",
+                          "PaymentTerms",
+                          "DeliveringPlant"
+                        ]
+                      }
+                    },
+                    "Companies": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "CompanyCode": {
+                            "type": "string"
+                          },
+                          "GlAccount": {
+                            "type": "string"
+                          },
+                          "PaymentMethods": {
+                            "type": "string"
+                          },
+                          "InterestCalculation": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "CompanyCode",
+                          "GlAccount",
+                          "PaymentMethods",
+                          "InterestCalculation"
+                        ]
+                      }
+                    },
+                    "Contacts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Contact": {
+                            "type": "string"
+                          },
+                          "FirstName": {
+                            "type": "string"
+                          },
+                          "LastName": {
+                            "type": "string"
+                          },
+                          "Title": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Contact",
+                          "FirstName",
+                          "LastName",
+                          "Title"
+                        ]
+                      }
+                    },
+                    "Messages": {
+                      "type": "array"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Parse_Partner_Addresses": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Response_2": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "cc0caa1d-3592-4b71-bd39-79464246dee0"
+                },
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                  "statusCode": 400,
+                  "body": {
+                    "Messages": [
+                      {
+                        "Message": "No customers were found based on your search criteria."
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "greater": [
+              "@length(outputs('Header')?['body/Rows'])",
+              0
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "35d60202-0da7-46d9-bc38-33a00570d486"
+          },
+          "type": "If"
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

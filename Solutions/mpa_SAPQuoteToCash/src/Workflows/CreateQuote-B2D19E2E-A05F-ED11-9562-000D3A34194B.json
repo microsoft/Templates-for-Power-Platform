@@ -1,0 +1,690 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_saperp": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "gilman_sharedsaperp_74c03"
+        },
+        "api": {
+          "name": "shared_saperp"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "SAP Application Server (mpa_SAPApplicationServer)": {
+          "defaultValue": "{\"AppServerHost\":\"sap.clearsoftware.com\",\"Client\":\"100\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_SAPApplicationServer"
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "657eeeca-c2a6-4e94-b441-09504acacba5"
+          },
+          "type": "Request",
+          "kind": "Http",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "Header": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "OrderType": {
+                        "type": "string"
+                      },
+                      "SalesOrganization": {
+                        "type": "string"
+                      },
+                      "CustomerPO": {
+                        "type": "string"
+                      },
+                      "Customer": {
+                        "type": "string"
+                      },
+                      "ShipTo": {
+                        "type": "string"
+                      },
+                      "DeliveryDate": {
+                        "type": "string"
+                      },
+                      "HeaderText": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "OrderType",
+                      "SalesOrganization",
+                      "CustomerPO",
+                      "Customer",
+                      "ShipTo",
+                      "DeliveryDate",
+                      "HeaderText"
+                    ]
+                  }
+                },
+                "Items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "Plant": {
+                        "type": "string"
+                      },
+                      "Material": {
+                        "type": "string"
+                      },
+                      "Quantity": {
+                        "type": "integer"
+                      },
+                      "Item": {
+                        "type": "string"
+                      },
+                      "Unit": {
+                        "type": "string"
+                      },
+                      "CrudType": {
+                        "type": "string"
+                      },
+                      "Description": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "Plant",
+                      "Material",
+                      "Quantity",
+                      "Item",
+                      "Unit",
+                      "CrudType"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": {
+        "Create_SalesItemsIn_Array": {
+          "runAfter": {
+            "Create_SalesPartners_Array": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "67b60224-0f7c-4338-b520-808a2181795b"
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@variables('Items')",
+            "select": {
+              "ITM_NUMBER": "@formatNumber(int(item()?['Item']), 'D6')",
+              "MATERIAL": "@if(isInt(item()?['Material']), formatNumber(int(item()?['Material']), 'D18'), item()?['Material'])",
+              "SHORT_TEXT": "@item()?['Description']",
+              "TARGET_QTY": "@item()?['Quantity']",
+              "TARGET_QU": "@item()?['Unit']",
+              "PLANT": "@item()?['Plant']"
+            }
+          }
+        },
+        "Create_SalesItemsInX_Array": {
+          "runAfter": {
+            "Create_SalesItemsIn_Array": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "7fc5c57e-dd3d-4efb-980a-16a4f735bae0"
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@variables('Items')",
+            "select": {
+              "ITM_NUMBER": "@formatNumber(int(item()?['Item']), 'D6')",
+              "MATERIAL": "X",
+              "SHORT_TEXT": "X",
+              "TARGET_QTY": "X",
+              "TARGET_QU": "X",
+              "PLANT": "X",
+              "UPDATEFLAG": "I"
+            }
+          }
+        },
+        "Create_SalesScheduleIn_Array": {
+          "runAfter": {
+            "Create_SalesItemsInX_Array": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "08468f56-72eb-4840-802f-dd43d389f78b"
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@variables('Items')",
+            "select": {
+              "ITM_NUMBER": "@formatNumber(int(item()?['Item']), 'D6')",
+              "SCHED_LINE": "0001",
+              "REQ_QTY": "@item()?['Quantity']"
+            }
+          }
+        },
+        "Create_SalesScheduleInX_Array": {
+          "runAfter": {
+            "Create_SalesScheduleIn_Array": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "fdc39c15-2648-4240-842c-480fd2b1b868"
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@variables('Items')",
+            "select": {
+              "ITM_NUMBER": "@formatNumber(int(item()?['Item']), 'D6')",
+              "SCHED_LINE": "0001",
+              "REQ_QTY": "X",
+              "UPDATEFLAG": "I"
+            }
+          }
+        },
+        "Parse_JSON": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "12f0f586-4295-4bdd-8329-522cf48feb2c"
+          },
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@triggerBody()",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "Header": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "OrderType": {
+                        "type": "string"
+                      },
+                      "SalesOrganization": {
+                        "type": "string"
+                      },
+                      "CustomerPO": {
+                        "type": "string"
+                      },
+                      "Customer": {
+                        "type": "string"
+                      },
+                      "ShipTo": {
+                        "type": "string"
+                      },
+                      "DeliveryDate": {
+                        "type": "string"
+                      },
+                      "HeaderText": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "OrderType",
+                      "SalesOrganization",
+                      "CustomerPO",
+                      "Customer",
+                      "ShipTo",
+                      "DeliveryDate",
+                      "HeaderText"
+                    ]
+                  }
+                },
+                "Items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "Plant": {
+                        "type": "string"
+                      },
+                      "Material": {
+                        "type": "string"
+                      },
+                      "Quantity": {
+                        "type": "integer"
+                      },
+                      "Item": {
+                        "type": "string"
+                      },
+                      "Unit": {
+                        "type": "string"
+                      },
+                      "CrudType": {
+                        "type": "string"
+                      },
+                      "Description": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "Plant",
+                      "Material",
+                      "Quantity",
+                      "Item",
+                      "Unit",
+                      "CrudType"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "Header": {
+          "runAfter": {
+            "Parse_JSON": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "9ff541ac-a4ab-42ac-9bf7-e16613baffb2"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Header",
+                "type": "object",
+                "value": "@body('Parse_JSON')?['Header'][0]"
+              }
+            ]
+          }
+        },
+        "Items": {
+          "runAfter": {
+            "Create_Sales_Text_Array": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "ef67d094-fd3b-4c59-9ad2-25d35c9342f7"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Items",
+                "type": "array",
+                "value": "@body('Parse_JSON')?['Items']"
+              }
+            ]
+          }
+        },
+        "Header_Text": {
+          "runAfter": {
+            "Header": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "692fc92a-2f40-4a55-8fa2-e831715eaaaa"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "HeaderText",
+                "type": "array",
+                "value": "@chunk(variables('Header')?['HeaderText'], 132)"
+              }
+            ]
+          }
+        },
+        "Create_Sales_Text_Array": {
+          "runAfter": {
+            "Header_Text": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "71ea1095-0422-42a2-87f5-023c73fc119e"
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@variables('HeaderText')",
+            "select": {
+              "TEXT_ID": "0001",
+              "FUNCTION": "005",
+              "LANGU": "EN",
+              "TEXT_LINE": "@item()"
+            }
+          }
+        },
+        "Create_SalesHeaderIn_Object": {
+          "runAfter": {
+            "Items": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "ea2969a7-c6b0-46e8-9e5d-b99416bc8752"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "SalesHeaderIn",
+                "type": "object",
+                "value": {
+                  "DOC_TYPE": "@variables('Header')?['OrderType']",
+                  "PURCH_NO_C": "@variables('Header')?['CustomerPO']",
+                  "SALES_ORG": "@variables('Header')?['SalesOrganization']",
+                  "DISTR_CHAN": "DS",
+                  "DIVISION": "SW",
+                  "REQ_DATE_H": "@formatDateTime(variables('Header')?['DeliveryDate'], 'yyyy-MM-dd')"
+                }
+              }
+            ]
+          }
+        },
+        "Create_SalesHeaderInX_Object": {
+          "runAfter": {
+            "Create_SalesHeaderIn_Object": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3a9a6626-4915-43eb-8402-1149d765c423"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "SalesHeaderInX",
+                "type": "object",
+                "value": {
+                  "DOC_TYPE": "X",
+                  "PURCH_NO_C": "X",
+                  "SALES_ORG": "X",
+                  "DISTR_CHAN": "X",
+                  "DIVISION": "X",
+                  "REQ_DATE_H": "X"
+                }
+              }
+            ]
+          }
+        },
+        "Create_SalesPartners_Array": {
+          "runAfter": {
+            "Create_SalesHeaderInX_Object": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "1f516210-5e61-4500-b663-ffa970e8c79e"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "SalesPartners",
+                "type": "array",
+                "value": [
+                  {
+                    "PARTN_ROLE": "AG",
+                    "PARTN_NUMB": "@if(isInt(variables('Header')?['Customer']), formatNumber(int(variables('Header')?['Customer']), 'D10'), variables('Header')?['Customer'])"
+                  },
+                  {
+                    "PARTN_ROLE": "WE",
+                    "PARTN_NUMB": "@if(isInt(variables('Header')?['ShipTo']), formatNumber(int(variables('Header')?['ShipTo']), 'D10'), variables('Header')?['ShipTo'])"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "SD_SALESDOCUMENT_CREATE": {
+          "runAfter": {
+            "Create_stateful_session": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "79f6cce2-db11-4a37-82d3-00fc93016860"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_saperp",
+              "operationId": "CallRfcJson",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+            },
+            "parameters": {
+              "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+              "rfcName": "SD_SALESDOCUMENT_CREATE:Creating a Sales and Distribution Document:VBAK",
+              "rfcGroupFilter": "*",
+              "autoCommit": true,
+              "sessionId": "@outputs('Create_stateful_session')?['body/SessionId']",
+              "rfcInputs/SALES_HEADER_IN": "@variables('SalesHeaderIn')",
+              "rfcInputs/SALES_HEADER_INX": "@variables('SalesHeaderInX')",
+              "rfcInputs/SALES_ITEMS_IN": "@body('Create_SalesItemsIn_Array')",
+              "rfcInputs/SALES_ITEMS_INX": "@body('Create_SalesItemsInX_Array')",
+              "rfcInputs/SALES_PARTNERS": "@variables('SalesPartners')",
+              "rfcInputs/SALES_SCHEDULES_IN": "@body('Create_SalesScheduleIn_Array')",
+              "rfcInputs/SALES_SCHEDULES_INX": "@body('Create_SalesScheduleInX_Array')"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Filter_Messages_for_Errors": {
+          "runAfter": {
+            "SD_SALESDOCUMENT_CREATE": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "314738ec-9d05-4ae3-b089-64259885fb43"
+          },
+          "type": "Query",
+          "inputs": {
+            "from": "@outputs('SD_SALESDOCUMENT_CREATE')?['body/RETURN']",
+            "where": "@equals(item()?['TYPE'], 'E')"
+          }
+        },
+        "Success_Check": {
+          "actions": {
+            "Commit_Data": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "d9cb6437-6522-421a-940e-5ccc83596af7"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp",
+                  "operationId": "CallRfcJson",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                  "rfcName": "BAPI_TRANSACTION_COMMIT:Execute external Commit when using BAPIs:BAPT",
+                  "rfcGroupFilter": "*",
+                  "autoCommit": true,
+                  "sessionId": "@outputs('Create_stateful_session')?['body/SessionId']"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Success_Response": {
+              "runAfter": {
+                "Commit_Data": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "88ce5aac-9ebe-41ab-87a6-dea14c80f06e"
+              },
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "Status": "Success",
+                  "Quote": "@{int(outputs('SD_SALESDOCUMENT_CREATE')?['body/SALESDOCUMENT_EX'])}",
+                  "Messages": [
+                    {
+                      "Message": "Quote @{int(outputs('SD_SALESDOCUMENT_CREATE')?['body/SALESDOCUMENT_EX'])} was successfully created."
+                    }
+                  ]
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Status": {
+                      "type": "string"
+                    },
+                    "Quote": {
+                      "type": "string"
+                    },
+                    "Messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Message"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Filter_Messages_for_Errors": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Clean_Up_Error_Messages": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "3ac4404f-21c4-4bae-bac7-2525e23d910f"
+                },
+                "type": "Select",
+                "inputs": {
+                  "from": "@body('Filter_Messages_for_Errors')",
+                  "select": {
+                    "Message": "@item()?['MESSAGE']"
+                  }
+                }
+              },
+              "Failure_Response": {
+                "runAfter": {
+                  "Clean_Up_Error_Messages": [
+                    "Succeeded"
+                  ]
+                },
+                "metadata": {
+                  "operationMetadataId": "0364356b-c5f6-40d1-89d8-d1e42b0df753"
+                },
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                  "statusCode": 200,
+                  "body": {
+                    "Status": "Failure",
+                    "Quote": "",
+                    "Messages": "@body('Clean_Up_Error_Messages')"
+                  },
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "Status": {
+                        "type": "string"
+                      },
+                      "Quote": {
+                        "type": "string"
+                      },
+                      "Messages": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "Message": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "Message"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "equals": [
+              "@length(outputs('Filter_Messages_for_Errors')?['body'])",
+              0
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "e9efd70f-e739-4ab6-ad9b-90b1e544b087"
+          },
+          "type": "If"
+        },
+        "Create_stateful_session": {
+          "runAfter": {
+            "Create_SalesScheduleInX_Array": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "453e5270-22b9-4923-88fb-688427ea74af"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_saperp",
+              "operationId": "CreateSession",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+            },
+            "parameters": {
+              "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

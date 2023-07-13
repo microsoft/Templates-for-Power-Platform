@@ -1,0 +1,534 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_saperp_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "gilman_sharedsaperp_74c03"
+        },
+        "api": {
+          "name": "shared_saperp"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "SAP Development (mpa_SAPApplicationServer)": {
+          "defaultValue": "{\"AppServerHost\":\"sap.clearsoftware.com\",\"Client\":\"100\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_SAPApplicationServer"
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "b5a8bb7e-564d-409d-94dd-fed00c29ac94"
+          },
+          "type": "Request",
+          "kind": "Http",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "Invoice": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": {
+        "Parse_JSON": {
+          "runAfter": {
+            "Invoice": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "12f0f586-4295-4bdd-8329-522cf48feb2c"
+          },
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@triggerBody()",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "Invoice": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "Header": {
+          "runAfter": {
+            "Parse_JSON": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "7cd63b20-75bc-4488-ad30-7668dba822db"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_saperp_1",
+              "operationId": "ReadTableVersion3",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+            },
+            "parameters": {
+              "x-ms-sap-system": "@parameters('SAP Development (mpa_SAPApplicationServer)')",
+              "inputParameters/tableName": "VBRK",
+              "inputParameters/FieldNames": [
+                "VBELN",
+                "FKART",
+                "VKORG",
+                "VTWEG",
+                "BUKRS",
+                "NETWR",
+                "ERNAM",
+                "ERDAT",
+                "KUNAG",
+                "SPART",
+                "KUNRG",
+                "ZTERM",
+                "WAERK",
+                "FKSTO:Billing document is cancelled"
+              ],
+              "inputParameters/RowCount": 1,
+              "inputParameters/WhereFilters": [
+                "VBELN LIKE '%@{variables('Invoice')}%'"
+              ]
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Condition": {
+          "actions": {
+            "Sold_To_Name": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "17eb13b8-250e-4046-aeb9-0ca0019482d0"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp_1",
+                  "operationId": "ReadTableVersion3",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Development (mpa_SAPApplicationServer)')",
+                  "inputParameters/tableName": "KNA1",
+                  "inputParameters/FieldNames": [
+                    "NAME1:Name 1"
+                  ],
+                  "inputParameters/RowCount": 1,
+                  "inputParameters/WhereFilters": [
+                    "KUNNR = '@{outputs('Header')?['body/Rows'][0]['KUNAG']}'"
+                  ]
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Response": {
+              "runAfter": {
+                "Parse_Items": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "3acb6b71-7516-4f46-82a7-fe87c0f4120b"
+              },
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "Invoice": "@triggerBody()?['Invoice']",
+                  "Header": "@body('Parse_Header')[0]",
+                  "Items": "@body('Parse_Items')"
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Invoice": {
+                      "type": "string"
+                    },
+                    "Header": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Type": {
+                            "type": "string"
+                          },
+                          "Vendor": {
+                            "type": "string"
+                          },
+                          "VendorName": {
+                            "type": "string"
+                          },
+                          "Invoice": {
+                            "type": "string"
+                          },
+                          "Currency": {
+                            "type": "string"
+                          },
+                          "TotalPrice": {
+                            "type": "string"
+                          },
+                          "CreatedOn": {
+                            "type": "string"
+                          },
+                          "PostingDate": {
+                            "type": "string"
+                          },
+                          "CompanyCode": {
+                            "type": "string"
+                          },
+                          "FiscalYear": {
+                            "type": "string"
+                          },
+                          "Status": {
+                            "type": "string"
+                          },
+                          "CreatedBy": {
+                            "type": "string"
+                          },
+                          "DueDate": {
+                            "type": "string"
+                          },
+                          "PaymentTerms": {
+                            "type": "string"
+                          },
+                          "PaymentMethod": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Type",
+                          "Vendor",
+                          "VendorName",
+                          "Invoice",
+                          "Currency",
+                          "TotalPrice",
+                          "CreatedOn",
+                          "PostingDate",
+                          "CompanyCode",
+                          "FiscalYear",
+                          "Status",
+                          "CreatedBy",
+                          "DueDate",
+                          "PaymentTerms",
+                          "PaymentMethod"
+                        ]
+                      }
+                    },
+                    "Items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Item": {
+                            "type": "string"
+                          },
+                          "PurchaseOrder": {
+                            "type": "string"
+                          },
+                          "PurchaseOrderItem": {
+                            "type": "string"
+                          },
+                          "Material": {
+                            "type": "string"
+                          },
+                          "Plant": {
+                            "type": "string"
+                          },
+                          "UnitPrice": {
+                            "type": "string"
+                          },
+                          "Quantity": {
+                            "type": "string"
+                          },
+                          "Description": {
+                            "type": "string"
+                          },
+                          "Unit": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Item",
+                          "PurchaseOrder",
+                          "PurchaseOrderItem",
+                          "Material",
+                          "Plant",
+                          "UnitPrice",
+                          "Quantity",
+                          "Description",
+                          "Unit"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "Parse_Header": {
+              "runAfter": {
+                "Bill_To_Name": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@outputs('Header')?['body/Rows']",
+                "select": {
+                  "Type": "@item()?['FKART']",
+                  "SoldTo": "@if(isInt(item()?['KUNAG']), string(int(item()?['KUNAG'])), item()?['KUNAG'])",
+                  "SoldToName": "@outputs('Sold_To_Name')?['body/Rows'][0]['NAME1']",
+                  "Invoice": "@if(isInt(item()?['VBELN']), string(int(item()?['VBELN'])), item()?['VBELN'])",
+                  "Currency": "@item()?['WAERK']",
+                  "TotalPrice": "@item()?['NETWR']",
+                  "CreatedOn": "@item()?['ERDAT']",
+                  "SalesOrganization": "@item()?['VKORG']",
+                  "CompanyCode": "@item()?['BUKRS']",
+                  "DistributionChannel": "@item()?['VTWEG']",
+                  "Status": "@if(equals(item()?['FKSTO'], 'X'), 'Reversed', 'Posted')",
+                  "CreatedBy": "@item()?['ERNAM']",
+                  "Division": "@item()?['SPART']",
+                  "PaymentTerms": "@item()?['ZTERM']",
+                  "BillTo": "@if(isInt(item()?['KUNRG']), string(int(item()?['KUNRG'])), item()?['KUNRG'])",
+                  "BillToName": "@outputs('Bill_To_Name')?['body/Rows'][0]['NAME1']"
+                }
+              }
+            },
+            "Items": {
+              "runAfter": {
+                "Parse_Header": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "7cd63b20-75bc-4488-ad30-7668dba822db"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp_1",
+                  "operationId": "ReadTableVersion3",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Development (mpa_SAPApplicationServer)')",
+                  "inputParameters/tableName": "VBRP",
+                  "inputParameters/FieldNames": [
+                    "POSNR:Billing item",
+                    "VGBEL:Document number of the reference document",
+                    "VGPOS:Item number of the reference item",
+                    "MATNR",
+                    "WERKS",
+                    "NETWR:Net value of the billing item in document currency",
+                    "FKIMG:Actual Invoiced Quantity",
+                    "MEINS",
+                    "ARKTX:Short text for sales order item"
+                  ],
+                  "inputParameters/RowCount": 9999,
+                  "inputParameters/WhereFilters": [
+                    "VBELN LIKE '%@{variables('Invoice')}%'"
+                  ]
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Parse_Items": {
+              "runAfter": {
+                "Items": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@outputs('Items')?['body/Rows']",
+                "select": {
+                  "Item": "@if(isInt(item()?['POSNR']), string(int(item()?['POSNR'])), item()?['POSNR'])",
+                  "SalesOrder": "@if(isInt(item()?['VGBEL']), string(int(item()?['VGBEL'])), item()?['VGBEL'])",
+                  "SalesOrderItem": "@if(isInt(item()?['VGPOS']), string(int(item()?['VGPOS'])), item()?['VGPOS'])",
+                  "Material": "@if(isInt(item()?['MATNR']), string(int(item()?['MATNR'])), item()?['MATNR'])",
+                  "Plant": "@item()?['WERKS']",
+                  "TotalPrice": "@item()?['NETWR']",
+                  "Quantity": "@item()?['FKIMG']",
+                  "Description": "@item()?['ARKTX']",
+                  "Unit": "@item()?['MEINS']",
+                  "UnitPrice": "@div(float(item()?['NETWR']), float(item()?['FKIMG']))"
+                }
+              }
+            },
+            "Bill_To_Name": {
+              "runAfter": {
+                "Sold_To_Name": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "17eb13b8-250e-4046-aeb9-0ca0019482d0"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp_1",
+                  "operationId": "ReadTableVersion3",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Development (mpa_SAPApplicationServer)')",
+                  "inputParameters/tableName": "KNA1",
+                  "inputParameters/FieldNames": [
+                    "NAME1:Name 1"
+                  ],
+                  "inputParameters/RowCount": 1,
+                  "inputParameters/WhereFilters": [
+                    "KUNNR = '@{outputs('Header')?['body/Rows'][0]['KUNRG']}'"
+                  ]
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "runAfter": {
+            "Header": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Response_2": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "0e444872-e5c1-4764-880c-6c2baeb05cf7"
+                },
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                  "statusCode": 400,
+                  "body": "Invoice @{triggerBody()?['Invoice']} does not exist.",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "List": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "Order": {
+                              "type": "string"
+                            },
+                            "Type": {
+                              "type": "string"
+                            },
+                            "Vendor": {
+                              "type": "string"
+                            },
+                            "CreatedOn": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "Order",
+                            "Type",
+                            "Vendor",
+                            "CreatedOn"
+                          ]
+                        }
+                      },
+                      "Names": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "Vendor": {
+                              "type": "string"
+                            },
+                            "Name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "Vendor",
+                            "Name"
+                          ]
+                        }
+                      },
+                      "Messages": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "Message": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "Message"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "greater": [
+              "@length(outputs('Header')?['body/Rows'])",
+              0
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "da1616ba-2830-4fbe-85b1-a97ea5aaa52e"
+          },
+          "type": "If"
+        },
+        "Invoice": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "4b0212c7-3ffa-4661-9cb5-e4e8ac8d68e7"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Invoice",
+                "type": "string",
+                "value": "@{formatNumber(int(triggerBody()?['Invoice']), 'D10')}"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

@@ -1,0 +1,450 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_saperp": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "gilman_sharedsaperp_74c03"
+        },
+        "api": {
+          "name": "shared_saperp"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "SAP Development (mpa_SAPApplicationServer)": {
+          "defaultValue": "{\"AppServerHost\":\"sap.clearsoftware.com\",\"Client\":\"100\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_SAPApplicationServer"
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "c9e729d1-f9af-4263-b9d9-fbe73b8d3531"
+          },
+          "type": "Request",
+          "kind": "Http",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "Type": {
+                  "type": "string"
+                },
+                "Quote": {
+                  "type": "string"
+                },
+                "CreatedOn": {
+                  "type": "string"
+                },
+                "Customer": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": {
+        "Parse_JSON": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "12f0f586-4295-4bdd-8329-522cf48feb2c"
+          },
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@triggerBody()",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "Type": {
+                  "type": "string"
+                },
+                "Quote": {
+                  "type": "string"
+                },
+                "CreatedOn": {
+                  "type": "string"
+                },
+                "Customer": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "Criteria": {
+          "runAfter": {
+            "Parse_JSON": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6cbfab8f-a161-42d5-9e57-30c613507fb2"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Criteria",
+                "type": "array",
+                "value": [
+                  "TRVOG = '2'",
+                  "AND AUART LIKE '%@{body('Parse_JSON')?['Type']}%'",
+                  "AND KUNNR LIKE '%@{body('Parse_JSON')?['Customer']}%'",
+                  "AND VBELN LIKE '%@{body('Parse_JSON')?['Quote']}%'",
+                  "AND ERDAT LIKE '%@{body('Parse_JSON')?['CreatedOn']}%'"
+                ]
+              }
+            ]
+          }
+        },
+        "SAP_Query": {
+          "runAfter": {
+            "Criteria": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "5fa0383c-f5d3-4ee1-b5f4-021fd1e630fb"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_saperp",
+              "operationId": "ReadTableVersion3",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+            },
+            "parameters": {
+              "x-ms-sap-system": "@parameters('SAP Development (mpa_SAPApplicationServer)')",
+              "inputParameters/tableName": "VBAK",
+              "inputParameters/FieldNames": [
+                "VBELN",
+                "AUART",
+                "KUNNR",
+                "ERDAT",
+                "NETWR"
+              ],
+              "inputParameters/RowCount": 99999,
+              "inputParameters/WhereFilters": "@variables('Criteria')"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Condition": {
+          "actions": {
+            "Parse_List_2": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@outputs('SAP_Query')?['body/Rows']",
+                "select": {
+                  "Type": "@item()?['AUART']",
+                  "Customer": "@if(isInt(item()?['KUNNR']), string(int(item()?['KUNNR'])), item()?['KUNNR'])",
+                  "CreatedOn": "@item()?['ERDAT']",
+                  "CustomerRaw": "@item()?['KUNNR']",
+                  "Amount": "@item()?['NETWR']",
+                  "Quote": "@if(isInt(item()?['VBELN']), string(int(item()?['VBELN'])), item()?['VBELN'])"
+                }
+              }
+            },
+            "Prepare_IN_Statement_2": {
+              "runAfter": {
+                "Parse_List_2": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Parse_List_2')",
+                "select": "@concat('''', item()?['CustomerRaw'], '''', ',')"
+              }
+            },
+            "Finalize_IN_Statement_2": {
+              "runAfter": {
+                "Prepare_IN_Statement_2": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "42c0b6dd-26a1-41e9-b4a7-8d91fc33dd16"
+              },
+              "type": "Compose",
+              "inputs": "@union(json('[\"KUNNR IN (\"]'), body('Prepare_IN_Statement_2'), json('[\")\"]'))"
+            },
+            "Customer_Names_2": {
+              "runAfter": {
+                "Finalize_IN_Statement_2": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "116e2ff5-2f69-4e6b-a5ab-2de75d0338b8"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp",
+                  "operationId": "ReadTableVersion3",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Development (mpa_SAPApplicationServer)')",
+                  "inputParameters/tableName": "KNA1",
+                  "inputParameters/FieldNames": [
+                    "KUNNR:Customer Number",
+                    "NAME1:Name 1"
+                  ],
+                  "inputParameters/RowCount": 9999,
+                  "inputParameters/WhereFilters": "@outputs('Finalize_IN_Statement_2')"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Parse_Customers_2": {
+              "runAfter": {
+                "Customer_Names_2": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@outputs('Customer_Names_2')?['body/Rows']",
+                "select": {
+                  "Customer": "@if(isInt(item()?['KUNNR']), string(int(item()?['KUNNR'])), item()?['KUNNR'])",
+                  "Name": "@item()?['NAME1']"
+                }
+              }
+            },
+            "Response_3": {
+              "runAfter": {
+                "Parse_Customers_2": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "3acb6b71-7516-4f46-82a7-fe87c0f4120b"
+              },
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "List": "@body('Parse_List_2')",
+                  "Names": "@body('Parse_Customers_2')",
+                  "Messages": [
+                    {
+                      "Message": "@{length(body('Parse_List_2'))} quote(s) found based on your search criteria."
+                    }
+                  ]
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "List": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Type": {
+                            "type": "string"
+                          },
+                          "Customer": {
+                            "type": "string"
+                          },
+                          "CreatedOn": {
+                            "type": "string"
+                          },
+                          "CustomerRaw": {
+                            "type": "string"
+                          },
+                          "Amount": {
+                            "type": "string"
+                          },
+                          "Quote": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Type",
+                          "Customer",
+                          "CreatedOn",
+                          "CustomerRaw",
+                          "Amount",
+                          "Quote"
+                        ]
+                      }
+                    },
+                    "Names": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Customer": {
+                            "type": "string"
+                          },
+                          "Name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Customer",
+                          "Name"
+                        ]
+                      }
+                    },
+                    "Messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Message"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "SAP_Query": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Response_2": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "97a8bd17-357c-4f4f-9224-f76c05f3c2a9"
+                },
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                  "statusCode": 400,
+                  "body": {
+                    "List": "",
+                    "Names": "",
+                    "Messages": [
+                      {
+                        "Message": "No order(s) found based on your search criteria."
+                      }
+                    ]
+                  },
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "List": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "Order": {
+                              "type": "string"
+                            },
+                            "Type": {
+                              "type": "string"
+                            },
+                            "Customer": {
+                              "type": "string"
+                            },
+                            "CreatedOn": {
+                              "type": "string"
+                            },
+                            "Amount": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "Order",
+                            "Type",
+                            "Customer",
+                            "CreatedOn",
+                            "Amount"
+                          ]
+                        }
+                      },
+                      "Names": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "Customer": {
+                              "type": "string"
+                            },
+                            "Name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "Customer",
+                            "Name"
+                          ]
+                        }
+                      },
+                      "Messages": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "Message": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "Message"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "greater": [
+              "@length(outputs('SAP_Query')?['body/Rows'])",
+              0
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "50ee3927-730d-4e63-bd1e-bf2a9dd929a3"
+          },
+          "type": "If"
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}
