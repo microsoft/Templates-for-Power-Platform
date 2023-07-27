@@ -36,7 +36,7 @@ jobs:
         name: Get current datetime
         run: |
           $datetime = $(Get-Date -Format "yyyy-MM-ddTHH:mm:ss")
-          echo "datetime=$datetime" >> "$GITHUB_OUTPUT"
+          echo "datetime=$datetime" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Setup .NET Core environment 
         uses: actions/setup-dotnet@v1
@@ -64,7 +64,7 @@ jobs:
           $lines = $output -split "`n"
           $versionLine = $lines | Where-Object { $_ -match "${{ github.event.inputs.solution_name }}" }
           $version = ($versionLine -split "\s+")[3]
-          echo "current_version=$version" >> "$GITHUB_OUTPUT"
+          echo "current_version=$version" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
           # Split the version into its components
           $versionParts = $version.Split('.')
           # Define an environment variable for the version part to increment
@@ -78,30 +78,30 @@ jobs:
           }
           # Reconstruct the version
           $newVersion = "{0}.{1}.{2}.{3}" -f $versionParts[0], $versionParts[1], $versionParts[2], $versionParts[3]
-          echo "new_version=$newVersion" >> "$GITHUB_OUTPUT"
+          echo "new_version=$newVersion" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
           $newVersionWithUnderscores = "{0}_{1}_{2}_{3}" -f $versionParts[0], $versionParts[1], $versionParts[2], $versionParts[3]
-          echo "new_version_with_underscores=$newVersionWithUnderscores" >> "$GITHUB_OUTPUT"
+          echo "new_version_with_underscores=$newVersionWithUnderscores" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Increment the online version
         run: pac solution online-version --solution-name "${{ github.event.inputs.solution_name }}" --solution-version ${{ steps.solution_versioning.outputs.new_version }}
 
       - name: Export unmanaged solution
-        run: pac solution export --path "${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputsnew_version_with_underscores }}_unmanaged.zip" --name "${{ github.event.inputs.solution_name }}" --include general
+        run: pac solution export --path "${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputs.new_version_with_underscores }}_unmanaged.zip" --name "${{ github.event.inputs.solution_name }}" --include general
 
       - name: Export managed solution
-        run: pac solution export --path "${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputsnew_version_with_underscores }}_managed.zip" --name "${{ github.event.inputs.solution_name }}" --managed --include general
+        run: pac solution export --path "${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputs.new_version_with_underscores }}_managed.zip" --name "${{ github.event.inputs.solution_name }}" --managed --include general
 
       - name: Publish unmanaged artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputsnew_version_with_underscores }}_unmanaged
-          path: ${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputsnew_version_with_underscores }}_unmanaged.zip
+          name: ${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputs.new_version_with_underscores }}_unmanaged
+          path: ${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputs.new_version_with_underscores }}_unmanaged.zip
 
       - name: Publish managed artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputsnew_version_with_underscores }}_managed
-          path: ${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputsnew_version_with_underscores }}_managed.zip
+          name: ${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputs.new_version_with_underscores }}_managed
+          path: ${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputs.new_version_with_underscores }}_managed.zip
 
       - name: Auth with Source Environment
         run: |
@@ -114,4 +114,4 @@ jobs:
 
       - name: Deploy Managed version To Target Environment
         run: |
-          pac solution import --path "${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputsnew_version_with_underscores }}_managed.zip" --activate-plugins --publish-changes
+          pac solution import --path "${{ github.event.inputs.solution_name }}_${{ steps.solution_versioning.outputs.new_version_with_underscores }}_managed.zip" --activate-plugins --publish-changes
