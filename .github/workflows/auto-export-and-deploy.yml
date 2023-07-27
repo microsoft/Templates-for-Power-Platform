@@ -36,7 +36,7 @@ jobs:
         name: Get current datetime
         run: |
           $datetime = $(Get-Date -Format "yyyy-MM-ddTHH:mm:ss")
-          echo "::set-output name=datetime::$datetime"
+          echo "datetime=$datetime" >> "$GITHUB_ENV"
 
       - name: Setup .NET Core environment 
         uses: actions/setup-dotnet@v1
@@ -64,7 +64,7 @@ jobs:
           $lines = $output -split "`n"
           $versionLine = $lines | Where-Object { $_ -match "${{ github.event.inputs.solution_name }}" }
           $version = ($versionLine -split "\s+")[3]
-          echo "::set-output name=current_version::$version"
+          echo "current_version=$version" >> "$GITHUB_ENV"
           # Split the version into its components
           $versionParts = $version.Split('.')
           # Define an environment variable for the version part to increment
@@ -78,9 +78,9 @@ jobs:
           }
           # Reconstruct the version
           $newVersion = "{0}.{1}.{2}.{3}" -f $versionParts[0], $versionParts[1], $versionParts[2], $versionParts[3]
-          echo "::set-output name=new_version::$newVersion"
+          echo "new_version=$newVersion" >> "$GITHUB_ENV"
           $newVersionWithUnderscores = "{0}_{1}_{2}_{3}" -f $versionParts[0], $versionParts[1], $versionParts[2], $versionParts[3]
-          echo "::set-output name=new_version_with_underscores::$newVersionWithUnderscores"        
+          echo "new_version_with_underscores=$newVersionWithUnderscores" >> "$GITHUB_ENV"
 
       - name: Increment the online version
         run: pac solution online-version --solution-name "${{ github.event.inputs.solution_name }}" --solution-version ${{ steps.solution_versioning.outputs.new_version }}
