@@ -10,11 +10,18 @@ on:
 jobs:
   export-solution:
     runs-on: windows-latest
-
+    defaults:
+      run:
+        shell: pwsh
+        
     steps:
-      - name: Get current date
-        id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+      - id: date
+        name: Get current datetime
+        run: |
+          $datetime = $(Get-Date -Format "yyyy-MM-ddTHH:mm:ss")
+          $datetimeForBranchName = $datetime -replace ":", "-"
+          echo "datetime=$datetime" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
+          echo "datetimeForBranchName=$datetimeForBranchName" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Checkout code
         uses: actions/checkout@v2
@@ -60,7 +67,7 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "github-actions@github.com"
-          git checkout -b "${{ github.event.inputs.solution_name }}-${{ steps.date.outputs.date }}"
+          git checkout -b "${{ github.event.inputs.solution_name }}-${{ steps.date.outputs.datetimeForBranchName }}"
           git add .
           git commit -m "Synced ${{ github.event.inputs.solution_name }} Power Platform Solution"
-          git push --set-upstream origin "${{ github.event.inputs.solution_name }}-${{ steps.date.outputs.date }}"
+          git push --set-upstream origin "${{ github.event.inputs.solution_name }}-${{ steps.date.outputs.datetimeForBranchName }}"
