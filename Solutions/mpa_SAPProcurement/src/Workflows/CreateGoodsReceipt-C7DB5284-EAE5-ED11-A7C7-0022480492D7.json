@@ -100,9 +100,12 @@
                   "rfcInputs/GOODSMVT_HEADER/HEADER_TXT": "@variables('Header')?['DeliveryNote']",
                   "rfcInputs/GOODSMVT_ITEM": "@body('GOODSMVT_ITEM')"
                 },
-                "authentication": "@parameters('$authentication')",
                 "retryPolicy": {
                   "type": "none"
+                },
+                "authentication": {
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']",
+                  "type": "Raw"
                 }
               }
             },
@@ -302,16 +305,16 @@
               "inputs": {
                 "from": "@variables('Items')",
                 "select": {
-                  "PO_ITEM": "@formatNumber(int(item()?['ItemNumber']), 'D5')",
+                  "PO_ITEM": "@formatNumber(int(item()?['PurchaseOrderItemNumber']), 'D5')",
                   "MATERIAL": "@if(isInt(item()?['MaterialNumber']), formatNumber(int(item()?['MaterialNumber']), 'D18'), item()?['MaterialNumber'])",
-                  "PO_NUMBER": "@variables('Header')?['OrderNumber']",
+                  "PO_NUMBER": "@variables('Header')?['PurchaseOrderNumber']",
                   "ENTRY_QNT": "@float(item()?['Quantity'])",
                   "ENTRY_UOM": "@item()?['UnitOfMeasure']",
                   "PLANT": "@item()?['Location']",
                   "NO_MORE_GR": "X",
                   "MOVE_TYPE": "101",
                   "MVT_IND": "B",
-                  "STGE_LOC": "0001",
+                  "STGE_LOC": "@item()?['StorageLocation']",
                   "VENDOR": "@if(isInt(variables('Header')?['Vendor']), formatNumber(int(variables('Header')?['Vendor']), 'D10'), variables('Header')?['Vendor'])"
                 }
               }
@@ -360,7 +363,7 @@
                     "Header": {
                       "type": "object",
                       "properties": {
-                        "OrderNumber": {
+                        "PurchaseOrderNumber": {
                           "type": "string"
                         },
                         "Vendor": {
@@ -371,7 +374,7 @@
                         }
                       },
                       "required": [
-                        "OrderNumber",
+                        "PurchaseOrderNumber",
                         "Vendor",
                         "DeliveryNote"
                       ]
@@ -390,10 +393,13 @@
                           "Quantity": {
                             "type": "number"
                           },
-                          "ItemNumber": {
+                          "PurchaseOrderItemNumber": {
                             "type": "string"
                           },
                           "UnitOfMeasure": {
+                            "type": "string"
+                          },
+                          "StorageLocation": {
                             "type": "string"
                           }
                         },
@@ -526,7 +532,7 @@
                 }
               }
             },
-            "Response_3": {
+            "Exception_Response": {
               "runAfter": {
                 "Create_Integration_Log_Error": [
                   "Succeeded"
@@ -572,6 +578,20 @@
                     }
                   }
                 }
+              }
+            },
+            "Terminate": {
+              "runAfter": {
+                "Exception_Response": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "f018145b-98a9-492a-848c-df0d93b6ff94"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed"
               }
             }
           },

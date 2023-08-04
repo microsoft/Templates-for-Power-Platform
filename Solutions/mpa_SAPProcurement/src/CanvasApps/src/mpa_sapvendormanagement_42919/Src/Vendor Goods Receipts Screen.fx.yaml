@@ -1,0 +1,2214 @@
+"'Vendor Goods Receipts Screen' As screen":
+    Fill: =varThemeColors.background
+    LoadingSpinner: =LoadingSpinner.Data
+    LoadingSpinnerColor: =varThemeColors.primary
+    OnHidden: =
+    OnVisible: |-
+        =Reset(txtVendorGoodsReceiptsFilter);
+        //Set default sort variable
+        Set(
+            varVendorGoodsReceiptsSortByColumn,//default sort by column of vendor purchase orders gallery
+            btnVendorGoodsReceiptTableHeaderLocation.Text
+        );
+        Set(
+            varVendorGoodsReceiptsSortOrder,//default sort order of vendor purchase orders gallery
+            SortOrder.Descending
+        );
+        //Collection that tracks cross screen navigation thread and allows to back out in reverse sequence, remove from "thread" if navigating back to this screen
+        RemoveIf(
+            colAppNavigationThreads,
+            Screen = App.ActiveScreen
+        );
+        //If first time user is clicking on the tab since last purchase order search, then query list of purchase orders
+        If(
+            IsEmpty(colVendorGoodsReceipts),
+            Reset(dteVendorGoodsReceiptsDateFieldFrom);
+            Reset(dteVendorGoodsReceiptsDateFieldTo);
+            Set(
+                varShowGoodsReceiptsRefresh,//Variable that shows refresh button if user changes purchase order from/to date controls
+                false
+            );
+            //Execute flow to query purchase orders for given vendor
+        Select(icoVendorGoodsReceiptsDateRefresh)
+        );
+        //Workaround for resetting components
+        UpdateContext({_resetCommandBar:false});
+        UpdateContext({_resetCommandBar:true});
+
+    conVendorGoodsReceiptsMain As groupContainer.verticalAutoLayoutContainer:
+        Height: =Parent.Height-Self.Y
+        LayoutAlignItems: =LayoutAlignItems.Stretch
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutMode: =LayoutMode.Auto
+        LayoutOverflowX: =LayoutOverflow.Scroll
+        LayoutOverflowY: =LayoutOverflow.Scroll
+        Width: =Parent.Width-Self.X
+        X: =cmpVendorGoodsReceiptsLeftNavigation.Width
+        Y: =cmpVendorGoodsReceiptsHeader.Height
+        ZIndex: =4
+
+        cmpVendorGoodsReceiptsCommandBar As CommandBar:
+            Fill: =RGBA(255, 255, 255, 1)
+            Height: =45
+            LayoutMinHeight: =640
+            LayoutMinWidth: =conVendorGoodsReceiptsData.LayoutMinWidth
+            ResetCommandBar: =_resetCommandBar
+
+        shpVendorGoodsReceiptsCommandBarDivider As rectangle:
+            AccessibleLabel: |-
+                =// Define a variable named "Text" with the value "{value}"
+                With(
+                    {
+                        Text: "Divider"
+                    },
+                    If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colUserLocalizedStrings,
+                            'English Value' = Text
+                        ).'Localized Value'
+                    )
+                )
+            Fill: =varThemeColors.secondaryGray
+            Height: =1
+            LayoutMinWidth: =conVendorGoodsReceiptsData.LayoutMinWidth
+            Width: =1692
+            ZIndex: =2
+
+        lblVendorGoodsReceiptsName As label:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =varThemeColors.text
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            Fill: =RGBA(255, 255, 255, 1)
+            FocusedBorderColor: =varThemeColors.primary
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Semibold
+            Height: =37
+            LayoutMinWidth: =conVendorGoodsReceiptsData.LayoutMinWidth
+            PaddingBottom: =15
+            PaddingLeft: =32
+            PaddingRight: =32
+            PaddingTop: =22
+            Role: =TextRole.Heading1
+            Size: =14.5
+            Text: |-
+                =// Define a variable named "Text" with the value "{value}"
+                If(
+                    !varIsNew && !IsBlank(varVendorHeader),
+                    varVendorHeader.FullName,
+                    With(
+                        {
+                            Text: If(
+                                varIsNew,
+                                "New vendor",
+                                "Vendor"
+                            )
+                        },
+                      If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colUserLocalizedStrings,
+                            'English Value' = Text 
+                        ).'Localized Value'
+                    )
+                ))
+            Width: =1692
+            Wrap: =false
+            ZIndex: =3
+
+        cmpVendorGoodsReceiptsTabs As ScreenTabs:
+            LayoutMinHeight: =640
+            LayoutMinWidth: =conVendorGoodsReceiptsData.LayoutMinWidth
+            Width: =1692
+            ZIndex: =4
+
+        conVendorGoodsReceiptsData As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Height: =257
+            LayoutAlignItems: =LayoutAlignItems.Stretch
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutMinHeight: =
+            LayoutMinWidth: =conVendorGoodsReceiptsCommandBar.LayoutMinWidth + Self.PaddingLeft + Self.PaddingRight
+            LayoutMode: =LayoutMode.Auto
+            LayoutOverflowY: =LayoutOverflow.Scroll
+            PaddingBottom: =20
+            PaddingLeft: =32
+            PaddingRight: =32
+            PaddingTop: =20
+            Width: =Parent.Width-Parent.PaddingLeft-Parent.PaddingRight
+            ZIndex: =9
+
+            conVendorGoodsReceiptsCommandBar As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                Fill: =RGBA(255, 255, 255, 1)
+                FillPortions: =0
+                Height: =39
+                LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+                LayoutMinHeight: =
+                LayoutMinWidth: =lblVendorGoodsReceiptsTableHeader.Width + conVendorGoodsReceiptsCommandBarFilterFields.LayoutMinWidth + Self.PaddingLeft + Self.PaddingRight
+                LayoutMode: =LayoutMode.Auto
+                PaddingRight: =2
+                Width: =
+                ZIndex: =1
+
+                lblVendorGoodsReceiptsTableHeader As label:
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    BorderThickness: =2
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                    Fill: =RGBA(255, 255, 255, 1)
+                    FocusedBorderColor: =varThemeColors.primary
+                    FocusedBorderThickness: =4
+                    Font: =Font.'Segoe UI'
+                    FontWeight: =FontWeight.Semibold
+                    Height: =Parent.Height
+                    LayoutMinHeight: =
+                    LayoutMinWidth: =
+                    PaddingBottom: =0
+                    PaddingLeft: =8
+                    PaddingRight: =0
+                    PaddingTop: =0
+                    Role: =TextRole.Heading2
+                    Size: =10.5
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {
+                                Text: "Related goods receipts"
+                            },
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Width: =Len(Self.Text)*8
+                    ZIndex: =1
+
+                conVendorGoodsReceiptsCommandBarFilterFields As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    Height: =Parent.Height
+                    LayoutAlignItems: =LayoutAlignItems.Center
+                    LayoutGap: =10
+                    LayoutJustifyContent: =LayoutJustifyContent.End
+                    LayoutMinHeight: =43
+                    LayoutMinWidth: |-
+                        =conVendorGoodsReceiptsCommandBarFilter.Width + lblVendorGoodsReceiptsCommandBarFilterFrom.Width + dteVendorGoodsReceiptsDateFieldFrom.Width + lblVendorGoodsReceiptsCommandBarFilterTo.Width + dteVendorGoodsReceiptsDateFieldTo.Width + If(
+                            icoVendorGoodsReceiptsDateRefresh.Visible,
+                            icoVendorGoodsReceiptsDateRefresh.Width
+                        ) + Self.LayoutGap * 6
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingRight: =2
+                    Width: =
+                    ZIndex: =3
+
+                    conVendorGoodsReceiptsCommandBarFilter As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        FillPortions: =0
+                        Height: =Parent.Height
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        Width: =txtVendorGoodsReceiptsFilter.X+txtVendorGoodsReceiptsFilter.Width+txtVendorGoodsReceiptsFilter.FocusedBorderThickness
+                        ZIndex: =1
+
+                        txtVendorGoodsReceiptsFilter As text:
+                            AccessibleLabel: =Self.HintText
+                            BorderColor: =varThemeColors.primaryGray
+                            BorderThickness: =1
+                            Clear: =true
+                            Color: =varThemeColors.text
+                            Default: =
+                            DelayOutput: =true
+                            DisabledBorderColor: =varThemeColors.primaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    Or(
+                                        IsEmpty(First(colVendorGoodsReceipts).List),
+                                        varIsProcessing
+                                    ),
+                                    DisplayMode.Disabled,
+                                    DisplayMode.Edit
+                                )
+                            Fill: =varThemeColors.backgroundFill
+                            FocusedBorderColor: =varThemeColors.focusBorder
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =32
+                            HintText: |-
+                                =With(
+                                    {Text: "Filter goods receipts"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            HoverBorderColor: =varThemeColors.tertiaryGray
+                            HoverColor: =varThemeColors.text
+                            HoverFill: =varThemeColors.backgroundFill
+                            MaxLength: =70
+                            OnChange: =
+                            PaddingBottom: =6
+                            PaddingLeft: =8
+                            PaddingRight: =8
+                            PaddingTop: =6
+                            PressedBorderColor: =varThemeColors.tertiaryGray
+                            PressedColor: =
+                            PressedFill: =varThemeColors.backgroundFill
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Reset: =true
+                            Size: =10.5
+                            Tooltip: |-
+                                =Coalesce(
+                                    Self.Text,
+                                    Self.HintText
+                                )
+                            Width: =248
+                            X: =shpVendorGoodsReceiptsCommandBarFilterDivider.X+shpVendorGoodsReceiptsCommandBarFilterDivider.Width+7
+                            Y: =Parent.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        shpVendorGoodsReceiptsCommandBarFilterDivider As rectangle:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: "Divider"
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Fill: =varThemeColors.secondaryGray
+                            Height: =30
+                            OnSelect: =
+                            Width: =2
+                            Y: =6
+                            ZIndex: =2
+
+                    lblVendorGoodsReceiptsCommandBarFilterFrom As label:
+                        Align: =Align.Right
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: |-
+                            =With(
+                                {Text: "Created from"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            ) & If(
+                                Or(
+                                    !IsBlank(dteVendorGoodsReceiptsDateFieldFrom.SelectedDate),
+                                    !IsBlank(dteVendorGoodsReceiptsDateFieldTo.SelectedDate)
+                                ),
+                                " *"
+                            )
+                        Width: =Len(Self.Text)*8
+                        X: =dteVendorGoodsReceiptsDateFieldFrom.X
+                        ZIndex: =2
+
+                    dteVendorGoodsReceiptsDateFieldFrom As datepicker:
+                        AccessibleLabel: |-
+                            =With(
+                                {Text: "Select created from date required"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: |-
+                            =If(
+                                Or(
+                                    IsBlank(dteVendorGoodsReceiptsDateFieldFrom.SelectedDate),
+                                    IsBlank(dteVendorGoodsReceiptsDateFieldTo.SelectedDate)
+                                ),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
+                        BorderThickness: =1
+                        CalendarHeaderFill: =ColorFade(RGBA(105, 121, 126, 1), -30%)
+                        Color: =varThemeColors.text
+                        DefaultDate: =DateAdd(Today(),-1,TimeUnit.Years)
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayMode: |-
+                            =If(
+                                Or(IsBlank(varVendorHeader),varIsProcessing),
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )
+                        EndYear: =2025
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: |-
+                            =If(
+                                Self.BorderColor = varThemeColors.requiredRed,
+                                Self.BorderColor,
+                                varThemeColors.focusBorder
+                            )
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HoverDateFill: =RGBA(200, 200, 200, 1)
+                        IconBackground: =varThemeColors.backgroundFill
+                        IconFill: =varThemeColors.text
+                        InputTextPlaceholder: |-
+                            =With(
+                                {Text: "Select from date"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        OnChange: =Set(varShowGoodsReceiptsRefresh,true)
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        SelectedDateFill: =RGBA(105, 121, 126, 1)
+                        Size: =10.5
+                        StartYear: =2016
+                        Tooltip: |-
+                            =If(
+                                IsBlank(Self.SelectedDate),
+                                Self.InputTextPlaceholder,
+                                Self.SelectedDate
+                            )
+                        Width: =125
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =3
+
+                    lblVendorGoodsReceiptsCommandBarFilterTo As label:
+                        Align: =Align.Right
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: |-
+                            =With(
+                                {Text: "Created to"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            ) & If(
+                                Or(
+                                    !IsBlank(dteVendorGoodsReceiptsDateFieldFrom.SelectedDate),
+                                    !IsBlank(dteVendorGoodsReceiptsDateFieldTo.SelectedDate)
+                                ),
+                                " *"
+                            )
+                        Width: =Len(Self.Text)*8
+                        X: =dteVendorGoodsReceiptsDateFieldTo.X
+                        ZIndex: =4
+
+                    dteVendorGoodsReceiptsDateFieldTo As datepicker:
+                        AccessibleLabel: |-
+                            =With(
+                                {Text: "Select created to date required"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: |-
+                            =If(
+                                Or(
+                                    IsBlank(dteVendorGoodsReceiptsDateFieldFrom.SelectedDate),
+                                    IsBlank(dteVendorGoodsReceiptsDateFieldTo.SelectedDate)
+                                ),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
+                        BorderThickness: =1
+                        CalendarHeaderFill: =ColorFade(RGBA(105, 121, 126, 1), -30%)
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayMode: |-
+                            =If(
+                                Or(IsBlank(varVendorHeader),varIsProcessing),
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )
+                        EndYear: =2025
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: |-
+                            =If(
+                                Self.BorderColor = varThemeColors.requiredRed,
+                                Self.BorderColor,
+                                varThemeColors.focusBorder
+                            )
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HoverDateFill: =RGBA(200, 200, 200, 1)
+                        IconBackground: =varThemeColors.backgroundFill
+                        IconFill: =varThemeColors.text
+                        InputTextPlaceholder: |-
+                            =With(
+                                {Text: "Select to date"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        OnChange: =Set(varShowGoodsReceiptsRefresh,true)
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        SelectedDateFill: =RGBA(105, 121, 126, 1)
+                        Size: =10.5
+                        StartYear: =2016
+                        Tooltip: |-
+                            =If(
+                                IsBlank(Self.SelectedDate),
+                                Self.InputTextPlaceholder,
+                                Self.SelectedDate
+                            )
+                        Width: =125
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =5
+
+                    "icoVendorGoodsReceiptsDateRefresh As icon.'3DPrinting'":
+                        AccessibleLabel: =Self.Tooltip
+                        BorderColor: =varThemeColors.primary
+                        Color: =varThemeColors.primary
+                        DisabledBorderColor: =varThemeColors.disabledText
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =RGBA(0,0,0,0)
+                        DisplayMode: |-
+                            =If(
+                                varIsProcessing,
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )
+                        Fill: =RGBA(0,0,0,0)
+                        FocusedBorderColor: =varThemeColors.focusBorder
+                        Height: =30
+                        HoverBorderColor: =
+                        HoverColor: =varThemeColors.primary
+                        HoverFill: =RGBA(0,0,0,0)
+                        Icon: =Icon.Reload
+                        OnSelect: |-
+                            =//Check if required search fields and store missing fields in a collection
+                            Clear(colRequiredFieldsTemp);
+                            If(
+                                And(
+                                    IsBlank(dteVendorGoodsReceiptsDateFieldFrom.SelectedDate),
+                                    !IsBlank(dteVendorGoodsReceiptsDateFieldTo.SelectedDate)
+                                ),
+                                Collect(
+                                    colRequiredFieldsTemp,
+                                    lblVendorGoodsReceiptsCommandBarFilterFrom.Text
+                                )
+                            );
+                            If(
+                                And(
+                                    !IsBlank(dteVendorGoodsReceiptsDateFieldFrom.SelectedDate),
+                                    IsBlank(dteVendorGoodsReceiptsDateFieldTo.SelectedDate)
+                                ),
+                                Collect(
+                                    colRequiredFieldsTemp,
+                                    lblVendorGoodsReceiptsCommandBarFilterTo.Text
+                                )
+                            );
+                            //Check to see if required fields collection, notify which fields are missing if so
+                            If(
+                                !IsEmpty(colRequiredFieldsTemp),
+                                Notify(
+                                    Substitute(
+                                        With(
+                                            {Text: "The following information is required before searching"},
+                                            If(
+                                    // If the localized text is blank, return the default text
+                                                IsBlank(
+                                                    LookUp(
+                                                        colUserLocalizedStrings,
+                                                        'English Value' = Text
+                                                    ).'Localized Value'
+                                                ),
+                                                Text,
+                                    // If a localized text is found, return that instead of the default text
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            )
+                                        ) & ": " & Concat(
+                                            colRequiredFieldsTemp,
+                                            Value,
+                                            ", "
+                                        ),
+                                        " *",
+                                        ""
+                                    ),
+                                    NotificationType.Error,
+                                    0
+                                );
+                                ,
+                                Reset(txtVendorGoodsReceiptsFilter);
+                                Set(
+                                    varVendorGoodsReceiptsSortByColumn,//default sort by column of vendor purchase orders gallery
+                                    btnVendorGoodsReceiptTableHeaderLocation.Text
+                                );
+                                Set(
+                                    varVendorGoodsReceiptsSortOrder,//default sort order of vendor purchase orders gallery
+                                    SortOrder.Descending
+                                );
+                                Set(
+                                    varIsProcessing,
+                                    true
+                                );
+                                Set(
+                                    varFooterMessage,
+                                    "Loading"
+                                );
+                                ClearCollect(
+                                    colVendorGoodsReceipts,
+                                    ReadGoodsReceiptList.Run(
+                                        Substitute(
+                                            JSON(
+                                                {
+                                                    Vendor: varVendorHeader.Vendor,
+                                                    DateTo: Text(
+                                                        dteVendorGoodsReceiptsDateFieldTo.SelectedDate,
+                                                        "yyyymmdd",
+                                                        "en-US"
+                                                    ),
+                                                    DateFrom: Text(
+                                                        dteVendorGoodsReceiptsDateFieldFrom.SelectedDate,
+                                                        "yyyymmdd",
+                                                        "en-US"
+                                                    )
+                                                },
+                                                JSONFormat.IndentFour
+                                            ),
+                                            "null",
+                                            """"""
+                                        )
+                                    )
+                                );
+                                 //Evaluate return statuses to determine what type of notification
+                            With(
+                                    {
+                                        Text: Switch(
+                                            First(colVendorGoodsReceipts).Status,
+                                            "Information",
+                                            "No goods receipts were found based on your search criteria",
+                                            "Warning",
+                                            "The maximum number of search results were found based upon your criteria and some records may be missing. Please try changing your search criteria.",
+                                            "Error",
+                                            Concat(
+                                                First(colVendorGoodsReceipts).Messages,
+                                                Message,
+                                                " "
+                                            ),
+                                            "goods receipts found based upon your search criteria"
+                                        ),
+                                        Status: First(colVendorGoodsReceipts).Status
+                                    },
+                                    If(
+                                        Status <> "Error",
+                                        Set(
+                                            varShowGoodsReceiptsRefresh,
+                                            false
+                                        );
+                                    );
+                                    Notify(
+                                    //Append record count to message if success
+                                        Concatenate(
+                                            If(
+                                                Status = "Success",
+                                                CountRows(First(colVendorGoodsReceipts).List)
+                                            ) & " ",
+                                            If(
+                                    // If the localized text is blank, return the default text
+                                                IsBlank(
+                                                    LookUp(
+                                                        colUserLocalizedStrings,
+                                                        'English Value' = Text
+                                                    ).'Localized Value'
+                                                ),
+                                                Text,
+                                    // If a localized text is found, return that instead of the default text
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            )
+                                        ),
+                                        //Set the notification type
+                                        Switch(
+                                            Status,
+                                            "Information",
+                                            NotificationType.Information,
+                                            "Warning",
+                                            NotificationType.Warning,
+                                            "Error",
+                                            NotificationType.Error,
+                                            NotificationType.Success
+                                        ),
+                                        If(
+                                            Status = "Error",
+                                            0,
+                                            7000
+                                        )
+                                    );
+                                );
+                                
+                            );
+                            Reset(galVendorGoodsReceipts);
+                            Clear(colRequiredFieldsTemp);
+                            Set(
+                                varIsProcessing,
+                                false
+                            );
+                            Set(
+                                varFooterMessage,
+                                Blank()
+                            );
+                            //Set the focus on the filter field if results returned
+                            If(
+                                !IsEmpty(colVendorGoodsReceipts),
+                                SetFocus(txtVendorGoodsReceiptsFilter)
+                            )
+                        PaddingBottom: =5
+                        PaddingLeft: =5
+                        PaddingRight: =5
+                        PaddingTop: =5
+                        PressedBorderColor: =
+                        PressedColor: =
+                        PressedFill: =RGBA(0,0,0,0)
+                        TabIndex: =0
+                        Tooltip: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Refresh vendor purchase orders"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Visible: =varShowGoodsReceiptsRefresh
+                        Width: =30
+                        X: =
+                        Y: =6
+                        ZIndex: =6
+
+            shpVendorGoodsReceiptsTableHeaderDivider As rectangle:
+                AccessibleLabel: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {
+                            Text: "Divider"
+                        },
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Fill: =varThemeColors.secondaryGray
+                Height: =1
+                LayoutMinHeight: =
+                LayoutMinWidth: =conVendorGoodsReceiptsCommandBar.LayoutMinWidth
+                Width: =
+                ZIndex: =3
+
+            conVendorGoodsReceiptsTable As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                Fill: =RGBA(255, 255, 255, 1)
+                LayoutAlignItems: =LayoutAlignItems.Stretch
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutMinHeight: |-
+                    =conVendorRequistionsTableHeader.Height + shpVendorRequisitionsTabelHeaderDivider.Height + If(
+                        galVendorGoodsReceipts.Visible,
+                        galVendorGoodsReceipts.LayoutMinHeight,
+                        cmpVendorGoodsReceiptsNoResults.Height
+                    ) + Self.PaddingTop + Self.PaddingBottom
+                LayoutMinWidth: =conVendorGoodsReceiptsCommandBar.LayoutMinWidth
+                LayoutMode: =LayoutMode.Auto
+                PaddingBottom: =2
+                PaddingLeft: =16
+                PaddingRight: =16
+                ZIndex: =8
+
+                conVendorGoodsReceiptsTableHeader As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    Fill: =RGBA(255, 255, 255, 1)
+                    FillPortions: =0
+                    Height: =43
+                    LayoutAlignItems: =LayoutAlignItems.Center
+                    LayoutMinHeight: =
+                    LayoutMinWidth: =conVendorGoodsReceiptTableHeaderGoodsReceipt.LayoutMinWidth + conVendorGoodsReceiptTableHeaderLocation.LayoutMinWidth + conVendorGoodsReceiptTableHeaderPostingDate.LayoutMinWidth + conVendorGoodsReceiptsPurchaseOrder.LayoutMinWidth + conVendorGoodsReceiptsMovementType.LayoutMinWidth
+                    LayoutMode: =LayoutMode.Auto
+                    Width: =
+                    ZIndex: =1
+
+                    conVendorGoodsReceiptTableHeaderGoodsReceipt As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Height: =44
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =icoVendorGoodsReceiptTableHeaderGoodsReceipt.X+icoVendorGoodsReceiptTableHeaderGoodsReceipt.Width+10
+                        Width: =
+                        Y: =37
+                        ZIndex: =1
+
+                        icoVendorGoodsReceiptTableHeaderGoodsReceipt As icon.Save:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: If(
+                                            Self.Icon = Icon.ArrowUp,
+                                            "Sorted ascending",
+                                            "Sorted descending"
+                                        )
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.tertiaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =btnVendorGoodsReceiptTableHeaderGoodsReceipt.DisplayMode
+                            FocusedBorderColor: =varThemeColors.primary
+                            Height: =12
+                            Icon: |-
+                                =If(
+                                    varVendorGoodsReceiptsSortOrder = SortOrder.Ascending,
+                                    Icon.ArrowUp,
+                                    Icon.ArrowDown
+                                )
+                            Visible: =varVendorGoodsReceiptsSortByColumn = btnVendorGoodsReceiptTableHeaderGoodsReceipt.Text && galVendorGoodsReceipts.Visible
+                            Width: =12
+                            X: =Len(btnVendorGoodsReceiptTableHeaderGoodsReceipt.Text)*8+8
+                            Y: =btnVendorGoodsReceiptTableHeaderGoodsReceipt.Y+btnVendorGoodsReceiptTableHeaderGoodsReceipt.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        btnVendorGoodsReceiptTableHeaderGoodsReceipt As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            BorderThickness: =1
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        galVendorGoodsReceipts.Visible,
+                                        !varIsProcessing
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.View
+                                )
+                            Fill: =RGBA(0,0,0,0)
+                            FocusedBorderColor: =varThemeColors.focusBorder
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =Parent.Height-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |-
+                                =If(//Stores the sort order of that column
+                                    And(varVendorGoodsReceiptsSortOrder = SortOrder.Ascending,varVendorGoodsReceiptsSortByColumn=Self.Text),
+                                    Set(
+                                        varVendorGoodsReceiptsSortOrder,
+                                        SortOrder.Descending
+                                    ),
+                                    Set(
+                                        varVendorGoodsReceiptsSortOrder,
+                                        SortOrder.Ascending
+                                    )
+                                );
+                                Set(//Stores which column is currently being sorted
+                                    varVendorGoodsReceiptsSortByColumn,
+                                    Self.Text
+                                );
+                                Reset(galVendorGoodsReceipts)//Resets the gallery to move the scrollbar to the top
+                            PaddingLeft: =12
+                            PressedBorderColor: =
+                            PressedColor: =varThemeColors.text
+                            PressedFill: =
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Goods receipt"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =2
+
+                    conVendorGoodsReceiptTableHeaderLocation As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Height: =44
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =icoVendorGoodsReceiptTableHeaderLocation.X+icoVendorGoodsReceiptTableHeaderLocation.Width+10
+                        Width: =
+                        Y: =37
+                        ZIndex: =2
+
+                        icoVendorGoodsReceiptTableHeaderLocation As icon.Save:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: If(
+                                            Self.Icon = Icon.ArrowUp,
+                                            "Sorted ascending",
+                                            "Sorted descending"
+                                        )
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.tertiaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =btnVendorGoodsReceiptTableHeaderLocation.DisplayMode
+                            FocusedBorderColor: =varThemeColors.primary
+                            Height: =12
+                            Icon: |-
+                                =If(
+                                    varVendorGoodsReceiptsSortOrder = SortOrder.Ascending,
+                                    Icon.ArrowUp,
+                                    Icon.ArrowDown
+                                )
+                            Visible: =varVendorGoodsReceiptsSortByColumn = btnVendorGoodsReceiptTableHeaderLocation.Text && galVendorGoodsReceipts.Visible
+                            Width: =12
+                            X: =Len(btnVendorGoodsReceiptTableHeaderLocation.Text)*8+8
+                            Y: =btnVendorGoodsReceiptTableHeaderLocation.Y+btnVendorGoodsReceiptTableHeaderLocation.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        btnVendorGoodsReceiptTableHeaderLocation As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            BorderThickness: =1
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        galVendorGoodsReceipts.Visible,
+                                        !varIsProcessing
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.View
+                                )
+                            Fill: =RGBA(0,0,0,0)
+                            FocusedBorderColor: =varThemeColors.focusBorder
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =Parent.Height-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |-
+                                =Set(//Stores which column is currently being sorted
+                                    varVendorGoodsReceiptsSortByColumn,
+                                    Self.Text
+                                );
+                                If(//Stores the sort order of that column
+                                    And(
+                                        varVendorGoodsReceiptsSortOrder = SortOrder.Ascending,
+                                        varVendorGoodsReceiptsSortByColumn = Self.Text
+                                    ),
+                                    Set(
+                                        varVendorGoodsReceiptsSortOrder,
+                                        SortOrder.Descending
+                                    ),
+                                    Set(
+                                        varVendorGoodsReceiptsSortOrder,
+                                        SortOrder.Ascending
+                                    )
+                                );
+                                Reset(galVendorGoodsReceipts)//Resets the gallery to move the scrollbar to the top
+                            PaddingLeft: =10
+                            PressedBorderColor: =
+                            PressedColor: =varThemeColors.text
+                            PressedFill: =
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Location"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =2
+
+                    conVendorGoodsReceiptTableHeaderPostingDate As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Height: =44
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =icoVendorGoodsReceiptTableHeaderPostingDate.X+icoVendorGoodsReceiptTableHeaderPostingDate.Width+10
+                        Width: =
+                        X: =icoVendorGoodsReceiptTableHeaderPostingDate.X+icoVendorGoodsReceiptTableHeaderPostingDate.Width+10
+                        Y: =37
+                        ZIndex: =3
+
+                        icoVendorGoodsReceiptTableHeaderPostingDate As icon.Save:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: If(
+                                            Self.Icon = Icon.ArrowUp,
+                                            "Sorted ascending",
+                                            "Sorted descending"
+                                        )
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.tertiaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =btnVendorGoodsReceiptTableHeaderPostingDate.DisplayMode
+                            FocusedBorderColor: =varThemeColors.primary
+                            Height: =12
+                            Icon: |-
+                                =If(
+                                    varVendorGoodsReceiptsSortOrder = SortOrder.Ascending,
+                                    Icon.ArrowUp,
+                                    Icon.ArrowDown
+                                )
+                            Visible: =varVendorGoodsReceiptsSortByColumn = btnVendorGoodsReceiptTableHeaderPostingDate.Text && galVendorGoodsReceipts.Visible
+                            Width: =12
+                            X: =Len(btnVendorGoodsReceiptTableHeaderPostingDate.Text)*8+8
+                            Y: =btnVendorGoodsReceiptTableHeaderPostingDate.Y+btnVendorGoodsReceiptTableHeaderPostingDate.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        btnVendorGoodsReceiptTableHeaderPostingDate As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            BorderThickness: =1
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        galVendorGoodsReceipts.Visible,
+                                        !varIsProcessing
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.View
+                                )
+                            Fill: =RGBA(0,0,0,0)
+                            FocusedBorderColor: =varThemeColors.focusBorder
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =Parent.Height-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |-
+                                =Set(//Stores which column is currently being sorted
+                                    varVendorGoodsReceiptsSortByColumn,
+                                    Self.Text
+                                );
+                                If(//Stores the sort order of that column
+                                    And(
+                                        varVendorGoodsReceiptsSortOrder = SortOrder.Ascending,
+                                        varVendorGoodsReceiptsSortByColumn = Self.Text
+                                    ),
+                                    Set(
+                                        varVendorGoodsReceiptsSortOrder,
+                                        SortOrder.Descending
+                                    ),
+                                    Set(
+                                        varVendorGoodsReceiptsSortOrder,
+                                        SortOrder.Ascending
+                                    )
+                                );
+                                Reset(galVendorGoodsReceipts)//Resets the gallery to move the scrollbar to the top
+                            PaddingLeft: =10
+                            PressedBorderColor: =
+                            PressedColor: =varThemeColors.text
+                            PressedFill: =
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Posting date"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =2
+
+                    conVendorGoodsReceiptsPurchaseOrder As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Height: =44
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =icoVendorGoodsReceiptsPurchaseOrder.X+icoVendorGoodsReceiptsPurchaseOrder.Height
+                        Width: =
+                        Y: =37
+                        ZIndex: =4
+
+                        icoVendorGoodsReceiptsPurchaseOrder As icon.Save:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: If(
+                                            Self.Icon = Icon.ArrowUp,
+                                            "Sorted ascending",
+                                            "Sorted descending"
+                                        )
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.tertiaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =btnVendorGoodsReceiptsPurchaseOrder.DisplayMode
+                            FocusedBorderColor: =varThemeColors.primary
+                            Height: =12
+                            Icon: |-
+                                =If(
+                                    varVendorGoodsReceiptsSortOrder = SortOrder.Ascending,
+                                    Icon.ArrowUp,
+                                    Icon.ArrowDown
+                                )
+                            Visible: =varVendorGoodsReceiptsSortByColumn = btnVendorGoodsReceiptsPurchaseOrder.Text && galVendorGoodsReceipts.Visible
+                            Width: =12
+                            X: =Len(btnVendorGoodsReceiptsPurchaseOrder.Text)*7.5+8
+                            Y: =btnVendorGoodsReceiptsPurchaseOrder.Y+btnVendorGoodsReceiptsPurchaseOrder.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        btnVendorGoodsReceiptsPurchaseOrder As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            BorderThickness: =1
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        galVendorGoodsReceipts.Visible,
+                                        !varIsProcessing
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.View
+                                )
+                            Fill: =RGBA(0,0,0,0)
+                            FocusedBorderColor: =varThemeColors.focusBorder
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =Parent.Height-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |-
+                                =Set(//Stores which column is currently being sorted
+                                    varVendorGoodsReceiptsSortByColumn,
+                                    Self.Text
+                                );
+                                If(//Stores the sort order of that column
+                                    And(
+                                        varVendorGoodsReceiptsSortOrder = SortOrder.Ascending,
+                                        varVendorGoodsReceiptsSortByColumn = Self.Text
+                                    ),
+                                    Set(
+                                        varVendorGoodsReceiptsSortOrder,
+                                        SortOrder.Descending
+                                    ),
+                                    Set(
+                                        varVendorGoodsReceiptsSortOrder,
+                                        SortOrder.Ascending
+                                    )
+                                );
+                                Reset(galVendorGoodsReceipts)//Resets the gallery to move the scrollbar to the top
+                            PaddingLeft: =10
+                            PressedBorderColor: =
+                            PressedColor: =varThemeColors.text
+                            PressedFill: =
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Purchase order"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =2
+
+                    conVendorGoodsReceiptsMovementType As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Height: =44
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =icoVendorGoodsReceiptsMovementType.X+icoVendorGoodsReceiptsMovementType.Width+10
+                        Width: =
+                        Y: =37
+                        ZIndex: =5
+
+                        icoVendorGoodsReceiptsMovementType As icon.Save:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: If(
+                                            Self.Icon = Icon.ArrowUp,
+                                            "Sorted ascending",
+                                            "Sorted descending"
+                                        )
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.tertiaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =btnVendorGoodsReceiptsMovementType.DisplayMode
+                            FocusedBorderColor: =varThemeColors.primary
+                            Height: =12
+                            Icon: |-
+                                =If(
+                                    varVendorGoodsReceiptsSortOrder = SortOrder.Ascending,
+                                    Icon.ArrowUp,
+                                    Icon.ArrowDown
+                                )
+                            Visible: =varVendorGoodsReceiptsSortByColumn = btnVendorGoodsReceiptsMovementType.Text && galVendorGoodsReceipts.Visible
+                            Width: =12
+                            X: =Len(btnVendorGoodsReceiptsMovementType.Text)*8.5+8
+                            Y: =btnVendorGoodsReceiptsMovementType.Y+btnVendorGoodsReceiptsMovementType.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        btnVendorGoodsReceiptsMovementType As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            BorderThickness: =1
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        galVendorGoodsReceipts.Visible,
+                                        !varIsProcessing
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.View
+                                )
+                            Fill: =RGBA(0,0,0,0)
+                            FocusedBorderColor: =varThemeColors.focusBorder
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =Parent.Height-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |-
+                                =Set(//Stores which column is currently being sorted
+                                    varVendorGoodsReceiptsSortByColumn,
+                                    Self.Text
+                                );
+                                If(//Stores the sort order of that column
+                                    And(
+                                        varVendorGoodsReceiptsSortOrder = SortOrder.Ascending,
+                                        varVendorGoodsReceiptsSortByColumn = Self.Text
+                                    ),
+                                    Set(
+                                        varVendorGoodsReceiptsSortOrder,
+                                        SortOrder.Descending
+                                    ),
+                                    Set(
+                                        varVendorGoodsReceiptsSortOrder,
+                                        SortOrder.Ascending
+                                    )
+                                );
+                                Reset(galVendorGoodsReceipts)//Resets the gallery to move the scrollbar to the top
+                            PaddingLeft: =10
+                            PressedBorderColor: =
+                            PressedColor: =varThemeColors.text
+                            PressedFill: =
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Movement type"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =2
+
+                    conVendorGoodsReceiptsMaterial As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Height: =44
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =icoVendorGoodsReceiptsMaterial.X+icoVendorGoodsReceiptsMaterial.Width+10
+                        Width: =
+                        Y: =37
+                        ZIndex: =6
+
+                        icoVendorGoodsReceiptsMaterial As icon.Save:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: If(
+                                            Self.Icon = Icon.ArrowUp,
+                                            "Sorted ascending",
+                                            "Sorted descending"
+                                        )
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.tertiaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =btnVendorGoodsReceiptsMaterial.DisplayMode
+                            FocusedBorderColor: =varThemeColors.primary
+                            Height: =12
+                            Icon: |-
+                                =If(
+                                    varVendorGoodsReceiptsSortOrder = SortOrder.Ascending,
+                                    Icon.ArrowUp,
+                                    Icon.ArrowDown
+                                )
+                            Visible: =varVendorGoodsReceiptsSortByColumn = btnVendorGoodsReceiptsMaterial.Text && galVendorGoodsReceipts.Visible
+                            Width: =12
+                            X: =Len(btnVendorGoodsReceiptsMaterial.Text)*8+8
+                            Y: =btnVendorGoodsReceiptsMaterial.Y+btnVendorGoodsReceiptsMaterial.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        btnVendorGoodsReceiptsMaterial As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            BorderThickness: =1
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        galVendorGoodsReceipts.Visible,
+                                        !varIsProcessing
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.View
+                                )
+                            Fill: =RGBA(0,0,0,0)
+                            FocusedBorderColor: =varThemeColors.focusBorder
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =Parent.Height-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |-
+                                =Set(//Stores which column is currently being sorted
+                                    varVendorGoodsReceiptsSortByColumn,
+                                    Self.Text
+                                );
+                                If(//Stores the sort order of that column
+                                    And(
+                                        varVendorGoodsReceiptsSortOrder = SortOrder.Ascending,
+                                        varVendorGoodsReceiptsSortByColumn = Self.Text
+                                    ),
+                                    Set(
+                                        varVendorGoodsReceiptsSortOrder,
+                                        SortOrder.Descending
+                                    ),
+                                    Set(
+                                        varVendorGoodsReceiptsSortOrder,
+                                        SortOrder.Ascending
+                                    )
+                                );
+                                Reset(galVendorGoodsReceipts)//Resets the gallery to move the scrollbar to the top
+                            PaddingLeft: =10
+                            PressedBorderColor: =
+                            PressedColor: =varThemeColors.text
+                            PressedFill: =
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Material"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =2
+
+                shpVendorGoodsReceiptsTabelHeaderDivider As rectangle:
+                    AccessibleLabel: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {
+                                Text: "Divider"
+                            },
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Fill: =varThemeColors.secondaryGray
+                    Height: =1
+                    LayoutMinHeight: =
+                    Width: =
+                    ZIndex: =2
+
+                galVendorGoodsReceipts As gallery.galleryVertical:
+                    AccessibleLabel: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {Text: "Vendor requisitions"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    FocusedBorderColor: =varThemeColors.focusBorder
+                    FocusedBorderThickness: =2
+                    Height: =Self.TemplateHeight * 6
+                    ItemAccessibleLabel: =Concatenate(ThisItem.MaterialDocument," - ",ThisItem.Vendor)
+                    Items: |-
+                        =//Display vendor purchae orders items for collection previously cached and according to sorting and filtering conditions
+                        SortByColumns(
+                            If(
+                                !IsBlank(txtVendorGoodsReceiptsFilter.Text),//Filter text data is entered so search the collection based upon entered text
+                                Search(
+                                    First(colVendorGoodsReceipts).List,
+                                    txtVendorGoodsReceiptsFilter.Text,
+                                    "MaterialDocument",
+                                    "Location",
+                                    "PostingDate",
+                                    "PurchaseOrder",
+                                    "MovementType",
+                                    "Material"
+                                ),
+                                First(colVendorGoodsReceipts).List//otherwise, just display all items in the cached collection
+                            ),
+                            Switch(//determine which field to sort by based upon the tabel header column value selected and stored in variable
+                                varVendorGoodsReceiptsSortByColumn,
+                                btnVendorGoodsReceiptTableHeaderGoodsReceipt.Text,
+                                "MaterialDocument",
+                                btnVendorGoodsReceiptTableHeaderLocation.Text,
+                                "Location",
+                                btnVendorGoodsReceiptTableHeaderPostingDate.Text,
+                                "PostingDate",
+                                btnVendorGoodsReceiptsPurchaseOrder.Text,
+                                "PurchaseOrder",
+                                btnVendorGoodsReceiptsMovementType.Text,
+                                "MovementType",
+                                btnVendorGoodsReceiptsMaterial.Text,
+                                "Material"
+                            ),
+                            varVendorGoodsReceiptsSortOrder//finally, sort ascending or descending based upon value stored in variable
+                        )
+                    Layout: =Layout.Vertical
+                    LayoutMinHeight: =Self.TemplateHeight * 6
+                    LayoutMinWidth: =320
+                    TabIndex: =0
+                    TemplateFill: =RGBA(255, 255, 255, 1)
+                    TemplatePadding: =0
+                    TemplateSize: =43
+                    Visible: =CountRows(First(colVendorGoodsReceipts).List) > 0
+                    Width: =
+                    ZIndex: =3
+
+                    shpVendorGoodsReceiptTableDivider As rectangle:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {
+                                    Text: "Divider"
+                                },
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Fill: =varThemeColors.secondaryGray
+                        Height: =1
+                        Width: =Parent.Width
+                        Y: =Parent.TemplateHeight-Self.Height
+                        ZIndex: =1
+
+                    lblVendorGoodsReceiptMovementType As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        Height: =43
+                        PaddingBottom: =0
+                        PaddingLeft: =12
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: =ThisItem.MovementType
+                        Width: =conVendorGoodsReceiptsMovementType.Width
+                        X: =conVendorGoodsReceiptsMovementType.X
+                        ZIndex: =2
+
+                    btnVendorGobtnodsReceiptPurchaseOrder As button:
+                        Align: =Align.Left
+                        BorderColor: =RGBA(0,0,0,0)
+                        BorderThickness: =0
+                        Color: =varThemeColors.lookupBlue
+                        DisabledBorderColor: =
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =
+                        DisplayMode: |-
+                            =/*If(
+                                Or(
+                                    IsBlank(txtVendor.Text),
+                                    IsBlank(cmbPOOrderType.Selected),
+                                    IsBlank(cmbPOPurchOrg.Selected),
+                                    IsBlank(cmbPOPurchGroup.Selected)
+                                ),
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )*/
+                        Fill: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.focusBorder
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Normal
+                        Height: =Parent.TemplateHeight-Self.Y*2
+                        HoverBorderColor: =
+                        HoverColor: =varThemeColors.primary
+                        HoverFill: =
+                        OnSelect: |-
+                            =Launch(
+                                varPurchaseOrderAccess.'Application URL',
+                                {purchaseorder: Self.Text}
+                            )
+                        PaddingLeft: =12
+                        PressedColor: =Self.Color
+                        PressedFill: =Color.Transparent
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =10.5
+                        Text: =ThisItem.PurchaseOrder
+                        Tooltip: =Self.Text
+                        Visible: =!IsBlank(varPurchaseOrderAccess)
+                        Width: =conVendorGoodsReceiptsPurchaseOrder.Width
+                        X: =conVendorGoodsReceiptsPurchaseOrder.X
+                        Y: =Self.FocusedBorderThickness
+                        ZIndex: =3
+
+                    lblVendorGoodsReceiptPurchaseOrder As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        Height: =43
+                        PaddingBottom: =0
+                        PaddingLeft: =12
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: =ThisItem.PurchaseOrder
+                        Visible: =!btnVendorGobtnodsReceiptPurchaseOrder.Visible
+                        Width: =conVendorGoodsReceiptsPurchaseOrder.Width
+                        X: =conVendorGoodsReceiptsPurchaseOrder.X
+                        ZIndex: =4
+
+                    lblVendorGoodsReceiptPostingDate As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        Height: =43
+                        PaddingBottom: =0
+                        PaddingLeft: =12
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: |-
+                            =Text(
+                                DateValue(ThisItem.PostingDate),
+                                DateTimeFormat.ShortDate
+                            )
+                        Width: =conVendorGoodsReceiptTableHeaderPostingDate.Width
+                        X: =conVendorGoodsReceiptTableHeaderPostingDate.X
+                        ZIndex: =5
+
+                    lblVendorGoodsReceiptLocation As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        Height: =43
+                        PaddingBottom: =0
+                        PaddingLeft: =12
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: =ThisItem.Location
+                        Width: =conVendorGoodsReceiptTableHeaderLocation.Width
+                        X: =conVendorGoodsReceiptTableHeaderLocation.X
+                        ZIndex: =6
+
+                    lblVendorGoodsReceipt As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        Height: =43
+                        PaddingBottom: =0
+                        PaddingLeft: =12
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: =ThisItem.MaterialDocument
+                        Visible: =IsBlank(varGoodsReceiptsAccess)
+                        Width: =conVendorGoodsReceiptTableHeaderGoodsReceipt.Width
+                        X: =conVendorGoodsReceiptTableHeaderGoodsReceipt.X
+                        ZIndex: =7
+
+                    btnVendorGoodsReceiptsSelect As button:
+                        Align: =Align.Left
+                        BorderColor: =RGBA(0,0,0,0)
+                        BorderThickness: =0
+                        Color: =varThemeColors.lookupBlue
+                        DisabledBorderColor: =
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =
+                        DisplayMode: |-
+                            =/*If(
+                                Or(
+                                    IsBlank(txtVendor.Text),
+                                    IsBlank(cmbPOOrderType.Selected),
+                                    IsBlank(cmbPOPurchOrg.Selected),
+                                    IsBlank(cmbPOPurchGroup.Selected)
+                                ),
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )*/
+                        Fill: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.focusBorder
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Normal
+                        Height: =Parent.TemplateHeight-Self.Y*2
+                        HoverBorderColor: =
+                        HoverColor: =varThemeColors.primary
+                        HoverFill: =
+                        OnSelect: |-
+                            =Launch(
+                                varGoodsReceiptsAccess.'Application URL',
+                                {receipt: Self.Text}
+                            )
+                        PaddingLeft: =12
+                        PressedColor: =Self.Color
+                        PressedFill: =Color.Transparent
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =10.5
+                        Text: =ThisItem.MaterialDocument
+                        Tooltip: =Self.Text
+                        Visible: =!IsBlank(varGoodsReceiptsAccess)
+                        Width: =conVendorGoodsReceiptTableHeaderGoodsReceipt.Width-Self.X
+                        X: =1
+                        Y: =Self.FocusedBorderThickness
+                        ZIndex: =8
+
+                    lblVendorGoodsReceiptMaterial As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        Height: =43
+                        PaddingBottom: =0
+                        PaddingLeft: =12
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: =ThisItem.Material
+                        Width: =conVendorGoodsReceiptsMaterial.Width
+                        X: =conVendorGoodsReceiptsMaterial.X
+                        ZIndex: =9
+
+                cmpVendorGoodsReceiptsNoResults As NoItemsDisplay:
+                    LayoutMinHeight: =
+                    LayoutMinWidth: =640
+                    Visible: =!galVendorGoodsReceipts.Visible
+                    Width: =
+                    ZIndex: =4
+
+            conVendorGoodsReceiptsDataFooter As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                FillPortions: =0
+                Height: =30
+                LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                ZIndex: =10
+
+                lblVendorGoodsReceiptsNumberOfRecords As label:
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    BorderThickness: =2
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                    FillPortions: =1
+                    FocusedBorderColor: =varThemeColors.primary
+                    FocusedBorderThickness: =4
+                    Font: =Font.'Segoe UI'
+                    FontWeight: =FontWeight.Lighter
+                    Height: =30
+                    LayoutMinWidth: =
+                    PaddingLeft: =btnVendorRequistionsTableHeaderRequisition.PaddingLeft
+                    Size: =10.5
+                    Text: |-
+                        =//Show how many rows are returned in the results
+                        CountRows(galVendorGoodsReceipts.AllItems) & " " &//Count the rows in the gallery
+                        // Define a variable named "Text" with the value "{value}"
+                         With(
+                            {Text: "record(s)"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Visible: |+
+                        =galVendorGoodsReceipts.Visible
+                        
+                    Width: =
+                    X: =1
+                    ZIndex: =1
+
+                lblVendorGoodsReceiptsFooterMessage As label:
+                    Align: =Align.Right
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    BorderThickness: =2
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                    FillPortions: =1
+                    FocusedBorderColor: =varThemeColors.primary
+                    FocusedBorderThickness: =4
+                    Font: =Font.'Segoe UI'
+                    Height: =34
+                    Italic: =true
+                    LayoutMinHeight: =
+                    LayoutMinWidth: =
+                    Live: =Live.Assertive
+                    PaddingBottom: =0
+                    PaddingLeft: =32
+                    PaddingRight: =32
+                    PaddingTop: =0
+                    Role: =TextRole.Heading2
+                    Size: =10.5
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {Text: varFooterMessage},
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        ) & If(varIsProcessing, "...")
+                    Width: =
+                    ZIndex: =2
+
+    cmpVendorGoodsReceiptsLeftNavigation As LeftNavigation:
+        Height: =Parent.Height-Self.Y
+        Width: =cmpVendorGoodsReceiptsLeftNavigation.MenuWidth
+        Y: =cmpVendorGoodsReceiptsHeader.Height
+        ZIndex: =5
+
+    cmpVendorGoodsReceiptsHeader As ScreenHeader:
+        Width: =Parent.Width
+        ZIndex: =6
+

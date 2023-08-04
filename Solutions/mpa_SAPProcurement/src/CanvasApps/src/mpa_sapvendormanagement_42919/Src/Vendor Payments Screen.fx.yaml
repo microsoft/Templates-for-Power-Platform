@@ -1,0 +1,2019 @@
+"'Vendor Payments Screen' As screen":
+    Fill: =varThemeColors.background
+    LoadingSpinner: =LoadingSpinner.Data
+    LoadingSpinnerColor: =varThemeColors.primary
+    OnHidden: =
+    OnVisible: |-
+        =Reset(txtVendorPaymentsFilter);
+        //Set default sort variable
+        Set(
+            varVendorPaymentsSortByColumn,//default sort by column of vendor payments gallery
+            btnVendorPaymentsTableHeaderDueDate.Text
+        );
+        Set(
+            varVendorPaymentsSortOrder,//default sort order of vendor purchase orders gallery
+            SortOrder.Descending
+        );
+        //Collection that tracks cross screen navigation thread and allows to back out in reverse sequence, remove from "thread" if navigating back to this screen
+        RemoveIf(
+            colAppNavigationThreads,
+            Screen = App.ActiveScreen
+        );
+        //If first time user is clicking on the tab since last purchase order search, then query list of purchase orders
+        If(
+            IsEmpty(colVendorPayments),
+            Reset(dteVendorPaymentsDateFieldFrom);
+            Reset(dteVendorPaymentsDateFieldTo);
+            Set(
+                varShowVendorPaymentsRefresh,//Variable that shows refresh button if user changes vendor payments from/to date controls
+                false
+            );
+            //Execute flow to query invoices for given vendor
+        Select(icoVendorPaymentsDateRefresh)
+        );
+        //Workaround for resetting components
+        UpdateContext({_resetCommandBar:false});
+        UpdateContext({_resetCommandBar:true});
+
+    conVendorPaymentsMain As groupContainer.verticalAutoLayoutContainer:
+        Height: =Parent.Height-Self.Y
+        LayoutAlignItems: =LayoutAlignItems.Stretch
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutMode: =LayoutMode.Auto
+        LayoutOverflowX: =LayoutOverflow.Scroll
+        LayoutOverflowY: =LayoutOverflow.Scroll
+        Width: =Parent.Width-Self.X
+        X: =cmpVendorPaymentsLeftNavigation.Width
+        Y: =cmpVendorPaymentsHeader.Height
+        ZIndex: =4
+
+        cmpVendorPaymentsCommandBar As CommandBar:
+            Fill: =RGBA(255, 255, 255, 1)
+            Height: =45
+            LayoutMinHeight: =640
+            LayoutMinWidth: =conVendorPaymentsData.LayoutMinWidth
+            ResetCommandBar: =_resetCommandBar
+
+        shpVendorPaymentsCommandBarDivider As rectangle:
+            AccessibleLabel: |-
+                =// Define a variable named "Text" with the value "{value}"
+                With(
+                    {
+                        Text: "Divider"
+                    },
+                    If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colUserLocalizedStrings,
+                            'English Value' = Text
+                        ).'Localized Value'
+                    )
+                )
+            Fill: =varThemeColors.secondaryGray
+            Height: =1
+            LayoutMinWidth: =conVendorPaymentsData.LayoutMinWidth
+            Width: =1692
+            ZIndex: =2
+
+        lblVendorPaymentsName As label:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =varThemeColors.text
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            Fill: =RGBA(255, 255, 255, 1)
+            FocusedBorderColor: =varThemeColors.primary
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Semibold
+            Height: =37
+            LayoutMinWidth: =conVendorPaymentsData.LayoutMinWidth
+            PaddingBottom: =15
+            PaddingLeft: =32
+            PaddingRight: =32
+            PaddingTop: =22
+            Role: =TextRole.Heading1
+            Size: =14.5
+            Text: |-
+                =// Define a variable named "Text" with the value "{value}"
+                If(
+                    !varIsNew && !IsBlank(varVendorHeader),
+                    varVendorHeader.FullName,
+                    With(
+                        {
+                            Text: If(
+                                varIsNew,
+                                "New vendor",
+                                "Vendor"
+                            )
+                        },
+                      If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colUserLocalizedStrings,
+                            'English Value' = Text 
+                        ).'Localized Value'
+                    )
+                ))
+            Width: =1692
+            Wrap: =false
+            ZIndex: =3
+
+        cmpVendorPaymentsTabs As ScreenTabs:
+            LayoutMinHeight: =640
+            LayoutMinWidth: =conVendorPaymentsData.LayoutMinWidth
+            Width: =1692
+            ZIndex: =4
+
+        conVendorPaymentsData As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Height: =257
+            LayoutAlignItems: =LayoutAlignItems.Stretch
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutMinHeight: =
+            LayoutMinWidth: =conVendorPaymentsCommandBar.LayoutMinWidth + Self.PaddingLeft + Self.PaddingRight
+            LayoutMode: =LayoutMode.Auto
+            LayoutOverflowY: =LayoutOverflow.Scroll
+            PaddingBottom: =20
+            PaddingLeft: =32
+            PaddingRight: =32
+            PaddingTop: =20
+            Width: =Parent.Width-Parent.PaddingLeft-Parent.PaddingRight
+            ZIndex: =9
+
+            conVendorPaymentsCommandBar As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                Fill: =RGBA(255, 255, 255, 1)
+                FillPortions: =0
+                Height: =39
+                LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+                LayoutMinHeight: =
+                LayoutMinWidth: =lblVendorPaymentsTableHeader.Width + conVendorPaymentsCommandBarFilterFields.LayoutMinWidth + Self.PaddingLeft + Self.PaddingRight
+                LayoutMode: =LayoutMode.Auto
+                PaddingRight: =2
+                Width: =
+                ZIndex: =1
+
+                lblVendorPaymentsTableHeader As label:
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    BorderThickness: =2
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                    Fill: =RGBA(255, 255, 255, 1)
+                    FocusedBorderColor: =varThemeColors.primary
+                    FocusedBorderThickness: =4
+                    Font: =Font.'Segoe UI'
+                    FontWeight: =FontWeight.Semibold
+                    Height: =Parent.Height
+                    LayoutMinHeight: =
+                    LayoutMinWidth: =
+                    PaddingBottom: =0
+                    PaddingLeft: =8
+                    PaddingRight: =0
+                    PaddingTop: =0
+                    Role: =TextRole.Heading2
+                    Size: =10.5
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {
+                                Text: "Related invoices"
+                            },
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Width: =Len(Self.Text)*8
+                    ZIndex: =1
+
+                conVendorPaymentsCommandBarFilterFields As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    Height: =Parent.Height
+                    LayoutAlignItems: =LayoutAlignItems.Center
+                    LayoutGap: =10
+                    LayoutJustifyContent: =LayoutJustifyContent.End
+                    LayoutMinHeight: =43
+                    LayoutMinWidth: |-
+                        =conVendorPaymentsCommandBarFilter.Width + lblVendorPaymentsCommandBarFilterFrom.Width + dteVendorPaymentsDateFieldFrom.Width + lblVendorPaymentsCommandBarFilterTo.Width + dteVendorPaymentsDateFieldTo.Width + If(
+                            icoVendorPaymentsDateRefresh.Visible,
+                            icoVendorPaymentsDateRefresh.Width
+                        ) + Self.LayoutGap * 6
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingRight: =2
+                    Width: =
+                    ZIndex: =3
+
+                    conVendorPaymentsCommandBarFilter As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        FillPortions: =0
+                        Height: =Parent.Height
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        Width: =txtVendorPaymentsFilter.X+txtVendorPaymentsFilter.Width+txtVendorPaymentsFilter.FocusedBorderThickness
+                        ZIndex: =1
+
+                        txtVendorPaymentsFilter As text:
+                            AccessibleLabel: =Self.HintText
+                            BorderColor: =varThemeColors.primaryGray
+                            BorderThickness: =1
+                            Clear: =true
+                            Color: =varThemeColors.text
+                            Default: =
+                            DelayOutput: =true
+                            DisabledBorderColor: =varThemeColors.primaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    Or(
+                                        IsEmpty(First(colVendorPayments).List),
+                                        varIsProcessing
+                                    ),
+                                    DisplayMode.Disabled,
+                                    DisplayMode.Edit
+                                )
+                            Fill: =varThemeColors.backgroundFill
+                            FocusedBorderColor: =varThemeColors.focusBorder
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =32
+                            HintText: |-
+                                =With(
+                                    {Text: "Filter vendor payments"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            HoverBorderColor: =varThemeColors.tertiaryGray
+                            HoverColor: =varThemeColors.text
+                            HoverFill: =varThemeColors.backgroundFill
+                            MaxLength: =70
+                            OnChange: =
+                            PaddingBottom: =6
+                            PaddingLeft: =8
+                            PaddingRight: =8
+                            PaddingTop: =6
+                            PressedBorderColor: =varThemeColors.tertiaryGray
+                            PressedColor: =
+                            PressedFill: =varThemeColors.backgroundFill
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Reset: =true
+                            Size: =10.5
+                            Tooltip: |-
+                                =Coalesce(
+                                    Self.Text,
+                                    Self.HintText
+                                )
+                            Width: =248
+                            X: =shpVendorPaymentsCommandBarFilterDivider.X+shpVendorPaymentsCommandBarFilterDivider.Width+7
+                            Y: =Parent.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        shpVendorPaymentsCommandBarFilterDivider As rectangle:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: "Divider"
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Fill: =varThemeColors.secondaryGray
+                            Height: =30
+                            OnSelect: =
+                            Width: =2
+                            Y: =6
+                            ZIndex: =2
+
+                    lblVendorPaymentsCommandBarFilterFrom As label:
+                        Align: =Align.Right
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: |-
+                            =With(
+                                {Text: "Due from"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            ) & If(
+                                Or(
+                                    !IsBlank(dteVendorPaymentsDateFieldFrom.SelectedDate),
+                                    !IsBlank(dteVendorPaymentsDateFieldTo.SelectedDate)
+                                ),
+                                " *"
+                            )
+                        Width: =Len(Self.Text)*8
+                        X: =dteVendorPaymentsDateFieldFrom.X
+                        ZIndex: =2
+
+                    dteVendorPaymentsDateFieldFrom As datepicker:
+                        AccessibleLabel: |-
+                            =With(
+                                {Text: "Select created from date required"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: |-
+                            =If(
+                                Or(
+                                    IsBlank(dteVendorPaymentsDateFieldFrom.SelectedDate),
+                                    IsBlank(dteVendorPaymentsDateFieldTo.SelectedDate)
+                                ),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
+                        BorderThickness: =1
+                        CalendarHeaderFill: =ColorFade(RGBA(105, 121, 126, 1), -30%)
+                        Color: =varThemeColors.text
+                        DefaultDate: =DateAdd(Today(),-1,TimeUnit.Years)
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayMode: |-
+                            =If(
+                                Or(IsBlank(varVendorHeader),varIsProcessing),
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )
+                        EndYear: =2025
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: |-
+                            =If(
+                                Self.BorderColor = varThemeColors.requiredRed,
+                                Self.BorderColor,
+                                varThemeColors.focusBorder
+                            )
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HoverDateFill: =RGBA(200, 200, 200, 1)
+                        IconBackground: =varThemeColors.backgroundFill
+                        IconFill: =varThemeColors.text
+                        InputTextPlaceholder: |-
+                            =With(
+                                {Text: "Select from date"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        OnChange: =Set(varShowVendorPaymentsRefresh,true)
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        SelectedDateFill: =RGBA(105, 121, 126, 1)
+                        Size: =10.5
+                        StartYear: =2016
+                        Tooltip: |-
+                            =If(
+                                IsBlank(Self.SelectedDate),
+                                Self.InputTextPlaceholder,
+                                Self.SelectedDate
+                            )
+                        Width: =125
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =3
+
+                    lblVendorPaymentsCommandBarFilterTo As label:
+                        Align: =Align.Right
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: |-
+                            =With(
+                                {Text: "Due to"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            ) & If(
+                                Or(
+                                    !IsBlank(dteVendorPaymentsDateFieldFrom.SelectedDate),
+                                    !IsBlank(dteVendorPaymentsDateFieldTo.SelectedDate)
+                                ),
+                                " *"
+                            )
+                        Width: =Len(Self.Text)*8
+                        X: =dteVendorPaymentsDateFieldTo.X
+                        ZIndex: =4
+
+                    dteVendorPaymentsDateFieldTo As datepicker:
+                        AccessibleLabel: |-
+                            =With(
+                                {Text: "Select created to date required"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: |-
+                            =If(
+                                Or(
+                                    IsBlank(dteVendorPaymentsDateFieldFrom.SelectedDate),
+                                    IsBlank(dteVendorPaymentsDateFieldTo.SelectedDate)
+                                ),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
+                        BorderThickness: =1
+                        CalendarHeaderFill: =ColorFade(RGBA(105, 121, 126, 1), -30%)
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayMode: |-
+                            =If(
+                                Or(IsBlank(varVendorHeader),varIsProcessing),
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )
+                        EndYear: =2025
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: |-
+                            =If(
+                                Self.BorderColor = varThemeColors.requiredRed,
+                                Self.BorderColor,
+                                varThemeColors.focusBorder
+                            )
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HoverDateFill: =RGBA(200, 200, 200, 1)
+                        IconBackground: =varThemeColors.backgroundFill
+                        IconFill: =varThemeColors.text
+                        InputTextPlaceholder: |-
+                            =With(
+                                {Text: "Select to date"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        OnChange: =Set(varShowVendorPaymentsRefresh,true)
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        SelectedDateFill: =RGBA(105, 121, 126, 1)
+                        Size: =10.5
+                        StartYear: =2016
+                        Tooltip: |-
+                            =If(
+                                IsBlank(Self.SelectedDate),
+                                Self.InputTextPlaceholder,
+                                Self.SelectedDate
+                            )
+                        Width: =125
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =5
+
+                    "icoVendorPaymentsDateRefresh As icon.'3DPrinting'":
+                        AccessibleLabel: =Self.Tooltip
+                        BorderColor: =varThemeColors.primary
+                        Color: =varThemeColors.primary
+                        DisabledBorderColor: =varThemeColors.disabledText
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =RGBA(0,0,0,0)
+                        DisplayMode: |-
+                            =If(
+                                varIsProcessing,
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )
+                        Fill: =RGBA(0,0,0,0)
+                        FocusedBorderColor: =varThemeColors.focusBorder
+                        Height: =30
+                        HoverBorderColor: =
+                        HoverColor: =varThemeColors.primary
+                        HoverFill: =RGBA(0,0,0,0)
+                        Icon: =Icon.Reload
+                        OnSelect: |-
+                            =//Check if required search fields and store missing fields in a collection
+                            Clear(colRequiredFieldsTemp);
+                            If(
+                                And(
+                                    IsBlank(dteVendorPaymentsDateFieldFrom.SelectedDate),
+                                    !IsBlank(dteVendorPaymentsDateFieldTo.SelectedDate)
+                                ),
+                                Collect(
+                                    colRequiredFieldsTemp,
+                                    lblVendorPaymentsCommandBarFilterFrom.Text
+                                )
+                            );
+                            If(
+                                And(
+                                    !IsBlank(dteVendorPaymentsDateFieldFrom.SelectedDate),
+                                    IsBlank(dteVendorPaymentsDateFieldTo.SelectedDate)
+                                ),
+                                Collect(
+                                    colRequiredFieldsTemp,
+                                    lblVendorPaymentsCommandBarFilterTo.Text
+                                )
+                            );
+                            //Check to see if required fields collection, notify which fields are missing if so
+                            If(
+                                !IsEmpty(colRequiredFieldsTemp),
+                                Notify(
+                                    Substitute(
+                                        With(
+                                            {Text: "The following information is required before searching"},
+                                            If(
+                                    // If the localized text is blank, return the default text
+                                                IsBlank(
+                                                    LookUp(
+                                                        colUserLocalizedStrings,
+                                                        'English Value' = Text
+                                                    ).'Localized Value'
+                                                ),
+                                                Text,
+                                    // If a localized text is found, return that instead of the default text
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            )
+                                        ) & ": " & Concat(
+                                            colRequiredFieldsTemp,
+                                            Value,
+                                            ", "
+                                        ),
+                                        " *",
+                                        ""
+                                    ),
+                                    NotificationType.Error,
+                                    0
+                                );
+                                ,
+                                Reset(txtVendorPaymentsFilter);
+                                Set(
+                                    varVendorPaymentsSortByColumn,//default sort by column of vendor payments gallery
+                                    btnVendorPaymentsTableHeaderDueDate.Text
+                                );
+                                Set(
+                                    varVendorPaymentsSortOrder,//default sort order of vendor payments gallery
+                                    SortOrder.Descending
+                                );
+                                Set(
+                                    varIsProcessing,
+                                    true
+                                );
+                                Set(
+                                    varFooterMessage,
+                                    "Loading"
+                                );
+                                ClearCollect(
+                                    colVendorPayments,
+                                    ReadVendorPaymentList.Run(
+                                        Substitute(
+                                            JSON(
+                                                {
+                                                    Vendor: varVendorHeader.Vendor,
+                                                    DateFrom: Text(
+                                                        dteVendorPaymentsDateFieldFrom.SelectedDate,
+                                                        "yyyymmdd",
+                                                        "en-US"
+                                                    ),
+                                                    DateTo: Text(
+                                                        dteVendorPaymentsDateFieldTo.SelectedDate,
+                                                        "yyyymmdd",
+                                                        "en-US"
+                                                    )
+                                                },
+                                                JSONFormat.IndentFour
+                                            ),
+                                            "null",
+                                            """"""
+                                        )
+                                    )
+                                );
+                                 //Evaluate return statuses to determine what type of notification
+                            With(
+                                    {
+                                        Text: Switch(
+                                            First(colVendorPayments).Status,
+                                            "Information",
+                                            "No vendor payments were found based on your search criteria",
+                                            "Warning",
+                                            "The maximum number of search results were found based upon your criteria and some records may be missing. Please try changing your search criteria.",
+                                            "Error",
+                                            Concat(
+                                                First(colVendorPayments).Messages,
+                                                Message,
+                                                " "
+                                            ),
+                                            "vendor payments found based upon your search criteria"
+                                        ),
+                                        Status: First(colVendorPayments).Status
+                                    },
+                                    If(
+                                        Status <> "Error",
+                                        Set(
+                                            varShowVendorPaymentsRefresh,
+                                            false
+                                        );
+                                    );
+                                    Notify(
+                                    //Append record count to message if success
+                                        Concatenate(
+                                            If(
+                                                Status = "Success",
+                                                CountRows(First(colVendorPayments).List)
+                                            ) & " ",
+                                            If(
+                                    // If the localized text is blank, return the default text
+                                                IsBlank(
+                                                    LookUp(
+                                                        colUserLocalizedStrings,
+                                                        'English Value' = Text
+                                                    ).'Localized Value'
+                                                ),
+                                                Text,
+                                    // If a localized text is found, return that instead of the default text
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            )
+                                        ),
+                                        //Set the notification type
+                                        Switch(
+                                            Status,
+                                            "Information",
+                                            NotificationType.Information,
+                                            "Warning",
+                                            NotificationType.Warning,
+                                            "Error",
+                                            NotificationType.Error,
+                                            NotificationType.Success
+                                        ),
+                                        If(
+                                            Status = "Error",
+                                            0,
+                                            7000
+                                        )
+                                    );
+                                );
+                                
+                            );
+                            Reset(galVendorPayments);
+                            Clear(colRequiredFieldsTemp);
+                            Set(
+                                varIsProcessing,
+                                false
+                            );
+                            Set(
+                                varFooterMessage,
+                                Blank()
+                            );
+                            //Set the focus on the filter field if results returned
+                            If(
+                                !IsEmpty(colVendorPayments),
+                                SetFocus(txtVendorPaymentsFilter)
+                            )
+                        PaddingBottom: =5
+                        PaddingLeft: =5
+                        PaddingRight: =5
+                        PaddingTop: =5
+                        PressedBorderColor: =
+                        PressedColor: =
+                        PressedFill: =RGBA(0,0,0,0)
+                        TabIndex: =0
+                        Tooltip: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Refresh vendor purchase orders"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Visible: =varShowVendorPaymentsRefresh
+                        Width: =30
+                        X: =
+                        Y: =6
+                        ZIndex: =6
+
+            shpVendorPaymentsTableHeaderDivider As rectangle:
+                AccessibleLabel: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {
+                            Text: "Divider"
+                        },
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Fill: =varThemeColors.secondaryGray
+                Height: =1
+                LayoutMinHeight: =
+                LayoutMinWidth: =conVendorPaymentsCommandBar.LayoutMinWidth
+                Width: =
+                ZIndex: =3
+
+            conVendorPaymentsTable As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                Fill: =RGBA(255, 255, 255, 1)
+                LayoutAlignItems: =LayoutAlignItems.Stretch
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutMinHeight: |-
+                    =conVendorRequistionsTableHeader.Height + shpVendorRequisitionsTabelHeaderDivider.Height + If(
+                        galVendorPayments.Visible,
+                        galVendorPayments.LayoutMinHeight,
+                        cmpVendorPaymetNoResults.Height
+                    ) + Self.PaddingTop + Self.PaddingBottom
+                LayoutMinWidth: =conVendorPaymentsCommandBar.LayoutMinWidth
+                LayoutMode: =LayoutMode.Auto
+                PaddingBottom: =2
+                PaddingLeft: =16
+                PaddingRight: =16
+                ZIndex: =8
+
+                conVendorPaymentsTableHeader As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    Fill: =RGBA(255, 255, 255, 1)
+                    FillPortions: =0
+                    Height: =43
+                    LayoutAlignItems: =LayoutAlignItems.Center
+                    LayoutMinHeight: =
+                    LayoutMinWidth: =conVendorPaymentTableHeaderPaymentNumber.LayoutMinWidth + conVendorPaymentsTableHeaderDueDate.LayoutMinWidth + conVendorPaymentsTableHeaderCompanyCode.LayoutMinWidth + conVendorPaymentsTableHeaderStatus.LayoutMinWidth + conVendorPaymentsTableHeaderAmount.LayoutMinWidth
+                    LayoutMode: =LayoutMode.Auto
+                    Width: =
+                    ZIndex: =1
+
+                    conVendorPaymentTableHeaderPaymentNumber As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Height: =44
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =icoVendorPaymentTableHeaderPaymentNumber.X+icoVendorPaymentTableHeaderPaymentNumber.Width+10
+                        Width: =
+                        Y: =37
+                        ZIndex: =1
+
+                        icoVendorPaymentTableHeaderPaymentNumber As icon.Save:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: If(
+                                            Self.Icon = Icon.ArrowUp,
+                                            "Sorted ascending",
+                                            "Sorted descending"
+                                        )
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.tertiaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =btnVendorPaymentTableHeaderPaymentNumber.DisplayMode
+                            FocusedBorderColor: =varThemeColors.primary
+                            Height: =12
+                            Icon: |-
+                                =If(
+                                    varVendorPaymentsSortOrder = SortOrder.Ascending,
+                                    Icon.ArrowUp,
+                                    Icon.ArrowDown
+                                )
+                            Visible: =varVendorPaymentsSortByColumn = btnVendorPaymentTableHeaderPaymentNumber.Text && galVendorPayments.Visible
+                            Width: =12
+                            X: =Len(btnVendorPaymentTableHeaderPaymentNumber.Text)*8+8
+                            Y: =btnVendorPaymentTableHeaderPaymentNumber.Y+btnVendorPaymentTableHeaderPaymentNumber.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        btnVendorPaymentTableHeaderPaymentNumber As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            BorderThickness: =1
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        galVendorPayments.Visible,
+                                        !varIsProcessing
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.View
+                                )
+                            Fill: =RGBA(0,0,0,0)
+                            FocusedBorderColor: =varThemeColors.focusBorder
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =Parent.Height-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |-
+                                =Set(//Stores which column is currently being sorted
+                                    varVendorPaymentsSortByColumn,
+                                    Self.Text
+                                );
+                                If(//Stores the sort order of that column
+                                    And(
+                                        varVendorPaymentsSortOrder = SortOrder.Ascending,
+                                        varVendorPaymentsSortByColumn = Self.Text
+                                    ),
+                                    Set(
+                                        varVendorPaymentsSortOrder,
+                                        SortOrder.Descending
+                                    ),
+                                    Set(
+                                        varVendorPaymentsSortOrder,
+                                        SortOrder.Ascending
+                                    )
+                                );
+                                Reset(galVendorPayments)//Resets the gallery to move the scrollbar to the top
+                            PaddingLeft: =12
+                            PressedBorderColor: =
+                            PressedColor: =varThemeColors.text
+                            PressedFill: =
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Payment number"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =2
+
+                    conVendorPaymentsTableHeaderDueDate As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Height: =44
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =icoVendorPaymentsTableHeaderDueDate.X+icoVendorPaymentsTableHeaderDueDate.Width+10
+                        Width: =
+                        Y: =37
+                        ZIndex: =2
+
+                        icoVendorPaymentsTableHeaderDueDate As icon.Save:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: If(
+                                            Self.Icon = Icon.ArrowUp,
+                                            "Sorted ascending",
+                                            "Sorted descending"
+                                        )
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.tertiaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =btnVendorPaymentsTableHeaderDueDate.DisplayMode
+                            FocusedBorderColor: =varThemeColors.primary
+                            Height: =12
+                            Icon: |-
+                                =If(
+                                    varVendorPaymentsSortOrder = SortOrder.Ascending,
+                                    Icon.ArrowUp,
+                                    Icon.ArrowDown
+                                )
+                            Visible: =varVendorPaymentsSortByColumn = btnVendorPaymentsTableHeaderDueDate.Text && galVendorPayments.Visible
+                            Width: =12
+                            X: =Len(btnVendorPaymentsTableHeaderDueDate.Text)*8+8
+                            Y: =btnVendorPaymentsTableHeaderDueDate.Y+btnVendorPaymentsTableHeaderDueDate.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        btnVendorPaymentsTableHeaderDueDate As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            BorderThickness: =1
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        galVendorPayments.Visible,
+                                        !varIsProcessing
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.View
+                                )
+                            Fill: =RGBA(0,0,0,0)
+                            FocusedBorderColor: =varThemeColors.focusBorder
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =Parent.Height-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |-
+                                =Set(//Stores which column is currently being sorted
+                                    varVendorPaymentsSortByColumn,
+                                    Self.Text
+                                );
+                                If(//Stores the sort order of that column
+                                    And(
+                                        varVendorPaymentsSortOrder = SortOrder.Ascending,
+                                        varVendorPaymentsSortByColumn = Self.Text
+                                    ),
+                                    Set(
+                                        varVendorPaymentsSortOrder,
+                                        SortOrder.Descending
+                                    ),
+                                    Set(
+                                        varVendorPaymentsSortOrder,
+                                        SortOrder.Ascending
+                                    )
+                                );
+                                Reset(galVendorPayments)//Resets the gallery to move the scrollbar to the top
+                            PaddingLeft: =10
+                            PressedBorderColor: =
+                            PressedColor: =varThemeColors.text
+                            PressedFill: =
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Due Date"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =2
+
+                    conVendorPaymentsTableHeaderStatus As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Height: =44
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =icoVendorPaymentsTableHeaderStatus.X+icoVendorPaymentsTableHeaderStatus.Height
+                        Width: =
+                        Y: =37
+                        ZIndex: =3
+
+                        icoVendorPaymentsTableHeaderStatus As icon.Save:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: If(
+                                            Self.Icon = Icon.ArrowUp,
+                                            "Sorted ascending",
+                                            "Sorted descending"
+                                        )
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.tertiaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =btnVendorPaymentsTableHeaderStatus.DisplayMode
+                            FocusedBorderColor: =varThemeColors.primary
+                            Height: =12
+                            Icon: |-
+                                =If(
+                                    varVendorPaymentsSortOrder = SortOrder.Ascending,
+                                    Icon.ArrowUp,
+                                    Icon.ArrowDown
+                                )
+                            Visible: =varVendorPaymentsSortByColumn=btnVendorPaymentsTableHeaderStatus.Text && galVendorPayments.Visible
+                            Width: =12
+                            X: =Len(btnVendorPaymentsTableHeaderStatus.Text)*8.5+8
+                            Y: =btnVendorPaymentsTableHeaderStatus.Y+btnVendorPaymentsTableHeaderStatus.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        btnVendorPaymentsTableHeaderStatus As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            BorderThickness: =1
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        galVendorPayments.Visible,
+                                        !varIsProcessing
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.View
+                                )
+                            Fill: =RGBA(0,0,0,0)
+                            FocusedBorderColor: =varThemeColors.focusBorder
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =Parent.Height-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |-
+                                =Set(//Stores which column is currently being sorted
+                                    varVendorPaymentsSortByColumn,
+                                    Self.Text
+                                );
+                                If(//Stores the sort order of that column
+                                    And(
+                                        varVendorPaymentsSortOrder = SortOrder.Ascending,
+                                        varVendorPaymentsSortByColumn = Self.Text
+                                    ),
+                                    Set(
+                                        varVendorPaymentsSortOrder,
+                                        SortOrder.Descending
+                                    ),
+                                    Set(
+                                        varVendorPaymentsSortOrder,
+                                        SortOrder.Ascending
+                                    )
+                                );
+                                Reset(galVendorPayments)//Resets the gallery to move the scrollbar to the top
+                            PaddingLeft: =10
+                            PressedBorderColor: =
+                            PressedColor: =varThemeColors.text
+                            PressedFill: =
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Status"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =2
+
+                    conVendorPaymentsTableHeaderCompanyCode As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Height: =44
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =icoVendorPaymentsTableHeaderCompanyCode.X+icoVendorPaymentsTableHeaderCompanyCode.Width+10
+                        Width: =
+                        X: =icoVendorPaymentsTableHeaderCompanyCode.X+icoVendorPaymentsTableHeaderCompanyCode.Width+10
+                        Y: =37
+                        ZIndex: =4
+
+                        icoVendorPaymentsTableHeaderCompanyCode As icon.Save:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: If(
+                                            Self.Icon = Icon.ArrowUp,
+                                            "Sorted ascending",
+                                            "Sorted descending"
+                                        )
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.tertiaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =btnVendorPaymentsTableHeaderCompanyCode.DisplayMode
+                            FocusedBorderColor: =varThemeColors.primary
+                            Height: =12
+                            Icon: |-
+                                =If(
+                                    varVendorPaymentsSortOrder = SortOrder.Ascending,
+                                    Icon.ArrowUp,
+                                    Icon.ArrowDown
+                                )
+                            Visible: =varVendorPaymentsSortByColumn=btnVendorPaymentsTableHeaderCompanyCode.Text && galVendorPayments.Visible
+                            Width: =12
+                            X: =Len(btnVendorPaymentsTableHeaderCompanyCode.Text)*9+8
+                            Y: =btnVendorPaymentsTableHeaderCompanyCode.Y+btnVendorPaymentsTableHeaderCompanyCode.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        btnVendorPaymentsTableHeaderCompanyCode As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            BorderThickness: =1
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        galVendorPayments.Visible,
+                                        !varIsProcessing
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.View
+                                )
+                            Fill: =RGBA(0,0,0,0)
+                            FocusedBorderColor: =varThemeColors.focusBorder
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =Parent.Height-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |-
+                                =Set(//Stores which column is currently being sorted
+                                    varVendorPaymentsSortByColumn,
+                                    Self.Text
+                                );
+                                If(//Stores the sort order of that column
+                                    And(
+                                        varVendorPaymentsSortOrder = SortOrder.Ascending,
+                                        varVendorPaymentsSortByColumn = Self.Text
+                                    ),
+                                    Set(
+                                        varVendorPaymentsSortOrder,
+                                        SortOrder.Descending
+                                    ),
+                                    Set(
+                                        varVendorPaymentsSortOrder,
+                                        SortOrder.Ascending
+                                    )
+                                );
+                                Reset(galVendorPayments)//Resets the gallery to move the scrollbar to the top
+                            PaddingLeft: =10
+                            PressedBorderColor: =
+                            PressedColor: =varThemeColors.text
+                            PressedFill: =
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Company code"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =2
+
+                    conVendorPaymentsTableHeaderAmount As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Height: =44
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =icoVendorPaymentsTableHeaderAmount.X+icoVendorPaymentsTableHeaderAmount.Width+10
+                        Width: =
+                        Y: =37
+                        ZIndex: =5
+
+                        icoVendorPaymentsTableHeaderAmount As icon.Save:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: If(
+                                            Self.Icon = Icon.ArrowUp,
+                                            "Sorted ascending",
+                                            "Sorted descending"
+                                        )
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.tertiaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =btnVendorPaymentsTableHeaderAmount.DisplayMode
+                            FocusedBorderColor: =varThemeColors.primary
+                            Height: =12
+                            Icon: |-
+                                =If(
+                                    varVendorPaymentsSortOrder = SortOrder.Ascending,
+                                    Icon.ArrowUp,
+                                    Icon.ArrowDown
+                                )
+                            Visible: =varVendorPaymentsSortByColumn=btnVendorPaymentsTableHeaderAmount.Text && galVendorPayments.Visible
+                            Width: =12
+                            X: =Len(btnVendorPaymentsTableHeaderAmount.Text)*10+8
+                            Y: =btnVendorPaymentsTableHeaderAmount.Y+btnVendorPaymentsTableHeaderAmount.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        btnVendorPaymentsTableHeaderAmount As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            BorderThickness: =1
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        galVendorPayments.Visible,
+                                        !varIsProcessing
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.View
+                                )
+                            Fill: =RGBA(0,0,0,0)
+                            FocusedBorderColor: =varThemeColors.focusBorder
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =Parent.Height-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |-
+                                =Set(//Stores which column is currently being sorted
+                                    varVendorPaymentsSortByColumn,
+                                    Self.Text
+                                );
+                                If(//Stores the sort order of that column
+                                    And(
+                                        varVendorPaymentsSortOrder = SortOrder.Ascending,
+                                        varVendorPaymentsSortByColumn = Self.Text
+                                    ),
+                                    Set(
+                                        varVendorPaymentsSortOrder,
+                                        SortOrder.Descending
+                                    ),
+                                    Set(
+                                        varVendorPaymentsSortOrder,
+                                        SortOrder.Ascending
+                                    )
+                                );
+                                Reset(galVendorPayments)//Resets the gallery to move the scrollbar to the top
+                            PaddingLeft: =10
+                            PressedBorderColor: =
+                            PressedColor: =varThemeColors.text
+                            PressedFill: =
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Total"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                ) 
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =2
+
+                shpVendorPaymentTabelHeaderDivider As rectangle:
+                    AccessibleLabel: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {
+                                Text: "Divider"
+                            },
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Fill: =varThemeColors.secondaryGray
+                    Height: =1
+                    LayoutMinHeight: =
+                    Width: =
+                    ZIndex: =2
+
+                galVendorPayments As gallery.galleryVertical:
+                    AccessibleLabel: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {Text: "Vendor requisitions"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    FocusedBorderColor: =varThemeColors.focusBorder
+                    FocusedBorderThickness: =2
+                    Height: =Self.TemplateHeight * 6
+                    ItemAccessibleLabel: =Concatenate(ThisItem.Payment," - ",ThisItem.Vendor)
+                    Items: |-
+                        =//Display vendor invoice search result items based upon whether filters results further and/or by sort column selected
+                        With(
+                            {
+                                searchResults: If(
+                                    IsBlank(txtVendorPaymentsFilter.Text),//If additional filter text not entered, then just display results
+                                    First(colVendorPayments).List,
+                                    Search(//Otherwise, search on cached results based upon entered text
+                                        First(colVendorPayments).List,
+                                        txtVendorPaymentsFilter.Text,
+                                        "Payment",
+                                        "DueDate",
+                                        "Status",
+                                        "FiscalYear",
+                                        "Company"
+                                    )
+                                )
+                            },
+                            SortByColumns(
+                                searchResults,
+                                Switch(
+                                    varVendorPaymentsSortByColumn,//determine which field to sort by based upon the tabel header column value selected and stored in variable
+                                    btnVendorPaymentTableHeaderPaymentNumber.Text,
+                                    "Payment",
+                                    btnVendorPaymentsTableHeaderDueDate.Text,
+                                    "Vendor",
+                                    btnVendorPaymentsTableHeaderCompanyCode.Text,
+                                    "Comapny",
+                                    btnVendorPaymentsTableHeaderAmount.Text,
+                                    "Amount"
+                                ),
+                                varVendorPaymentsSortOrder//sort ascending or descending based upon value stored in variable
+                            )
+                        )
+                    Layout: =Layout.Vertical
+                    LayoutMinHeight: =Self.TemplateHeight * 6
+                    LayoutMinWidth: =320
+                    TabIndex: =0
+                    TemplateFill: =RGBA(255, 255, 255, 1)
+                    TemplatePadding: =0
+                    TemplateSize: =43
+                    Visible: =CountRows(First(colVendorPayments).List) > 0
+                    Width: =
+                    ZIndex: =3
+
+                    shpVendorPaymentsTableDivider As rectangle:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {
+                                    Text: "Divider"
+                                },
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Fill: =varThemeColors.secondaryGray
+                        Height: =1
+                        Width: =Parent.Width
+                        Y: =Parent.TemplateHeight-Self.Height
+                        ZIndex: =1
+
+                    lblVendorPaymentAmount As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        Height: =43
+                        PaddingBottom: =0
+                        PaddingLeft: =12
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: |-
+                            =Text(
+                                ThisItem.Amount,
+                                "[$-en-US]#,##0.00"
+                            ) & Concatenate(
+                                " (",
+                                ThisItem.Currency,
+                                ")"
+                            )
+                        Width: =conVendorPaymentsTableHeaderAmount.Width
+                        X: =conVendorPaymentsTableHeaderAmount.X
+                        ZIndex: =2
+
+                    lblVendorPaymentCompanyCode As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        Height: =43
+                        PaddingBottom: =0
+                        PaddingLeft: =12
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: =ThisItem.Company
+                        Width: =conVendorPaymentsTableHeaderCompanyCode.Width
+                        X: =conVendorPaymentsTableHeaderCompanyCode.X
+                        ZIndex: =3
+
+                    lblVendorPaymetStatus As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        Height: =43
+                        PaddingBottom: =0
+                        PaddingLeft: =12
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: =ThisItem.Status
+                        Width: =conVendorPaymentsTableHeaderStatus.Width
+                        X: =conVendorPaymentsTableHeaderStatus.X
+                        ZIndex: =4
+
+                    lblVendorPaymetDueDate As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        Height: =43
+                        PaddingBottom: =0
+                        PaddingLeft: =12
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: |-
+                            =Text(
+                                DateValue(ThisItem.DueDate),
+                                DateTimeFormat.ShortDate
+                            )
+                        Width: =conVendorPaymentsTableHeaderDueDate.Width
+                        X: =conVendorPaymentsTableHeaderDueDate.X
+                        ZIndex: =5
+
+                    lblVendorPaymentNumber As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        Height: =43
+                        PaddingBottom: =0
+                        PaddingLeft: =12
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: =ThisItem.Payment
+                        Visible: =IsBlank(varVendorInvoiceAccess)
+                        Width: =conVendorPaymentsTableHeaderDueDate.Width
+                        X: =conVendorPaymentTableHeaderPaymentNumber.X
+                        ZIndex: =6
+
+                    btnVendorPaymentNumberSelect As button:
+                        Align: =Align.Left
+                        BorderColor: =RGBA(0,0,0,0)
+                        BorderThickness: =0
+                        Color: =varThemeColors.lookupBlue
+                        DisabledBorderColor: =
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =
+                        DisplayMode: |-
+                            =/*If(
+                                Or(
+                                    IsBlank(txtVendor.Text),
+                                    IsBlank(cmbPOOrderType.Selected),
+                                    IsBlank(cmbPOPurchOrg.Selected),
+                                    IsBlank(cmbPOPurchGroup.Selected)
+                                ),
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )*/
+                        Fill: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.focusBorder
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Normal
+                        Height: =Parent.TemplateHeight-Self.Y*2
+                        HoverBorderColor: =
+                        HoverColor: =varThemeColors.primary
+                        HoverFill: =
+                        OnSelect: |-
+                            =Launch(
+                                varVendorInvoiceAccess.'Application URL',
+                                {invoice: Self.Text}
+                            )
+                        PaddingLeft: =12
+                        PressedColor: =Self.Color
+                        PressedFill: =Color.Transparent
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =10.5
+                        Text: =ThisItem.Payment
+                        Tooltip: =Self.Text
+                        Visible: =!IsBlank(varVendorInvoiceAccess)
+                        Width: =conVendorPaymentTableHeaderPaymentNumber.Width-Self.X
+                        Y: =Self.FocusedBorderThickness
+                        ZIndex: =7
+
+                cmpVendorPaymetNoResults As NoItemsDisplay:
+                    LayoutMinHeight: =
+                    LayoutMinWidth: =640
+                    Visible: =!galVendorPayments.Visible
+                    Width: =
+                    ZIndex: =4
+
+            conVendorPaymentsDataFooter As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                FillPortions: =0
+                Height: =30
+                LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                ZIndex: =10
+
+                lblVendorPaymentsNumberOfRecords As label:
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    BorderThickness: =2
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                    FillPortions: =1
+                    FocusedBorderColor: =varThemeColors.primary
+                    FocusedBorderThickness: =4
+                    Font: =Font.'Segoe UI'
+                    FontWeight: =FontWeight.Lighter
+                    Height: =30
+                    LayoutMinWidth: =
+                    PaddingLeft: =btnVendorRequistionsTableHeaderRequisition.PaddingLeft
+                    Size: =10.5
+                    Text: |-
+                        =//Show how many rows are returned in the results
+                        CountRows(galVendorPayments.AllItems) & " " &//Count the rows in the gallery
+                        // Define a variable named "Text" with the value "{value}"
+                         With(
+                            {Text: "record(s)"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Visible: |+
+                        =galVendorPayments.Visible
+                        
+                    Width: =
+                    X: =1
+                    ZIndex: =1
+
+                lblVendorPaymentsFooterMessage As label:
+                    Align: =Align.Right
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    BorderThickness: =2
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                    FillPortions: =1
+                    FocusedBorderColor: =varThemeColors.primary
+                    FocusedBorderThickness: =4
+                    Font: =Font.'Segoe UI'
+                    Height: =34
+                    Italic: =true
+                    LayoutMinHeight: =
+                    LayoutMinWidth: =
+                    Live: =Live.Assertive
+                    PaddingBottom: =0
+                    PaddingLeft: =32
+                    PaddingRight: =32
+                    PaddingTop: =0
+                    Role: =TextRole.Heading2
+                    Size: =10.5
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {Text: varFooterMessage},
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        ) & If(varIsProcessing, "...")
+                    Width: =
+                    ZIndex: =2
+
+    cmpVendorPaymentsLeftNavigation As LeftNavigation:
+        Height: =Parent.Height-Self.Y
+        Width: =cmpVendorPaymentsLeftNavigation.MenuWidth
+        Y: =cmpVendorPaymentsHeader.Height
+        ZIndex: =5
+
+    cmpVendorPaymentsHeader As ScreenHeader:
+        Width: =Parent.Width
+        ZIndex: =6
+

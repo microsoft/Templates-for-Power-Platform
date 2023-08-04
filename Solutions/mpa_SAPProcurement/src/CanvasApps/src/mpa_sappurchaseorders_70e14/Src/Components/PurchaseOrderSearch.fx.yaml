@@ -260,7 +260,7 @@ PurchaseOrderSearch As CanvasComponent:
                             DisplayMode.Edit
                         )
                     Fill: =varThemeColors.backgroundFill
-                    FocusedBorderColor: =varThemeColors.tertiaryGray
+                    FocusedBorderColor: =varThemeColors.focusBorder
                     FocusedBorderThickness: =2
                     Font: =Font.'Segoe UI'
                     FontWeight: |-
@@ -377,7 +377,7 @@ PurchaseOrderSearch As CanvasComponent:
                             DisplayMode.Edit
                         )
                     Fill: =varThemeColors.backgroundFill
-                    FocusedBorderColor: =varThemeColors.tertiaryGray
+                    FocusedBorderColor: =varThemeColors.focusBorder
                     FocusedBorderThickness: =2
                     Font: =Font.'Segoe UI'
                     FontWeight: |-
@@ -499,32 +499,29 @@ PurchaseOrderSearch As CanvasComponent:
                                 DisplayMode.Edit
                             )
                         Fill: =varThemeColors.backgroundFill
-                        FocusedBorderColor: =varThemeColors.tertiaryGray
+                        FocusedBorderColor: =varThemeColors.focusBorder
                         FocusedBorderThickness: =2
                         Font: =Font.'Segoe UI'
                         Height: =32
                         HintText: |-
-                            =If(
-                                Self.DisplayMode <> DisplayMode.Disabled,
-                            // Define a variable named "Text" with the value "{value}"
-                                With(
-                                    {Text: "Enter order number"},
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Enter order number"},
                                 // Check if a localized text exists for "Text" in the user's preferred language
-                                    If(
+                                If(
                                     // If the localized text is blank, return the default text
-                                        IsBlank(
-                                            LookUp(
-                                                colUserLocalizedStrings,
-                                                'English Value' = Text
-                                            ).'Localized Value'
-                                        ),
-                                        Text,
-                                    // If a localized text is found, return that instead of the default text
+                                    IsBlank(
                                         LookUp(
                                             colUserLocalizedStrings,
                                             'English Value' = Text
                                         ).'Localized Value'
-                                    )
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
                                 )
                             )
                         HoverBorderColor: =varThemeColors.tertiaryGray
@@ -638,33 +635,30 @@ PurchaseOrderSearch As CanvasComponent:
                                 DisplayMode.Edit
                             )
                         Fill: =varThemeColors.backgroundFill
-                        FocusedBorderColor: =varThemeColors.tertiaryGray
+                        FocusedBorderColor: =varThemeColors.focusBorder
                         FocusedBorderThickness: =2
                         Font: =Font.'Segoe UI'
                         Format: =TextFormat.Number
                         Height: =32
                         HintText: |-
-                            =If(
-                                Self.DisplayMode <> DisplayMode.Disabled,
-                            // Define a variable named "Text" with the value "{value}"
-                                With(
-                                    {Text: "Enter vendor number"},
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Enter vendor number"},
                                 // Check if a localized text exists for "Text" in the user's preferred language
-                                    If(
+                                If(
                                     // If the localized text is blank, return the default text
-                                        IsBlank(
-                                            LookUp(
-                                                colUserLocalizedStrings,
-                                                'English Value' = Text
-                                            ).'Localized Value'
-                                        ),
-                                        Text,
-                                    // If a localized text is found, return that instead of the default text
+                                    IsBlank(
                                         LookUp(
                                             colUserLocalizedStrings,
                                             'English Value' = Text
                                         ).'Localized Value'
-                                    )
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
                                 )
                             )
                         HoverBorderColor: =Self.BorderColor
@@ -835,8 +829,13 @@ PurchaseOrderSearch As CanvasComponent:
                                     {
                                         'Object ID': varNewVendorHeader.Vendor,
                                         'Object Type': 'Object Type (SAP Search Histories)'.Vendor,
-                                        Name: varNewVendorHeader.FullName,
-                                        'Last Searched On': Now()
+                                        Name: varNewVendorHeader.VendorName,
+                                        'Attribute 1': Concatenate(
+                                        varNewVendorHeader.Vendor,
+                                        "-",
+                                        varNewVendorHeader.VendorName
+                                    ),
+                                    'Last Searched On': Now()
                                     }
                                 );
                                 //Check if the patch function was successful and notify if there was any errors.
@@ -993,7 +992,32 @@ PurchaseOrderSearch As CanvasComponent:
                     ZIndex: =7
 
                     dtePurchaseOrderSearchAllDateFrom As datepicker:
-                        AccessibleLabel: =Self.InputTextPlaceholder
+                        AccessibleLabel: |-
+                            =If(
+                                Or(
+                                    !IsBlank(dtePurchaseOrderSearchAllDateFrom.SelectedDate),
+                                    !IsBlank(dtePurchaseOrderSearchAllDateTo.SelectedDate)
+                                ),
+                                With(
+                                    {Text: "Select created from date required"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                    // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                    // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            )
                         BorderColor: |-
                             =If(
                                 And(
@@ -1018,7 +1042,15 @@ PurchaseOrderSearch As CanvasComponent:
                             )
                         EndYear: =2025
                         Fill: =varThemeColors.backgroundFill
-                        FocusedBorderColor: =varThemeColors.tertiaryGray
+                        FocusedBorderColor: |-
+                            =If(
+                                And(
+                                    IsBlank(Self.SelectedDate),
+                                    !IsBlank(dtePurchaseOrderSearchAllDateTo.SelectedDate)
+                                ),
+                                varThemeColors.requiredRed,
+                                varThemeColors.focusBorder
+                            )
                         FocusedBorderThickness: =2
                         Font: =Font.'Segoe UI'
                         Height: =32
@@ -1124,7 +1156,32 @@ PurchaseOrderSearch As CanvasComponent:
                     ZIndex: =8
 
                     dtePurchaseOrderSearchAllDateTo As datepicker:
-                        AccessibleLabel: =Self.InputTextPlaceholder
+                        AccessibleLabel: |-
+                            =If(
+                                Or(
+                                    !IsBlank(dtePurchaseOrderSearchAllDateFrom.SelectedDate),
+                                    !IsBlank(dtePurchaseOrderSearchAllDateTo.SelectedDate)
+                                ),
+                                With(
+                                    {Text: "Select created to date required"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                    // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                    // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            )
                         BorderColor: |-
                             =If(
                                 And(
@@ -1149,7 +1206,15 @@ PurchaseOrderSearch As CanvasComponent:
                             )
                         EndYear: =2025
                         Fill: =varThemeColors.backgroundFill
-                        FocusedBorderColor: =varThemeColors.tertiaryGray
+                        FocusedBorderColor: |-
+                            =If(
+                                And(
+                                    IsBlank(Self.SelectedDate),
+                                    !IsBlank(dtePurchaseOrderSearchAllDateFrom.SelectedDate)
+                                ),
+                                varThemeColors.requiredRed,
+                                varThemeColors.focusBorder
+                            )
                         FocusedBorderThickness: =2
                         Font: =Font.'Segoe UI'
                         Height: =32
@@ -1271,7 +1336,7 @@ PurchaseOrderSearch As CanvasComponent:
                             DisplayMode.Edit
                         )
                     Fill: =varThemeColors.primary
-                    FocusedBorderColor: =varThemeColors.tertiaryGray
+                    FocusedBorderColor: =varThemeColors.focusBorder
                     FocusedBorderThickness: =2
                     Font: =Font.'Segoe UI'
                     HoverBorderColor: =varThemeColors.primary
@@ -1523,7 +1588,7 @@ PurchaseOrderSearch As CanvasComponent:
                             DisplayMode.Edit
                         )
                     Fill: =varThemeColors.backgroundFill
-                    FocusedBorderColor: =varThemeColors.tertiaryGray
+                    FocusedBorderColor: =varThemeColors.focusBorder
                     FocusedBorderThickness: =2
                     Font: =Font.'Segoe UI'
                     HoverBorderColor: =varThemeColors.primary
@@ -1678,7 +1743,7 @@ PurchaseOrderSearch As CanvasComponent:
                                     DisplayMode.Edit
                                 )
                             Fill: =varThemeColors.backgroundFill
-                            FocusedBorderColor: =varThemeColors.tertiaryGray
+                            FocusedBorderColor: =varThemeColors.focusBorder
                             FocusedBorderThickness: =2
                             Font: =Font.'Segoe UI'
                             Height: =32
@@ -1895,7 +1960,7 @@ PurchaseOrderSearch As CanvasComponent:
                                 DisabledFill: =varThemeColors.backgroundFillDisabled
                                 DisplayMode: =If(galPurchaseOrderSearchResults.Visible,DisplayMode.Edit,DisplayMode.View)
                                 Fill: =RGBA(0,0,0,0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 Height: =Parent.Height-Self.Y*2
@@ -2027,7 +2092,7 @@ PurchaseOrderSearch As CanvasComponent:
                                 DisabledFill: =varThemeColors.backgroundFillDisabled
                                 DisplayMode: =If(galPurchaseOrderSearchResults.Visible,DisplayMode.Edit,DisplayMode.View)
                                 Fill: =RGBA(0,0,0,0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 Height: =Parent.Height-Self.Y*2
@@ -2156,7 +2221,7 @@ PurchaseOrderSearch As CanvasComponent:
                                 DisabledFill: =varThemeColors.backgroundFillDisabled
                                 DisplayMode: =If(galPurchaseOrderSearchResults.Visible,DisplayMode.Edit,DisplayMode.View)
                                 Fill: =RGBA(0,0,0,0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 Height: =Parent.Height-Self.Y*2
@@ -2284,7 +2349,7 @@ PurchaseOrderSearch As CanvasComponent:
                                 DisabledFill: =varThemeColors.backgroundFillDisabled
                                 DisplayMode: =If(galPurchaseOrderSearchResults.Visible,DisplayMode.Edit,DisplayMode.View)
                                 Fill: =RGBA(0,0,0,0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 Height: =Parent.Height-Self.Y*2
@@ -2415,7 +2480,7 @@ PurchaseOrderSearch As CanvasComponent:
                                 DisabledFill: =varThemeColors.backgroundFillDisabled
                                 DisplayMode: =If(galPurchaseOrderSearchResults.Visible,DisplayMode.Edit,DisplayMode.View)
                                 Fill: =RGBA(0,0,0,0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 Height: =Parent.Height-Self.Y*2
@@ -2543,7 +2608,7 @@ PurchaseOrderSearch As CanvasComponent:
                                 DisabledFill: =varThemeColors.backgroundFillDisabled
                                 DisplayMode: =If(galPurchaseOrderSearchResults.Visible,DisplayMode.Edit,DisplayMode.View)
                                 Fill: =RGBA(0,0,0,0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 Height: =Parent.Height-Self.Y*2
@@ -2671,7 +2736,7 @@ PurchaseOrderSearch As CanvasComponent:
                                 DisabledFill: =varThemeColors.backgroundFillDisabled
                                 DisplayMode: =If(galPurchaseOrderSearchResults.Visible,DisplayMode.Edit,DisplayMode.View)
                                 Fill: =RGBA(0,0,0,0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 Height: =Parent.Height-Self.Y*2
@@ -2799,7 +2864,7 @@ PurchaseOrderSearch As CanvasComponent:
                                 DisabledFill: =varThemeColors.backgroundFillDisabled
                                 DisplayMode: =If(galPurchaseOrderSearchResults.Visible,DisplayMode.Edit,DisplayMode.View)
                                 Fill: =RGBA(0,0,0,0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 Height: =Parent.Height-Self.Y*2
@@ -2911,7 +2976,7 @@ PurchaseOrderSearch As CanvasComponent:
                                 )
                             )
                         AlignInContainer: =AlignInContainer.SetByContainer
-                        FocusedBorderColor: =varThemeColors.tertiaryGray
+                        FocusedBorderColor: =varThemeColors.focusBorder
                         FocusedBorderThickness: =2
                         Height: =
                         ItemAccessibleLabel: =ThisItem.OrderNumber
@@ -3160,13 +3225,14 @@ PurchaseOrderSearch As CanvasComponent:
                         btnPurchaseOrderSearchResultsSelect As button:
                             Align: =Align.Left
                             BorderColor: =RGBA(0,0,0,0)
-                            Color: =varThemeColors.primary
+                            BorderThickness: =0
+                            Color: =varThemeColors.lookupBlue
                             DisabledBorderColor: =
                             DisabledColor: =varThemeColors.disabledText
                             DisabledFill: =
                             DisplayMode: =
                             Fill: =RGBA(0, 0, 0, 0)
-                            FocusedBorderColor: =varThemeColors.tertiaryGray
+                            FocusedBorderColor: =varThemeColors.focusBorder
                             FocusedBorderThickness: =2
                             Font: =Font.'Segoe UI'
                             FontWeight: =FontWeight.Normal
@@ -3505,32 +3571,29 @@ PurchaseOrderSearch As CanvasComponent:
                                     DisplayMode.Disabled
                                 )
                             Fill: =varThemeColors.backgroundFill
-                            FocusedBorderColor: =varThemeColors.tertiaryGray
+                            FocusedBorderColor: =varThemeColors.focusBorder
                             FocusedBorderThickness: =2
                             Font: =Font.'Segoe UI'
                             Height: =32
                             HintText: |-
-                                =If(
-                                    Self.DisplayMode <> DisplayMode.Disabled,
-                                // Define a variable named "Text" with the value "{value}"
-                                    With(
-                                        {Text: "Filter purchase orders"},
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Filter purchase orders"},
                                     // Check if a localized text exists for "Text" in the user's preferred language
-                                        If(
+                                    If(
                                         // If the localized text is blank, return the default text
-                                            IsBlank(
-                                                LookUp(
-                                                    colUserLocalizedStrings,
-                                                    'English Value' = Text
-                                                ).'Localized Value'
-                                            ),
-                                            Text,
-                                        // If a localized text is found, return that instead of the default text
+                                        IsBlank(
                                             LookUp(
                                                 colUserLocalizedStrings,
                                                 'English Value' = Text
                                             ).'Localized Value'
-                                        )
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
                                     )
                                 )
                             HoverBorderColor: =varThemeColors.tertiaryGray
@@ -3720,7 +3783,7 @@ PurchaseOrderSearch As CanvasComponent:
                                         DisplayMode.View
                                     )
                                 Fill: =RGBA(0,0,0,0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 Height: =Parent.Height-Self.Y*2
@@ -3848,7 +3911,7 @@ PurchaseOrderSearch As CanvasComponent:
                                         DisplayMode.View
                                     )
                                 Fill: =RGBA(0,0,0,0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 Height: =Parent.Height-Self.Y*2
@@ -3940,7 +4003,7 @@ PurchaseOrderSearch As CanvasComponent:
                                 )
                             )
                         AlignInContainer: =AlignInContainer.SetByContainer
-                        FocusedBorderColor: =varThemeColors.tertiaryGray
+                        FocusedBorderColor: =varThemeColors.focusBorder
                         FocusedBorderThickness: =2
                         Height: =
                         Items: |-
@@ -4031,13 +4094,14 @@ PurchaseOrderSearch As CanvasComponent:
                         btnPurchaseOrderRecentlySearchedPurchaseOrder As button:
                             Align: =Align.Left
                             BorderColor: =RGBA(0,0,0,0)
-                            Color: =varThemeColors.primary
+                            BorderThickness: =0
+                            Color: =varThemeColors.lookupBlue
                             DisabledBorderColor: =
                             DisabledColor: =varThemeColors.disabledText
                             DisabledFill: =
                             DisplayMode: =
                             Fill: =RGBA(0, 0, 0, 0)
-                            FocusedBorderColor: =varThemeColors.tertiaryGray
+                            FocusedBorderColor: =varThemeColors.focusBorder
                             FocusedBorderThickness: =2
                             Font: =Font.'Segoe UI'
                             FontWeight: =FontWeight.Normal

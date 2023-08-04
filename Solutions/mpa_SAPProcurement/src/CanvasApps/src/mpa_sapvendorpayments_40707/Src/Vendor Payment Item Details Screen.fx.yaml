@@ -1,0 +1,1941 @@
+"'Vendor Payment Item Details Screen' As screen":
+    OnVisible: |-
+        =RemoveIf(
+            colAppNavigationThreads,
+            Screen = App.ActiveScreen
+        );
+        //Only reset the fields if explicitly set. Avoids fields getting reset when navigating to Material Search screen and back.
+        If(
+            _reset,
+            Set(
+                varSelectedMaterialHeader,
+                Blank()
+            );
+            Reset(txtVendorPaymentItemDetailsDataComapnyCode);
+            Reset(txtVendorPaymentItemDetailsDataType);
+            Reset(txtVendorPaymentItemDetailsDataTotal);
+            Reset(txtVendorPaymentItemDetailsDataGlAccount);
+        );
+        UpdateContext({_reset:false})
+
+    cmpVendorPaymentItemDetailsHeader As ScreenHeader:
+        Width: =Parent.Width
+
+    conVendorPaymentItemDetailsMain As groupContainer.verticalAutoLayoutContainer:
+        Height: =Parent.Height-Self.Y
+        LayoutAlignItems: =LayoutAlignItems.Stretch
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutMode: =LayoutMode.Auto
+        LayoutOverflowX: =LayoutOverflow.Scroll
+        LayoutOverflowY: =LayoutOverflow.Scroll
+        PaddingLeft: =32
+        PaddingRight: =32
+        Width: =Parent.Width
+        Y: =cmpVendorPaymentItemDetailsHeader.Height
+        ZIndex: =1
+
+        conVendorPaymentItemDetailsNavHeader As groupContainer.horizontalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Fill: =RGBA(255, 255, 255, 1)
+            FillPortions: =0
+            Height: =48
+            LayoutAlignItems: =LayoutAlignItems.Center
+            LayoutGap: =5
+            LayoutMinHeight: =100
+            LayoutMinWidth: =400
+            LayoutMode: =LayoutMode.Auto
+            PaddingLeft: =2
+            Width: =Parent.Width-Parent.PaddingLeft-Parent.PaddingRight
+            ZIndex: =1
+
+            "icoVendorPaymentItemDetailsNavHeaderBack As icon.'3DPrinting'":
+                AccessibleLabel: =Self.Tooltip
+                BorderColor: =varThemeColors.primary
+                Color: =varThemeColors.primary
+                DisabledBorderColor: =varThemeColors.disabledText
+                DisabledColor: =varThemeColors.backgroundFillDisabled
+                DisabledFill: =RGBA(0,0,0,0)
+                Fill: =RGBA(0,0,0,0)
+                FocusedBorderColor: =varThemeColors.focusBorder
+                Height: =30
+                HoverBorderColor: =varThemeColors.primary
+                HoverColor: =varThemeColors.tertiary
+                HoverFill: =RGBA(0,0,0,0)
+                Icon: =Icon.ArrowLeft
+                OnSelect: |-
+                    =//Navigate back to proceeding screen according to navigation threads collection
+                    Navigate(
+                        Last(
+                            Sort(
+                                colAppNavigationThreads,
+                                Order
+                            )
+                        ).Screen,
+                        ScreenTransition.CoverRight
+                    )
+                PaddingBottom: =5
+                PaddingLeft: =5
+                PaddingRight: =5
+                PaddingTop: =5
+                PressedBorderColor: =varThemeColors.primary
+                PressedColor: =varThemeColors.primary
+                PressedFill: =RGBA(0,0,0,0)
+                TabIndex: =0
+                Tooltip: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {Text: "Back"},
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text 
+                            ).'Localized Value'
+                        )
+                    )
+                Width: =30
+                Y: =Parent.Height/2-Self.Height/2
+                ZIndex: =1
+
+            lblVendorPaymentItemDetailsNavHeader As label:
+                BorderColor: =RGBA(0, 0, 0, 0)
+                BorderStyle: =BorderStyle.None
+                BorderThickness: =2
+                Color: =varThemeColors.text
+                DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                FocusedBorderColor: =
+                FocusedBorderThickness: =4
+                Font: =Font.'Segoe UI'
+                FontWeight: =FontWeight.Semibold
+                Height: =Parent.Height
+                PaddingBottom: =0
+                PaddingLeft: =0
+                PaddingTop: =0
+                Role: =TextRole.Heading1
+                Size: =14.5
+                Text: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {
+                            Text: Switch(
+                                true,
+                                And(
+                                    !varIsEdit,
+                                    !varIsNew
+                                ),
+                                "View vendor payment item details",
+                                IsBlank(_item),
+                                "New vendor payment item details",
+                                "Edit vendor payment item details"
+                            )
+                        },
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Width: =Parent.Width-Self.X
+                Wrap: =false
+                ZIndex: =2
+
+        conVendorPaymentItemDetailsData As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            Height: =400
+            LayoutAlignItems: =LayoutAlignItems.Stretch
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutGap: =15
+            LayoutMinHeight: =conVendorPaymentItemDetailsDataFields.Height + conVendorPaymentItemDetailsButtons.Height + Self.LayoutGap + Self.PaddingBottom
+            LayoutMinWidth: =400
+            LayoutMode: =LayoutMode.Auto
+            LayoutOverflowY: =LayoutOverflow.Scroll
+            PaddingBottom: =20
+            PaddingLeft: =5
+            PaddingRight: =5
+            Width: =Parent.Width-Parent.PaddingLeft-Parent.PaddingRight
+            ZIndex: =4
+
+            conVendorPaymentItemDetailsDataFields As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                BorderColor: =RGBA(0, 0, 0, 0)
+                BorderStyle: =BorderStyle.None
+                FillPortions: =0
+                Height: |-
+                    =With(
+                        {defaultHeight: 64},
+                        Switch(
+                            true,
+                            Self.Width <= 470,
+                            7 * defaultHeight + 6 * Self.LayoutGap,
+                            Self.Width <= 600,
+                            5 * defaultHeight + 4 * Self.LayoutGap,
+                            Self.Width <= 770,
+                            4 * defaultHeight + 3 * Self.LayoutGap,
+                            Self.Width <= 1060,
+                            3 * defaultHeight + 2 * Self.LayoutGap,
+                            Self.Width <= 1500,
+                            2 * defaultHeight + Self.LayoutGap,
+                            defaultHeight
+                        )
+                    )
+                LayoutGap: =10
+                LayoutMinHeight: =
+                LayoutMinWidth: =400
+                LayoutMode: =LayoutMode.Auto
+                LayoutWrap: =true
+                PaddingRight: =32
+                Width: =
+                ZIndex: =1
+
+                conVendorPaymentItemDetailsDataComapnyCode As groupContainer.manualLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    FillPortions: =0
+                    Height: =64
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    Width: |-
+                        =Max(
+                            284,
+                            Len(txtVendorPaymentItemDetailsDataComapnyCode.HintText) * 10
+                        )
+                    X: =40
+                    ZIndex: =2
+
+                    txtVendorPaymentItemDetailsDataComapnyCode As text:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Enter description required"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: |-
+                            =If(
+                                IsBlank(Self.Text),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
+                        BorderThickness: =1
+                        Clear: =true
+                        Color: =varThemeColors.text
+                        Default: =_item.CompanyCode
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayMode: |-
+                            =Switch(
+                                true,
+                                varIsProcessing,
+                                DisplayMode.Disabled,
+                                Or(
+                                    varIsNew,
+                                    varIsEdit
+                                ),
+                                DisplayMode.Edit,
+                                DisplayMode.View
+                            )
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: |-
+                            =If(
+                                Self.BorderColor = varThemeColors.requiredRed,
+                                Self.BorderColor,
+                                varThemeColors.focusBorder
+                            )
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HintText: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Enter description"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        HoverBorderColor: =Self.FocusedBorderColor
+                        HoverColor: =Self.Color
+                        HoverFill: =varThemeColors.backgroundFill
+                        MaxLength: =40
+                        OnChange: =
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        PressedBorderColor: =varThemeColors.tertiaryGray
+                        PressedColor: =varThemeColors.text
+                        PressedFill: =varThemeColors.backgroundFill
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Reset: =true
+                        Size: =10.5
+                        Tooltip: |-
+                            =Coalesce(
+                                Self.Text,
+                                Self.HintText
+                            )
+                        Width: =lblVendorPaymentItemDetailsDataComapnyCode.Width
+                        X: =Self.FocusedBorderThickness
+                        Y: =lblVendorPaymentItemDetailsDataComapnyCode.Y+lblVendorPaymentItemDetailsDataComapnyCode.Height
+                        ZIndex: =2
+
+                    lblVendorPaymentItemDetailsDataComapnyCode As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        Size: =10.5
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Company Code"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Width: =Parent.Width-Self.FocusedBorderThickness*2
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =3
+
+                conVendorPaymentItemDetailsDataGlAccount As groupContainer.manualLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    FillPortions: =0
+                    Height: =64
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    Width: |-
+                        =Max(
+                            112,
+                            Len(txtVendorPaymentItemDetailsDataGlAccount.HintText) * 10
+                        )
+                    X: =40
+                    ZIndex: =3
+
+                    txtVendorPaymentItemDetailsDataGlAccount As text:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Enter quantity required"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: |-
+                            =If(
+                                IsBlank(Self.Text),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
+                        BorderThickness: =1
+                        Clear: =true
+                        Color: =varThemeColors.text
+                        Default: =_item.GlAccount
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayMode: |-
+                            =Switch(
+                                true,
+                                varIsProcessing,
+                                DisplayMode.Disabled,
+                                Or(
+                                    varIsNew,
+                                    varIsEdit
+                                ),
+                                DisplayMode.Edit,
+                                DisplayMode.View
+                            )
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: |-
+                            =If(
+                                Self.BorderColor = varThemeColors.requiredRed,
+                                Self.BorderColor,
+                                varThemeColors.focusBorder
+                            )
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Format: =TextFormat.Number
+                        Height: =32
+                        HintText: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Enter quantity"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        HoverBorderColor: =Self.FocusedBorderColor
+                        HoverColor: =Self.Color
+                        HoverFill: =varThemeColors.backgroundFill
+                        MaxLength: =10
+                        OnChange: =
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        PressedBorderColor: =varThemeColors.tertiaryGray
+                        PressedColor: =varThemeColors.text
+                        PressedFill: =varThemeColors.backgroundFill
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Reset: =true
+                        Size: =10.5
+                        Tooltip: |-
+                            =Coalesce(
+                                Self.Text,
+                                Self.HintText
+                            )
+                        Width: =lblVendorPaymentItemDetailsDataGlAccount.Width
+                        X: =Self.FocusedBorderThickness
+                        Y: =lblVendorPaymentItemDetailsDataGlAccount.Y+lblVendorPaymentItemDetailsDataGlAccount.Height
+                        ZIndex: =2
+
+                    lblVendorPaymentItemDetailsDataGlAccount As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        Size: =10.5
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Gl Account"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Width: =Parent.Width-Self.FocusedBorderThickness*2
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =3
+
+                conVendorPaymentItemDetailsDataTotal As groupContainer.manualLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    FillPortions: =0
+                    Height: =64
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    Width: |-
+                        =Max(
+                            112,
+                            Len(txtVendorPaymentItemDetailsDataTotal.HintText) * 10
+                        )
+                    X: =40
+                    ZIndex: =4
+
+                    txtVendorPaymentItemDetailsDataTotal As text:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Total price required"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: |-
+                            =If(
+                                IsBlank(Self.Text),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
+                        BorderThickness: =1
+                        Clear: =true
+                        Color: =varThemeColors.text
+                        Default: |-
+                            =Text(
+                                _item.Amount,
+                                "[$-en-US]#,###.00"
+                            )
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayMode: |-
+                            =Switch(
+                                true,
+                                varIsProcessing,
+                                DisplayMode.Disabled,
+                                Or(
+                                    varIsNew,
+                                    varIsEdit
+                                ),
+                                DisplayMode.Edit,
+                                DisplayMode.View
+                            )
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: =varThemeColors.focusBorder
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Format: =TextFormat.Number
+                        Height: =32
+                        HintText: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Enter total price"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        HoverBorderColor: =varThemeColors.tertiaryGray
+                        HoverColor: =varThemeColors.text
+                        HoverFill: =varThemeColors.backgroundFill
+                        OnChange: =
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        PressedBorderColor: =varThemeColors.tertiaryGray
+                        PressedColor: =varThemeColors.text
+                        PressedFill: =varThemeColors.backgroundFill
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Reset: =true
+                        Size: =10.5
+                        Tooltip: |-
+                            =Coalesce(
+                                Self.Text,
+                                Self.HintText
+                            )
+                        Width: =lblVendorPaymentItemDetailsDataTotal.Width
+                        X: =Self.FocusedBorderThickness
+                        Y: =lblVendorPaymentItemDetailsDataTotal.Y+lblVendorPaymentItemDetailsDataTotal.Height
+                        ZIndex: =2
+
+                    lblVendorPaymentItemDetailsDataTotal As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        Size: =10.5
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Total price"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            ) & If(
+                                !IsBlank(_currencyCode),
+                                " (" & _currencyCode & ")"
+                            ) &" *"
+                        Width: =Parent.Width-Self.FocusedBorderThickness*2
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =3
+
+                conVendorPaymentItemDetailsDataType As groupContainer.manualLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    FillPortions: =0
+                    Height: =64
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    Width: |-
+                        =Max(
+                            124,
+                            Len(txtVendorPaymentItemDetailsDataType.AccessibleLabel) * 10
+                        )
+                    X: =40
+                    ZIndex: =5
+
+                    txtVendorPaymentItemDetailsDataType As text:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Unit"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: =varThemeColors.primaryGray
+                        BorderThickness: =1
+                        Clear: =true
+                        Color: =varThemeColors.text
+                        Default: =_item.Type
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayMode: |-
+                            =If(
+                                varIsProcessing,
+                                DisplayMode.Disabled,
+                                DisplayMode.View
+                            )
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HoverBorderColor: =Self.BorderColor
+                        HoverColor: =varThemeColors.text
+                        HoverFill: =varThemeColors.backgroundFill
+                        OnChange: =
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        PressedBorderColor: =Self.BorderColor
+                        PressedColor: =varThemeColors.text
+                        PressedFill: =varThemeColors.backgroundFill
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =10.5
+                        Tooltip: |-
+                            =Coalesce(
+                                Self.Text,
+                                Self.HintText
+                            )
+                        Width: =lblVendorPaymentItemDetailsDataType.Width
+                        X: =Self.FocusedBorderThickness
+                        Y: =lblVendorPaymentItemDetailsDataType.Y+lblVendorPaymentItemDetailsDataType.Height
+                        ZIndex: =2
+
+                    lblVendorPaymentItemDetailsDataType As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        Size: =10.5
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Type"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Width: =Parent.Width-Self.FocusedBorderThickness*2
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =3
+
+                conVendorPaymentItemDetailsDataPurchaseOrder As groupContainer.manualLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    FillPortions: =0
+                    Height: =64
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    Visible: |-
+                        =And(
+                            !IsBlank(_item),
+                            _item.CrudType <> "C"
+                        )
+                    Width: |-
+                        =Max(
+                            144,
+                            Len(lblVendorPaymentItemDetailsDataPurchaseOrder.Text) * 10
+                        )
+                    X: =40
+                    ZIndex: =7
+
+                    btnVendorPaymentItemDetailsDataPurchaseOrder As button:
+                        Align: =Align.Left
+                        BorderColor: =RGBA(0,0,0,0)
+                        BorderThickness: =0
+                        Color: =varThemeColors.lookupBlue
+                        DisabledBorderColor: =
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =
+                        DisplayMode: |-
+                            =If(
+                                varIsProcessing,
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: =varThemeColors.focusBorder
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Normal
+                        Height: =32
+                        HoverBorderColor: =
+                        HoverColor: =varThemeColors.primary
+                        HoverFill: =
+                        OnSelect: |-
+                            =Launch(
+                                varPurchaseOrderAccess.'Application URL',
+                                {purchaseorder: Self.Text}
+                            )
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        PressedColor: =Self.Color
+                        PressedFill: =Color.Transparent
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =10.5
+                        Text: |
+                            =_item.PurchaseOrder
+                        Tooltip: =Self.Text
+                        Visible: =!IsBlank(varPurchaseOrderAccess) && !IsBlank(Self.Text)
+                        Width: =lblVendorPaymentItemDetailsDataPurchaseOrder.Width
+                        X: =Self.FocusedBorderThickness
+                        Y: =lblVendorPaymentItemDetailsDataPurchaseOrder.Y+lblVendorPaymentItemDetailsDataPurchaseOrder.Height
+                        ZIndex: =2
+
+                    txtVendorPaymentItemDetailsDataPurchaseOrder As text:
+                        AccessibleLabel: =Self.Tooltip
+                        BorderColor: =varThemeColors.primaryGray
+                        BorderThickness: =1
+                        Color: =varThemeColors.text
+                        Default: =_item.PurchaseOrder
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayMode: =DisplayMode.View
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: =varThemeColors.focusBorder
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Format: =TextFormat.Number
+                        Height: =32
+                        HintText: |-
+                            =With(
+                                {Text: "No purchase order"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        HoverBorderColor: =Self.BorderColor
+                        HoverColor: =Self.Color
+                        HoverFill: =varThemeColors.backgroundFill
+                        OnChange: =
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        PressedBorderColor: =varThemeColors.tertiaryGray
+                        PressedColor: =varThemeColors.text
+                        PressedFill: =varThemeColors.backgroundFill
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Reset: =true
+                        Size: =10.5
+                        Tooltip: |-
+                            =Coalesce(
+                                Self.Text,
+                                Self.HintText
+                            )
+                        Visible: =!btnVendorPaymentItemDetailsDataPurchaseOrder.Visible
+                        Width: =lblVendorPaymentItemDetailsDataPurchaseOrder.Width
+                        X: =Self.FocusedBorderThickness
+                        Y: =lblVendorPaymentItemDetailsDataPurchaseOrder.Y+lblVendorPaymentItemDetailsDataPurchaseOrder.Height
+                        ZIndex: =3
+
+                    lblVendorPaymentItemDetailsDataPurchaseOrder As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        Size: =10.5
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Purchase order"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Width: =Parent.Width-Self.FocusedBorderThickness*2
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =4
+
+                conVendorPaymentItemDetailsDataPurchaseOrderItemNumber As groupContainer.manualLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    FillPortions: =0
+                    Height: =64
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    Width: |-
+                        =Max(
+                            120,
+                            Len(txtVendorPaymentItemDetailsDataPurchaseOrderItemNumber.HintText) * 10
+                        )
+                    X: =40
+                    ZIndex: =8
+
+                    txtVendorPaymentItemDetailsDataPurchaseOrderItemNumber As text:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Enter description required"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: |-
+                            =If(
+                                IsBlank(Self.Text),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
+                        BorderThickness: =1
+                        Clear: =true
+                        Color: =varThemeColors.text
+                        Default: |-
+                            =If(
+                                IsBlank(_item.PurchaseOrder),
+                                "",
+                                _item.PurchaseOrderLine
+                            )
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayMode: |-
+                            =If(
+                                varIsProcessing,
+                                DisplayMode.Disabled,
+                                DisplayMode.View
+                            )
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: |-
+                            =If(
+                                Self.BorderColor = varThemeColors.requiredRed,
+                                Self.BorderColor,
+                                varThemeColors.focusBorder
+                            )
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HintText: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "No purchase order item"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        HoverBorderColor: =Self.FocusedBorderColor
+                        HoverColor: =Self.Color
+                        HoverFill: =varThemeColors.backgroundFill
+                        MaxLength: =40
+                        OnChange: =
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        PressedBorderColor: =varThemeColors.tertiaryGray
+                        PressedColor: =varThemeColors.text
+                        PressedFill: =varThemeColors.backgroundFill
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Reset: =true
+                        Size: =10.5
+                        Tooltip: |-
+                            =Coalesce(
+                                Self.Text,
+                                Self.HintText
+                            )
+                        Width: =lblVendorPaymentItemDetailsDataPurchaseOrderItemNumber.Width
+                        X: =Self.FocusedBorderThickness
+                        Y: =lblVendorPaymentItemDetailsDataPurchaseOrderItemNumber.Y+lblVendorPaymentItemDetailsDataPurchaseOrderItemNumber.Height
+                        ZIndex: =2
+
+                    lblVendorPaymentItemDetailsDataPurchaseOrderItemNumber As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        Size: =10.5
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Purchase order item"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Width: =Parent.Width-Self.FocusedBorderThickness*2
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =3
+
+                conVendorPaymentItemDetailsDataFiscalYear As groupContainer.manualLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    FillPortions: =0
+                    Height: =64
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    Width: |-
+                        =Max(
+                            120,
+                            Len(txtVendorPaymentItemDetailsDataFiscalYear.HintText) * 10
+                        )
+                    X: =40
+                    ZIndex: =9
+
+                    txtVendorPaymentItemDetailsDataFiscalYear As text:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Enter description required"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: |-
+                            =If(
+                                IsBlank(Self.Text),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
+                        BorderThickness: =1
+                        Clear: =true
+                        Color: =varThemeColors.text
+                        Default: =_item.FiscalYear
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayMode: |-
+                            =If(
+                                varIsProcessing,
+                                DisplayMode.Disabled,
+                                DisplayMode.View
+                            )
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: |-
+                            =If(
+                                Self.BorderColor = varThemeColors.requiredRed,
+                                Self.BorderColor,
+                                varThemeColors.focusBorder
+                            )
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HintText: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "No purchase order item"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        HoverBorderColor: =Self.FocusedBorderColor
+                        HoverColor: =Self.Color
+                        HoverFill: =varThemeColors.backgroundFill
+                        MaxLength: =40
+                        OnChange: =
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        PressedBorderColor: =varThemeColors.tertiaryGray
+                        PressedColor: =varThemeColors.text
+                        PressedFill: =varThemeColors.backgroundFill
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Reset: =true
+                        Size: =10.5
+                        Tooltip: |-
+                            =Coalesce(
+                                Self.Text,
+                                Self.HintText
+                            )
+                        Width: =lblVendorPaymentItemDetailsDataFiscalYear.Width
+                        X: =Self.FocusedBorderThickness
+                        Y: =lblVendorPaymentItemDetailsDataFiscalYear.Y+lblVendorPaymentItemDetailsDataFiscalYear.Height
+                        ZIndex: =2
+
+                    lblVendorPaymentItemDetailsDataFiscalYear As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        Size: =10.5
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Fiscal year"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Width: =Parent.Width-Self.FocusedBorderThickness*2
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =3
+
+                conVendorPaymentItemDetailsDataBaselineDate As groupContainer.manualLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    FillPortions: =0
+                    Height: =64
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    Width: |-
+                        =Max(
+                            120,
+                            Len(txtVendorPaymentItemDetailsDataBaselineDate.HintText) * 10
+                        )
+                    X: =40
+                    ZIndex: =10
+
+                    txtVendorPaymentItemDetailsDataBaselineDate As text:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Enter description required"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: |-
+                            =If(
+                                IsBlank(Self.Text),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
+                        BorderThickness: =1
+                        Clear: =true
+                        Color: =varThemeColors.text
+                        Default: =IfError(Text(DateValue(_item.BaselineDate),"mm/dd/yyyy"),"")
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayMode: |-
+                            =If(
+                                varIsProcessing,
+                                DisplayMode.Disabled,
+                                DisplayMode.View
+                            )
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: |-
+                            =If(
+                                Self.BorderColor = varThemeColors.requiredRed,
+                                Self.BorderColor,
+                                varThemeColors.focusBorder
+                            )
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HintText: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "No baseline date"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        HoverBorderColor: =Self.FocusedBorderColor
+                        HoverColor: =Self.Color
+                        HoverFill: =varThemeColors.backgroundFill
+                        MaxLength: =40
+                        OnChange: =
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        PressedBorderColor: =varThemeColors.tertiaryGray
+                        PressedColor: =varThemeColors.text
+                        PressedFill: =varThemeColors.backgroundFill
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Reset: =true
+                        Size: =10.5
+                        Tooltip: |-
+                            =Coalesce(
+                                Self.Text,
+                                Self.HintText
+                            )
+                        Width: =lblVendorPaymentItemDetailsDataBaselineDate.Width
+                        X: =Self.FocusedBorderThickness
+                        Y: =lblVendorPaymentItemDetailsDataBaselineDate.Y+lblVendorPaymentItemDetailsDataBaselineDate.Height
+                        ZIndex: =2
+
+                    lblVendorPaymentItemDetailsDataBaselineDate As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        Size: =10.5
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Baseline date"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Width: =Parent.Width-Self.FocusedBorderThickness*2
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =3
+
+                conVendorPaymentItemDetailsDataClearingDate As groupContainer.manualLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    FillPortions: =0
+                    Height: =64
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    Width: |-
+                        =Max(
+                            120,
+                            Len(txtVendorPaymentItemDetailsDataClearingDate.HintText) * 10
+                        )
+                    X: =40
+                    ZIndex: =11
+
+                    txtVendorPaymentItemDetailsDataClearingDate As text:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Enter description required"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: |-
+                            =If(
+                                IsBlank(Self.Text),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
+                        BorderThickness: =1
+                        Clear: =true
+                        Color: =varThemeColors.text
+                        Default: |-
+                            =
+                            IfError(
+                            Text(DateValue(_item.ClearingDate),"mm/dd/yyyy"),
+                            ""
+                            )
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayMode: |-
+                            =If(
+                                varIsProcessing,
+                                DisplayMode.Disabled,
+                                DisplayMode.View
+                            )
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: |-
+                            =If(
+                                Self.BorderColor = varThemeColors.requiredRed,
+                                Self.BorderColor,
+                                varThemeColors.focusBorder
+                            )
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HintText: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "No clearing date"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        HoverBorderColor: =Self.FocusedBorderColor
+                        HoverColor: =Self.Color
+                        HoverFill: =varThemeColors.backgroundFill
+                        MaxLength: =40
+                        OnChange: =
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        PressedBorderColor: =varThemeColors.tertiaryGray
+                        PressedColor: =varThemeColors.text
+                        PressedFill: =varThemeColors.backgroundFill
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Reset: =true
+                        Size: =10.5
+                        Tooltip: |-
+                            =Coalesce(
+                                Self.Text,
+                                Self.HintText
+                            )
+                        Width: =lblVendorPaymentItemDetailsDataClearingDate.Width
+                        X: =Self.FocusedBorderThickness
+                        Y: =lblVendorPaymentItemDetailsDataClearingDate.Y+lblVendorPaymentItemDetailsDataClearingDate.Height
+                        ZIndex: =2
+
+                    lblVendorPaymentItemDetailsDataClearingDate As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        Size: =10.5
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Clearing date"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Width: =Parent.Width-Self.FocusedBorderThickness*2
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =3
+
+                conVendorPaymentItemDetailsDataStatus As groupContainer.manualLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    FillPortions: =0
+                    Height: =64
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    Width: |-
+                        =Max(
+                            120,
+                            Len(txtVendorPaymentItemDetailsDataStatus.HintText) * 10
+                        )
+                    X: =40
+                    ZIndex: =12
+
+                    txtVendorPaymentItemDetailsDataStatus As text:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Enter description required"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: |-
+                            =If(
+                                IsBlank(Self.Text),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
+                        BorderThickness: =1
+                        Clear: =true
+                        Color: =varThemeColors.text
+                        Default: =_item.Status
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayMode: |-
+                            =If(
+                                varIsProcessing,
+                                DisplayMode.Disabled,
+                                DisplayMode.View
+                            )
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: |-
+                            =If(
+                                Self.BorderColor = varThemeColors.requiredRed,
+                                Self.BorderColor,
+                                varThemeColors.focusBorder
+                            )
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HintText: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "No purchase order item"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        HoverBorderColor: =Self.FocusedBorderColor
+                        HoverColor: =Self.Color
+                        HoverFill: =varThemeColors.backgroundFill
+                        MaxLength: =40
+                        OnChange: =
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        PressedBorderColor: =varThemeColors.tertiaryGray
+                        PressedColor: =varThemeColors.text
+                        PressedFill: =varThemeColors.backgroundFill
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Reset: =true
+                        Size: =10.5
+                        Tooltip: |-
+                            =Coalesce(
+                                Self.Text,
+                                Self.HintText
+                            )
+                        Width: =lblVendorPaymentItemDetailsDataStatus.Width
+                        X: =Self.FocusedBorderThickness
+                        Y: =lblVendorPaymentItemDetailsDataStatus.Y+lblVendorPaymentItemDetailsDataStatus.Height
+                        ZIndex: =2
+
+                    lblVendorPaymentItemDetailsDataStatus As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingLeft: =0
+                        PaddingRight: =0
+                        Size: =10.5
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Status"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Width: =Parent.Width-Self.FocusedBorderThickness*2
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =3
+
+            conVendorPaymentItemDetailsButtons As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                BorderColor: =RGBA(0, 0, 0, 0)
+                BorderStyle: =BorderStyle.None
+                FillPortions: =0
+                Height: =44
+                LayoutAlignItems: =LayoutAlignItems.Center
+                LayoutGap: |-
+                    =If(
+                        Or(
+                            varIsNew,
+                            varIsEdit
+                        ),
+                        20,
+                        0
+                    )
+                LayoutMinHeight: =
+                LayoutMinWidth: =400
+                LayoutMode: =LayoutMode.Auto
+                PaddingLeft: =2
+                PaddingRight: =2
+                Visible: |-
+                    =Or(
+                        varIsNew,
+                        varIsEdit
+                    )
+                Width: =
+                ZIndex: =2
+
+                btnVendorPaymentItemDetailsDone As button:
+                    BorderColor: =varThemeColors.primary
+                    BorderThickness: =1
+                    Color: =varThemeColors.altText
+                    DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                    DisabledColor: =varThemeColors.disabledText
+                    DisabledFill: =varThemeColors.backgroundFillDisabled
+                    Fill: =varThemeColors.primary
+                    FocusedBorderColor: =varThemeColors.focusBorder
+                    FocusedBorderThickness: =2
+                    Font: =Font.'Segoe UI'
+                    HoverBorderColor: =varThemeColors.primary
+                    HoverColor: =varThemeColors.altText
+                    HoverFill: =varThemeColors.tertiary
+                    OnSelect: |
+                        =
+                        //Navigate back to preceding screen
+                        Select(icoVendorPaymentItemDetailsNavHeaderBack);
+                        //No longer need required field temp data
+                        Clear(colRequiredFieldsTemp);
+                    PressedBorderColor: =varThemeColors.primary
+                    PressedColor: =varThemeColors.altText
+                    PressedFill: =varThemeColors.primary
+                    RadiusBottomLeft: =4
+                    RadiusBottomRight: =4
+                    RadiusTopLeft: =4
+                    RadiusTopRight: =4
+                    Size: =10.5
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {Text: "Done"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Tooltip: =Self.Text
+                    Width: =150
+                    X: =1
+                    Y: =1
+                    ZIndex: =1
+
+                btnVendorPaymentItemDetailsCancel As button:
+                    BorderColor: =varThemeColors.primary
+                    BorderThickness: =1
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                    DisabledColor: =varThemeColors.disabledText
+                    DisabledFill: =varThemeColors.backgroundFillDisabled
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Fill: =varThemeColors.backgroundFill
+                    FocusedBorderColor: =varThemeColors.focusBorder
+                    FocusedBorderThickness: =2
+                    Font: =Font.'Segoe UI'
+                    HoverBorderColor: =varThemeColors.primary
+                    HoverColor: =varThemeColors.altText
+                    HoverFill: =varThemeColors.tertiary
+                    OnSelect: |-
+                        =//Navigate back to proceeding screen
+                        Select(icoVendorPaymentItemDetailsNavHeaderBack)
+                    PressedBorderColor: =varThemeColors.primary
+                    PressedColor: =varThemeColors.altText
+                    PressedFill: =varThemeColors.primary
+                    RadiusBottomLeft: =4
+                    RadiusBottomRight: =4
+                    RadiusTopLeft: =4
+                    RadiusTopRight: =4
+                    Size: =10.5
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {Text: "Cancel"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Tooltip: =Self.Text
+                    Width: =150
+                    X: =1
+                    Y: =1
+                    ZIndex: =2
+
+        lblVendorPaymentItemDetailsFooter As label:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =varThemeColors.text
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            FocusedBorderColor: =varThemeColors.primary
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =34
+            Italic: =true
+            LayoutMinHeight: =
+            LayoutMinWidth: =
+            Live: =Live.Assertive
+            PaddingBottom: =0
+            PaddingLeft: =0
+            PaddingRight: =0
+            PaddingTop: =0
+            Role: =TextRole.Heading2
+            Size: =10.5
+            Text: |-
+                =// Define a variable named "Text" with the value "{value}"
+                With(
+                    {Text: varFooterMessage},
+                    If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colUserLocalizedStrings,
+                            'English Value' = Text
+                        ).'Localized Value'
+                    )
+                ) & If(varIsProcessing, "...")
+            Visible: =!IsBlank(varFooterMessage)
+            Width: =
+            ZIndex: =5
+
