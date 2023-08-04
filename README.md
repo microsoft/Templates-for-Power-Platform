@@ -11,15 +11,23 @@ This solution allows you to extend your core procure-to-pay business processes e
 
 Enables individual teammates to celebrate co-workers for their contributions. There are many more exciting solutions on the roadmap such as Awards & Recognitions which enables employees to nominate individuals & teams for awards and Employee Onboarding which partners new employees with current employees and mentors to facilitate new employee onboarding, especially in a hybrid work environment. All with easy to use interface with data stored in Microsoft Dataverse. Available for both web and mobile devices.
 
+### Employee Awards and Recognition
+
+The Awards and Recognition template streamlines and automates the process of acknowledging outstanding efforts in an organization. By facilitating an engaging, inclusive, and efficient awards system, the app aims to encourage a positive work culture that recognizes and appreciates exceptional contributions
+
 ## Access on AppSource
 
 #### [Employee Kudos Template on AppSource](https://aka.ms/AccessEmployeeKudosTemplate)
+
+#### [Employee Awards and Recognition](https://aka.ms/AccessAwardsAndRecognitionTemplate)
 
 #### [SAP Procurement Template on AppSource](https://aka.ms/AccessSAPProcurementTemplate)
 
 ## Documentation
 
 #### [Employee Kudos Template](https://aka.ms/LearnEmployeeKudosTemplate)
+
+#### [Employee Awards and Recognition](https://aka.ms/LearnAwardsAndRecognitionTemplate)
 
 #### [SAP Procurement Template](https://aka.ms/LearnSAPProcurementTemplate)
 

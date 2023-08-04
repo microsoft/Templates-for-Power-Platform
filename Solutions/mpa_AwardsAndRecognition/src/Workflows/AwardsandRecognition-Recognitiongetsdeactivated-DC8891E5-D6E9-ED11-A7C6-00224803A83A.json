@@ -1,0 +1,93 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_EmployeeRecognition_Dataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "A_Nomination_is_Deactivated": {
+          "metadata": {
+            "operationMetadataId": "8f4c202f-2dad-4a2d-b073-8741902da1d6"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "parameters": {
+              "subscriptionRequest/message": 3,
+              "subscriptionRequest/entityname": "mpa_nomination",
+              "subscriptionRequest/scope": 4,
+              "subscriptionRequest/filteringattributes": "statecode",
+              "subscriptionRequest/filterexpression": "statecode eq 1"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "SubscribeWebhookTrigger",
+              "connectionName": "shared_commondataserviceforapps"
+            }
+          }
+        }
+      },
+      "actions": {
+        "Nominations_gets_reviewed_and_deactivated": {
+          "actions": {
+            "Sets_Reviewed_By_and_Reviewed_On_fields": {
+              "metadata": {
+                "operationMetadataId": "a1127c2f-7c8b-459c-875f-8ba75b3ab132"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "mpa_nominations",
+                  "recordId": "@triggerOutputs()?['body/mpa_nominationid']",
+                  "item/mpa_reviewedbyid@odata.bind": "/systemusers(@{triggerOutputs()?['body/_modifiedby_value']})",
+                  "item/mpa_reviewedon": "@triggerOutputs()?['body/modifiedon']"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "UpdateRecord",
+                  "connectionName": "shared_commondataserviceforapps"
+                }
+              }
+            }
+          },
+          "runAfter": {},
+          "else": {
+            "actions": {}
+          },
+          "expression": {
+            "equals": [
+              "@triggerOutputs()?['body/statecode']",
+              1
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "4120af84-cf07-4419-b432-d75d0ee1e846"
+          },
+          "type": "If",
+          "description": " Nomination was reviewed and deactivated, (approved, denied, withdrawn or canceled)"
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}
