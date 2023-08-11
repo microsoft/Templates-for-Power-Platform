@@ -1,0 +1,570 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_saperp": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_SAPERP"
+        },
+        "api": {
+          "name": "shared_saperp"
+        }
+      },
+      "shared_saperp_1": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_SAPERP"
+        },
+        "api": {
+          "name": "shared_saperp"
+        }
+      },
+      "shared_commondataserviceforapps": {
+        "impersonation": {
+          "source": "invoker"
+        },
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_SAPDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "SAP Application Server (mpa_SAPApplicationServer)": {
+          "defaultValue": "{\"AppServerHost\":\"sap.clearsoftware.com\",\"Client\":\"100\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_SAPApplicationServer",
+            "description": "JSON string that contains system parameters, host, system number, client, etc."
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "8a014a1e-c34f-45e8-8fbe-25cb7afc4ae4"
+          },
+          "type": "Request",
+          "kind": "PowerAppV2",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "JSON",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Initialize_SAPErrorMessage": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "6a6087f9-b1aa-4966-9ea5-0f695d638f87"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "SAPErrorMessage",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_Messages": {
+          "runAfter": {
+            "Initialize_SAPErrorMessage": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "e001b474-e846-4b22-836c-7d75d4ea2646"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Messages",
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "Try": {
+          "actions": {
+            "BAPI_INCOMINGINVOICE_DELETE": {
+              "runAfter": {
+                "Header": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "b90be845-2eec-4d47-8a8a-0e8a128d0778"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp",
+                  "operationId": "CallRfcJson",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                  "rfcName": "BAPI_INCOMINGINVOICE_CANCEL:Invoice Verification: Reverse Invoice:MRM_BAPI",
+                  "rfcGroupFilter": "*",
+                  "autoCommit": true,
+                  "rfcInputs/FISCALYEAR": "@outputs('Header')?['body/Rows'][0]['GJAHR']",
+                  "rfcInputs/INVOICEDOCNUMBER": "@body('Parse_JSON')?['InvoiceNumber']",
+                  "rfcInputs/REASONREVERSAL": "@body('Parse_JSON')?['ReversalReason']"
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": {
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']",
+                  "type": "Raw"
+                }
+              }
+            },
+            "Messages": {
+              "runAfter": {
+                "Set_SAPErrorMessage_01": [
+                  "Skipped"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "ab58316a-40de-4c0c-8ca1-7e25a99a34c4"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "Messages",
+                "value": "@if(equals('',outputs('BAPI_INCOMINGINVOICE_DELETE')?['body/RETURN']), json('[]'), outputs('BAPI_INCOMINGINVOICE_DELETE')?['body/RETURN'])"
+              }
+            },
+            "Filter_Messages_for_Errors": {
+              "runAfter": {
+                "Messages": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "314738ec-9d05-4ae3-b089-64259885fb43"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@variables('Messages')",
+                "where": "@equals(item()?['TYPE'], 'E')"
+              }
+            },
+            "Success_Check": {
+              "actions": {
+                "Success_Response": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "88ce5aac-9ebe-41ab-87a6-dea14c80f06e"
+                  },
+                  "type": "Response",
+                  "kind": "Http",
+                  "inputs": {
+                    "statusCode": 200,
+                    "body": {
+                      "Status": "Success",
+                      "InvoiceNumber": "@body('Parse_JSON')?['InvoiceNumber']",
+                      "Messages": [
+                        {
+                          "Message": "Vendor invoice @{body('Parse_JSON')?['InvoiceNumber']} was successfully reversed."
+                        }
+                      ]
+                    },
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "Status": {
+                          "type": "string"
+                        },
+                        "InvoiceNumber": {
+                          "type": "string"
+                        },
+                        "Messages": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "Message"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Filter_Messages_for_Errors": [
+                  "Succeeded",
+                  "Skipped"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Clean_Up_Error_Messages": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "3ac4404f-21c4-4bae-bac7-2525e23d910f"
+                    },
+                    "type": "Select",
+                    "inputs": {
+                      "from": "@body('Filter_Messages_for_Errors')",
+                      "select": {
+                        "Message": "@item()?['MESSAGE']"
+                      }
+                    }
+                  },
+                  "Failure_Response": {
+                    "runAfter": {
+                      "Clean_Up_Error_Messages": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "0364356b-c5f6-40d1-89d8-d1e42b0df753"
+                    },
+                    "type": "Response",
+                    "kind": "Http",
+                    "inputs": {
+                      "statusCode": 200,
+                      "body": {
+                        "Status": "Error",
+                        "InvoiceNumber": "@body('Parse_JSON')?['InvoiceNumber']",
+                        "Messages": "@body('Clean_Up_Error_Messages')"
+                      },
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "Status": {
+                            "type": "string"
+                          },
+                          "InvoiceNumber": {
+                            "type": "string"
+                          },
+                          "Messages": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "Message": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "Message"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "equals": [
+                  "@length(outputs('Filter_Messages_for_Errors')?['body'])",
+                  0
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "e9efd70f-e739-4ab6-ad9b-90b1e544b087"
+              },
+              "type": "If"
+            },
+            "Set_SAPErrorMessage_01": {
+              "runAfter": {
+                "BAPI_INCOMINGINVOICE_DELETE": [
+                  "Failed",
+                  "TimedOut"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "8210fa16-c827-4334-b2fe-07cb01f936be"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "SAPErrorMessage",
+                "value": "@{body('BAPI_INCOMINGINVOICE_DELETE')['error']['message']}"
+              }
+            },
+            "Parse_JSON": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "4e53efa2-885f-44e9-a1e2-d5d1c0e0efb3"
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@triggerBody()['text']",
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "InvoiceNumber": {
+                      "type": "string"
+                    },
+                    "ReversalReason": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "Header": {
+              "runAfter": {
+                "Parse_JSON": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "7cd63b20-75bc-4488-ad30-7668dba822db"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp_1",
+                  "operationId": "ReadTableVersion3",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                  "inputParameters/tableName": "RBKP",
+                  "inputParameters/FieldNames": [
+                    "GJAHR:Fiscal Year"
+                  ],
+                  "inputParameters/RowCount": 1,
+                  "inputParameters/WhereFilters": [
+                    "BELNR LIKE '%@{body('Parse_JSON')?['InvoiceNumber']}%'"
+                  ]
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_Messages": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "dff1b20e-c1f2-4a77-b33b-4aa0241f2696"
+          },
+          "type": "Scope"
+        },
+        "Catch": {
+          "actions": {
+            "Filter_array": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "e4ff6915-74dd-4ad8-aeb5-69689f7cd846"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@result('Try')",
+                "where": "@or(equals(item()?['Status'], 'Failed'), equals(item()?['Status'], 'TimedOut'))"
+              }
+            },
+            "ErrorTable": {
+              "runAfter": {
+                "Filter_array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "a4543bb1-084d-4bd9-865a-d59ec8caa8fc"
+              },
+              "type": "Table",
+              "inputs": {
+                "from": "@body('Filter_array')",
+                "format": "HTML",
+                "columns": [
+                  {
+                    "header": "Step",
+                    "value": "@item()?['name']"
+                  },
+                  {
+                    "header": "Status",
+                    "value": "@item()?['Status']"
+                  },
+                  {
+                    "header": "Code",
+                    "value": "@item()?['code']"
+                  },
+                  {
+                    "header": "InnerErrorMessage",
+                    "value": "@{item()?['outputs']?['body']?['error']?['innerError']?['error']?['message']}@{item()?['error']?['message']}@{variables('SAPErrorMessage')}"
+                  },
+                  {
+                    "header": "Input",
+                    "value": "@triggerBody()"
+                  }
+                ]
+              }
+            },
+            "ErrorReturn": {
+              "runAfter": {
+                "ErrorTable": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6ea00725-e758-40bb-9cc7-b69d0a65d01b"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Filter_array')",
+                "select": {
+                  "Step": "@item()?['name']",
+                  "Status": "@item()?['Status']",
+                  "Code": "@item()?['code']",
+                  "InnerErrorMessage": "@{item()?['outputs']?['body']?['error']?['innerError']?['error']?['message']} @{item()?['error']?['message']} @{variables('SAPErrorMessage')}",
+                  "Input": "@triggerBody()",
+                  "FlowName": "@workflow()?['tags']['flowDisplayName']",
+                  "URL": "@concat('https://flow.microsoft.com/manage/environments/', workflow()?['tags']['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']['name'])"
+                }
+              }
+            },
+            "Create_Integration_Log_Error": {
+              "runAfter": {
+                "ErrorReturn": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "65c53a8f-bba5-4aee-a2c2-1bbea7395180"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "CreateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_saperrors",
+                  "item/mpa_name": "@outputs('ErrorReturn')?['body'][0]['FlowName']",
+                  "item/mpa_action": "@outputs('ErrorReturn')?['body'][0]['Step']",
+                  "item/mpa_additionalinformation": "@triggerBody()['text']",
+                  "item/mpa_errormessage": "@outputs('ErrorReturn')?['body'][0]['InnerErrorMessage']",
+                  "item/mpa_sourcetype": 865420000,
+                  "item/mpa_workflowinstanceurl": "@outputs('ErrorReturn')?['body'][0]['URL']",
+                  "item/mpa_workflowstatus": "@If(equals(item()?['Status'], 'Failed'), '865420001', '865420000')"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Error_Response": {
+              "runAfter": {
+                "Create_Integration_Log_Error": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "1a07fe00-c854-4b19-9f61-ff2091a0b894"
+              },
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "Status": "Error",
+                  "Messages": [
+                    {
+                      "Message": "@outputs('Create_Integration_Log_Error')?['body/mpa_errormessage']"
+                    }
+                  ]
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Status": {
+                      "type": "string"
+                    },
+                    "InvoiceNumber": {
+                      "type": "string"
+                    },
+                    "Messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Message"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "Terminate": {
+              "runAfter": {
+                "Error_Response": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "f5a399f9-b6a2-4c6f-8c97-baf37fd6cab1"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed"
+              }
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "acddc208-94dd-4daf-9177-fa386ba1baec"
+          },
+          "type": "Scope"
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

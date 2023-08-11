@@ -39,7 +39,8 @@
           "defaultValue": "{\"AppServerHost\":\"sap.clearsoftware.com\",\"Client\":\"100\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
           "type": "String",
           "metadata": {
-            "schemaName": "mpa_SAPApplicationServer"
+            "schemaName": "mpa_SAPApplicationServer",
+            "description": "JSON string that contains system parameters, host, system number, client, etc."
           }
         }
       },
@@ -105,9 +106,9 @@
               "type": "OpenApiConnection",
               "inputs": {
                 "host": {
-                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp",
                   "connectionName": "shared_saperp_1",
-                  "operationId": "ReadTableVersion3"
+                  "operationId": "ReadTableVersion3",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
                 },
                 "parameters": {
                   "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
@@ -135,12 +136,9 @@
                     "AND LOEKZ <> 'X'"
                   ]
                 },
+                "authentication": "@parameters('$authentication')",
                 "retryPolicy": {
                   "type": "none"
-                },
-                "authentication": {
-                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']",
-                  "type": "Raw"
                 }
               }
             },
@@ -186,9 +184,9 @@
                   "type": "OpenApiConnection",
                   "inputs": {
                     "host": {
-                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp",
                       "connectionName": "shared_saperp_1",
-                      "operationId": "ReadTableVersion3"
+                      "operationId": "ReadTableVersion3",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
                     },
                     "parameters": {
                       "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
@@ -201,12 +199,9 @@
                         "LIFNR = '@{body('Parse_List')[0]?['VendorRaw']}'"
                       ]
                     },
+                    "authentication": "@parameters('$authentication')",
                     "retryPolicy": {
                       "type": "none"
-                    },
-                    "authentication": {
-                      "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']",
-                      "type": "Raw"
                     }
                   }
                 },
@@ -550,9 +545,9 @@
               "type": "OpenApiConnection",
               "inputs": {
                 "host": {
-                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                   "connectionName": "shared_commondataserviceforapps_1",
-                  "operationId": "CreateRecord"
+                  "operationId": "CreateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                 },
                 "parameters": {
                   "entityName": "mpa_saperrors",
@@ -564,13 +559,13 @@
                   "item/mpa_workflowinstanceurl": "@outputs('ErrorReturn')?['body'][0]['URL']",
                   "item/mpa_workflowstatus": "@If(equals(item()?['Status'], 'Failed'), '865420001', '865420000')"
                 },
+                "authentication": "@parameters('$authentication')",
                 "retryPolicy": {
                   "type": "none"
-                },
-                "authentication": "@parameters('$authentication')"
+                }
               }
             },
-            "Response_3": {
+            "Error_Response": {
               "runAfter": {
                 "Create_Integration_Log_Error": [
                   "Succeeded"
@@ -672,6 +667,20 @@
                   }
                 }
               }
+            },
+            "Terminate": {
+              "runAfter": {
+                "Error_Response": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "00d4f2a6-80ef-4dd3-8de0-8c67cc2e954f"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed"
+              }
             }
           },
           "runAfter": {
@@ -702,7 +711,7 @@
         }
       }
     },
-    "templateName": null
+    "templateName": ""
   },
   "schemaVersion": "1.0.0.0"
 }

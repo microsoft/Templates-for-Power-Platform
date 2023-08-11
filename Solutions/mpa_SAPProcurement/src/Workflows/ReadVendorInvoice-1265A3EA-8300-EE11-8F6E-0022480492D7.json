@@ -1,0 +1,1036 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_saperp": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_SAPERP"
+        },
+        "api": {
+          "name": "shared_saperp"
+        }
+      },
+      "shared_commondataserviceforapps": {
+        "impersonation": {
+          "source": "invoker"
+        },
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_SAPDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "SAP Application Server (mpa_SAPApplicationServer)": {
+          "defaultValue": "{\"AppServerHost\":\"sap.clearsoftware.com\",\"Client\":\"100\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_SAPApplicationServer",
+            "description": "JSON string that contains system parameters, host, system number, client, etc."
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "a0cd0b64-8cd1-4d27-a054-5c3f92f8b938"
+          },
+          "type": "Request",
+          "kind": "PowerAppV2",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "Vendor Invoice",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Initialize_SAPErrorMessage": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "6a6087f9-b1aa-4966-9ea5-0f695d638f87"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "SAPErrorMessage",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Try": {
+          "actions": {
+            "Condition": {
+              "actions": {
+                "Vendor_Name": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "17eb13b8-250e-4046-aeb9-0ca0019482d0"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_saperp",
+                      "operationId": "ReadTableVersion3",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                    },
+                    "parameters": {
+                      "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                      "inputParameters/tableName": "LFA1",
+                      "inputParameters/FieldNames": [
+                        "NAME1:Name 1"
+                      ],
+                      "inputParameters/RowCount": 1,
+                      "inputParameters/WhereFilters": [
+                        "LIFNR = '@{outputs('Header')?['body/Rows'][0]['LIFNR']}'"
+                      ]
+                    },
+                    "authentication": "@parameters('$authentication')",
+                    "retryPolicy": {
+                      "type": "none"
+                    }
+                  }
+                },
+                "Response": {
+                  "runAfter": {
+                    "Parse_Items": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "3acb6b71-7516-4f46-82a7-fe87c0f4120b"
+                  },
+                  "type": "Response",
+                  "kind": "Http",
+                  "inputs": {
+                    "statusCode": 200,
+                    "body": {
+                      "Status": "Success",
+                      "InvoiceNumber": "@variables('Invoice')",
+                      "Header": "@first(body('Parse_Header'))",
+                      "Items": "@body('Parse_Items')",
+                      "PurchaseOrderNumber": "@body('Parse_Items')[0]['PurchaseOrderNumber']"
+                    },
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "InvoiceNumber": {
+                          "type": "string"
+                        },
+                        "PurchaseOrderNumber": {
+                          "type": "string"
+                        },
+                        "Header": {
+                          "type": "object",
+                          "properties": {
+                            "Type": {
+                              "type": "string"
+                            },
+                            "Vendor": {
+                              "type": "string"
+                            },
+                            "VendorName": {
+                              "type": "string"
+                            },
+                            "InvoiceNumber": {
+                              "type": "string"
+                            },
+                            "Currency": {
+                              "type": "string"
+                            },
+                            "TotalPrice": {
+                              "type": "string"
+                            },
+                            "CreatedOn": {
+                              "type": "string"
+                            },
+                            "PostingDate": {
+                              "type": "string"
+                            },
+                            "CompanyCode": {
+                              "type": "string"
+                            },
+                            "FiscalYear": {
+                              "type": "string"
+                            },
+                            "CreatedBy": {
+                              "type": "string"
+                            },
+                            "DueDate": {
+                              "type": "string"
+                            },
+                            "PaymentTerms": {
+                              "type": "string"
+                            },
+                            "PaymentMethod": {
+                              "type": "string"
+                            },
+                            "ReversalDocument": {
+                              "type": "string"
+                            },
+                            "InvoiceDocumentStatus": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "Type",
+                            "Vendor",
+                            "VendorName",
+                            "Invoice",
+                            "Currency",
+                            "TotalPrice",
+                            "CreatedOn",
+                            "PostingDate",
+                            "CompanyCode",
+                            "FiscalYear",
+                            "Status",
+                            "CreatedBy",
+                            "DueDate",
+                            "PaymentTerms",
+                            "PaymentMethod",
+                            "TotalPrice"
+                          ]
+                        },
+                        "Items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ItemNumber": {
+                                "type": "string"
+                              },
+                              "PurchaseOrderNumber": {
+                                "type": "string"
+                              },
+                              "PurchaseOrderItemNumber": {
+                                "type": "string"
+                              },
+                              "MaterialNumber": {
+                                "type": "string"
+                              },
+                              "Location": {
+                                "type": "string"
+                              },
+                              "Quantity": {
+                                "type": "number"
+                              },
+                              "Description": {
+                                "type": "string"
+                              },
+                              "UnitOfMeasure": {
+                                "type": "string"
+                              },
+                              "TotalPrice": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "ItemNumber",
+                              "PurchaseOrder",
+                              "PurchaseOrderItem",
+                              "Material",
+                              "Location",
+                              "UnitPrice",
+                              "Quantity",
+                              "Description",
+                              "UnitOfMeasure"
+                            ]
+                          }
+                        },
+                        "Status": {
+                          "type": "string"
+                        },
+                        "Messages": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "Message"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "Parse_Header": {
+                  "runAfter": {
+                    "Set_SAPErrorMessage_2": [
+                      "Skipped",
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@outputs('Header')?['body/Rows']",
+                    "select": {
+                      "Type": "@item()?['BLART']",
+                      "Vendor": "@if(isInt(item()?['LIFNR']), string(int(item()?['LIFNR'])), item()?['LIFNR'])",
+                      "VendorName": "@outputs('Vendor_Name')?['body/Rows'][0]['NAME1']",
+                      "InvoiceNumber": "@if(isInt(item()?['BELNR']), string(int(item()?['BELNR'])), item()?['BELNR'])",
+                      "Currency": "@item()?['WAERS']",
+                      "TotalPrice": "@item()?['RMWWR']",
+                      "CreatedOn": "@item()?['CPUDT']",
+                      "PostingDate": "@item()?['BUDAT']",
+                      "CompanyCode": "@item()?['BUKRS']",
+                      "FiscalYear": "@item()?['GJAHR']",
+                      "CreatedBy": "@item()?['USNAM']",
+                      "DueDate": "@item()?['ZFBDT']",
+                      "PaymentTerms": "@item()?['ZTERM']",
+                      "PaymentMethod": "@item()?['ZLSCH']",
+                      "ReversalDocument": "@item()?['STBLG']",
+                      "InvoiceDocumentStatus": "@item()?['RBSTAT']"
+                    }
+                  }
+                },
+                "Items": {
+                  "runAfter": {
+                    "Parse_Header": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "7cd63b20-75bc-4488-ad30-7668dba822db"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_saperp",
+                      "operationId": "ReadTableVersion3",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                    },
+                    "parameters": {
+                      "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                      "inputParameters/tableName": "RSEG",
+                      "inputParameters/FieldNames": [
+                        "BUZEI",
+                        "EBELN",
+                        "EBELP",
+                        "MATNR",
+                        "WERKS",
+                        "WRBTR",
+                        "MENGE",
+                        "MEINS",
+                        "SGTXT"
+                      ],
+                      "inputParameters/RowCount": 999,
+                      "inputParameters/WhereFilters": [
+                        "BELNR EQ '@{variables('Invoice')}'"
+                      ]
+                    },
+                    "authentication": "@parameters('$authentication')",
+                    "retryPolicy": {
+                      "type": "none"
+                    }
+                  }
+                },
+                "Parse_Items": {
+                  "runAfter": {
+                    "Set_SAPErrorMessage_3": [
+                      "Skipped",
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@outputs('Items')?['body/Rows']",
+                    "select": {
+                      "ItemNumber": "@if(isInt(item()?['BUZEI']), string(int(item()?['BUZEI'])), item()?['BUZEI'])",
+                      "PurchaseOrderNumber": "@if(isInt(item()?['EBELN']), string(int(item()?['EBELN'])), item()?['EBELN'])",
+                      "PurchaseOrderItemNumber": "@if(isInt(item()?['EBELP']), string(int(item()?['EBELP'])), item()?['EBELP'])",
+                      "MaterialNumber": "@if(isInt(item()?['MATNR']), string(int(item()?['MATNR'])), item()?['MATNR'])",
+                      "Location": "@item()?['WERKS']",
+                      "Quantity": "@float(item()?['MENGE'])",
+                      "Description": "@item()?['SGTXT']",
+                      "UnitOfMeasure": "@item()?['MEINS']",
+                      "TotalPrice": "@float(item()?['WRBTR'])"
+                    }
+                  }
+                },
+                "Set_SAPErrorMessage_2": {
+                  "runAfter": {
+                    "Vendor_Name": [
+                      "Failed",
+                      "TimedOut"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "8a70d4b9-a001-4eef-9471-3ac46453ca9f"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "SAPErrorMessage",
+                    "value": "@{body('Vendor_Name')['error']['innerError']['error']['message']}"
+                  }
+                },
+                "Set_SAPErrorMessage_3": {
+                  "runAfter": {
+                    "Items": [
+                      "Failed",
+                      "TimedOut"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "8a70d4b9-a001-4eef-9471-3ac46453ca9f"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "SAPErrorMessage",
+                    "value": "@{body('Items')['error']['innerError']['error']['message']}"
+                  }
+                }
+              },
+              "runAfter": {
+                "Set_SAPErrorMessage": [
+                  "Succeeded",
+                  "Skipped"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Failure_Response": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "0e444872-e5c1-4764-880c-6c2baeb05cf7"
+                    },
+                    "type": "Response",
+                    "kind": "Http",
+                    "inputs": {
+                      "statusCode": 200,
+                      "body": {
+                        "Status": "Information",
+                        "Messages": [
+                          {
+                            "Message": "Invoice @{variables('Invoice')} does not exist."
+                          }
+                        ]
+                      },
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "InvoiceNumber": {
+                            "type": "string"
+                          },
+                          "PurchaseOrderNumber": {
+                            "type": "string"
+                          },
+                          "Header": {
+                            "type": "object",
+                            "properties": {
+                              "Type": {
+                                "type": "string"
+                              },
+                              "Vendor": {
+                                "type": "string"
+                              },
+                              "VendorName": {
+                                "type": "string"
+                              },
+                              "InvoiceNumber": {
+                                "type": "string"
+                              },
+                              "Currency": {
+                                "type": "string"
+                              },
+                              "TotalPrice": {
+                                "type": "string"
+                              },
+                              "CreatedOn": {
+                                "type": "string"
+                              },
+                              "PostingDate": {
+                                "type": "string"
+                              },
+                              "CompanyCode": {
+                                "type": "string"
+                              },
+                              "FiscalYear": {
+                                "type": "string"
+                              },
+                              "CreatedBy": {
+                                "type": "string"
+                              },
+                              "DueDate": {
+                                "type": "string"
+                              },
+                              "PaymentTerms": {
+                                "type": "string"
+                              },
+                              "PaymentMethod": {
+                                "type": "string"
+                              },
+                              "ReversalDocument": {
+                                "type": "string"
+                              },
+                              "InvoiceDocumentStatus": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "Type",
+                              "Vendor",
+                              "VendorName",
+                              "Invoice",
+                              "Currency",
+                              "TotalPrice",
+                              "CreatedOn",
+                              "PostingDate",
+                              "CompanyCode",
+                              "FiscalYear",
+                              "Status",
+                              "CreatedBy",
+                              "DueDate",
+                              "PaymentTerms",
+                              "PaymentMethod",
+                              "TotalPrice"
+                            ]
+                          },
+                          "Items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "ItemNumber": {
+                                  "type": "string"
+                                },
+                                "PurchaseOrderNumber": {
+                                  "type": "string"
+                                },
+                                "PurchaseOrderItemNumber": {
+                                  "type": "string"
+                                },
+                                "MaterialNumber": {
+                                  "type": "string"
+                                },
+                                "Location": {
+                                  "type": "string"
+                                },
+                                "Quantity": {
+                                  "type": "number"
+                                },
+                                "Description": {
+                                  "type": "string"
+                                },
+                                "UnitOfMeasure": {
+                                  "type": "string"
+                                },
+                                "TotalPrice": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "ItemNumber",
+                                "PurchaseOrder",
+                                "PurchaseOrderItem",
+                                "Material",
+                                "Location",
+                                "UnitPrice",
+                                "Quantity",
+                                "Description",
+                                "UnitOfMeasure"
+                              ]
+                            }
+                          },
+                          "Status": {
+                            "type": "string"
+                          },
+                          "Messages": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "Message": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "Message"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "greater": [
+                  "@length(outputs('Header')?['body/Rows'])",
+                  0
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "da1616ba-2830-4fbe-85b1-a97ea5aaa52e"
+              },
+              "type": "If"
+            },
+            "Set_SAPErrorMessage": {
+              "runAfter": {
+                "Header": [
+                  "Failed",
+                  "TimedOut"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "8a70d4b9-a001-4eef-9471-3ac46453ca9f"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "SAPErrorMessage",
+                "value": "@{body('Header')['error']['message']}"
+              }
+            },
+            "Header": {
+              "runAfter": {
+                "Set_invoice_number": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "7cd63b20-75bc-4488-ad30-7668dba822db"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp",
+                  "operationId": "ReadTableVersion3",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                  "inputParameters/tableName": "RBKP",
+                  "inputParameters/FieldNames": [
+                    "BELNR",
+                    "BLART",
+                    "CPUDT",
+                    "BUDAT",
+                    "BUKRS",
+                    "GJAHR",
+                    "RBSTAT",
+                    "RMWWR",
+                    "LIFNR",
+                    "USNAM",
+                    "ZFBDT",
+                    "ZTERM",
+                    "WAERS",
+                    "ZLSCH",
+                    "STBLG:Reversal document number"
+                  ],
+                  "inputParameters/RowCount": 1,
+                  "inputParameters/WhereFilters": [
+                    "BELNR EQ '@{triggerBody()['text']}'"
+                  ]
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              }
+            },
+            "Set_invoice_number": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "f4ac9fc0-846c-4521-88e7-ff90e4d5ed8f"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "Invoice",
+                "value": "@triggerBody()['text']"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "085803e6-b94f-4ee5-a00a-acfec0e2edcf"
+          },
+          "type": "Scope"
+        },
+        "Catch": {
+          "actions": {
+            "Filter_array": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "e4ff6915-74dd-4ad8-aeb5-69689f7cd846"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@result('Try')",
+                "where": "@or(equals(item()?['Status'], 'Failed'), equals(item()?['Status'], 'TimedOut'))"
+              }
+            },
+            "ErrorTable": {
+              "runAfter": {
+                "Filter_array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "a4543bb1-084d-4bd9-865a-d59ec8caa8fc"
+              },
+              "type": "Table",
+              "inputs": {
+                "from": "@body('Filter_array')",
+                "format": "HTML",
+                "columns": [
+                  {
+                    "header": "Step",
+                    "value": "@item()?['name']"
+                  },
+                  {
+                    "header": "Status",
+                    "value": "@item()?['Status']"
+                  },
+                  {
+                    "header": "Code",
+                    "value": "@item()?['code']"
+                  },
+                  {
+                    "header": "InnerErrorMessage",
+                    "value": "@{item()?['outputs']?['body']?['error']?['innerError']?['error']?['message']}@{item()?['error']?['message']}\n@{variables('SAPErrorMessage')}"
+                  },
+                  {
+                    "header": "Input",
+                    "value": "@triggerBody()"
+                  }
+                ]
+              }
+            },
+            "ErrorReturn": {
+              "runAfter": {
+                "ErrorTable": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6ea00725-e758-40bb-9cc7-b69d0a65d01b"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Filter_array')",
+                "select": {
+                  "Step": "@item()?['name']",
+                  "Status": "@item()?['Status']",
+                  "Code": "@item()?['code']",
+                  "InnerErrorMessage": "@{item()?['outputs']?['body']?['error']?['innerError']?['error']?['message']} @{item()?['error']?['message']}  @{variables('SAPErrorMessage')}",
+                  "Input": "@triggerBody()",
+                  "FlowName": "@workflow()?['tags']['flowDisplayName']",
+                  "URL": "@concat('https://flow.microsoft.com/manage/environments/', workflow()?['tags']['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']['name'])"
+                }
+              }
+            },
+            "Error_Response": {
+              "runAfter": {
+                "Create_Integration_Log_Error": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "1a07fe00-c854-4b19-9f61-ff2091a0b894"
+              },
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "Status": "Error",
+                  "Messages": [
+                    {
+                      "Message": "@outputs('Create_Integration_Log_Error')?['body/mpa_errormessage']"
+                    }
+                  ]
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "InvoiceNumber": {
+                      "type": "string"
+                    },
+                    "PurchaseOrderNumber": {
+                      "type": "string"
+                    },
+                    "Header": {
+                      "type": "object",
+                      "properties": {
+                        "Type": {
+                          "type": "string"
+                        },
+                        "Vendor": {
+                          "type": "string"
+                        },
+                        "VendorName": {
+                          "type": "string"
+                        },
+                        "InvoiceNumber": {
+                          "type": "string"
+                        },
+                        "Currency": {
+                          "type": "string"
+                        },
+                        "TotalPrice": {
+                          "type": "string"
+                        },
+                        "CreatedOn": {
+                          "type": "string"
+                        },
+                        "PostingDate": {
+                          "type": "string"
+                        },
+                        "CompanyCode": {
+                          "type": "string"
+                        },
+                        "FiscalYear": {
+                          "type": "string"
+                        },
+                        "CreatedBy": {
+                          "type": "string"
+                        },
+                        "DueDate": {
+                          "type": "string"
+                        },
+                        "PaymentTerms": {
+                          "type": "string"
+                        },
+                        "PaymentMethod": {
+                          "type": "string"
+                        },
+                        "ReversalDocument": {
+                          "type": "string"
+                        },
+                        "InvoiceDocumentStatus": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "Type",
+                        "Vendor",
+                        "VendorName",
+                        "Invoice",
+                        "Currency",
+                        "TotalPrice",
+                        "CreatedOn",
+                        "PostingDate",
+                        "CompanyCode",
+                        "FiscalYear",
+                        "Status",
+                        "CreatedBy",
+                        "DueDate",
+                        "PaymentTerms",
+                        "PaymentMethod",
+                        "TotalPrice"
+                      ]
+                    },
+                    "Items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ItemNumber": {
+                            "type": "string"
+                          },
+                          "PurchaseOrderNumber": {
+                            "type": "string"
+                          },
+                          "PurchaseOrderItemNumber": {
+                            "type": "string"
+                          },
+                          "MaterialNumber": {
+                            "type": "string"
+                          },
+                          "Location": {
+                            "type": "string"
+                          },
+                          "Quantity": {
+                            "type": "number"
+                          },
+                          "Description": {
+                            "type": "string"
+                          },
+                          "UnitOfMeasure": {
+                            "type": "string"
+                          },
+                          "TotalPrice": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "ItemNumber",
+                          "PurchaseOrder",
+                          "PurchaseOrderItem",
+                          "Material",
+                          "Location",
+                          "UnitPrice",
+                          "Quantity",
+                          "Description",
+                          "UnitOfMeasure"
+                        ]
+                      }
+                    },
+                    "Status": {
+                      "type": "string"
+                    },
+                    "Messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Message"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "Create_Integration_Log_Error": {
+              "runAfter": {
+                "ErrorReturn": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "65c53a8f-bba5-4aee-a2c2-1bbea7395180"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "CreateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_saperrors",
+                  "item/mpa_name": "@outputs('ErrorReturn')?['body'][0]['FlowName']",
+                  "item/mpa_action": "@outputs('ErrorReturn')?['body'][0]['Step']",
+                  "item/mpa_additionalinformation": "@triggerBody()",
+                  "item/mpa_errormessage": "@outputs('ErrorReturn')?['body'][0]['InnerErrorMessage']",
+                  "item/mpa_sourcetype": 865420000,
+                  "item/mpa_workflowinstanceurl": "@outputs('ErrorReturn')?['body'][0]['URL']",
+                  "item/mpa_workflowstatus": "@If(equals(item()?['Status'], 'Failed'), '865420001', '865420000')"
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              }
+            },
+            "Terminate": {
+              "runAfter": {
+                "Error_Response": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "82e1e5cf-e701-46ab-b141-94126dcd8bdf"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed"
+              }
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "acddc208-94dd-4daf-9177-fa386ba1baec"
+          },
+          "type": "Scope"
+        },
+        "Initialize_Invoice_variable": {
+          "runAfter": {
+            "Initialize_SAPErrorMessage": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "9f869608-1189-49b6-8447-4d2d76cf9840"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Invoice",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_variable": {
+          "runAfter": {
+            "Initialize_Invoice_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "32725813-8d5f-4c19-9351-a8b918695e11"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Header",
+                "type": "object",
+                "value": {}
+              }
+            ]
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

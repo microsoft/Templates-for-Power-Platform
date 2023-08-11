@@ -1,0 +1,964 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_saperp_1": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_SAPERP"
+        },
+        "api": {
+          "name": "shared_saperp"
+        }
+      },
+      "shared_commondataserviceforapps_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_SAPDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "SAP Application Server (mpa_SAPApplicationServer)": {
+          "defaultValue": "{\"AppServerHost\":\"sap.clearsoftware.com\",\"Client\":\"100\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_SAPApplicationServer",
+            "description": "JSON string that contains system parameters, host, system number, client, etc."
+          }
+        },
+        "SAP Count of Rows To Read (mpa_SAPCountofRowsToRead)": {
+          "defaultValue": 1000,
+          "type": "Int",
+          "metadata": {
+            "schemaName": "mpa_SAPCountofRowsToRead",
+            "description": "Sets the maximum number of records to be returned on any search query and helps to alleviate performance concerns"
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "85fac927-5100-4318-a55c-92b7147a2caf"
+          },
+          "type": "Request",
+          "kind": "PowerAppV2",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "Json",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Try": {
+          "actions": {
+            "Parse_JSON": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "12f0f586-4295-4bdd-8329-522cf48feb2c"
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@triggerBody()['text']",
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "DateFrom": {
+                      "type": "string"
+                    },
+                    "DateTo": {
+                      "type": "string"
+                    },
+                    "Vendor": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "BSEG": {
+              "runAfter": {
+                "Set_Criteria": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "eaf1d6c6-a67a-4b43-b229-c0e322ca1132"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp_1",
+                  "operationId": "ReadTableVersion3",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                  "inputParameters/tableName": "BSEG",
+                  "inputParameters/FieldNames": [
+                    "BELNR:Accounting Document Number",
+                    "BUKRS:Company Code",
+                    "GJAHR:Fiscal Year",
+                    "ZFBDT:Baseline Date for Due Date Calculation",
+                    "LIFNR:Account Number of Vendor or Creditor",
+                    "DMBTR:Amount in Local Currency",
+                    "AUGBL:Document Number of the Clearing Document",
+                    "AUGDT:Clearing Date",
+                    "ZLSPR:Payment Block Key",
+                    "PSWSL:Update Currency for General Ledger Transaction Figures"
+                  ],
+                  "inputParameters/RowCount": "@parameters('SAP Count of Rows To Read (mpa_SAPCountofRowsToRead)')",
+                  "inputParameters/WhereFilters": "@variables('Criteria')"
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              }
+            },
+            "Condition": {
+              "actions": {
+                "Parse_List": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@outputs('BSEG')?['body/Rows']",
+                    "select": {
+                      "Payment": "@item()?['BELNR']",
+                      "ClearingDate": "@item()?['AUGDT']",
+                      "Company": "@item()?['BUKRS']",
+                      "FiscalYear": "@item()?['GJAHR']",
+                      "Amount": "@float(item()?['DMBTR'])",
+                      "VendorRaw": "@item()?['LIFNR']",
+                      "Vendor": "@if(isInt(item()?['LIFNR']), string(int(item()?['LIFNR'])), item()?['LIFNR'])",
+                      "ClearingDocument": "@item()?['AUGBL']",
+                      "Status": "@if(equals(item()?['AUGBL'], ''), if(equals(item()?['ZLSPR'], 'R'), 'Blocked', 'To Be Paid'), 'Paid')",
+                      "DueDate": "@item()?['ZFBDT']",
+                      "Currency": "@item()?['PSWSL']"
+                    }
+                  }
+                },
+                "Prepare_IN_Statement": {
+                  "runAfter": {
+                    "Parse_List": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Parse_List')",
+                    "select": "@concat('''', item()?['VendorRaw'], '''', ',')"
+                  }
+                },
+                "Finalize_IN_Statement": {
+                  "runAfter": {
+                    "Prepare_IN_Statement": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "42c0b6dd-26a1-41e9-b4a7-8d91fc33dd16"
+                  },
+                  "type": "Compose",
+                  "inputs": "@union(json('[\"LIFNR IN (\"]'), body('Prepare_IN_Statement'), json('[\")\"]'))"
+                },
+                "Vendor_Names": {
+                  "runAfter": {
+                    "Finalize_IN_Statement": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "116e2ff5-2f69-4e6b-a5ab-2de75d0338b8"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_saperp_1",
+                      "operationId": "ReadTableVersion3",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                    },
+                    "parameters": {
+                      "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                      "inputParameters/tableName": "LFA1",
+                      "inputParameters/FieldNames": [
+                        "LIFNR:Account Number of Vendor or Creditor",
+                        "NAME1:Name 1"
+                      ],
+                      "inputParameters/RowCount": 9999,
+                      "inputParameters/WhereFilters": "@outputs('Finalize_IN_Statement')"
+                    },
+                    "authentication": "@parameters('$authentication')",
+                    "retryPolicy": {
+                      "type": "none"
+                    }
+                  }
+                },
+                "Parse_Vendors": {
+                  "runAfter": {
+                    "Vendor_Names": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@outputs('Vendor_Names')?['body/Rows']",
+                    "select": {
+                      "Vendor": "@if(isInt(item()?['LIFNR']), string(int(item()?['LIFNR'])), item()?['LIFNR'])",
+                      "Name": "@item()?['NAME1']"
+                    }
+                  }
+                },
+                "Check_Max_Results": {
+                  "actions": {
+                    "Warning_Response": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "ad65312d-b280-4c2b-8d36-76d71411f880"
+                      },
+                      "type": "Response",
+                      "kind": "Http",
+                      "inputs": {
+                        "statusCode": 200,
+                        "body": {
+                          "Status": "Warning",
+                          "List": "@body('Parse_List')",
+                          "Names": "@body('Parse_Vendors')",
+                          "Messages": [
+                            {
+                              "Message": "The maximum number of @{parameters('SAP Application Server (mpa_SAPApplicationServer)')} search results were returned and there may be records missing. Try refining your search criteria."
+                            }
+                          ]
+                        },
+                        "schema": {
+                          "type": "object",
+                          "properties": {
+                            "Status": {
+                              "type": "string"
+                            },
+                            "List": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "Payment": {
+                                    "type": "string"
+                                  },
+                                  "ClearingDate": {
+                                    "type": "string"
+                                  },
+                                  "Company": {
+                                    "type": "string"
+                                  },
+                                  "FiscalYear": {
+                                    "type": "string"
+                                  },
+                                  "Amount": {
+                                    "type": "number"
+                                  },
+                                  "VendorRaw": {
+                                    "type": "string"
+                                  },
+                                  "Vendor": {
+                                    "type": "string"
+                                  },
+                                  "ClearingDocument": {
+                                    "type": "string"
+                                  },
+                                  "Status": {
+                                    "type": "string"
+                                  },
+                                  "DueDate": {
+                                    "type": "string"
+                                  },
+                                  "Currency": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "Payment",
+                                  "ClearingDate",
+                                  "Company",
+                                  "FiscalYear",
+                                  "Amount",
+                                  "VendorRaw",
+                                  "Vendor",
+                                  "ClearingDocument",
+                                  "Status",
+                                  "DueDate"
+                                ]
+                              }
+                            },
+                            "Names": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "Vendor": {
+                                    "type": "string"
+                                  },
+                                  "Name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "Vendor",
+                                  "Name"
+                                ]
+                              }
+                            },
+                            "Messages": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "Message": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "Message"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Parse_Vendors": [
+                      "Succeeded"
+                    ]
+                  },
+                  "else": {
+                    "actions": {
+                      "Success_Response": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "3acb6b71-7516-4f46-82a7-fe87c0f4120b"
+                        },
+                        "type": "Response",
+                        "kind": "Http",
+                        "inputs": {
+                          "statusCode": 200,
+                          "body": {
+                            "Status": "Success",
+                            "List": "@body('Parse_List')",
+                            "Names": "@body('Parse_Vendors')",
+                            "Messages": [
+                              {
+                                "Message": "@{length(body('Parse_List'))} payments found based on your search criteria."
+                              }
+                            ]
+                          },
+                          "schema": {
+                            "type": "object",
+                            "properties": {
+                              "Status": {
+                                "type": "string"
+                              },
+                              "List": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "Payment": {
+                                      "type": "string"
+                                    },
+                                    "ClearingDate": {
+                                      "type": "string"
+                                    },
+                                    "Company": {
+                                      "type": "string"
+                                    },
+                                    "FiscalYear": {
+                                      "type": "string"
+                                    },
+                                    "Amount": {
+                                      "type": "number"
+                                    },
+                                    "VendorRaw": {
+                                      "type": "string"
+                                    },
+                                    "Vendor": {
+                                      "type": "string"
+                                    },
+                                    "ClearingDocument": {
+                                      "type": "string"
+                                    },
+                                    "Status": {
+                                      "type": "string"
+                                    },
+                                    "DueDate": {
+                                      "type": "string"
+                                    },
+                                    "Currency": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "Payment",
+                                    "ClearingDate",
+                                    "Company",
+                                    "FiscalYear",
+                                    "Amount",
+                                    "VendorRaw",
+                                    "Vendor",
+                                    "ClearingDocument",
+                                    "Status",
+                                    "DueDate"
+                                  ]
+                                }
+                              },
+                              "Names": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "Vendor": {
+                                      "type": "string"
+                                    },
+                                    "Name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "Vendor",
+                                    "Name"
+                                  ]
+                                }
+                              },
+                              "Messages": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "Message": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "Message"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "expression": {
+                    "equals": [
+                      "@length(outputs('BSEG')?['body/Rows'])",
+                      "@parameters('SAP Count of Rows To Read (mpa_SAPCountofRowsToRead)')"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "daccdc84-7547-4ad8-b25c-f5cb80e40e9f"
+                  },
+                  "type": "If"
+                }
+              },
+              "runAfter": {
+                "Set_SAPErrorMessage01": [
+                  "Succeeded",
+                  "Skipped"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Information_Response": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "d8bf49f2-4a27-41d5-9eea-e2fa5f6b222f"
+                    },
+                    "type": "Response",
+                    "kind": "Http",
+                    "inputs": {
+                      "statusCode": 200,
+                      "body": {
+                        "Status": "Information",
+                        "Messages": [
+                          {
+                            "Message": "No payments found based on your search criteria."
+                          }
+                        ]
+                      },
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "Status": {
+                            "type": "string"
+                          },
+                          "List": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "Payment": {
+                                  "type": "string"
+                                },
+                                "ClearingDate": {
+                                  "type": "string"
+                                },
+                                "Company": {
+                                  "type": "string"
+                                },
+                                "FiscalYear": {
+                                  "type": "string"
+                                },
+                                "Amount": {
+                                  "type": "number"
+                                },
+                                "VendorRaw": {
+                                  "type": "string"
+                                },
+                                "Vendor": {
+                                  "type": "string"
+                                },
+                                "ClearingDocument": {
+                                  "type": "string"
+                                },
+                                "Status": {
+                                  "type": "string"
+                                },
+                                "DueDate": {
+                                  "type": "string"
+                                },
+                                "Currency": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "Payment",
+                                "ClearingDate",
+                                "Company",
+                                "FiscalYear",
+                                "Amount",
+                                "VendorRaw",
+                                "Vendor",
+                                "ClearingDocument",
+                                "Status",
+                                "DueDate"
+                              ]
+                            }
+                          },
+                          "Names": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "Vendor": {
+                                  "type": "string"
+                                },
+                                "Name": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "Vendor",
+                                "Name"
+                              ]
+                            }
+                          },
+                          "Messages": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "Message": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "Message"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "greater": [
+                  "@length(outputs('BSEG')?['body/Rows'])",
+                  0
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "e3f88466-76d8-4bbc-8bff-bcdefac0d0da"
+              },
+              "type": "If"
+            },
+            "Set_SAPErrorMessage01": {
+              "runAfter": {
+                "BSEG": [
+                  "Failed",
+                  "TimedOut"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "ce5d0c06-0fe6-4fc6-8645-10acf7f40f33"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "SAPErrorMessage",
+                "value": "@{body('BSEG')['error']['innerError']['error']['message']}"
+              }
+            },
+            "Set_Criteria": {
+              "runAfter": {
+                "Parse_JSON": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "3ccd95ad-b639-43fb-a28b-d2c4863e06a4"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "Criteria",
+                "value": [
+                  "BSCHL = '31'",
+                  "AND LIFNR LIKE '%@{body('Parse_JSON')?['Vendor']}%'",
+                  "AND ZFBDT BETWEEN '@{if(equals(body('Parse_JSON')?['DateFrom'],''),'19000101',body('Parse_JSON')?['DateFrom'])}' AND '@{if(equals(body('Parse_JSON')?['DateTo'],''),'99991231',body('Parse_JSON')?['DateTo'])}'"
+                ]
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_Criteria": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "8d9868a9-04c9-4a85-a9a6-bd37fbcbd4a5"
+          },
+          "type": "Scope"
+        },
+        "Initialize_Criteria": {
+          "runAfter": {
+            "Initialize_SAPErrorMessage": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "cef49a3c-f9a3-4d44-8e39-f3035e4ab87b"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Criteria",
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "Catch": {
+          "actions": {
+            "Filter_array": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "e4ff6915-74dd-4ad8-aeb5-69689f7cd846"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@result('Try')",
+                "where": "@or(equals(item()?['Status'], 'Failed'), equals(item()?['Status'], 'TimedOut'))"
+              }
+            },
+            "ErrorTable": {
+              "runAfter": {
+                "Filter_array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "a4543bb1-084d-4bd9-865a-d59ec8caa8fc"
+              },
+              "type": "Table",
+              "inputs": {
+                "from": "@body('Filter_array')",
+                "format": "HTML",
+                "columns": [
+                  {
+                    "header": "Step",
+                    "value": "@item()?['name']"
+                  },
+                  {
+                    "header": "Status",
+                    "value": "@item()?['Status']"
+                  },
+                  {
+                    "header": "Code",
+                    "value": "@item()?['code']"
+                  },
+                  {
+                    "header": "InnerErrorMessage",
+                    "value": "@{item()?['outputs']?['body']?['error']?['innerError']?['error']?['message']}@{item()?['error']?['message']}@{variables('SAPErrorMessage')}"
+                  },
+                  {
+                    "header": "Input",
+                    "value": "@triggerBody()"
+                  }
+                ]
+              }
+            },
+            "Failure_Response": {
+              "runAfter": {
+                "Create_Integration_Log_Error": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "1a07fe00-c854-4b19-9f61-ff2091a0b894"
+              },
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "Status": "Error",
+                  "Messages": [
+                    {
+                      "Message": "@{variables('SAPErrorMessage')}"
+                    }
+                  ]
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Status": {
+                      "type": "string"
+                    },
+                    "List": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Payment": {
+                            "type": "string"
+                          },
+                          "ClearingDate": {
+                            "type": "string"
+                          },
+                          "Company": {
+                            "type": "string"
+                          },
+                          "FiscalYear": {
+                            "type": "string"
+                          },
+                          "Amount": {
+                            "type": "number"
+                          },
+                          "VendorRaw": {
+                            "type": "string"
+                          },
+                          "Vendor": {
+                            "type": "string"
+                          },
+                          "ClearingDocument": {
+                            "type": "string"
+                          },
+                          "Status": {
+                            "type": "string"
+                          },
+                          "DueDate": {
+                            "type": "string"
+                          },
+                          "Currency": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Payment",
+                          "ClearingDate",
+                          "Company",
+                          "FiscalYear",
+                          "Amount",
+                          "VendorRaw",
+                          "Vendor",
+                          "ClearingDocument",
+                          "Status",
+                          "DueDate"
+                        ]
+                      }
+                    },
+                    "Names": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Vendor": {
+                            "type": "string"
+                          },
+                          "Name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Vendor",
+                          "Name"
+                        ]
+                      }
+                    },
+                    "Messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Message"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "Create_Integration_Log_Error": {
+              "runAfter": {
+                "ErrorReturn": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "65c53a8f-bba5-4aee-a2c2-1bbea7395180"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "CreateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_saperrors",
+                  "item/mpa_name": "@outputs('ErrorReturn')?['body'][0]['FlowName']",
+                  "item/mpa_action": "@outputs('ErrorReturn')?['body'][0]['Step']",
+                  "item/mpa_additionalinformation": "@triggerBody()['text']",
+                  "item/mpa_errormessage": "@outputs('ErrorReturn')?['body'][0]['InnerErrorMessage']",
+                  "item/mpa_sourcetype": 865420000,
+                  "item/mpa_workflowinstanceurl": "@outputs('ErrorReturn')?['body'][0]['URL']",
+                  "item/mpa_workflowstatus": "@If(equals(item()?['Status'], 'Failed'), '865420001', '865420000')"
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              }
+            },
+            "ErrorReturn": {
+              "runAfter": {
+                "ErrorTable": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6ea00725-e758-40bb-9cc7-b69d0a65d01b"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Filter_array')",
+                "select": {
+                  "Step": "@item()?['name']",
+                  "Status": "@item()?['Status']",
+                  "Code": "@item()?['code']",
+                  "InnerErrorMessage": "@{item()?['outputs']?['body']?['error']?['innerError']?['error']?['message']} @{item()?['error']?['message']} @{variables('SAPErrorMessage')}",
+                  "Input": "@triggerBody()",
+                  "FlowName": "@workflow()?['tags']['flowDisplayName']",
+                  "URL": "@concat('https://flow.microsoft.com/manage/environments/', workflow()?['tags']['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']['name'])"
+                }
+              }
+            },
+            "Terminate": {
+              "runAfter": {
+                "Failure_Response": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "a927256a-3c51-4729-ab58-7936c48de5f9"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed"
+              }
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "acddc208-94dd-4daf-9177-fa386ba1baec"
+          },
+          "type": "Scope"
+        },
+        "Initialize_SAPErrorMessage": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "6a6087f9-b1aa-4966-9ea5-0f695d638f87"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "SAPErrorMessage",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

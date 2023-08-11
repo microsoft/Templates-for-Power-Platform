@@ -35,6 +35,8 @@
                     'ISO Language Code'.it,
                     "ja",
                     'ISO Language Code'.ja,
+                    "ko",
+                    'ISO Language Code'.ko,
                     "pt",
                     'ISO Language Code'.pt,
                     "zh",
@@ -146,12 +148,12 @@
         );
 
     conRequisitionDetailsMain As groupContainer.verticalAutoLayoutContainer:
-        Height: =App.Height-Self.Y
+        Height: =Parent.Height-Self.Y
         LayoutAlignItems: =LayoutAlignItems.Stretch
         LayoutDirection: =LayoutDirection.Vertical
         LayoutMode: =LayoutMode.Auto
         LayoutOverflowX: =LayoutOverflow.Scroll
-        Width: =App.Width-Self.X
+        Width: =Parent.Width-Self.X
         X: =cmpRequisitionDetailsLeftNavigation.Width
         Y: =cmpRequisitionDetailsHeader.Height
         ZIndex: =1
@@ -308,7 +310,8 @@
                     btnRequisitionsDetailsVendorSelect As button:
                         Align: =Align.Left
                         BorderColor: =RGBA(0,0,0,0)
-                        Color: =varThemeColors.primary
+                        BorderThickness: =0
+                        Color: =varThemeColors.lookupBlue
                         DisabledBorderColor: =
                         DisabledColor: =varThemeColors.disabledText
                         DisabledFill: =
@@ -319,7 +322,7 @@
                                 DisplayMode.Edit
                             )
                         Fill: =varThemeColors.backgroundFill
-                        FocusedBorderColor: =varThemeColors.tertiaryGray
+                        FocusedBorderColor: =varThemeColors.focusBorder
                         FocusedBorderThickness: =2
                         Font: =Font.'Segoe UI'
                         FontWeight: =FontWeight.Normal
@@ -364,10 +367,39 @@
                         ZIndex: =1
 
                     txtRequisitionDetailsVendor As text:
-                        AccessibleLabel: =Self.Tooltip
+                        AccessibleLabel: |-
+                            =//Check first if the vendor is confirmed/resolved
+                            With(
+                                {
+                                    Text: If(
+                                        Self.Italic,// Define a variable named "Text" with the value "{value}"
+                                        "Vendor needs to be searched and resolved first",
+                                        "Enter vendor number required"
+                                    )
+                                },
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
                         BorderColor: |-
                             =If(
-                                Self.Color = varThemeColors.requiredRed,
+                                Or(
+                                    Self.Italic,
+                                    IsBlank(Self.Text)
+                                ),
                                 varThemeColors.requiredRed,
                                 varThemeColors.primaryGray
                             )
@@ -408,13 +440,19 @@
                                 DisplayMode.View
                             )
                         Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: |-
+                            =If(
+                                Self.Italic,
+                                varThemeColors.requiredRed,
+                                varThemeColors.focusBorder
+                            )
                         FocusedBorderThickness: =2
                         Font: =Font.'Segoe UI'
                         Format: =TextFormat.Number
                         Height: =32
                         HintText: |-
                             =If(
-                                Self.DisplayMode <> DisplayMode.Disabled,
+                                Self.DisplayMode = DisplayMode.Edit,
                             // Define a variable named "Text" with the value "{value}"
                                 With(
                                     {Text: "Enter vendor number"},
@@ -516,7 +554,7 @@
                                 DisplayMode.Edit
                             )
                         Fill: =RGBA(0,0,0,0)
-                        FocusedBorderColor: =varThemeColors.tertiaryGray
+                        FocusedBorderColor: =varThemeColors.focusBorder
                         Height: =txtRequisitionDetailsVendor.Height
                         HoverBorderColor: =
                         HoverColor: =varThemeColors.primary
@@ -591,7 +629,7 @@
                                 DisplayMode.Edit
                             )
                         Fill: =RGBA(0,0,0,0)
-                        FocusedBorderColor: =varThemeColors.tertiaryGray
+                        FocusedBorderColor: =varThemeColors.focusBorder
                         Height: =txtRequisitionDetailsVendor.Height
                         HoverBorderColor: =
                         HoverColor: =varThemeColors.primary
@@ -815,13 +853,28 @@
                     ZIndex: =2
 
                     txtRequisitionDetailsVendorName As text:
-                        AccessibleLabel: =Self.HintText
-                        BorderColor: |-
-                            =If(
-                                IsBlank(Self.Text),
-                                varThemeColors.requiredRed,
-                                varThemeColors.primaryGray
+                        AccessibleLabel: |-
+                            =//Check first if the vendor is confirmed/resolved
+                            With(
+                                {Text: "Vendor name"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
                             )
+                        BorderColor: =varThemeColors.primaryGray
                         BorderThickness: =1
                         Clear: =true
                         Color: =varThemeColors.text
@@ -852,6 +905,7 @@
                                 DisplayMode.View
                             )
                         Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: =varThemeColors.focusBorder
                         FocusedBorderThickness: =2
                         Font: =Font.'Segoe UI'
                         Height: =32
@@ -927,13 +981,7 @@
                     Height: =64
                     LayoutMinHeight: =100
                     LayoutMinWidth: =250
-                    Width: |-
-                        =Max(
-                            264,
-                            Len(
-                                cmbRequisitionDetailsPurchasingOrg.AccessibleLabel
-                            ) * 9
-                        )
+                    Width: =275
                     X: =40
                     ZIndex: =3
 
@@ -941,7 +989,7 @@
                         AccessibleLabel: |-
                             =// Define a variable named "Text" with the value "{value}"
                             With(
-                                {Text: "Select purchasing organization"},
+                                {Text: "Select purchasing organization required"},
                                 // Check if a localized text exists for "Text" in the user's preferred language
                                 If(
                                     // If the localized text is blank, return the default text
@@ -1010,13 +1058,39 @@
                                 DisplayMode.Disabled
                             )
                         Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: |-
+                            =If(
+                                Self.BorderColor = varThemeColors.requiredRed,
+                                Self.BorderColor,
+                                varThemeColors.focusBorder
+                            )
                         FocusedBorderThickness: =2
                         Font: =Font.'Segoe UI'
                         Height: =32
                         HoverBorderColor: =Self.BorderColor
                         HoverColor: =varThemeColors.text
                         HoverFill: =varThemeColors.secondaryGray
-                        InputTextPlaceholder: =Self.AccessibleLabel
+                        InputTextPlaceholder: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Select purchasing organization"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
                         Items: |-
                             =//Filter possible list of values according to mapped domain and language field
                             Sort(
@@ -1028,7 +1102,27 @@
                                 ),
                                 'Display Value'
                             )
-                        NoSelectionText: =Self.AccessibleLabel
+                        NoSelectionText: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Select purchasing organization"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
                         OnChange: =
                         PaddingBottom: =6
                         PaddingLeft: =8
@@ -1059,7 +1153,26 @@
                         Tooltip: |-
                             =Coalesce(
                                 Self.Selected.'Display Value',
-                                Self.AccessibleLabel
+                                // Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Select purchasing organization"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                    // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                    // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
                             )
                         Width: =lblRequisitionDetailsPurchasingOrg.Width
                         X: =lblRequisitionDetailsPurchasingOrg.X
@@ -1111,13 +1224,7 @@
                     Height: =64
                     LayoutMinHeight: =100
                     LayoutMinWidth: =250
-                    Width: |-
-                        =Max(
-                            224,
-                            Len(
-                                cmbRequisitionDetailsPurchasingGroup.AccessibleLabel
-                            ) * 9
-                        )
+                    Width: =250
                     X: =40
                     ZIndex: =4
 
@@ -1125,7 +1232,7 @@
                         AccessibleLabel: |-
                             =// Define a variable named "Text" with the value "{value}"
                             With(
-                                {Text: "Select purchasing group"},
+                                {Text: "Select purchasing group required"},
                                 // Check if a localized text exists for "Text" in the user's preferred language
                                 If(
                                     // If the localized text is blank, return the default text
@@ -1177,13 +1284,39 @@
                         DisplayFields: =["mpa_value","mpa_valuecode"]
                         DisplayMode: =cmbRequisitionDetailsPurchasingOrg.DisplayMode
                         Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: |-
+                            =If(
+                                Self.BorderColor = varThemeColors.requiredRed,
+                                Self.BorderColor,
+                                varThemeColors.focusBorder
+                            )
                         FocusedBorderThickness: =2
                         Font: =Font.'Segoe UI'
                         Height: =32
                         HoverBorderColor: =Self.BorderColor
                         HoverColor: =varThemeColors.text
                         HoverFill: =varThemeColors.secondaryGray
-                        InputTextPlaceholder: =Self.AccessibleLabel
+                        InputTextPlaceholder: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Select purchasing group"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
                         Items: |-
                             =//Filter possible list of values according to mapped domain and language field
                             Sort(
@@ -1195,7 +1328,27 @@
                                 ),
                                 'Display Value'
                             )
-                        NoSelectionText: =Self.AccessibleLabel
+                        NoSelectionText: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Select purchasing group"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
                         OnChange: =
                         PaddingBottom: =6
                         PaddingLeft: =8
@@ -1226,7 +1379,26 @@
                         Tooltip: |-
                             =Coalesce(
                                 Self.Selected.'Display Value',
-                                Self.AccessibleLabel
+                                // Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Select purchasing group"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                    // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                    // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
                             )
                         Width: =lblRequisitionDetailsPurchasingGroup.Width
                         X: =lblRequisitionDetailsPurchasingGroup.X
@@ -1375,6 +1547,8 @@
                                 DisplayMode.Disabled
                             )
                         Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: |
+                            =varThemeColors.focusBorder
                         FocusedBorderThickness: =2
                         Font: =Font.'Segoe UI'
                         Height: =32
@@ -1533,8 +1707,25 @@
                         DisabledColor: =varThemeColors.disabledText
                         DisabledFill: =varThemeColors.backgroundFillDisabled
                         DisplayFields: =["mpa_value","mpa_valuecode"]
-                        DisplayMode: =cmbRequisitionDetailsPurchasingOrg.DisplayMode
+                        DisplayMode: |-
+                            =Switch(
+                                true,
+                                Or(
+                                    varIsProcessing,
+                                    And(
+                                        IsBlank(varRequisition),
+                                        !varIsNew
+                                    )
+                                ),
+                                DisplayMode.Disabled,
+                                varIsEdit,
+                                DisplayMode.View,
+                                varIsNew,
+                                DisplayMode.Edit,
+                                DisplayMode.View
+                            )
                         Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: =varThemeColors.focusBorder
                         FocusedBorderThickness: =2
                         Font: =Font.'Segoe UI'
                         Height: =32
@@ -1645,7 +1836,27 @@
                     ZIndex: =7
 
                     txtRequisitionDetailsTotal As text:
-                        AccessibleLabel: =Self.HintText
+                        AccessibleLabel: |-
+                            =//Check first if the vendor is confirmed/resolved
+                            With(
+                                {Text: "Total"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
                         BorderColor: |-
                             =If(
                                 IsBlank(Self.Text),
@@ -1691,6 +1902,7 @@
                                 DisplayMode.View
                             )
                         Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: =varThemeColors.focusBorder
                         FocusedBorderThickness: =2
                         Font: =Font.'Segoe UI'
                         Height: =32
@@ -1885,6 +2097,7 @@
                             btnRequisitionDetailsItemsAddButton As button:
                                 Align: =Align.Left
                                 BorderColor: =RGBA(0,0,0,0)
+                                BorderThickness: =0
                                 Color: =varThemeColors.text
                                 DisabledBorderColor: =
                                 DisabledColor: =varThemeColors.disabledText
@@ -1896,7 +2109,7 @@
                                         DisplayMode.Edit
                                     )
                                 Fill: =RGBA(0, 0, 0, 0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 FontWeight: =FontWeight.Normal
@@ -2019,6 +2232,7 @@
                             btnRequisitionDetailsItemsCopyButton As button:
                                 Align: =Align.Left
                                 BorderColor: =RGBA(0,0,0,0)
+                                BorderThickness: =0
                                 Color: =varThemeColors.text
                                 DisabledBorderColor: =
                                 DisabledColor: =varThemeColors.disabledText
@@ -2030,7 +2244,7 @@
                                         DisplayMode.Edit
                                     )
                                 Fill: =RGBA(0, 0, 0, 0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 FontWeight: =FontWeight.Normal
@@ -2163,6 +2377,7 @@
                             btnRequisitionDetailsItemsDeleteButton As button:
                                 Align: =Align.Left
                                 BorderColor: =RGBA(0,0,0,0)
+                                BorderThickness: =0
                                 Color: =varThemeColors.text
                                 DisabledBorderColor: =
                                 DisabledColor: =varThemeColors.disabledText
@@ -2174,7 +2389,7 @@
                                         DisplayMode.Edit
                                     )
                                 Fill: =RGBA(0, 0, 0, 0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 FontWeight: =FontWeight.Normal
@@ -2278,7 +2493,7 @@
                                     DisplayMode.Edit
                                 )
                             Fill: =varThemeColors.backgroundFill
-                            FocusedBorderColor: =varThemeColors.tertiaryGray
+                            FocusedBorderColor: =varThemeColors.focusBorder
                             FocusedBorderThickness: =2
                             Font: =Font.'Segoe UI'
                             Height: =32
@@ -2452,7 +2667,7 @@
                                     DisplayMode.Edit,
                                     DisplayMode.Disabled
                                 )
-                            FocusedBorderColor: =varThemeColors.tertiaryGray
+                            FocusedBorderColor: =varThemeColors.focusBorder
                             Font: =Font.'Segoe UI'
                             FontWeight: =FontWeight.Semibold
                             Height: =Parent.Height-Self.FocusedBorderThickness*2
@@ -2565,7 +2780,7 @@
                                         DisplayMode.View
                                     )
                                 Fill: =RGBA(0,0,0,0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 Height: =Parent.Height-Self.Y*2
@@ -2695,7 +2910,7 @@
                                         DisplayMode.View
                                     )
                                 Fill: =RGBA(0,0,0,0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 Height: =Parent.Height-Self.Y*2
@@ -2826,7 +3041,7 @@
                                         DisplayMode.View
                                     )
                                 Fill: =RGBA(0,0,0,0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 Height: =Parent.Height-Self.Y*2
@@ -2957,7 +3172,7 @@
                                         DisplayMode.View
                                     )
                                 Fill: =RGBA(0,0,0,0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 Height: =Parent.Height-Self.Y*2
@@ -3087,7 +3302,7 @@
                                         DisplayMode.View
                                     )
                                 Fill: =RGBA(0,0,0,0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 Height: =Parent.Height-Self.Y*2
@@ -3217,7 +3432,7 @@
                                         DisplayMode.View
                                     )
                                 Fill: =RGBA(0,0,0,0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 Height: =Parent.Height-Self.Y*2
@@ -3347,7 +3562,7 @@
                                         DisplayMode.View
                                     )
                                 Fill: =RGBA(0,0,0,0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 Height: =Parent.Height-Self.Y*2
@@ -3480,7 +3695,7 @@
                                         DisplayMode.View
                                     )
                                 Fill: =RGBA(0,0,0,0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 Height: =Parent.Height-Self.Y*2
@@ -3613,7 +3828,7 @@
                                         DisplayMode.View
                                     )
                                 Fill: =RGBA(0,0,0,0)
-                                FocusedBorderColor: =varThemeColors.tertiaryGray
+                                FocusedBorderColor: =varThemeColors.focusBorder
                                 FocusedBorderThickness: =2
                                 Font: =Font.'Segoe UI'
                                 Height: =Parent.Height-Self.Y*2
@@ -3780,7 +3995,7 @@
                                 DisplayMode.Disabled,
                                 DisplayMode.Edit
                             )
-                        FocusedBorderColor: =varThemeColors.tertiaryGray
+                        FocusedBorderColor: =varThemeColors.focusBorder
                         FocusedBorderThickness: =2
                         Height: =Self.TemplateHeight*6
                         ItemAccessibleLabel: =ThisItem.Description
@@ -3842,7 +4057,7 @@
                         TemplateFill: |-
                             =If(
                                 chbRequisitionDetailsItemSelectRow.Value,
-                                ColorFade(varThemeColors.secondaryGray,50%),
+                                varThemeColors.templateRowSelectFill,
                                 RGBA(
                                     255,
                                     255,
@@ -3888,7 +4103,8 @@
                         btnRequisitionDetailsViewEdit As button:
                             Align: =Align.Left
                             BorderColor: =RGBA(0,0,0,0)
-                            Color: =varThemeColors.primary
+                            BorderThickness: =0
+                            Color: =varThemeColors.lookupBlue
                             DisabledBorderColor: =
                             DisabledColor: =varThemeColors.disabledText
                             DisabledFill: =
@@ -3899,7 +4115,7 @@
                                     DisplayMode.Edit
                                 )
                             Fill: =RGBA(0, 0, 0, 0)
-                            FocusedBorderColor: =varThemeColors.tertiaryGray
+                            FocusedBorderColor: =varThemeColors.focusBorder
                             FocusedBorderThickness: =2
                             Font: =Font.'Segoe UI'
                             FontWeight: =FontWeight.Normal
@@ -3970,7 +4186,8 @@
                         btnRequisitionDetailsItemsPurchaseOrder As button:
                             Align: =Align.Left
                             BorderColor: =RGBA(0,0,0,0)
-                            Color: =varThemeColors.primary
+                            BorderThickness: =0
+                            Color: =varThemeColors.lookupBlue
                             DisabledBorderColor: =
                             DisabledColor: =varThemeColors.disabledText
                             DisabledFill: =
@@ -3981,7 +4198,7 @@
                                     DisplayMode.Edit
                                 )
                             Fill: =RGBA(0, 0, 0, 0)
-                            FocusedBorderColor: =varThemeColors.tertiaryGray
+                            FocusedBorderColor: =varThemeColors.focusBorder
                             FocusedBorderThickness: =2
                             Font: =Font.'Segoe UI'
                             FontWeight: =FontWeight.Normal
@@ -4230,7 +4447,8 @@
                             Default: =varResetSelectRows
                             DisabledColor: =Self.Color
                             DisplayMode: =chbRequisitionsDetailsItemsSelectAll.DisplayMode
-                            FocusedBorderColor: =varThemeColors.tertiaryGray
+                            FocusedBorderColor: =varThemeColors.focusBorder
+                            Font: =Font.'Segoe UI'
                             Height: =Parent.TemplateHeight-Self.Y*2
                             HoverBorderColor: =
                             HoverColor: =Self.Color
@@ -4239,6 +4457,7 @@
                             OnSelect: =
                             OnUncheck: =
                             PressedColor: =Self.Color
+                            Size: =0
                             Text: |-
                                 =// Define a variable named "Text" with the value "{value}"
                                 With(
@@ -4539,12 +4758,12 @@
         ZIndex: =2
 
     cmpRequisitionDetailsLeftNavigation As LeftNavigation:
-        Height: =App.Height-Self.Y
+        Height: =Parent.Height-Self.Y
         Width: =cmpRequisitionDetailsLeftNavigation.MenuWidth
         Y: =cmpRequisitionDetailsHeader.Height
         ZIndex: =3
 
     cmpRequisitionDetailsHeader As ScreenHeader:
-        Width: =App.Width
+        Width: =Parent.Width
         ZIndex: =4
 

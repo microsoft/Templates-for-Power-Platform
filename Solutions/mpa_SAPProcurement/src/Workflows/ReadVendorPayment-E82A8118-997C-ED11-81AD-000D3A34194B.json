@@ -1,0 +1,1149 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_saperp_2": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_SAPERP"
+        },
+        "api": {
+          "name": "shared_saperp"
+        }
+      },
+      "shared_commondataserviceforapps_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_SAPDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "SAP Application Server (mpa_SAPApplicationServer)": {
+          "defaultValue": "{\"AppServerHost\":\"sap.clearsoftware.com\",\"Client\":\"100\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_SAPApplicationServer",
+            "description": "JSON string that contains system parameters, host, system number, client, etc."
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "9ad2b679-b55e-4a90-b8a0-29a9ea3a29ff"
+          },
+          "type": "Request",
+          "kind": "PowerAppV2",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "PaymentNumber",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Try": {
+          "actions": {
+            "Parse_JSON": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "12f0f586-4295-4bdd-8329-522cf48feb2c"
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@triggerBody()['text']",
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Payment": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "BKPF": {
+              "runAfter": {
+                "Parse_JSON": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "bde68cbe-3cb3-452e-ad35-c93aeb46853f"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp_2",
+                  "operationId": "ReadTableVersion3",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                  "inputParameters/tableName": "BKPF",
+                  "inputParameters/FieldNames": [
+                    "BELNR:Accounting Document Number",
+                    "BUKRS:Company Code",
+                    "GJAHR:Fiscal Year",
+                    "AWKEY:Reference Key",
+                    "BLART:Document Type",
+                    "BKTXT:Document Header Text",
+                    "XBLNR:Reference Document Number",
+                    "USNAM:User name",
+                    "BUDAT:Posting Date in the Document",
+                    "BLDAT:Document Date in Document",
+                    "WAERS:Currency Key"
+                  ],
+                  "inputParameters/RowCount": 1,
+                  "inputParameters/WhereFilters": [
+                    "BELNR = '@{formatNumber(int(body('Parse_JSON')?['Payment']), 'D10')}'"
+                  ]
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              }
+            },
+            "Existence_Check": {
+              "actions": {
+                "Success_Response": {
+                  "runAfter": {
+                    "Parse_GL_Accounts": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "3acb6b71-7516-4f46-82a7-fe87c0f4120b"
+                  },
+                  "type": "Response",
+                  "kind": "Http",
+                  "inputs": {
+                    "statusCode": 200,
+                    "body": {
+                      "Status": "Success",
+                      "Payment": "@body('Parse_Header')[0]?['Payment']",
+                      "Header": "@body('Parse_Header')[0]",
+                      "Items": "@body('Parse_Items')",
+                      "GlAccounts": "@body('Parse_GL_Accounts')",
+                      "Messages": []
+                    },
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "Status": {
+                          "type": "string"
+                        },
+                        "Payment": {
+                          "type": "string"
+                        },
+                        "Header": {
+                          "type": "object",
+                          "properties": {
+                            "Payment": {
+                              "type": "string"
+                            },
+                            "CompanyCode": {
+                              "type": "string"
+                            },
+                            "FiscalYear": {
+                              "type": "string"
+                            },
+                            "ObjectKey": {
+                              "type": "string"
+                            },
+                            "DocumentType": {
+                              "type": "string"
+                            },
+                            "HeaderText": {
+                              "type": "string"
+                            },
+                            "ReferenceNumber": {
+                              "type": "string"
+                            },
+                            "CreatedBy": {
+                              "type": "string"
+                            },
+                            "PostingDate": {
+                              "type": "string"
+                            },
+                            "DocumentDate": {
+                              "type": "string"
+                            },
+                            "Currency": {
+                              "type": "string"
+                            },
+                            "VendorName": {
+                              "type": "string"
+                            },
+                            "Vendor": {
+                              "type": "string"
+                            },
+                            "Status": {
+                              "type": "string"
+                            },
+                            "VendorInvoice": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "Items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Item": {
+                                "type": "string"
+                              },
+                              "Type": {
+                                "type": "string"
+                              },
+                              "GlAccountRaw": {
+                                "type": "string"
+                              },
+                              "Amount": {
+                                "type": "number"
+                              },
+                              "CrudType": {
+                                "type": "string"
+                              },
+                              "GlAccount": {
+                                "type": "string"
+                              },
+                              "Vendor": {
+                                "type": "string"
+                              },
+                              "Payment": {
+                                "type": "string"
+                              },
+                              "Status": {
+                                "type": "string"
+                              },
+                              "ClearingDate": {
+                                "type": "string"
+                              },
+                              "CostCenter": {
+                                "type": "string"
+                              },
+                              "TermsOfPaymentKey": {
+                                "type": "string"
+                              },
+                              "BaselineDate": {
+                                "type": "string"
+                              },
+                              "PaymentMethod": {
+                                "type": "string"
+                              },
+                              "PurchaseOrder": {
+                                "type": "string"
+                              },
+                              "PurchaseOrderLine": {
+                                "type": "string"
+                              },
+                              "FiscalYear": {
+                                "type": "string"
+                              },
+                              "CompanyCode": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "Item",
+                              "Type",
+                              "GlAccountRaw",
+                              "Amount",
+                              "CrudType",
+                              "GlAccount",
+                              "Vendor",
+                              "Payment",
+                              "Status"
+                            ]
+                          }
+                        },
+                        "GlAccounts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Description": {
+                                "type": "string"
+                              },
+                              "GlAccount": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "Description",
+                              "GlAccount"
+                            ]
+                          }
+                        },
+                        "Messages": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "Message"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "Items": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "bde68cbe-3cb3-452e-ad35-c93aeb46853f"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_saperp_2",
+                      "operationId": "ReadTableVersion3",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                    },
+                    "parameters": {
+                      "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                      "inputParameters/tableName": "BSEG",
+                      "inputParameters/FieldNames": [
+                        "BUZEI:Number of Line Item Within Accounting Document",
+                        "SHKZG:Debit/Credit Indicator",
+                        "DMBTR:Amount in Local Currency",
+                        "HKONT:General Ledger Account",
+                        "LIFNR:Account Number of Vendor or Creditor",
+                        "AUGBL:Document Number of the Clearing Document",
+                        "ZLSPR:Payment Block Key",
+                        "AUGDT:Clearing Date",
+                        "KOSTL:Cost Center",
+                        "ZTERM:Terms of Payment Key",
+                        "ZFBDT:Baseline Date for Due Date Calculation",
+                        "ZLSCH:Payment Method",
+                        "EBELN:Purchasing Document Number",
+                        "EBELP:Item Number of Purchasing Document",
+                        "GJAHR:Fiscal Year",
+                        "BUKRS:Company Code"
+                      ],
+                      "inputParameters/RowCount": 99999,
+                      "inputParameters/WhereFilters": [
+                        "BELNR = '@{formatNumber(int(body('Parse_JSON')?['Payment']), 'D10')}' "
+                      ]
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Parse_Items": {
+                  "runAfter": {
+                    "Set_SAPErrorMessage02": [
+                      "Succeeded",
+                      "Skipped"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@outputs('Items')?['body/Rows']",
+                    "select": {
+                      "Item": "@if(isInt(item()?['BUZEI']), string(int(item()?['BUZEI'])), item()?['BUZEI'])",
+                      "Type": "@item()?['SHKZG']",
+                      "GlAccountRaw": "@item()?['HKONT']",
+                      "Amount": "@float(item()?['DMBTR'])",
+                      "CrudType": "R",
+                      "GlAccount": "@if(isInt(item()?['HKONT']), string(int(item()?['HKONT'])), item()?['HKONT'])",
+                      "Vendor": "@if(isInt(item()?['LIFNR']), string(int(item()?['LIFNR'])), item()?['LIFNR'])",
+                      "Payment": "@item()?['AUGBL']",
+                      "Status": "@if(equals(item()?['AUGBL'], ''), if(equals(item()?['ZLSPR'], 'R'), 'Blocked', 'To Be Paid'), 'Paid')",
+                      "ClearingDate": "@item()?['AUGDT']",
+                      "CostCenter": "@item()?['KOSTL']",
+                      "TermsOfPaymentKey": "@item()?['ZTERM']",
+                      "BaselineDate": "@item()?['ZFBDT']",
+                      "PaymentMethod": "@item()?['ZLSCH']",
+                      "PurchaseOrder": "@item()?['EBELN']",
+                      "PurchaseOrderLine": "@if(isInt(item()?['EBELP']), string(int(item()?['EBELP'])), item()?['EBELP'])",
+                      "FiscalYear": "@item()?['GJAHR']",
+                      "CompanyCode": "@item()?['BUKRS']"
+                    }
+                  }
+                },
+                "Prepare_IN_Statement": {
+                  "runAfter": {
+                    "Parse_Header": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Parse_Items')",
+                    "select": "@concat('''', item()?['GlAccountRaw'], '''', ',')"
+                  }
+                },
+                "Finalize_IN_Statement": {
+                  "runAfter": {
+                    "Prepare_IN_Statement": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "42c0b6dd-26a1-41e9-b4a7-8d91fc33dd16"
+                  },
+                  "type": "Compose",
+                  "inputs": "@union(\njson(concat('[\"SPRAS = ', '''', 'EN', '''','\"]')),\njson(concat('[\"AND KTOPL = ', '''', body('Parse_Header')[0]?['CompanyCode'], '''','\"]')), \njson('[\"AND SAKNR IN (\"]'), \nbody('Prepare_IN_Statement'), \njson('[\")\"]')\n)"
+                },
+                "GL_Accounts": {
+                  "runAfter": {
+                    "Finalize_IN_Statement": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "116e2ff5-2f69-4e6b-a5ab-2de75d0338b8"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_saperp_2",
+                      "operationId": "ReadTableVersion3",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                    },
+                    "parameters": {
+                      "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                      "inputParameters/tableName": "SKAT",
+                      "inputParameters/FieldNames": [
+                        "SAKNR:G/L Account Number",
+                        "TXT50:G/L Account Long Text"
+                      ],
+                      "inputParameters/RowCount": 9999,
+                      "inputParameters/WhereFilters": "@outputs('Finalize_IN_Statement')"
+                    },
+                    "authentication": "@parameters('$authentication')",
+                    "retryPolicy": {
+                      "type": "none"
+                    }
+                  }
+                },
+                "Parse_GL_Accounts": {
+                  "runAfter": {
+                    "Set_SAPErrorMessage03": [
+                      "Succeeded",
+                      "Skipped"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@outputs('GL_Accounts')?['body/Rows']",
+                    "select": {
+                      "Description": "@item()?['TXT50']",
+                      "GlAccount": "@if(isInt(item()?['SAKNR']), string(int(item()?['SAKNR'])), item()?['SAKNR'])"
+                    }
+                  }
+                },
+                "Parse_Header": {
+                  "runAfter": {
+                    "Vendor_Name": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@outputs('BKPF')?['body/Rows']",
+                    "select": {
+                      "Payment": "@if(isInt(item()?['BELNR']), string(int(item()?['BELNR'])), item()?['BELNR'])",
+                      "CompanyCode": "@item()?['BUKRS']",
+                      "FiscalYear": "@item()?['GJAHR']",
+                      "ObjectKey": "@item()?['AWKEY']",
+                      "DocumentType": "@item()?['BLART']",
+                      "HeaderText": "@item()?['BKTXT']",
+                      "ReferenceNumber": "@item()?['XBLNR']",
+                      "CreatedBy": "@item()?['USNAM']",
+                      "PostingDate": "@item()?['BUDAT']",
+                      "DocumentDate": "@item()?['BLDAT']",
+                      "Currency": "@item()?['WAERS']",
+                      "VendorName": "@outputs('Vendor_Name')?['body/Rows'][0]['NAME1']",
+                      "Vendor": "@outputs('Parse_Items')?['body'][0]['Vendor']",
+                      "Status": "@outputs('Parse_Items')?['body'][0]['Status']",
+                      "VendorInvoice": "@trim(substring(item()?['AWKEY'], 0, 10))"
+                    }
+                  }
+                },
+                "Vendor_Name": {
+                  "runAfter": {
+                    "Parse_Items": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "17eb13b8-250e-4046-aeb9-0ca0019482d0"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_saperp_2",
+                      "operationId": "ReadTableVersion3",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                    },
+                    "parameters": {
+                      "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                      "inputParameters/tableName": "LFA1",
+                      "inputParameters/FieldNames": [
+                        "NAME1:Name 1"
+                      ],
+                      "inputParameters/RowCount": 1,
+                      "inputParameters/WhereFilters": [
+                        "LIFNR = '@{outputs('Items')?['body/Rows'][0]['LIFNR']}'"
+                      ]
+                    },
+                    "authentication": "@parameters('$authentication')",
+                    "retryPolicy": {
+                      "type": "none"
+                    }
+                  }
+                },
+                "Set_SAPErrorMessage02": {
+                  "runAfter": {
+                    "Items": [
+                      "Failed",
+                      "TimedOut"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "ce5d0c06-0fe6-4fc6-8645-10acf7f40f33"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "SAPErrorMessage",
+                    "value": "@{body('Items')['error']['innerError']['error']['message']}"
+                  }
+                },
+                "Set_SAPErrorMessage03": {
+                  "runAfter": {
+                    "GL_Accounts": [
+                      "Failed",
+                      "TimedOut"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "ce5d0c06-0fe6-4fc6-8645-10acf7f40f33"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "SAPErrorMessage",
+                    "value": "@{body('GL_Accounts')['error']['innerError']['error']['message']}"
+                  }
+                }
+              },
+              "runAfter": {
+                "Set_SAPErrorMessage01": [
+                  "Skipped",
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Information_Response": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "3acb6b71-7516-4f46-82a7-fe87c0f4120b"
+                    },
+                    "type": "Response",
+                    "kind": "Http",
+                    "inputs": {
+                      "statusCode": 200,
+                      "body": {
+                        "Status": "Information",
+                        "Messages": [
+                          {
+                            "Message": "Payment @{body('Parse_JSON')?['Payment']} does not exist."
+                          }
+                        ]
+                      },
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "Status": {
+                            "type": "string"
+                          },
+                          "Payment": {
+                            "type": "string"
+                          },
+                          "Header": {
+                            "type": "object",
+                            "properties": {
+                              "Payment": {
+                                "type": "string"
+                              },
+                              "CompanyCode": {
+                                "type": "string"
+                              },
+                              "FiscalYear": {
+                                "type": "string"
+                              },
+                              "ObjectKey": {
+                                "type": "string"
+                              },
+                              "DocumentType": {
+                                "type": "string"
+                              },
+                              "HeaderText": {
+                                "type": "string"
+                              },
+                              "ReferenceNumber": {
+                                "type": "string"
+                              },
+                              "CreatedBy": {
+                                "type": "string"
+                              },
+                              "PostingDate": {
+                                "type": "string"
+                              },
+                              "DocumentDate": {
+                                "type": "string"
+                              },
+                              "Currency": {
+                                "type": "string"
+                              },
+                              "VendorName": {
+                                "type": "string"
+                              },
+                              "Vendor": {
+                                "type": "string"
+                              },
+                              "Status": {
+                                "type": "string"
+                              },
+                              "VendorInvoice": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "Items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "Item": {
+                                  "type": "string"
+                                },
+                                "Type": {
+                                  "type": "string"
+                                },
+                                "GlAccountRaw": {
+                                  "type": "string"
+                                },
+                                "Amount": {
+                                  "type": "number"
+                                },
+                                "CrudType": {
+                                  "type": "string"
+                                },
+                                "GlAccount": {
+                                  "type": "string"
+                                },
+                                "Vendor": {
+                                  "type": "string"
+                                },
+                                "Payment": {
+                                  "type": "string"
+                                },
+                                "Status": {
+                                  "type": "string"
+                                },
+                                "ClearingDate": {
+                                  "type": "string"
+                                },
+                                "CostCenter": {
+                                  "type": "string"
+                                },
+                                "TermsOfPaymentKey": {
+                                  "type": "string"
+                                },
+                                "BaselineDate": {
+                                  "type": "string"
+                                },
+                                "PaymentMethod": {
+                                  "type": "string"
+                                },
+                                "PurchaseOrder": {
+                                  "type": "string"
+                                },
+                                "PurchaseOrderLine": {
+                                  "type": "string"
+                                },
+                                "FiscalYear": {
+                                  "type": "string"
+                                },
+                                "CompanyCode": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "Item",
+                                "Type",
+                                "GlAccountRaw",
+                                "Amount",
+                                "CrudType",
+                                "GlAccount",
+                                "Vendor",
+                                "Payment",
+                                "Status"
+                              ]
+                            }
+                          },
+                          "GlAccounts": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "Description": {
+                                  "type": "string"
+                                },
+                                "GlAccount": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "Description",
+                                "GlAccount"
+                              ]
+                            }
+                          },
+                          "Messages": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "Message": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "Message"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "greater": [
+                  "@length(outputs('BKPF')?['body/Rows'])",
+                  0
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "23dd68d5-023e-4e5d-96f8-9317be3973ba"
+              },
+              "type": "If"
+            },
+            "Set_SAPErrorMessage01": {
+              "runAfter": {
+                "BKPF": [
+                  "Failed",
+                  "TimedOut"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "ce5d0c06-0fe6-4fc6-8645-10acf7f40f33"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "SAPErrorMessage",
+                "value": "@{body('BKPF')['error']['message']}"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_SAPErrorMessage": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "0749c7bd-f302-4393-86f0-9827b4eeabf7"
+          },
+          "type": "Scope"
+        },
+        "Catch": {
+          "actions": {
+            "Filter_array": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "e4ff6915-74dd-4ad8-aeb5-69689f7cd846"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@result('Try')",
+                "where": "@or(equals(item()?['Status'], 'Failed'), equals(item()?['Status'], 'TimedOut'))"
+              }
+            },
+            "ErrorTable": {
+              "runAfter": {
+                "Filter_array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "a4543bb1-084d-4bd9-865a-d59ec8caa8fc"
+              },
+              "type": "Table",
+              "inputs": {
+                "from": "@body('Filter_array')",
+                "format": "HTML",
+                "columns": [
+                  {
+                    "header": "Step",
+                    "value": "@item()?['name']"
+                  },
+                  {
+                    "header": "Status",
+                    "value": "@item()?['Status']"
+                  },
+                  {
+                    "header": "Code",
+                    "value": "@item()?['code']"
+                  },
+                  {
+                    "header": "InnerErrorMessage",
+                    "value": "@{item()?['outputs']?['body']?['error']?['innerError']?['error']?['message']}@{item()?['error']?['message']}@{variables('SAPErrorMessage')}"
+                  },
+                  {
+                    "header": "Input",
+                    "value": "@triggerBody()"
+                  }
+                ]
+              }
+            },
+            "ErrorReturn": {
+              "runAfter": {
+                "ErrorTable": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6ea00725-e758-40bb-9cc7-b69d0a65d01b"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Filter_array')",
+                "select": {
+                  "Step": "@item()?['name']",
+                  "Status": "@item()?['Status']",
+                  "Code": "@item()?['code']",
+                  "InnerErrorMessage": "@{item()?['outputs']?['body']?['error']?['innerError']?['error']?['message']} @{item()?['error']?['message']} @{variables('SAPErrorMessage')}",
+                  "Input": "@triggerBody()",
+                  "FlowName": "@workflow()?['tags']['flowDisplayName']",
+                  "URL": "@concat('https://flow.microsoft.com/manage/environments/', workflow()?['tags']['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']['name'])"
+                }
+              }
+            },
+            "Error_Response": {
+              "runAfter": {
+                "Create_Integration_Log_Error": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "1a07fe00-c854-4b19-9f61-ff2091a0b894"
+              },
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "Status": "Error",
+                  "Messages": [
+                    {
+                      "Message": "@outputs('Create_Integration_Log_Error')?['body/mpa_errormessage']"
+                    }
+                  ]
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Status": {
+                      "type": "string"
+                    },
+                    "Payment": {
+                      "type": "string"
+                    },
+                    "Header": {
+                      "type": "object",
+                      "properties": {
+                        "Payment": {
+                          "type": "string"
+                        },
+                        "CompanyCode": {
+                          "type": "string"
+                        },
+                        "FiscalYear": {
+                          "type": "string"
+                        },
+                        "ObjectKey": {
+                          "type": "string"
+                        },
+                        "DocumentType": {
+                          "type": "string"
+                        },
+                        "HeaderText": {
+                          "type": "string"
+                        },
+                        "ReferenceNumber": {
+                          "type": "string"
+                        },
+                        "CreatedBy": {
+                          "type": "string"
+                        },
+                        "PostingDate": {
+                          "type": "string"
+                        },
+                        "DocumentDate": {
+                          "type": "string"
+                        },
+                        "Currency": {
+                          "type": "string"
+                        },
+                        "VendorName": {
+                          "type": "string"
+                        },
+                        "Vendor": {
+                          "type": "string"
+                        },
+                        "Status": {
+                          "type": "string"
+                        },
+                        "VendorInvoice": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "Items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Item": {
+                            "type": "string"
+                          },
+                          "Type": {
+                            "type": "string"
+                          },
+                          "GlAccountRaw": {
+                            "type": "string"
+                          },
+                          "Amount": {
+                            "type": "number"
+                          },
+                          "CrudType": {
+                            "type": "string"
+                          },
+                          "GlAccount": {
+                            "type": "string"
+                          },
+                          "Vendor": {
+                            "type": "string"
+                          },
+                          "Payment": {
+                            "type": "string"
+                          },
+                          "Status": {
+                            "type": "string"
+                          },
+                          "ClearingDate": {
+                            "type": "string"
+                          },
+                          "CostCenter": {
+                            "type": "string"
+                          },
+                          "TermsOfPaymentKey": {
+                            "type": "string"
+                          },
+                          "BaselineDate": {
+                            "type": "string"
+                          },
+                          "PaymentMethod": {
+                            "type": "string"
+                          },
+                          "PurchaseOrder": {
+                            "type": "string"
+                          },
+                          "PurchaseOrderLine": {
+                            "type": "string"
+                          },
+                          "FiscalYear": {
+                            "type": "string"
+                          },
+                          "CompanyCode": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Item",
+                          "Type",
+                          "GlAccountRaw",
+                          "Amount",
+                          "CrudType",
+                          "GlAccount",
+                          "Vendor",
+                          "Payment",
+                          "Status"
+                        ]
+                      }
+                    },
+                    "GlAccounts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Description": {
+                            "type": "string"
+                          },
+                          "GlAccount": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Description",
+                          "GlAccount"
+                        ]
+                      }
+                    },
+                    "Messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Message"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "Create_Integration_Log_Error": {
+              "runAfter": {
+                "ErrorReturn": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "65c53a8f-bba5-4aee-a2c2-1bbea7395180"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "CreateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_saperrors",
+                  "item/mpa_name": "@outputs('ErrorReturn')?['body'][0]['FlowName']",
+                  "item/mpa_action": "@outputs('ErrorReturn')?['body'][0]['Step']",
+                  "item/mpa_additionalinformation": "@triggerBody()['text']",
+                  "item/mpa_errormessage": "@outputs('ErrorReturn')?['body'][0]['InnerErrorMessage']",
+                  "item/mpa_sourcetype": 865420000,
+                  "item/mpa_workflowinstanceurl": "@outputs('ErrorReturn')?['body'][0]['URL']",
+                  "item/mpa_workflowstatus": "@If(equals(item()?['Status'], 'Failed'), '865420001', '865420000')"
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              }
+            },
+            "Terminate": {
+              "runAfter": {
+                "Error_Response": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "56f4c9b8-0085-4309-9976-e415e79284e8"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed"
+              }
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "acddc208-94dd-4daf-9177-fa386ba1baec"
+          },
+          "type": "Scope"
+        },
+        "Initialize_SAPErrorMessage": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "6a6087f9-b1aa-4966-9ea5-0f695d638f87"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "SAPErrorMessage",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

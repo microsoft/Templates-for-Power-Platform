@@ -1,0 +1,1813 @@
+CommandBar As CanvasComponent:
+    Fill: =RGBA(0, 0, 0, 0)
+    Height: =44
+    OnReset: =
+    ResetCommandBar: =true
+    Width: =1692
+    X: =0
+    Y: =0
+    ZIndex: =1
+
+    conCommandBar As groupContainer.horizontalAutoLayoutContainer:
+        BorderColor: =
+        Height: =CommandBar.Height-1
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+        LayoutMode: =LayoutMode.Auto
+        PaddingLeft: =24
+        PaddingRight: =24
+        Width: =CommandBar.Width
+        ZIndex: =1
+
+        conCommandBarButtons As groupContainer.horizontalAutoLayoutContainer:
+            LayoutMinHeight: =0
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            ZIndex: =1
+
+            conCommandBarButtonsCreate As groupContainer.manualLayoutContainer:
+                FillPortions: =0
+                Height: =43
+                LayoutMinHeight: =
+                LayoutMinWidth: =250
+                Visible: =!Or(varIsEdit,varIsNew)
+                Width: =Len(btnCommandBarButtonsCreate.Text)*9+btnCommandBarButtonsCreate.PaddingLeft
+                ZIndex: =1
+
+                icoCommandBarButtonsCreate As icon.Save:
+                    AccessibleLabel: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {
+                                Text: "Create"
+                            },
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Color: =varThemeColors.primary
+                    DisabledColor: =varThemeColors.disabledText
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    FocusedBorderColor: =varThemeColors.primary
+                    Height: =16
+                    Icon: =Icon.Add
+                    Width: =16
+                    X: =5
+                    Y: =btnCommandBarButtonsCreate.Y+btnCommandBarButtonsCreate.Height/2-Self.Height/2
+                    ZIndex: =1
+
+                btnCommandBarButtonsCreate As button:
+                    Align: =Align.Left
+                    BorderColor: =RGBA(0,0,0,0)
+                    BorderThickness: =0
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =
+                    DisabledColor: =varThemeColors.disabledText
+                    DisabledFill: =
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Fill: =RGBA(0, 0, 0, 0)
+                    FocusedBorderColor: =varThemeColors.focusBorder
+                    FocusedBorderThickness: =2
+                    Font: =Font.'Segoe UI'
+                    FontWeight: =FontWeight.Normal
+                    Height: =Parent.Height-Self.Y*2
+                    HoverBorderColor: =
+                    HoverColor: =varThemeColors.primary
+                    HoverFill: =Color.Transparent
+                    OnSelect: |-
+                        =//Change global variables to set visibility of other commandbar buttons, search and screen controls
+                        Set(
+                            varIsEdit,
+                            false
+                        );
+                        Set(
+                            varIsNew,
+                            true
+                        );
+                        //Reset the cached data and controls to prepare for new vendor invoice details
+                        Reset(txtVendorInvoiceDetailsVendor);
+                        Reset(txtVendorInvoiceDetailsVendorName);
+                        Reset(txtVendorInvoiceDetailsTotal);
+                        Reset(cmbVendorInvoiceDetailsDocumentType);
+                        Reset(cmbVendorInvoiceDetailsPaymentMethod);
+                        Reset(cmbVendorInvoiceDetailsCurrency);
+                        Reset(dteVendorInvoiceDetailsDueDate);
+                        Reset(cmbVendorInvoiceDetailsCompanyCode);
+                        Reset(cmbVendorInvoiceDetailsPaymentTerms);
+                        Reset(txtVendorInvoiceDetailsFiscalYear);
+                        Reset(txtVendorInvoiceDetailsCreatedOn);
+                        Reset(dteVendorInvoiceDetailsPostingDate);
+                        ClearCollect(
+                            colVendorInvoiceItemsTemp,
+                            colVendorInvoiceItems
+                        );
+                        Clear(colVendorInvoiceItems);
+                        Set(
+                            varNewPurchaseOrderHeader,
+                            Blank()
+                        );
+                        Set(
+                            varNewPurchaseOrderNumber,
+                            Blank()
+                        );
+                        //Navigate back to Vendor Invoice Details screen if selecting to create from another screen
+                        Navigate(
+                            'Vendor Invoice Details Screen',
+                            ScreenTransition.None
+                        )
+                    PaddingLeft: =28
+                    PressedColor: =Color.Black
+                    PressedFill: =Color.Transparent
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Size: =10.5
+                    Text: |-
+                        =With(
+                            {Text: "Create"},
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Tooltip: =Self.Text
+                    Width: =Parent.Width-Self.X*2
+                    X: =Self.FocusedBorderThickness
+                    Y: =Self.FocusedBorderThickness
+                    ZIndex: =2
+
+            conCommandBarButtonsEdit As groupContainer.manualLayoutContainer:
+                FillPortions: =0
+                Height: =43
+                LayoutMinHeight: =
+                LayoutMinWidth: =250
+                Visible: |-
+                    =And(
+                        !IsBlank(varVendorInvoiceNumber),
+                        !varIsEdit,
+                        !varIsNew,
+                        IsBlank(varVendorInvoiceHeader.ReversalDocument),//Populated if the document has already been reversed
+                        varVendorInvoiceHeader.InvoiceDocumentStatus in Table(//Various Parked status's
+                            {Status: "A"},
+                            {Status: "B"},
+                            {Status: "C"},
+                            {Status: "D"}
+                        ).Status
+                    )
+                Width: =Len(btnCommandBarButtonsEdit.Text)*9+btnCommandBarButtonsEdit.PaddingLeft
+                X: =conCommandBarButtonsCreate.X+conCommandBarButtonsCreate.Width+10
+                ZIndex: =2
+
+                icoCommandBarButtonsEdit As icon.Save:
+                    AccessibleLabel: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {
+                                Text: "Edit"
+                            },
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Color: =varThemeColors.primary
+                    DisabledColor: =varThemeColors.disabledText
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    FocusedBorderColor: =varThemeColors.primary
+                    Height: =16
+                    Icon: =Icon.Edit
+                    OnSelect: =
+                    Width: =16
+                    X: =5
+                    Y: =btnCommandBarButtonsEdit.Y+btnCommandBarButtonsEdit.Height/2-Self.Height/2
+                    ZIndex: =1
+
+                btnCommandBarButtonsEdit As button:
+                    Align: =Align.Left
+                    BorderColor: =RGBA(0,0,0,0)
+                    BorderThickness: =0
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =
+                    DisabledColor: =varThemeColors.disabledText
+                    DisabledFill: =
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Fill: =RGBA(0, 0, 0, 0)
+                    FocusedBorderColor: =varThemeColors.focusBorder
+                    FocusedBorderThickness: =2
+                    Font: =Font.'Segoe UI'
+                    FontWeight: =FontWeight.Normal
+                    Height: =Parent.Height-Self.Y*2
+                    HoverBorderColor: =
+                    HoverColor: =varThemeColors.primary
+                    HoverFill: =Color.Transparent
+                    OnSelect: |-
+                        =//Change global variables to set visibility of other commandbar buttons, search and screen controls
+                        Set(
+                            varIsEdit,
+                            true
+                        );
+                        Set(
+                            varIsNew,
+                            false
+                        );
+                        //Create temporary collections and cache in case the user cancels out the change action and needs to revert back to the last queried vendor invoice
+                        ClearCollect(
+                            colVendorInvoiceItemsTemp,
+                            colVendorInvoiceItems
+                        );
+                        Set(
+                            varNewVendorHeader,//Clear out any new vendor selected
+                            Blank()
+                        );
+                    PaddingLeft: =28
+                    PressedColor: =Color.Black
+                    PressedFill: =Color.Transparent
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Size: =10.5
+                    Text: |-
+                        =With(
+                            {Text: "Edit"},
+                              If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text 
+                                ).'Localized Value'
+                            )
+                        )
+                    Tooltip: =Self.Text
+                    Width: =Parent.Width-Self.X*2
+                    X: =Self.FocusedBorderThickness
+                    Y: =Self.FocusedBorderThickness
+                    ZIndex: =2
+
+            conCommandBarButtonsSave As groupContainer.manualLayoutContainer:
+                BorderColor: =RGBA(0, 0, 0, 0)
+                BorderStyle: =BorderStyle.None
+                FillPortions: =0
+                Height: =Parent.Height
+                LayoutMinHeight: =
+                LayoutMinWidth: =250
+                Visible: |-
+                    =Or(
+                        varIsEdit,
+                        varIsNew
+                    )
+                Width: =Len(btnCommandBarButtonsSave.Text)*10+btnCommandBarButtonsSave.PaddingLeft
+                X: =1
+                ZIndex: =3
+
+                icoCommandBarButtonsSave As icon.Save:
+                    AccessibleLabel: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {
+                                Text: "Save"
+                            },
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Color: =varThemeColors.primary
+                    DisabledColor: =varThemeColors.disabledText
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    FocusedBorderColor: =varThemeColors.primary
+                    Height: =16
+                    Icon: =Icon.Save
+                    Width: =16
+                    X: =5
+                    Y: =btnCommandBarButtonsSave.Y+btnCommandBarButtonsSave.Height/2-Self.Height/2
+                    ZIndex: =1
+
+                btnCommandBarButtonsSave As button:
+                    Align: =Align.Left
+                    BorderColor: =RGBA(0,0,0,0)
+                    BorderThickness: =0
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =
+                    DisabledColor: =varThemeColors.disabledText
+                    DisabledFill: =
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Fill: =RGBA(0, 0, 0, 0)
+                    FocusedBorderColor: =varThemeColors.focusBorder
+                    FocusedBorderThickness: =2
+                    Font: =Font.'Segoe UI'
+                    FontWeight: =FontWeight.Normal
+                    Height: =Parent.Height-Self.Y*2
+                    HoverBorderColor: =
+                    HoverColor: =varThemeColors.primary
+                    HoverFill: =Color.Transparent
+                    OnSelect: |
+                        =//Reset controls
+                        Set(
+                            varResetSelectRows,
+                            true
+                        );
+                        //work around to reset gallery select row checkbox and selected row highlighted
+                        Set(
+                            varResetSelectRows,
+                            false
+                        );
+                        Reset(chbVendorInvoiceDetailsItemsSelectAll);
+                        Reset(txtVendorInvoiceDetailsItemsFilter);
+                        //Check to see if all required information is populated first and build a temporary collection of required fields missing
+                        Clear(colRequiredFieldsTemp);
+                        If(
+                            Or(
+                                IsBlank(txtVendorInvoiceDetailsPurchaseOrder.Text),
+                                txtVendorInvoiceDetailsPurchaseOrder.Italic//Italicized means the vendor invoice has not been "looked up" to confirm it exists first
+                            ),
+                            Collect(
+                                colRequiredFieldsTemp,
+                                lblVendorInvoiceDetailsPurchaseOrder.Text
+                            )
+                        );
+                        If(
+                            IsBlank(cmbVendorInvoiceDetailsPaymentMethod.Selected.'Value Code'),
+                            Collect(
+                                colRequiredFieldsTemp,
+                                lblVendorInvoiceDetailsPaymentMethod.Text
+                            )
+                        );
+                        If(
+                            IsBlank(cmbVendorInvoiceDetailsDocumentType.Selected.'Value Code'),
+                            Collect(
+                                colRequiredFieldsTemp,
+                                lblVendorInvoiceDetailsDocumentType.Text
+                            )
+                        );
+                        If(
+                            IsBlank(dteVendorInvoiceDetailsPostingDate.SelectedDate),
+                            Collect(
+                                colRequiredFieldsTemp,
+                                lblVendorInvoiceDetailsPostingDate.Text
+                            )
+                        );
+                        If(
+                            IsEmpty(
+                                Filter(
+                                    colVendorInvoiceItems,
+                                    CrudType <> "D"
+                                )
+                            ),
+                            Collect(
+                                colRequiredFieldsTemp,
+                                lblVendorInvoiceDetailsItems.Text
+                            )
+                        );
+                        If(
+                            !IsEmpty(
+                                Filter(
+                                    colVendorInvoiceItems,
+                                    CrudType <> "D",
+                                    IsBlank(Quantity)
+                                )
+                            ),
+                            Collect(
+                                colRequiredFieldsTemp,
+                                btnVendorInvoiceItemsTableHeaderQuantity.Text
+                            )
+                        );
+                        If(
+                            !IsEmpty(
+                                Filter(
+                                    colVendorInvoiceItems,
+                                    CrudType <> "D",
+                                    IsBlank(TotalPrice)
+                                )
+                            ),
+                            Collect(
+                                colRequiredFieldsTemp,
+                                btnVendorInvoiceItemsTableHeaderTotal.Text
+                            )
+                        );
+                        //Check to see if required fields are populated and if not, notify which fields are missing
+                        If(
+                            !IsEmpty(colRequiredFieldsTemp),
+                            Notify(
+                                Substitute(
+                                    With(
+                                        {Text: "The following information is required before saving"},
+                                        If(
+                                // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    ) & ": " & Concat(
+                                        colRequiredFieldsTemp,
+                                        Value,
+                                        ", "
+                                    ),
+                                    " *",
+                                    ""
+                                ),
+                                NotificationType.Error,
+                                0
+                            );
+                            ,
+                        //Set processing variable to change processing control behavior
+                            Set(
+                                varIsProcessing,
+                                true
+                            );
+                            Set(
+                                varFooterMessage,
+                                "Saving"
+                            );
+                            Set(
+                                varVendorInvoiceJSON,//Build the vendor invoice JSON
+                                "{Header: " & JSON(
+                                    {
+                                        PurchaseOrderNumber: Trim(txtVendorInvoiceDetailsPurchaseOrder.Text),
+                                        InvoiceNumber: varVendorInvoiceNumber,
+                                        Type: cmbVendorInvoiceDetailsDocumentType.Selected.'Value Code',
+                                        PaymentMethod: cmbVendorInvoiceDetailsPaymentMethod.Selected.'Value Code',
+                                        FiscalYear: If(
+                                            varIsEdit,
+                                            varVendorInvoiceHeader.FiscalYear,
+                                            ""
+                                        ),
+                                        PostingDate: Text(
+                                            varVendorInvoicePostingDate,
+                                            "yyyy-mm-dd",
+                                            "en-US"
+                                        ),
+                                        TotalPrice: Sum(
+                                            Filter(
+                                                colVendorInvoiceItems,
+                                                CrudType <> "D"
+                                            ),
+                                            TotalPrice
+                                        )
+                                    },
+                                    JSONFormat.IndentFour
+                                ) & ", Items: " & JSON(//Build the vendor invoice items JSON from cached collection
+                                    colVendorInvoiceItems,
+                                    JSONFormat.IndentFour
+                                ) & "}"
+                            );
+                            
+                        //Replace any nulls in JSON string with empty strings before calling the flows
+                        Set(
+                                varVendorInvoiceJSON,
+                                Substitute(
+                                    varVendorInvoiceJSON,
+                                    "null",
+                                    """"""
+                                )
+                            );
+                            
+                        //Call the corresponding Power Automate depending on whether user is creating or updating a vendor invoice
+                        If(
+                                varIsNew,//Create vendor invoice
+                                Set(
+                                    varVendorInvoiceReturn,
+                                    CreateVendorInvoice.Run(varVendorInvoiceJSON)
+                                );
+                                ,//Else update vendor invoice
+                                Set(
+                                    varVendorInvoiceReturn,
+                                    UpdateVendorInvoice.Run(varVendorInvoiceJSON)
+                                );
+                            );
+                            
+                        //Set processing back to false
+                        Set(
+                                varIsProcessing,
+                                false
+                            );
+                            
+                        //Assess and raise any error messages and process further upon success
+                        Switch(
+                                varVendorInvoiceReturn.Status,
+                                "Error",//Raise error messages leaving variables in existing state for user to try again
+                                Notify(
+                                    Concat(
+                                        varVendorInvoiceReturn.Messages,
+                                        Message,
+                                        " "
+                                    ),
+                                    NotificationType.Error,
+                                    0
+                                ),
+                                "Success",//Raise success message
+                                Notify(
+                                    With(
+                                        {
+                                            Text: If(
+                                                varIsNew,
+                                                "Vendor invoice successfully created",
+                                                "Vendor invoice successfully updated"
+                                            )
+                                        },
+                                        If(
+                                // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    ) & " - " & varVendorInvoiceReturn.InvoiceNumber,
+                                    NotificationType.Success
+                                );
+                                Set(
+                                    varSelectedVendorInvoiceID,//Set selected vendor invoice id so that the newly created vendor invoice can be refreshed at the end of the logic
+                                    varVendorInvoiceReturn.InvoiceNumber
+                                );
+                                Select(icoCommandBarSearchExecute);
+                            //Query the latest SAP vendor invoice record again to ensure any system generated data is returned
+                        Set(
+                                    varIsEdit,//Reset variable to not edit
+                                    false
+                                );
+                                Set(
+                                    varIsNew,//Reset variable to not be new vendor invoice record
+                                    false
+                                ),//Default to raise any information messages
+                                Notify(
+                                    Concat(
+                                        varVendorInvoiceReturn.Messages,
+                                        Message,
+                                        " "
+                                    ),
+                                    NotificationType.Information
+                                );
+                            );
+                            Set(
+                                varVendorInvoiceReturn,//Done with vendor invoice return variable, clear the cache
+                                Blank()
+                            )
+                        );
+                        //Set processing back to false
+                        Set(
+                            varIsProcessing,
+                            false
+                        );
+                        Set(
+                            varFooterMessage,
+                            ""
+                        );
+                        //No longer need required field temp data
+                        Clear(colRequiredFieldsTemp);
+                    PaddingLeft: =28
+                    PressedColor: =Color.Black
+                    PressedFill: =Color.Transparent
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Size: =10.5
+                    Text: |-
+                        =With(
+                            {Text: "Save"},
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Tooltip: =Self.Text
+                    Width: =Parent.Width-Self.X*2
+                    X: =Self.FocusedBorderThickness
+                    Y: =Self.FocusedBorderThickness
+                    ZIndex: =2
+
+            conCommandBarButtonsCancel As groupContainer.manualLayoutContainer:
+                BorderColor: =RGBA(0, 0, 0, 0)
+                BorderStyle: =BorderStyle.None
+                FillPortions: =0
+                Height: =Parent.Height
+                LayoutMinHeight: =
+                LayoutMinWidth: =250
+                Visible: |-
+                    =Or(
+                        varIsEdit,
+                        varIsNew
+                    )
+                Width: =Len(btnCommandBarButtonsCancel.Text)*9+btnCommandBarButtonsCancel.PaddingLeft
+                X: =conCommandBarButtonsSave.X+conCommandBarButtonsSave.Width+10
+                ZIndex: =4
+
+                icoCommandBarButtonsCancel As icon.Save:
+                    AccessibleLabel: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {
+                                Text: "Cancel"
+                            },
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Color: =varThemeColors.primary
+                    DisabledColor: =varThemeColors.disabledText
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    FocusedBorderColor: =varThemeColors.primary
+                    Height: =16
+                    Icon: =Icon.Cancel
+                    Width: =16
+                    X: =5
+                    Y: =btnCommandBarButtonsCancel.Y+btnCommandBarButtonsCancel.Height/2-Self.Height/2
+                    ZIndex: =1
+
+                btnCommandBarButtonsCancel As button:
+                    Align: =Align.Left
+                    BorderColor: =RGBA(0,0,0,0)
+                    BorderThickness: =0
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =
+                    DisabledColor: =varThemeColors.disabledText
+                    DisabledFill: =
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Fill: =RGBA(0, 0, 0, 0)
+                    FocusedBorderColor: =varThemeColors.focusBorder
+                    FocusedBorderThickness: =2
+                    Font: =Font.'Segoe UI'
+                    FontWeight: =FontWeight.Normal
+                    Height: =Parent.Height-Self.Y*2
+                    HoverBorderColor: =
+                    HoverColor: =varThemeColors.primary
+                    HoverFill: =Color.Transparent
+                    OnSelect: |+
+                        =//Change global variables to set visibility of other commandbar buttons, search and screen controls
+                        Set(
+                            varIsEdit,
+                            false
+                        );
+                        Set(
+                            varIsNew,
+                            false
+                        );
+                        //work around to reset gallery select row checkbox and selected row highlighted
+                        Set(
+                            varResetSelectRows,
+                            true
+                        );
+                        Set(
+                            varResetSelectRows,
+                            false
+                        );
+                        //Reset all the input controls to remove entered data and revert back to cached data
+                        Reset(txtVendorInvoiceDetailsVendor);
+                        Reset(txtVendorInvoiceDetailsVendorName);
+                        Reset(txtVendorInvoiceDetailsTotal);
+                        Reset(cmbVendorInvoiceDetailsDocumentType);
+                        Reset(cmbVendorInvoiceDetailsPaymentMethod);
+                        Reset(cmbVendorInvoiceDetailsCurrency);
+                        Reset(dteVendorInvoiceDetailsDueDate);
+                        Reset(cmbVendorInvoiceDetailsCompanyCode);
+                        Reset(cmbVendorInvoiceDetailsPaymentTerms);
+                        Reset(txtVendorInvoiceDetailsFiscalYear);
+                        Reset(txtVendorInvoiceDetailsCreatedOn);
+                        Reset(dteVendorInvoiceDetailsPostingDate);
+                        Set(
+                            varNewPurchaseOrderHeader,//set any selected vendor invoice back to blank
+                            Blank()
+                        );
+                        Set(
+                            varNewPurchaseOrderNumber,//set any selected vendor invoice back to blank
+                            Blank()
+                        );
+                        ClearCollect(
+                            colVendorInvoiceItems,
+                            colVendorInvoiceItemsTemp
+                        );
+                        
+                    PaddingLeft: =28
+                    PressedColor: =Color.Black
+                    PressedFill: =Color.Transparent
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Size: =10.5
+                    Text: |-
+                        =With(
+                            {Text: "Cancel"},
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Tooltip: =Self.Text
+                    Width: =Parent.Width-Self.X*2
+                    X: =Self.FocusedBorderThickness
+                    Y: =Self.FocusedBorderThickness
+                    ZIndex: =2
+
+            conCommandBarButtonsApprove As groupContainer.manualLayoutContainer:
+                BorderColor: =RGBA(0, 0, 0, 0)
+                BorderStyle: =BorderStyle.None
+                FillPortions: =0
+                Height: =Parent.Height
+                LayoutMinHeight: =
+                LayoutMinWidth: =250
+                Visible: |-
+                    =And(
+                        !IsBlank(varVendorInvoiceNumber),
+                        !varIsEdit,
+                        !varIsNew,
+                        IsBlank(varVendorInvoiceHeader.ReversalDocument),//Populated if the document has already been reversed
+                        varVendorInvoiceHeader.InvoiceDocumentStatus in Table(//Various Parked status's
+                            {Status: "A"},
+                            {Status: "B"},
+                            {Status: "C"},
+                            {Status: "D"}
+                        ).Status
+                    )
+                Width: =Len(btnCommandBarButtonsApprove.Text)*9+btnCommandBarButtonsApprove.PaddingLeft
+                X: =conCommandBarButtonsSave.X+conCommandBarButtonsSave.Width+10
+                ZIndex: =6
+
+                icoCommandBarButtonsApprove As icon.Save:
+                    AccessibleLabel: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {
+                                Text: "Cancel"
+                            },
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Color: =varThemeColors.primary
+                    DisabledColor: =varThemeColors.disabledText
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    FocusedBorderColor: =varThemeColors.primary
+                    Height: =16
+                    Icon: =Icon.ThumbsUp
+                    Width: =16
+                    X: =5
+                    Y: =btnCommandBarButtonsApprove.Y+btnCommandBarButtonsApprove.Height/2-Self.Height/2
+                    ZIndex: =1
+
+                btnCommandBarButtonsApprove As button:
+                    Align: =Align.Left
+                    BorderColor: =RGBA(0,0,0,0)
+                    BorderThickness: =0
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =
+                    DisabledColor: =varThemeColors.disabledText
+                    DisabledFill: =
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Fill: =RGBA(0, 0, 0, 0)
+                    FocusedBorderColor: =varThemeColors.focusBorder
+                    FocusedBorderThickness: =2
+                    Font: =Font.'Segoe UI'
+                    FontWeight: =FontWeight.Normal
+                    Height: =Parent.Height-Self.Y*2
+                    HoverBorderColor: =
+                    HoverColor: =varThemeColors.primary
+                    HoverFill: =Color.Transparent
+                    OnSelect: |
+                        =//Start processing
+                        Set(
+                            varIsProcessing,
+                            true
+                        );
+                        //Invoke ApproveVendorInvoice flow and store the response in a collection
+                        ClearCollect(
+                            colApprovalResponse,
+                            ApproveVendorInvoice.Run(varVendorInvoiceNumber)
+                        );
+                        If (
+                            First(colApprovalResponse).Status = "Success",
+                            Notify(
+                                // Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Vendor invoice was successfully approved"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                ),
+                                NotificationType.Success,
+                                7000
+                            );
+                            //Store the returned Vendor Invoice Number in a variable that is used to refresh the lastest data from SAP
+                            Set(
+                                varSelectedVendorInvoiceID,
+                                First(colApprovalResponse).InvoiceNumber
+                            );
+                            Set(varIsProcessing,false);
+                            Select(icoCommandBarSearchExecute); //Execute the logic to refresh vendor invoice data from SAP
+                            Set(
+                                varIsEdit,
+                                false
+                            );
+                            Set(
+                                varIsNew,
+                                false
+                            )
+                            ,
+                            //Error response, notify appropriately
+                            Notify(
+                                Concat(
+                                    First(colApprovalResponse).Messages,
+                                    Message,
+                                    " "
+                                ),
+                                NotificationType.Error,
+                                0
+                            )
+                        );
+                        //Done processing
+                        Set(
+                            varIsProcessing,
+                            false
+                        );
+                    PaddingLeft: =28
+                    PressedColor: =Color.Black
+                    PressedFill: =Color.Transparent
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Size: =10.5
+                    Text: |-
+                        =With(
+                            {Text: "Approve"},
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Tooltip: =Self.Text
+                    Width: =Parent.Width-Self.X*2
+                    X: =Self.FocusedBorderThickness
+                    Y: =Self.FocusedBorderThickness
+                    ZIndex: =2
+
+            conCommandBarButtonsReversePosting As groupContainer.manualLayoutContainer:
+                BorderColor: =RGBA(0, 0, 0, 0)
+                BorderStyle: =BorderStyle.None
+                FillPortions: =0
+                Height: =Parent.Height
+                LayoutMinHeight: =
+                LayoutMinWidth: =250
+                Visible: |-
+                    =And(
+                        !IsBlank(varVendorInvoiceNumber),
+                        !varIsEdit,
+                        !varIsNew,
+                        IsBlank(varVendorInvoiceHeader.ReversalDocument),//Populated if the document has already been reversed
+                        varVendorInvoiceHeader.InvoiceDocumentStatus in Table(//Various Posted status's
+                            {Status: "4"},
+                            {Status: "5"}
+                        ).Status
+                    )
+                Width: =Len(btnCommandBarButtonsReversePosting.Text)*8.5+btnCommandBarButtonsReversePosting.PaddingLeft
+                X: =conCommandBarButtonsSave.X+conCommandBarButtonsSave.Width+10
+                ZIndex: =7
+
+                icoCommandBarButtonsReversePosting As icon.Save:
+                    AccessibleLabel: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {
+                                Text: "Cancel"
+                            },
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Color: =varThemeColors.primary
+                    DisabledColor: =varThemeColors.disabledText
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    FocusedBorderColor: =varThemeColors.primary
+                    Height: =16
+                    Icon: =Icon.Reset
+                    Width: =16
+                    X: =5
+                    Y: =btnCommandBarButtonsReversePosting.Y+btnCommandBarButtonsReversePosting.Height/2-Self.Height/2
+                    ZIndex: =1
+
+                btnCommandBarButtonsReversePosting As button:
+                    Align: =Align.Left
+                    BorderColor: =RGBA(0,0,0,0)
+                    BorderThickness: =0
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =
+                    DisabledColor: =varThemeColors.disabledText
+                    DisabledFill: =
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Fill: =RGBA(0, 0, 0, 0)
+                    FocusedBorderColor: =varThemeColors.focusBorder
+                    FocusedBorderThickness: =2
+                    Font: =Font.'Segoe UI'
+                    FontWeight: =FontWeight.Normal
+                    Height: =Parent.Height-Self.Y*2
+                    HoverBorderColor: =
+                    HoverColor: =varThemeColors.primary
+                    HoverFill: =Color.Transparent
+                    OnSelect: |-
+                        =ClearCollect(
+                            colAppNavigationThreads,
+                            Table(
+                                {
+                                    Screen: App.ActiveScreen,
+                                    Order: CountRows(colAppNavigationThreads) + 1
+                                }
+                            )
+                        );
+                        Navigate(
+                            'Vendor Invoice Reversal Screen',
+                            ScreenTransition.Cover
+                        )
+                    PaddingLeft: =28
+                    PressedColor: =Color.Black
+                    PressedFill: =Color.Transparent
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Size: =10.5
+                    Text: |-
+                        =With(
+                            {Text: "Reverse posting"},
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Tooltip: =Self.Text
+                    Width: =Parent.Width-Self.X*2
+                    X: =Self.FocusedBorderThickness
+                    Y: =Self.FocusedBorderThickness
+                    ZIndex: =2
+
+        conCommandBarSearch As groupContainer.manualLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            FillPortions: =0
+            Height: =Parent.Height
+            LayoutMinHeight: =100
+            LayoutMinWidth: =Self.Width
+            Width: |
+                =imgCommandBarSearchExecuting.X + imgCommandBarSearchExecuting.Width + 1
+            ZIndex: =4
+
+            "icoCommandBarRefreshScreen As icon.'3DPrinting'":
+                AccessibleLabel: =Self.Tooltip
+                BorderColor: =varThemeColors.primary
+                Color: =varThemeColors.primary
+                DisabledBorderColor: =varThemeColors.disabledText
+                DisabledColor: =varThemeColors.disabledText
+                DisabledFill: =RGBA(0,0,0,0)
+                DisplayMode: |-
+                    =If(
+                        varIsProcessing,
+                        DisplayMode.Disabled,
+                        DisplayMode.Edit
+                    )
+                Fill: =RGBA(0,0,0,0)
+                FocusedBorderColor: =varThemeColors.focusBorder
+                Height: =30
+                HoverBorderColor: =
+                HoverColor: =varThemeColors.primary
+                HoverFill: =RGBA(0,0,0,0)
+                Icon: =Icon.Reload
+                OnSelect: |
+                    =//Refresh the core object data and navigate back to the default screen
+                    Navigate('Vendor Invoice Details Screen');
+                    Set(varSelectedVendorInvoiceID,varVendorInvoiceNumber);
+                    Select(icoCommandBarSearchExecute)
+                PaddingBottom: =5
+                PaddingLeft: =5
+                PaddingRight: =5
+                PaddingTop: =5
+                PressedBorderColor: =
+                PressedColor: =
+                PressedFill: =RGBA(0,0,0,0)
+                TabIndex: =0
+                Tooltip: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {Text: "Refresh"},
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Visible: |-
+                    =!Or(
+                        varIsEdit,
+                        varIsNew,
+                        varIsProcessing,
+                        IsBlank(varVendorInvoiceHeader)
+                    )
+                Width: =30
+                X: =imgCommandBarSearchExecuting.X
+                Y: =6
+                ZIndex: =1
+
+            imgCommandBarSearchExecuting As image:
+                Height: =30
+                Image: ='loading-grey'
+                PaddingBottom: =5
+                PaddingLeft: =5
+                PaddingRight: =5
+                PaddingTop: =5
+                Visible: =varIsProcessing
+                Width: =30
+                X: =icoCommandBarAdvancedSearch.X+icoCommandBarAdvancedSearch.Width+7
+                Y: =6
+                ZIndex: =2
+
+            "icoCommandBarAdvancedSearch As icon.'3DPrinting'":
+                AccessibleLabel: =Self.Tooltip
+                BorderColor: =varThemeColors.primary
+                Color: =varThemeColors.primary
+                DisabledBorderColor: =varThemeColors.disabledText
+                DisabledColor: =varThemeColors.disabledText
+                DisabledFill: =RGBA(0,0,0,0)
+                DisplayMode: |-
+                    =If(
+                        varIsProcessing,
+                        DisplayMode.Disabled,
+                        DisplayMode.Edit
+                    )
+                Fill: =RGBA(0,0,0,0)
+                FocusedBorderColor: =varThemeColors.focusBorder
+                Height: =30
+                HoverBorderColor: =
+                HoverColor: =varThemeColors.primary
+                HoverFill: =RGBA(0,0,0,0)
+                Icon: =Icon.FilterFlat
+                OnSelect: |
+                    =//Use a function like this to navigate the user to a search all screen containing the search component
+                    ClearCollect(
+                        colAppNavigationThreads,
+                        Table(
+                            {
+                                Screen: App.ActiveScreen,
+                                Order: CountRows(colAppNavigationThreads) + 1
+                            }
+                        )
+                    );
+                    Navigate(
+                        'Vendor Invoice Search Screen',
+                        ScreenTransition.Cover
+                    );
+                PaddingBottom: =5
+                PaddingLeft: =5
+                PaddingRight: =5
+                PaddingTop: =5
+                PressedBorderColor: =
+                PressedColor: =
+                PressedFill: =RGBA(0,0,0,0)
+                TabIndex: =0
+                Tooltip: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {Text: "Advanced search"},
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Visible: =!Or(varIsEdit,varIsNew)
+                Width: =30
+                X: =txtCommandBarSearchInput.X+txtCommandBarSearchInput.Width+10
+                Y: =6
+                ZIndex: =3
+
+            txtCommandBarSearchInput As text:
+                AccessibleLabel: =Self.HintText
+                BorderColor: =varThemeColors.primaryGray
+                BorderThickness: =1
+                Color: =varThemeColors.text
+                Default: =If(CommandBar.ResetCommandBar,"")
+                DisabledBorderColor: =varThemeColors.primaryGray
+                DisabledColor: =varThemeColors.disabledText
+                DisabledFill: =varThemeColors.backgroundFillDisabled
+                DisplayMode: |-
+                    =If(
+                        varIsProcessing,
+                        DisplayMode.Disabled,
+                        DisplayMode.Edit
+                    )
+                Fill: =varThemeColors.backgroundFill
+                FocusedBorderColor: =varThemeColors.focusBorder
+                FocusedBorderThickness: =2
+                Font: =Font.'Segoe UI'
+                Format: =TextFormat.Number
+                Height: =30
+                HintText: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {Text: "Search vendor invoice number"},
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                HoverBorderColor: =varThemeColors.tertiaryGray
+                HoverColor: =varThemeColors.text
+                HoverFill: =varThemeColors.backgroundFill
+                OnChange: |-
+                    =Set(
+                        varSelectedVendorInvoiceID,
+                        Trim(Self.Text)
+                    )
+                PaddingRight: =icoCommandBarSearchExecute.Width
+                PressedBorderColor: =varThemeColors.tertiaryGray
+                PressedColor: =varThemeColors.text
+                PressedFill: =varThemeColors.backgroundFill
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Size: =10.5
+                Tooltip: |-
+                    =Coalesce(
+                        Self.Text,
+                        Self.HintText
+                    )
+                Visible: =!Or(varIsEdit,varIsNew)
+                Width: |-
+                    =Max(
+                        125,
+                        Len(Self.HintText) * 10
+                    )
+                X: =cmbCommandBarRecentSearch.X+cmbCommandBarRecentSearch.Width+10
+                Y: =6
+                ZIndex: =4
+
+            "icoCommandBarSearchExecute As icon.'3DPrinting'":
+                AccessibleLabel: =Self.Tooltip
+                BorderColor: =varThemeColors.primary
+                Color: =varThemeColors.primaryGray
+                DisabledBorderColor: =varThemeColors.disabledText
+                DisabledColor: =varThemeColors.backgroundFillDisabled
+                DisabledFill: =RGBA(0,0,0,0)
+                DisplayMode: |-
+                    =If(
+                        varIsProcessing,
+                        DisplayMode.Disabled,
+                        DisplayMode.Edit
+                    )
+                Fill: =RGBA(0,0,0,0)
+                FocusedBorderColor: =varThemeColors.focusBorder
+                Height: =30
+                HoverBorderColor: =
+                HoverColor: =varThemeColors.primary
+                HoverFill: =RGBA(0,0,0,0)
+                Icon: =Icon.ArrowRight
+                OnSelect: |-
+                    =If(
+                        !IsBlank(varSelectedVendorInvoiceID),
+                    //Sets processing indicator control behavior 
+                        Set(
+                            varIsProcessing,
+                            true
+                        );
+                        Set(
+                            varFooterMessage,
+                            "Loading"
+                        );
+                        //Remove any existing cached vendor invoice data whether variables or collections
+                    Set(
+                            varVendorInvoiceHeader,
+                            Blank()
+                        );
+                        Set(
+                            varNewPurchaseOrderHeader,
+                            Blank()
+                        );
+                        Set(
+                            varPurchaseOrderNumber,
+                            Blank()
+                        );
+                        Set(
+                            varNewPurchaseOrderNumber,
+                            Blank()
+                        );
+                        Set(
+                            varVendorInvoicePostingDate,
+                            Blank()
+                        );
+                        Clear(colVendorInvoiceItems);
+                        
+                    //Call ReadVendorInvoice Power Automate to read the vendor invoice from SAP
+                    ClearCollect(
+                            colReadVendorInvoiceResponseTemp,//collection that temporarily stores the vendor invoice response data
+                            ReadVendorInvoice.Run(varSelectedVendorInvoiceID)
+                        );
+                        
+                    //Evalute response conditions
+                    Switch(
+                            true,
+                            And(//Check to see if read vendor invoice call was successful and process happy path logic
+                                First(colReadVendorInvoiceResponseTemp).Status = "Success",
+                                !IsBlank(First(colReadVendorInvoiceResponseTemp).InvoiceNumber)
+                            ),
+                            //Reset the search text input control
+                            Reset(txtCommandBarSearchInput);
+                            Set(
+                                varVendorInvoiceNumber,//Variable that stores the returned vendor invoice number
+                                First(colReadVendorInvoiceResponseTemp).InvoiceNumber
+                            );
+                            Set(
+                                varVendorInvoiceHeader,//Variable that stores the returned main vendor invoice data
+                                First(colReadVendorInvoiceResponseTemp).Header
+                            );
+                            Set(
+                                varPurchaseOrderNumber,//Variable that stores the returned vendor invoice for the vendor invoice
+                                First(colReadVendorInvoiceResponseTemp).PurchaseOrderNumber
+                            );
+                    
+                            Set(//Set default sort column of items table
+                                varVendorInvoiceItemsSortByColumn,
+                                btnVendorInvoiceItemsTableHeaderItem.Text
+                            );
+                            Set(//Set default sort order of items table
+                                varVendorInvoiceItemsSortOrder,
+                                SortOrder.Ascending
+                            );
+                            //Reset any controls that interact with existing vendor invoice data
+                    Reset(chbVendorInvoiceDetailsItemsSelectAll);
+                            Reset(galVendorInvoiceItems);
+                            Reset(txtVendorInvoiceDetailsItemsFilter);
+                         /*Cache associated vendor invoice child records. Collections are used to pass updated data back in update vendor invoice transactions
+                        Default CrudType fields to 'R'. CrudType will be changed if user changes/removes child records and used by update vendor invoice flow*/
+                    UpdateIf(
+                                ClearCollect(
+                                    colVendorInvoiceItems,//Collection that caches associated vendor invoice items
+                                    First(colReadVendorInvoiceResponseTemp).Items
+                                );
+                                ,
+                                true,
+                                {CrudType: "R"}
+                            );
+                            //Create/update vendor invoice search history record
+                    Patch(
+                                'SAP Search Histories',
+                                Coalesce(
+                                    LookUp(
+                                        'SAP Search Histories',
+                                        And(
+                                            'Object ID' = varVendorInvoiceNumber,
+                                            'Object Type' = 'Object Type (SAP Search Histories)'.'Vendor Invoice',
+                                            'Created By'.User = varSystemUserID
+                                        )
+                                    ),
+                                    Defaults('SAP Search Histories')
+                                ),
+                                {
+                                    'Object ID': varVendorInvoiceNumber,
+                                    'Object Type': 'Object Type (SAP Search Histories)'.'Vendor Invoice',
+                                    Name: Concatenate(
+                                        varVendorInvoiceNumber,
+                                        " - ",
+                                        varVendorInvoiceHeader.VendorName
+                                    ),
+                                    'Last Searched On': Now()
+                                }
+                            );
+                        //Check if the patch function was successful and notify if there was any errors.
+                    If(
+                                !IsEmpty(Errors('SAP Search Histories')),
+                                Notify(
+                                    First(Errors('SAP Search Histories')).Message,
+                                    NotificationType.Error,
+                                    0
+                                ),
+                                Reset(cmbCommandBarRecentSearch);
+                                Refresh('SAP Search Histories');
+                            );
+                        //End if ReadVendorInvoice Power Automate call was success
+                    ,
+                            And(//Flow returned and error
+                                First(colReadVendorInvoiceResponseTemp).Status = "Error",
+                                IsBlank(First(colReadVendorInvoiceResponseTemp).Header.Vendor)
+                            ),
+                            Notify(
+                                Concat(
+                                    First(colReadVendorInvoiceResponseTemp).Messages,
+                                    Message,
+                                    " "
+                                ),
+                                NotificationType.Error,
+                                0
+                            ),
+                            And(//Check to see if call was successful, but no vendor invoice was found
+                                First(colReadVendorInvoiceResponseTemp).Status = "Information",
+                                IsBlank(First(colReadVendorInvoiceResponseTemp).InvoiceNumber)
+                            ),
+                            Notify(
+                                With(
+                                    {Text: "Vendor invoice not found"},
+                                    If(
+                            // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                            // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                ),
+                                NotificationType.Information,
+                                7000
+                            ),//Default response for an unhandled error return
+                            Notify(
+                                With(
+                                    {Text: "Unexpected error occurred"},
+                                    If(
+                            // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                            // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                ),
+                                NotificationType.Error,
+                                0
+                            )
+                        );
+                        
+                    //End vendor invoice response switch statement
+                    //Reset loading to false as the data query is complete
+                    Set(
+                            varSelectedVendorInvoiceID,//done with selected vendor invoice ID variable, set back to blank
+                            Blank()
+                        );
+                       // Clear(colReadVendorInvoiceResponseTemp);
+                    //done with read vendor invoice temp collections, clear cache
+                    Set(
+                            varIsProcessing,//done processing read vendor invoice, set variable back to false stopping any processing control behavior
+                            false
+                        );
+                        Set(
+                            varFooterMessage,
+                            Blank()
+                        );
+                        
+                    )
+                PaddingBottom: =5
+                PaddingLeft: =5
+                PaddingRight: =5
+                PaddingTop: =5
+                PressedBorderColor: =
+                PressedColor: =
+                PressedFill: =RGBA(0,0,0,0)
+                TabIndex: =0
+                Tooltip: |-
+                    =With(
+                        {Text: "Execute search"},
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Visible: =!Or(varIsEdit,varIsNew) && !IsBlank(txtCommandBarSearchInput.Text)
+                Width: =30
+                X: =txtCommandBarSearchInput.X+txtCommandBarSearchInput.Width-Self.Width
+                Y: =6
+                ZIndex: =5
+
+            cmbCommandBarRecentSearch As combobox:
+                AccessibleLabel: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {
+                            Text: If(
+                                IsEmpty(
+                                    (Filter(
+                                        'SAP Search Histories',
+                                        'Object Type' = 'Object Type (SAP Search Histories)'.'Vendor Invoice',
+                                        'SAP Search Histories (Views)'.'My Recent SAP Search History'//View in Dataverse specifically designed to only returned records within a timeframe
+                                    ))
+                                ),
+                                "No recent vendor invoices",
+                                "Select recent vendor invoices"
+                            )
+                        },
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                BorderColor: =varThemeColors.primaryGray
+                BorderThickness: =1
+                ChevronBackground: =varThemeColors.backgroundFill
+                ChevronDisabledBackground: =varThemeColors.backgroundFillDisabled
+                ChevronDisabledFill: |
+                    =varThemeColors.text
+                ChevronFill: =varThemeColors.text
+                ChevronHoverBackground: =varThemeColors.secondaryGray
+                ChevronHoverFill: |
+                    =varThemeColors.text
+                Color: =varThemeColors.text
+                DefaultSelectedItems: =Blank()
+                DisabledBorderColor: =varThemeColors.primaryGray
+                DisabledColor: =varThemeColors.disabledText
+                DisabledFill: =varThemeColors.backgroundFillDisabled
+                DisplayFields: =["mpa_name","mpa_name"]
+                DisplayMode: |-
+                    =If(
+                        varIsProcessing,
+                        DisplayMode.Disabled,
+                        DisplayMode.Edit
+                    )
+                Fill: =varThemeColors.backgroundFill
+                FocusedBorderColor: =varThemeColors.focusBorder
+                FocusedBorderThickness: =2
+                Font: =Font.'Segoe UI'
+                Height: =30
+                HoverBorderColor: =varThemeColors.tertiaryGray
+                HoverColor: =varThemeColors.text
+                HoverFill: =varThemeColors.secondaryGray
+                InputTextPlaceholder: =Self.AccessibleLabel
+                IsSearchable: =false
+                Items: |-
+                    =//Filter the 'SAP Search Histories' dataverse entity based upon the 'Object Type' value that you will to filter/display in the combo box.
+                    Sort(
+                        Filter(
+                            'SAP Search Histories',
+                            'Object Type' = 'Object Type (SAP Search Histories)'.'Vendor Invoice',
+                            'SAP Search Histories (Views)'.'My Recent SAP Search History'//View in Dataverse specifically designed to only returned records within a timeframe
+                        ),
+                        'Last Searched On',
+                        SortOrder.Descending
+                    )
+                NoSelectionText: =Self.AccessibleLabel
+                OnChange: |-
+                    =//When user selects new recent value and not blank, invoke the same command bar search logic as if the user manually entered the vendor invoice value
+                    Reset(txtCommandBarSearchInput);
+                    If(
+                        And(
+                            !IsBlank(Self.Selected),
+                            Or(
+                                Self.Selected.'Object ID' <> varSelectedVendorInvoiceID,
+                                IsBlank(varSelectedVendorInvoiceID)
+                            )
+                        ),
+                        Set(
+                            varSelectedVendorInvoiceID,
+                            Self.Selected.'Object ID'
+                        );
+                        Select(icoCommandBarSearchExecute);
+                        
+                    )
+                PaddingLeft: =12
+                PaddingRight: =10
+                PressedBorderColor: =varThemeColors.tertiaryGray
+                PressedColor: =varThemeColors.altText
+                PressedFill: =varThemeColors.backgroundFill
+                SearchFields: =["mpa_name","mpa_objectid"]
+                SearchItems: =[]
+                SelectionColor: =varThemeColors.altText
+                SelectionFill: =varThemeColors.primaryGray
+                SelectionTagColor: =varThemeColors.text
+                SelectionTagFill: =varThemeColors.backgroundFill
+                SelectMultiple: =false
+                Size: =10.5
+                Tooltip: |-
+                    =Coalesce(
+                        Self.Selected.Name,
+                        Self.AccessibleLabel
+                    )
+                Visible: =!Or(varIsEdit,varIsNew)
+                Width: |-
+                    =Max(
+                        250,
+                        Len(Self.AccessibleLabel) * 10
+                    )
+                X: =shpCommandBarSearchDivider.X+shpCommandBarSearchDivider.Width+10
+                Y: =6
+                ZIndex: =6
+
+            shpCommandBarSearchDivider As rectangle:
+                AccessibleLabel: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {
+                            Text: "Divider"
+                        },
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Fill: =varThemeColors.secondaryGray
+                Height: =30
+                OnSelect: =
+                Visible: =!Or(varIsEdit,varIsNew)
+                Width: =2
+                Y: =6
+                ZIndex: =7
+

@@ -1,0 +1,1285 @@
+CommandBar As CanvasComponent:
+    Fill: =RGBA(0, 0, 0, 0)
+    Height: =44
+    OnReset: =
+    ResetCommandBar: =true
+    Width: =1692
+    X: =0
+    Y: =0
+    ZIndex: =1
+
+    conCommandBar As groupContainer.horizontalAutoLayoutContainer:
+        Height: =44
+        LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+        LayoutMode: =LayoutMode.Auto
+        PaddingLeft: =24
+        PaddingRight: =24
+        Width: =CommandBar.Width
+        X: =0   
+        ZIndex: =2
+
+        conCommandBarButtons As groupContainer.horizontalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            BorderColor: =
+            Height: =CommandBar.Height-1
+            LayoutAlignItems: =LayoutAlignItems.Center
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            Width: =CommandBar.Width
+            ZIndex: =1
+
+            conCommandBarButtonsCreate As groupContainer.manualLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                FillPortions: =0
+                Height: =43
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                Visible: =!varIsNew
+                Width: =Len(btnCommandBarButtonsCreate.Text)*9+btnCommandBarButtonsCreate.PaddingLeft
+                ZIndex: =1
+
+                icoCommandBarButtonsCreate As icon.Save:
+                    AccessibleLabel: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {
+                                Text: "Create"
+                            },
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Color: =varThemeColors.primary
+                    DisabledColor: =varThemeColors.disabledText
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    FocusedBorderColor: =varThemeColors.primary
+                    Height: =16
+                    Icon: =Icon.Add
+                    Width: =16
+                    X: =5
+                    Y: =btnCommandBarButtonsCreate.Y+btnCommandBarButtonsCreate.Height/2-Self.Height/2
+                    ZIndex: =1
+
+                btnCommandBarButtonsCreate As button:
+                    Align: =Align.Left
+                    BorderColor: =RGBA(0,0,0,0)
+                    BorderThickness: =0
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =
+                    DisabledColor: =varThemeColors.disabledText
+                    DisabledFill: =
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Fill: =RGBA(0, 0, 0, 0)
+                    FocusedBorderColor: =varThemeColors.tertiaryGray
+                    FocusedBorderThickness: =2
+                    Font: =Font.'Segoe UI'
+                    FontWeight: =FontWeight.Normal
+                    Height: =Parent.Height-Self.Y*2
+                    HoverBorderColor: =
+                    HoverColor: =varThemeColors.primary
+                    HoverFill: =Color.Transparent
+                    OnSelect: |-
+                        =//Change global variables to set visibility of other commandbar buttons, search and screen controls
+                        Set(
+                            varIsNew,
+                            true
+                        );
+                        //Reset the cached data and controls to prepare for new goods receipt details
+                        Reset(chbGoodsReceiptDetailsItemsSelectAll);
+                        Reset(txtGoodsReceiptDetailsItemsFilter);
+                        Reset(txtGoodsReceiptDetailsVendorName);
+                        Reset(txtGoodsReceiptDetailsCreatedOn);
+                        Reset(txtGoodsReceiptDetailsCreatedBy);
+                        Reset(txtGoodsReceiptDetailsStatus);
+                        Reset(txtGoodsReceiptDetailsPostingDate);
+                        Reset(txtGoodsReceiptDetailsDocumentDate);
+                        Reset(cmbVendorInvoiceDetailsDocumentType);
+                        
+                        ClearCollect(
+                            colGoodsReceiptItemsTemp,
+                            colGoodsReceiptItems
+                        );
+                        Clear(colGoodsReceiptItems);
+                        Set(
+                            varPurchaseOrderHeader,
+                            Blank()
+                        );
+                        Set(
+                            varNewPurchaseOrderNumber,
+                            Blank()
+                        );
+                        //Navigate back to Goods Receipt Details screen if selecting to create from another screen
+                        Navigate(
+                            'Goods Receipt Details Screen',
+                            ScreenTransition.None
+                        );
+                    PaddingLeft: =28
+                    PressedColor: =Color.Black
+                    PressedFill: =Color.Transparent
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Size: =10.5
+                    Text: |-
+                        =With(
+                            {Text: "Create"},
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Tooltip: =Self.Text
+                    Width: =Parent.Width-Self.X*2
+                    X: =Self.FocusedBorderThickness
+                    Y: =Self.FocusedBorderThickness
+                    ZIndex: =2
+
+            conCommandBarButtonsSave As groupContainer.manualLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                BorderColor: =RGBA(0, 0, 0, 0)
+                BorderStyle: =BorderStyle.None
+                FillPortions: =0
+                Height: =Parent.Height
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                Visible: =varIsNew
+                Width: =Len(btnCommandBarButtonsSave.Text)*10+btnCommandBarButtonsSave.PaddingLeft
+                X: =1
+                ZIndex: =2
+
+                icoCommandBarButtonsSave As icon.Save:
+                    AccessibleLabel: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {
+                                Text: "Save"
+                            },
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Color: =varThemeColors.primary
+                    DisabledColor: =varThemeColors.disabledText
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    FocusedBorderColor: =varThemeColors.primary
+                    Height: =16
+                    Icon: =Icon.Save
+                    Width: =16
+                    X: =5
+                    Y: =btnCommandBarButtonsSave.Y+btnCommandBarButtonsSave.Height/2-Self.Height/2
+                    ZIndex: =1
+
+                btnCommandBarButtonsSave As button:
+                    Align: =Align.Left
+                    BorderColor: =RGBA(0,0,0,0)
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =
+                    DisabledColor: =varThemeColors.disabledText
+                    DisabledFill: =
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Fill: =RGBA(0, 0, 0, 0)
+                    FocusedBorderColor: =varThemeColors.tertiaryGray
+                    FocusedBorderThickness: =2
+                    Font: =Font.'Segoe UI'
+                    FontWeight: =FontWeight.Normal
+                    Height: =Parent.Height-Self.Y*2
+                    HoverBorderColor: =
+                    HoverColor: =varThemeColors.primary
+                    HoverFill: =Color.Transparent
+                    OnSelect: |
+                        =//Reset controls
+                        Set(
+                            varResetSelectRows,
+                            true
+                        );
+                        //work around to reset gallery select row checkbox and selected row highlighted
+                        Set(
+                            varResetSelectRows,
+                            false
+                        );
+                        Reset(chbGoodsReceiptDetailsItemsSelectAll);
+                        Reset(txtGoodsReceiptDetailsItemsFilter);
+                        //Check to see if all required information is populated first and build a temporary collection of required fields missing
+                        Clear(colRequiredFieldsTemp);
+                        If(
+                            Or(
+                                IsBlank(txtGoodsReceiptDetailsPurchaseOrder.Text),
+                                txtGoodsReceiptDetailsPurchaseOrder.Italic//Italicized means the purchase order has not been "looked up" to confirm it exists first
+                            ),
+                            Collect(
+                                colRequiredFieldsTemp,
+                                lblGoodsReceiptDetailsPurchaseOrder.Text
+                            )
+                        );
+                        If(
+                            IsEmpty(colGoodsReceiptItems),
+                            Collect(
+                                colRequiredFieldsTemp,
+                                lblGoodsReceiptDetailsItems.Text
+                            )
+                        );
+                        If(
+                            !IsEmpty(
+                                Filter(
+                                    colGoodsReceiptItems,
+                                    IsBlank(StorageLocation)
+                                )
+                            ),
+                            Collect(
+                                colRequiredFieldsTemp,
+                                btnGoodsReceiptItemsTableHeaderStorageLocation.Text
+                            )
+                        );
+                        If(
+                            IsEmpty(
+                                Filter(
+                                    colGoodsReceiptItems,
+                                    Quantity > 0
+                                )
+                            ) && !IsEmpty(colGoodsReceiptItems),
+                            Collect(
+                                colRequiredFieldsTemp,
+                                btnGoodsReceiptItemsTableHeaderQuantityReceived.Text
+                            )
+                        );
+                        //Check to see if required fields are populated and if not, notify which fields are missing
+                        If(
+                            !IsEmpty(colRequiredFieldsTemp),
+                            Notify(
+                                Substitute(
+                                    With(
+                                        {Text: "The following information is required before saving"},
+                                        If(
+                                // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    ) & ": " & Concat(
+                                        colRequiredFieldsTemp,
+                                        Value,
+                                        ", "
+                                    ),
+                                    " *",
+                                    ""
+                                ),
+                                NotificationType.Error,
+                                0
+                            );
+                            ,
+                        //Set processing variable to change processing control behavior
+                            Set(
+                                varIsProcessing,
+                                true
+                            );
+                            Set(
+                                varFooterMessage,
+                                "Saving"
+                            );
+                            Set(
+                                varGoodsReceiptJSON,//Build the goods receipt JSON
+                                "{Header: " & JSON(
+                                    {
+                                        PurchaseOrderNumber: Trim(txtGoodsReceiptDetailsPurchaseOrder.Text),
+                                        Vendor: Trim(txtGoodsReceiptDetailsVendor.Text),
+                                        DeliveryNote: Trim(txtGoodsReceiptDetailsDeliveryNote.Text)
+                                    },
+                                    JSONFormat.IndentFour
+                                ) & ", Items: " & JSON(//Build the goods receipt items JSON from cached collection
+                                    colGoodsReceiptItems,
+                                    JSONFormat.IndentFour
+                                ) & "}"
+                            );
+                            
+                        //Replace any nulls in JSON string with empty strings before calling the flows
+                        Set(
+                                varGoodsReceiptJSON,
+                                Substitute(
+                                    varGoodsReceiptJSON,
+                                    "null",
+                                    """"""
+                                )
+                            );
+                            
+                        //Call the corresponding Power Automate to create goods receipt
+                        Set(
+                                varGoodsReceiptReturn,
+                                CreateGoodsReceipt.Run(varGoodsReceiptJSON)
+                            );
+                            
+                        //Set processing back to false
+                        Set(
+                                varIsProcessing,
+                                false
+                            );
+                            
+                        //Assess and raise any error messages and process further upon success
+                        Switch(
+                                varGoodsReceiptReturn.Status,
+                                "Error",//Raise error messages leaving variables in existing state for user to try again
+                                Notify(
+                                    Concat(
+                                        varGoodsReceiptReturn.Messages,
+                                        Message,
+                                        " "
+                                    ),
+                                    NotificationType.Error,
+                                    0
+                                ),
+                                "Success",//Raise success message
+                                Notify(
+                                    With(
+                                        {Text: "Goods receipt successfully created"},
+                                        If(
+                                // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    ) & " - " & varGoodsReceiptReturn.ReceiptNumber,
+                                    NotificationType.Success
+                                );
+                                Set(
+                                    varSelectedGoodsReceiptID,//Set selected vendor invoice id so that the newly created vendor invoice can be refreshed at the end of the logic
+                                    varGoodsReceiptReturn.ReceiptNumber
+                                );
+                                Select(icoCommandBarSearchExecute);
+                            //Query the latest SAP goods receipt record again to ensure any system generated data is returned
+                        Set(
+                                    varIsNew,//Reset variable to not be new goods receipt record
+                                    false
+                                ),//Default to raise any information messages
+                                Notify(
+                                    Concat(
+                                        varGoodsReceiptReturn.Messages,
+                                        Message,
+                                        " "
+                                    ),
+                                    NotificationType.Information
+                                );
+                            );
+                            Set(
+                                varGoodsReceiptReturn,//Done with goods receipt return variable, clear the cache
+                                Blank()
+                            )
+                        );
+                        //Set processing back to false
+                        Set(
+                            varIsProcessing,
+                            false
+                        );
+                        Set(
+                            varFooterMessage,
+                            ""
+                        );
+                        //No longer need required field temp data
+                        Clear(colRequiredFieldsTemp);
+                    PaddingLeft: =28
+                    PressedColor: =Color.Black
+                    PressedFill: =Color.Transparent
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Size: =10.5
+                    Text: |-
+                        =With(
+                            {Text: "Save"},
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Tooltip: =Self.Text
+                    Width: =Parent.Width-Self.X*2
+                    X: =Self.FocusedBorderThickness
+                    Y: =Self.FocusedBorderThickness
+                    ZIndex: =2
+
+            conCommandBarButtonsCancel As groupContainer.manualLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                BorderColor: =RGBA(0, 0, 0, 0)
+                BorderStyle: =BorderStyle.None
+                FillPortions: =0
+                Height: =Parent.Height
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                Visible: =varIsNew
+                Width: =Len(btnCommandBarButtonsCancel.Text)*9+btnCommandBarButtonsCancel.PaddingLeft
+                X: =conCommandBarButtonsSave.X+conCommandBarButtonsSave.Width+10
+                ZIndex: =3
+
+                icoCommandBarButtonsCancel As icon.Save:
+                    AccessibleLabel: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {
+                                Text: "Cancel"
+                            },
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Color: =varThemeColors.primary
+                    DisabledColor: =varThemeColors.disabledText
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    FocusedBorderColor: =varThemeColors.primary
+                    Height: =16
+                    Icon: =Icon.Cancel
+                    Width: =16
+                    X: =5
+                    Y: =btnCommandBarButtonsCancel.Y+btnCommandBarButtonsCancel.Height/2-Self.Height/2
+                    ZIndex: =1
+
+                btnCommandBarButtonsCancel As button:
+                    Align: =Align.Left
+                    BorderColor: =RGBA(0,0,0,0)
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =
+                    DisabledColor: =varThemeColors.disabledText
+                    DisabledFill: =
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Fill: =RGBA(0, 0, 0, 0)
+                    FocusedBorderColor: =varThemeColors.tertiaryGray
+                    FocusedBorderThickness: =2
+                    Font: =Font.'Segoe UI'
+                    FontWeight: =FontWeight.Normal
+                    Height: =Parent.Height-Self.Y*2
+                    HoverBorderColor: =
+                    HoverColor: =varThemeColors.primary
+                    HoverFill: =Color.Transparent
+                    OnSelect: |
+                        =//Change global variables to set visibility of other commandbar buttons, search and screen controls
+                        Set(
+                            varIsNew,
+                            false
+                        );
+                        //work around to reset gallery select row checkbox and selected row highlighted
+                        Set(
+                            varResetSelectRows,
+                            true
+                        );
+                        Set(
+                            varResetSelectRows,
+                            false
+                        );
+                        //Reset all the input controls to remove entered data and revert back to cached data
+                        Reset(chbGoodsReceiptDetailsItemsSelectAll);
+                        Reset(txtGoodsReceiptDetailsItemsFilter);
+                        Reset(txtGoodsReceiptDetailsVendorName);
+                        Reset(txtGoodsReceiptDetailsCreatedOn);
+                        Reset(txtGoodsReceiptDetailsCreatedBy);
+                        Reset(txtGoodsReceiptDetailsStatus);
+                        Reset(txtGoodsReceiptDetailsPostingDate);
+                        Reset(txtGoodsReceiptDetailsDocumentDate);
+                        Reset(cmbVendorInvoiceDetailsDocumentType);
+                        Set(
+                            varPurchaseOrderHeader,//set any selected vendor invoice back to blank
+                            Blank()
+                        );
+                        Set(
+                            varNewPurchaseOrderNumber,//set any selected vendor invoice back to blank
+                            Blank()
+                        );
+                        Set(
+                            varTotalExpectedQuantity,//set expected quantity back to zero
+                            Blank()
+                        );
+                        ClearCollect(
+                            colGoodsReceiptItems,
+                            colGoodsReceiptItemsTemp
+                        );
+                        Clear(colPurchaseOrderItems)
+                    PaddingLeft: =28
+                    PressedColor: =Color.Black
+                    PressedFill: =Color.Transparent
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Size: =10.5
+                    Text: |-
+                        =With(
+                            {Text: "Cancel"},
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Tooltip: =Self.Text
+                    Width: =Parent.Width-Self.X*2
+                    X: =Self.FocusedBorderThickness
+                    Y: =Self.FocusedBorderThickness
+                    ZIndex: =2
+
+        conCommandBarSearch As groupContainer.manualLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            FillPortions: =0
+            Height: =Parent.Height
+            LayoutMinHeight: =100
+            LayoutMinWidth: =Self.Width
+            Width: |
+                =imgCommandBarSearchExecuting.X + imgCommandBarSearchExecuting.Width + 1
+            ZIndex: =2
+
+            "icoCommandBarRefreshScreen As icon.'3DPrinting'":
+                AccessibleLabel: =Self.Tooltip
+                BorderColor: =varThemeColors.primary
+                Color: =varThemeColors.primary
+                DisabledBorderColor: =varThemeColors.disabledText
+                DisabledColor: =varThemeColors.disabledText
+                DisabledFill: =RGBA(0,0,0,0)
+                DisplayMode: |-
+                    =If(
+                        varIsProcessing,
+                        DisplayMode.Disabled,
+                        DisplayMode.Edit
+                    )
+                Fill: =RGBA(0,0,0,0)
+                FocusedBorderColor: =varThemeColors.tertiaryGray
+                Height: =30
+                HoverBorderColor: =
+                HoverColor: =varThemeColors.primary
+                HoverFill: =RGBA(0,0,0,0)
+                Icon: =Icon.Reload
+                OnSelect: |
+                    =//Refresh the core object data and navigate back to the default screen
+                    Navigate('Goods Receipt Details Screen');
+                    Set(varSelectedGoodsReceiptID,varGoodsReceiptNumber);
+                    Select(icoCommandBarSearchExecute)
+                PaddingBottom: =5
+                PaddingLeft: =5
+                PaddingRight: =5
+                PaddingTop: =5
+                PressedBorderColor: =
+                PressedColor: =
+                PressedFill: =RGBA(0,0,0,0)
+                TabIndex: =0
+                Tooltip: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {Text: "Refresh"},
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Visible: |-
+                    =!Or(
+                        varIsNew,
+                        varIsProcessing,
+                        IsBlank(varGoodsReceiptHeader)
+                    )
+                Width: =30
+                X: =imgCommandBarSearchExecuting.X
+                Y: =6
+                ZIndex: =1
+
+            imgCommandBarSearchExecuting As image:
+                Height: =30
+                Image: ='loading-grey_1'
+                PaddingBottom: =5
+                PaddingLeft: =5
+                PaddingRight: =5
+                PaddingTop: =5
+                Visible: =varIsProcessing
+                Width: =30
+                X: =icoCommandBarAdvancedSearch.X+icoCommandBarAdvancedSearch.Width+7
+                Y: =6
+                ZIndex: =2
+
+            txtCommandBarSearchInput As text:
+                AccessibleLabel: =Self.HintText
+                BorderColor: =varThemeColors.primaryGray
+                BorderThickness: =1
+                Color: =varThemeColors.text
+                Default: =If(CommandBar.ResetCommandBar,"")
+                DisabledBorderColor: =varThemeColors.primaryGray
+                DisabledColor: =varThemeColors.disabledText
+                DisabledFill: =varThemeColors.backgroundFillDisabled
+                DisplayMode: |-
+                    =If(
+                        varIsProcessing,
+                        DisplayMode.Disabled,
+                        DisplayMode.Edit
+                    )
+                Fill: =varThemeColors.backgroundFill
+                FocusedBorderColor: =varThemeColors.tertiaryGray
+                FocusedBorderThickness: =2
+                Font: =Font.'Segoe UI'
+                Format: =TextFormat.Number
+                Height: =30
+                HintText: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {Text: "Search goods receipt number"},
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                HoverBorderColor: =varThemeColors.tertiaryGray
+                HoverColor: =varThemeColors.text
+                HoverFill: =varThemeColors.backgroundFill
+                OnChange: |-
+                    =Set(
+                        varSelectedGoodsReceiptID,
+                        Trim(Self.Text)
+                    )
+                PaddingRight: =icoCommandBarSearchExecute.Width
+                PressedBorderColor: =varThemeColors.tertiaryGray
+                PressedColor: =varThemeColors.text
+                PressedFill: =varThemeColors.backgroundFill
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Size: =10.5
+                Tooltip: |-
+                    =Coalesce(
+                        Self.Text,
+                        Self.HintText
+                    )
+                Visible: =!varIsNew
+                Width: |-
+                    =Max(
+                        125,
+                        Len(Self.HintText) * 10
+                    )
+                X: =cmbCommandBarRecentSearch.X+cmbCommandBarRecentSearch.Width+10
+                Y: =6
+                ZIndex: =4
+
+            "icoCommandBarSearchExecute As icon.'3DPrinting'":
+                AccessibleLabel: =Self.Tooltip
+                BorderColor: =varThemeColors.primary
+                Color: =varThemeColors.primaryGray
+                DisabledBorderColor: =varThemeColors.disabledText
+                DisabledColor: =varThemeColors.backgroundFillDisabled
+                DisabledFill: =RGBA(0,0,0,0)
+                DisplayMode: |-
+                    =If(
+                        varIsProcessing,
+                        DisplayMode.Disabled,
+                        DisplayMode.Edit
+                    )
+                Fill: =RGBA(0,0,0,0)
+                FocusedBorderColor: =varThemeColors.tertiaryGray
+                Height: =30
+                HoverBorderColor: =
+                HoverColor: =varThemeColors.primary
+                HoverFill: =RGBA(0,0,0,0)
+                Icon: =Icon.ArrowRight
+                OnSelect: |
+                    =If(
+                        !IsBlank(varSelectedGoodsReceiptID),
+                        Set(
+                            varFooterMessage,
+                            "Loading"
+                        );
+                        
+                    //Sets processing indicator control behavior 
+                    Set(
+                            varIsProcessing,
+                            true
+                        );
+                        
+                    //Remove any existing cached purchase data whether variables or collections
+                    Set(
+                            varGoodsReceiptHeader,
+                            Blank()
+                        );
+                        Set(
+                            varPurchaseOrderNumber,
+                            Blank()
+                        );
+                        Set(
+                            varPurchaseOrderHeader,
+                            Blank()
+                        );
+                        Set(
+                            varGoodsReceiptVendor,
+                            Blank()
+                        );
+                        Set(
+                            varGoodsReceiptNumber,
+                            Blank()
+                        );
+                        Clear(colGoodsReceiptItems);
+                        
+                    //Call ReadGoodsReceipt Power Automate to read the goods receipt from SAP
+                    ClearCollect(
+                            colReadGoodsReceiptResponseTemp,//collection that temporarily stores the goods receipt response data
+                            ReadGoodsReceipt.Run(varSelectedGoodsReceiptID)
+                        );
+                        
+                    //Evalute response conditions
+                    Switch(
+                            true,
+                            And(//Check to see if read goods receipt call was successful and process happy path logic
+                                First(colReadGoodsReceiptResponseTemp).Status = "Success",
+                                !IsBlank(First(colReadGoodsReceiptResponseTemp).Receipt)
+                            ),
+                            Set(
+                                varGoodsReceiptNumber,//Variable that stores the returned goods receipt number
+                                First(colReadGoodsReceiptResponseTemp).Receipt
+                            );
+                            Set(
+                                varGoodsReceiptHeader,//Variable that stores the returned main goods receipt data
+                                First(colReadGoodsReceiptResponseTemp).Header
+                            );
+                            Set(
+                                varPurchaseOrderNumber,//Variable that stores the returned material data
+                                First(colReadGoodsReceiptResponseTemp).PurchaseOrderNumber
+                            );
+                            Set(
+                                varGoodsReceiptVendor,//Variable that stores the returned material data
+                                First(colReadGoodsReceiptResponseTemp).Vendor
+                            );
+                            Set(//Set default sort column of items table
+                                varGoodsReceiptItemsSortByColumn,
+                                btnGoodsReceipItemsTableHeaderItem.Text
+                            );
+                            Set(//Set default sort order of items table
+                                varGoodsReceiptItemsSortOrder,
+                                SortOrder.Ascending
+                            );
+                            //Reset any controls that interact with existing goods receipt data
+                    Reset(chbGoodsReceiptDetailsItemsSelectAll);
+                            Reset(galGoodsReceiptItems);
+                            Reset(txtGoodsReceiptDetailsItemsFilter);
+                            UpdateIf(
+                                ClearCollect(
+                                    colGoodsReceiptItems,//Collection that caches associated goods receipt items
+                                    AddColumns(
+                                        First(colReadGoodsReceiptResponseTemp).Items,
+                                        "Description",
+                                        LookUp(
+                                            First(colReadGoodsReceiptResponseTemp).Materials As temp1,
+                                            PurchaseOrderItemNumber = temp1.ItemNumber
+                                        ).MaterialDescription,
+                                        "ExpectedQuantity",
+                                        LookUp(
+                                            First(colReadPurchaseOrderResponseTemp).Items As tempCol1,
+                                            ItemNumber = tempCol1.ItemNumber
+                                        ).Quantity
+                                    )
+                                ),
+                                true,
+                                {CrudType: "R"}
+                            );
+                            //Create/update goods receipt search history record
+                    Patch(
+                                'SAP Search Histories',
+                                Coalesce(
+                                    LookUp(
+                                        'SAP Search Histories',
+                                        And(
+                                            'Object ID' = varGoodsReceiptNumber,
+                                            'Object Type' = 'Object Type (SAP Search Histories)'.'Goods Receipt',
+                                            'Created By'.User = varSystemUserID
+                                        )
+                                    ),
+                                    Defaults('SAP Search Histories')
+                                ),
+                                {
+                                    'Object ID': varGoodsReceiptNumber,
+                                    'Object Type': 'Object Type (SAP Search Histories)'.'Goods Receipt',
+                                    Name: Concatenate(
+                                        varGoodsReceiptNumber,
+                                        " - ",
+                                        varGoodsReceiptVendor.VendorName
+                                    ),
+                                    'Last Searched On': Now()
+                                }
+                            );
+                        //Check if the patch function was successful and notify if there was any errors.
+                    If(
+                                !IsEmpty(Errors('SAP Search Histories')),
+                                Notify(
+                                    First(Errors('SAP Search Histories')).Message,
+                                    NotificationType.Error,
+                                    0
+                                ),
+                                Reset(cmbCommandBarRecentSearch);
+                                Refresh('SAP Search Histories');
+                            );
+                        //End if ReadGoodsReceipt Power Automate call was success
+                    ,
+                            And(//Check to see if call was successful, but no goods receipt was found
+                                First(colReadGoodsReceiptResponseTemp).Status = "Information",
+                                IsBlank(First(colReadGoodsReceiptResponseTemp).Receipt)
+                            ),
+                            Notify(
+                                With(
+                                    {Text: "Goods receipt not found"},
+                                    If(
+                            // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                            // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                ),
+                                NotificationType.Information,
+                                7000
+                            ),
+                            And(//Flow returned and error
+                                First(colReadGoodsReceiptResponseTemp).Status = "Error",
+                                IsBlank(First(colReadGoodsReceiptResponseTemp).Receipt)
+                            ),
+                            Notify(
+                                Concat(
+                                    First(colReadGoodsReceiptResponseTemp).Messages,
+                                    Message,
+                                    " "
+                                ),
+                                NotificationType.Error,
+                                0
+                            ),//Default response for an unhandled error return
+                            Notify(
+                                With(
+                                    {Text: "Unexpected error occurred"},
+                                    If(
+                            // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                            // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                ),
+                                NotificationType.Error,
+                                0
+                            )
+                        );
+                        
+                    //End goods receipt response switch statement
+                    //Reset loading to false as the data query is complete
+                    //done with read goods receipt temp collections, clear cache
+                    Set(
+                            varIsProcessing,//done processing read goods receipt, set variable back to false stopping any processing control behavior
+                            false
+                        );
+                        Set(
+                            varFooterMessage,
+                            ""
+                        );
+                        
+                    );
+                    Set(
+                        varSelectedGoodsReceiptID,//done with selected goods receipt ID variable, set back to blank
+                        Blank()
+                    );
+                    Clear(colReadGoodsReceiptResponseTemp);
+                PaddingBottom: =5
+                PaddingLeft: =5
+                PaddingRight: =5
+                PaddingTop: =5
+                PressedBorderColor: =
+                PressedColor: =
+                PressedFill: =RGBA(0,0,0,0)
+                TabIndex: =0
+                Tooltip: |-
+                    =With(
+                        {Text: "Execute search"},
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Visible: =!varIsNew && !IsBlank(txtCommandBarSearchInput.Text)
+                Width: =30
+                X: =txtCommandBarSearchInput.X+txtCommandBarSearchInput.Width-Self.Width
+                Y: =6
+                ZIndex: =5
+
+            cmbCommandBarRecentSearch As combobox:
+                AccessibleLabel: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {
+                            Text: If(
+                                IsEmpty(
+                                    (Filter(
+                                        'SAP Search Histories',
+                                        'Object Type' = 'Object Type (SAP Search Histories)'.'Goods Receipt',
+                                        'SAP Search Histories (Views)'.'My Recent SAP Search History'//View in Dataverse specifically designed to only returned records within a timeframe
+                                    ))
+                                ),
+                                "No recent goods receipts",
+                                "Select recent goods receipt"
+                            )
+                        },
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                BorderColor: =varThemeColors.primaryGray
+                BorderThickness: =1
+                ChevronBackground: =varThemeColors.backgroundFill
+                ChevronDisabledBackground: =varThemeColors.backgroundFillDisabled
+                ChevronDisabledFill: |
+                    =varThemeColors.text
+                ChevronFill: =varThemeColors.text
+                ChevronHoverBackground: =varThemeColors.secondaryGray
+                ChevronHoverFill: |
+                    =varThemeColors.text
+                Color: =varThemeColors.text
+                DefaultSelectedItems: =Blank()
+                DisabledBorderColor: =varThemeColors.primaryGray
+                DisabledColor: =varThemeColors.disabledText
+                DisabledFill: =varThemeColors.backgroundFillDisabled
+                DisplayFields: =["mpa_name","mpa_objectid"]
+                DisplayMode: |-
+                    =If(
+                        varIsProcessing,
+                        DisplayMode.Disabled,
+                        DisplayMode.Edit
+                    )
+                Fill: =varThemeColors.backgroundFill
+                FocusedBorderColor: =varThemeColors.tertiaryGray
+                FocusedBorderThickness: =2
+                Font: =Font.'Segoe UI'
+                Height: =30
+                HoverBorderColor: =varThemeColors.tertiaryGray
+                HoverColor: =varThemeColors.text
+                HoverFill: =varThemeColors.secondaryGray
+                InputTextPlaceholder: =Self.AccessibleLabel
+                Items: |-
+                    =//Filter the 'SAP Search Histories' dataverse entity based upon the 'Object Type' value that you will to filter/display in the combo box.
+                    Sort(
+                        Filter(
+                            'SAP Search Histories',
+                            'Object Type' = 'Object Type (SAP Search Histories)'.'Goods Receipt',
+                            'SAP Search Histories (Views)'.'My Recent SAP Search History'//View in Dataverse specifically designed to only returned records within a timeframe
+                        ),
+                        'Last Searched On',
+                        SortOrder.Descending
+                    )
+                NoSelectionText: =Self.AccessibleLabel
+                OnChange: |-
+                    =//When user selects new recent value and not blank, invoke the same command bar search logic as if the user manually entered the goods receipt value
+                    Reset(txtCommandBarSearchInput);
+                    If(
+                        !IsBlank(Self.Selected) && Self.Selected.'Object ID' <> varSelectedGoodsReceiptID && IsBlank(varSelectedGoodsReceiptID),
+                        Set(
+                            varSelectedGoodsReceiptID,
+                            Self.Selected.'Object ID'
+                        );
+                        Select(icoCommandBarSearchExecute);
+                    )
+                PaddingLeft: =12
+                PaddingRight: =10
+                PressedBorderColor: =varThemeColors.tertiaryGray
+                PressedColor: =varThemeColors.altText
+                PressedFill: =varThemeColors.backgroundFill
+                SearchFields: =["mpa_objectid"]
+                SearchItems: |-
+                    =Search(//Filter the 'SAP Search Histories' dataverse entity based upon the 'Object Type' value that you will to filter/display in the combo box.
+                    Sort(
+                        Filter(
+                            'SAP Search Histories',
+                            'Object Type' = 'Object Type (SAP Search Histories)'.'Goods Receipt',
+                            'SAP Search Histories (Views)'.'My Recent SAP Search History'//View in Dataverse specifically designed to only returned records within a timeframe
+                        ),
+                        'Last Searched On',
+                        SortOrder.Descending
+                    ),cmbCommandBarRecentSearch.SearchText,"mpa_objectid")
+                SelectionColor: =varThemeColors.altText
+                SelectionFill: =varThemeColors.primaryGray
+                SelectionTagColor: =varThemeColors.text
+                SelectionTagFill: =varThemeColors.backgroundFill
+                SelectMultiple: =false
+                Size: =10.5
+                Tooltip: |-
+                    =Coalesce(
+                        Self.Selected.Name,
+                        Self.AccessibleLabel
+                    )
+                Visible: =!varIsNew
+                Width: |-
+                    =Max(
+                        250,
+                        Len(Self.AccessibleLabel) * 10
+                    )
+                X: =shpCommandBarSearchDivider.X+shpCommandBarSearchDivider.Width+10
+                Y: =6
+                ZIndex: =6
+
+            shpCommandBarSearchDivider As rectangle:
+                AccessibleLabel: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {
+                            Text: "Divider"
+                        },
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Fill: =varThemeColors.secondaryGray
+                Height: =30
+                OnSelect: =
+                Visible: =!varIsNew
+                Width: =2
+                Y: =6
+                ZIndex: =7
+
+            icoCommandBarAdvancedSearch As icon.FilterFlat:
+                AccessibleLabel: =Self.Tooltip
+                BorderColor: =varThemeColors.primary
+                Color: =varThemeColors.primary
+                DisplayMode: |-
+                    =If(
+                        varIsProcessing,
+                        DisplayMode.Disabled,
+                        DisplayMode.Edit
+                    )
+                FocusedBorderColor: =varThemeColors.disabledText
+                Height: =30
+                HoverBorderColor: =
+                Icon: =Icon.FilterFlat
+                OnSelect: |
+                    =//Use a function like this to navigate the user to a search all screen containing the search component
+                    ClearCollect(
+                        colAppNavigationThreads,
+                        Table(
+                            {
+                                Screen: App.ActiveScreen,
+                                Order: CountRows(colAppNavigationThreads) + 1
+                            }
+                        )
+                    );
+                    Navigate(
+                        'Goods Receipt Search Screen',
+                        ScreenTransition.Cover
+                    );
+                PaddingBottom: =5
+                PaddingLeft: =5
+                PaddingRight: =5
+                PaddingTop: =5
+                TabIndex: =0
+                Tooltip: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {Text: "Advanced search"},
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Visible: =!varIsNew
+                Width: =30
+                X: =txtCommandBarSearchInput.X+txtCommandBarSearchInput.Width+10
+                Y: =icoCommandBarSearchExecute.Y
+                ZIndex: =8
+
