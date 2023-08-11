@@ -187,7 +187,11 @@
                         {defaultHeight: 64},
                         Switch(
                             true,
+                            Self.Width <= 420,
+                            8 * defaultHeight + 7 * Self.LayoutGap,
                             Self.Width <= 470,
+                            7 * defaultHeight + 6 * Self.LayoutGap,
+                            Self.Width <= 550,
                             6 * defaultHeight + 5 * Self.LayoutGap,
                             Self.Width <= 600,
                             5 * defaultHeight + 4 * Self.LayoutGap,
@@ -522,7 +526,7 @@
                         PressedBorderColor: =varThemeColors.tertiaryGray
                         PressedColor: =varThemeColors.altText
                         PressedFill: =varThemeColors.backgroundFill
-                        SearchFields: =["mpa_valuecode","mpa_value"]
+                        SearchFields: =["mpa_value"]
                         SearchItems: |-
                             =Search(//Filter possible list of values according to mapped domain and language field
                             Sort(
@@ -533,7 +537,7 @@
                                     Language = varISOUserLanguageCode
                                 ),
                                 'Display Value'
-                            ),cmbGoodsReceiptItemDetailsDataLocation.SearchText,"mpa_valuecode","mpa_value")
+                            ),cmbGoodsReceiptItemDetailsDataLocation.SearchText,"mpa_value")
                         SelectionColor: =varThemeColors.altText
                         SelectionFill: =varThemeColors.primaryGray
                         SelectionTagColor: =varThemeColors.text
@@ -713,7 +717,7 @@
                         PressedBorderColor: =varThemeColors.tertiaryGray
                         PressedColor: =varThemeColors.altText
                         PressedFill: =varThemeColors.backgroundFill
-                        SearchFields: =["mpa_valuecode","mpa_value"]
+                        SearchFields: =["mpa_value"]
                         SearchItems: |-
                             =Search(//Filter possible list of values according to mapped domain and language field
                             Sort(
@@ -725,7 +729,7 @@
                                     'Parent Value'.'SAP List of Value' = cmbGoodsReceiptItemDetailsDataLocation.Selected.'SAP List of Value'
                                 ),
                                 'Display Value'
-                            ),cmbGoodsReceiptItemDetailsDataStorageLocation.SearchText,"mpa_valuecode","mpa_value")
+                            ),cmbGoodsReceiptItemDetailsDataStorageLocation.SearchText,"mpa_value")
                         SelectionColor: =varThemeColors.altText
                         SelectionFill: =varThemeColors.primaryGray
                         SelectionTagColor: =varThemeColors.text
@@ -834,7 +838,7 @@
                                 varThemeColors.requiredRed,
                                 varThemeColors.text
                             )
-                        Default: =Coalesce(cmbGoodsReceiptItemDetailsDataPOItemNumber.Selected.MaterialNumber,_item.MaterialNumber)
+                        Default: =Coalesce(varSelectedMaterialHeader.MaterialNumber, cmbGoodsReceiptItemDetailsDataPOItemNumber.Selected.MaterialNumber,_item.MaterialNumber)
                         DisabledBorderColor: =varThemeColors.primaryGray
                         DisabledColor: =varThemeColors.disabledText
                         DisabledFill: =varThemeColors.backgroundFillDisabled
@@ -1281,7 +1285,7 @@
                         BorderThickness: =1
                         Clear: =true
                         Color: =varThemeColors.text
-                        Default: =Coalesce(cmbGoodsReceiptItemDetailsDataPOItemNumber.Selected.Description, _item.Description)
+                        Default: =Coalesce(varSelectedMaterialHeader.Description,cmbGoodsReceiptItemDetailsDataPOItemNumber.Selected.Description, _item.Description)
                         DisabledBorderColor: =varThemeColors.primaryGray
                         DisabledColor: =varThemeColors.disabledText
                         DisabledFill: =varThemeColors.backgroundFillDisabled
@@ -1535,6 +1539,7 @@
                     Height: =64
                     LayoutMinHeight: =100
                     LayoutMinWidth: =250
+                    Visible: =varIsNew
                     Width: |-
                         =Max(
                             112,
@@ -2205,14 +2210,14 @@
                         //Either create new goods receipt item record or update existing in the collection
                         //Assess and warn if goods receipt creating is not equal to purchase order items
                             If(
-                                Value(cmbGoodsReceiptItemDetailsDataPOItemNumber.Selected.Quantity) <> Value(txtGoodsReceiptItemDetailsDataReceivedQuantity.Text),
+                                Value(txtGoodsReceiptItemDetailsDataExpectedQuantity.Text) <> Value(txtGoodsReceiptItemDetailsDataReceivedQuantity.Text),
                                 Notify(
                                     With(
                                         {
                                             Text: If(
-                                                Value(cmbGoodsReceiptItemDetailsDataPOItemNumber.Selected.Quantity) > Value(txtGoodsReceiptItemDetailsDataReceivedQuantity.Text),
-                                                "You are receiving less items than the expected amount",
-                                                "You are receiving more items than the expected amount"
+                                                Value(txtGoodsReceiptItemDetailsDataExpectedQuantity.Text) > Value(txtGoodsReceiptItemDetailsDataReceivedQuantity.Text),
+                                                "You are receiving less than the expected quantity",
+                                                "You are receiving more than the expected quantity"
                                             )
                                         },
                                         If(

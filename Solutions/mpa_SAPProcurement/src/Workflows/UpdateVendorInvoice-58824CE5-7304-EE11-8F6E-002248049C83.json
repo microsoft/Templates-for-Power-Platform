@@ -132,7 +132,7 @@
           "actions": {
             "Map_ITEMDATA": {
               "runAfter": {
-                "Set_HEADERDATA": [
+                "Filter_Items": [
                   "Succeeded"
                 ]
               },
@@ -141,7 +141,7 @@
               },
               "type": "Select",
               "inputs": {
-                "from": "@body('Parse_JSON')?['Items']",
+                "from": "@body('Filter_Items')",
                 "select": {
                   "PO_ITEM": "@formatNumber(int(item()?['PurchaseOrderItemNumber']), 'D5')",
                   "QUANTITY": "@item()?['Quantity']",
@@ -151,7 +151,8 @@
                   "PO_NUMBER": "@item()?['PurchaseOrderNumber']",
                   "TAX_CODE": "U0",
                   "TAXJURCODE": "IN0000000",
-                  "ITEM_AMOUNT": "@item()?['TotalPrice']"
+                  "ITEM_AMOUNT": "@item()?['TotalPrice']",
+                  "DELETE_IND": "@if(equals(item()?['CrudType'], 'D'), 'X', '')"
                 }
               }
             },
@@ -446,6 +447,9 @@
                           },
                           "PurchaseOrderNumber": {
                             "type": "string"
+                          },
+                          "CrudType": {
+                            "type": "string"
                           }
                         },
                         "required": [
@@ -453,7 +457,8 @@
                           "Quantity",
                           "ItemNumber",
                           "UnitOfMeasure",
-                          "TotalPrice"
+                          "TotalPrice",
+                          "CrudType"
                         ]
                       }
                     }
@@ -489,6 +494,21 @@
               "inputs": {
                 "name": "FiscalYear",
                 "value": "@body('Parse_JSON')?['Header']?['FiscalYear']"
+              }
+            },
+            "Filter_Items": {
+              "runAfter": {
+                "Set_HEADERDATA": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "bfd7d1c9-a741-4a8b-9545-7f5f4fe18304"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Parse_JSON')?['Items']",
+                "where": "@not(equals(item()?['CrudType'], 'R'))"
               }
             }
           },

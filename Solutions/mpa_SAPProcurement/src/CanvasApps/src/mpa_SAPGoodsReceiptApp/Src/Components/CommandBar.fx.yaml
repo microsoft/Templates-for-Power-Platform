@@ -815,7 +815,7 @@ CommandBar As CanvasComponent:
                 HoverColor: =varThemeColors.primary
                 HoverFill: =RGBA(0,0,0,0)
                 Icon: =Icon.ArrowRight
-                OnSelect: |-
+                OnSelect: |
                     =If(
                         !IsBlank(varSelectedGoodsReceiptID),
                         Set(
@@ -956,12 +956,59 @@ CommandBar As CanvasComponent:
                                 IsBlank(First(colReadGoodsReceiptResponseTemp).Receipt)
                             ),
                             Notify(
-                                "Goods Receipt not found for ID " & varSelectedGoodsReceiptID,
+                                With(
+                                    {Text: "Goods receipt not found"},
+                                    If(
+                            // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                            // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                ),
                                 NotificationType.Information,
                                 7000
+                            ),
+                            And(//Flow returned and error
+                                First(colReadGoodsReceiptResponseTemp).Status = "Error",
+                                IsBlank(First(colReadGoodsReceiptResponseTemp).Receipt)
+                            ),
+                            Notify(
+                                Concat(
+                                    First(colReadGoodsReceiptResponseTemp).Messages,
+                                    Message,
+                                    " "
+                                ),
+                                NotificationType.Error,
+                                0
                             ),//Default response for an unhandled error return
                             Notify(
-                                "Unexpected error occurred",
+                                With(
+                                    {Text: "Unexpected error occurred"},
+                                    If(
+                            // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                            // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                ),
                                 NotificationType.Error,
                                 0
                             )
@@ -969,12 +1016,6 @@ CommandBar As CanvasComponent:
                         
                     //End goods receipt response switch statement
                     //Reset loading to false as the data query is complete
-                    Set(
-                            varSelectedGoodsReceiptID,//done with selected goods receipt ID variable, set back to blank
-                            Blank()
-                        );
-                        Clear(colReadGoodsReceiptResponseTemp);
-                        
                     //done with read goods receipt temp collections, clear cache
                     Set(
                             varIsProcessing,//done processing read goods receipt, set variable back to false stopping any processing control behavior
@@ -985,7 +1026,12 @@ CommandBar As CanvasComponent:
                             ""
                         );
                         
-                    )
+                    );
+                    Set(
+                        varSelectedGoodsReceiptID,//done with selected goods receipt ID variable, set back to blank
+                        Blank()
+                    );
+                    Clear(colReadGoodsReceiptResponseTemp);
                 PaddingBottom: =5
                 PaddingLeft: =5
                 PaddingRight: =5
@@ -1200,15 +1246,6 @@ CommandBar As CanvasComponent:
                                 Order: CountRows(colAppNavigationThreads) + 1
                             }
                         )
-                    );
-                    //Navigate to the goods receipt search screen resetting all the seach controls (workaround)
-                    Set(
-                        varResetPurchaseOrdersSearch,
-                        true
-                    );
-                    Set(
-                        varCurrentGoodsReceiptSearchTab,
-                        "Search all"
                     );
                     Navigate(
                         'Goods Receipt Search Screen',

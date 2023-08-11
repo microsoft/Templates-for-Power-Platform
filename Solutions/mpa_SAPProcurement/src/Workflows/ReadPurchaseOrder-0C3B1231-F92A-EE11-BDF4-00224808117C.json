@@ -476,7 +476,7 @@
                 ]
               },
               "metadata": {
-                "operationMetadataId": "e8888524-0808-4e9a-910b-b953005824f9"
+                "operationMetadataId": "adf43f84-7dc7-4949-8691-2cf757d78cf1"
               },
               "type": "Terminate",
               "inputs": {
@@ -487,7 +487,9 @@
           "runAfter": {
             "Try": [
               "Failed",
-              "TimedOut"
+              "TimedOut",
+              "Succeeded",
+              "Skipped"
             ]
           },
           "metadata": {
@@ -512,64 +514,63 @@
         },
         "Try": {
           "actions": {
-            "Set_History": {
+            "Set_SAPErrorMessage": {
               "runAfter": {
-                "Set_SAPErrorMessage": [
-                  "Skipped"
+                "PO_Detail": [
+                  "Failed",
+                  "TimedOut"
                 ]
               },
               "metadata": {
-                "operationMetadataId": "3e393528-ab47-4427-9d04-0cca85e05c3c"
+                "operationMetadataId": "8a70d4b9-a001-4eef-9471-3ac46453ca9f"
               },
               "type": "SetVariable",
               "inputs": {
-                "name": "History",
-                "value": "@if(equals('',outputs('PO_Detail')?['body/POHISTORY']), json('[]'), outputs('PO_Detail')?['body/POHISTORY'])"
+                "name": "SAPErrorMessage",
+                "value": "@{body('PO_DETAIL')['error']['message']}"
               }
             },
-            "Set_POTEXTHEADER": {
+            "PO_Detail": {
               "runAfter": {
-                "Set_History": [
+                "Order": [
                   "Succeeded"
                 ]
               },
               "metadata": {
-                "operationMetadataId": "e4f7743c-e41b-4206-bb9e-a404f936579f"
+                "operationMetadataId": "e4d0406a-5170-4e6c-9d3b-046950bca69c"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp_2",
+                  "operationId": "CallRfcJson",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                  "rfcName": "BAPI_PO_GETDETAIL1",
+                  "rfcGroupFilter": "*",
+                  "autoCommit": false,
+                  "rfcInputs/PURCHASEORDER": "@variables('Order')",
+                  "rfcInputs/ACCOUNT_ASSIGNMENT": "X",
+                  "rfcInputs/HEADER_TEXT": "X",
+                  "rfcInputs/ITEM_TEXT": "X"
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              }
+            },
+            "Order": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "b368fc2c-55a7-4668-a72e-10d37bc18361"
               },
               "type": "SetVariable",
               "inputs": {
-                "name": "POTEXTHEADER",
-                "value": "@if(equals('',outputs('PO_Detail')?['body/POTEXTHEADER']), json('[]'), outputs('PO_Detail')?['body/POTEXTHEADER'])"
-              }
-            },
-            "Set_Messages": {
-              "runAfter": {
-                "Set_POTEXTHEADER": [
-                  "Succeeded"
-                ]
-              },
-              "metadata": {
-                "operationMetadataId": "cdbfd59d-05eb-40d3-9a41-4164dadaf9c9"
-              },
-              "type": "SetVariable",
-              "inputs": {
-                "name": "Messages",
-                "value": "@if(equals('',outputs('PO_Detail')?['body/RETURN']), json('[]'), outputs('PO_Detail')?['body/RETURN'])"
-              }
-            },
-            "Filter_Messages_for_Errors": {
-              "runAfter": {
-                "Set_Messages": [
-                  "Succeeded"
-                ]
-              },
-              "metadata": {
-                "operationMetadataId": "314738ec-9d05-4ae3-b089-64259885fb43"
-              },
-              "type": "Query",
-              "inputs": {
-                "from": "@variables('Messages')",
-                "where": "@equals(item()?['TYPE'], 'E')"
+                "name": "Order",
+                "value": "@triggerBody()['text']"
               }
             },
             "Existence_Check": {
@@ -1638,63 +1639,65 @@
               },
               "type": "If"
             },
-            "Set_SAPErrorMessage": {
+            "Filter_Messages_for_Errors": {
               "runAfter": {
-                "PO_Detail": [
-                  "Failed",
-                  "TimedOut"
-                ]
-              },
-              "metadata": {
-                "operationMetadataId": "8a70d4b9-a001-4eef-9471-3ac46453ca9f"
-              },
-              "type": "SetVariable",
-              "inputs": {
-                "name": "SAPErrorMessage",
-                "value": "@{body('PO_DETAIL')['error']['message']}"
-              }
-            },
-            "PO_Detail": {
-              "runAfter": {
-                "Order": [
+                "Set_Messages": [
                   "Succeeded"
                 ]
               },
               "metadata": {
-                "operationMetadataId": "e4d0406a-5170-4e6c-9d3b-046950bca69c"
+                "operationMetadataId": "314738ec-9d05-4ae3-b089-64259885fb43"
               },
-              "type": "OpenApiConnection",
+              "type": "Query",
               "inputs": {
-                "host": {
-                  "connectionName": "shared_saperp_2",
-                  "operationId": "CallRfcJson",
-                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
-                },
-                "parameters": {
-                  "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
-                  "rfcName": "BAPI_PO_GETDETAIL1",
-                  "rfcGroupFilter": "*",
-                  "autoCommit": false,
-                  "rfcInputs/PURCHASEORDER": "@variables('Order')",
-                  "rfcInputs/ACCOUNT_ASSIGNMENT": "X",
-                  "rfcInputs/HEADER_TEXT": "X",
-                  "rfcInputs/ITEM_TEXT": "X"
-                },
-                "authentication": "@parameters('$authentication')",
-                "retryPolicy": {
-                  "type": "none"
-                }
+                "from": "@variables('Messages')",
+                "where": "@equals(item()?['TYPE'], 'E')"
               }
             },
-            "Order": {
-              "runAfter": {},
+            "Set_Messages": {
+              "runAfter": {
+                "Set_POTEXTHEADER": [
+                  "Succeeded"
+                ]
+              },
               "metadata": {
-                "operationMetadataId": "b368fc2c-55a7-4668-a72e-10d37bc18361"
+                "operationMetadataId": "cdbfd59d-05eb-40d3-9a41-4164dadaf9c9"
               },
               "type": "SetVariable",
               "inputs": {
-                "name": "Order",
-                "value": "@triggerBody()['text']"
+                "name": "Messages",
+                "value": "@if(equals('',outputs('PO_Detail')?['body/RETURN']), json('[]'), outputs('PO_Detail')?['body/RETURN'])"
+              }
+            },
+            "Set_POTEXTHEADER": {
+              "runAfter": {
+                "Set_History": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "e4f7743c-e41b-4206-bb9e-a404f936579f"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "POTEXTHEADER",
+                "value": "@if(equals('',outputs('PO_Detail')?['body/POTEXTHEADER']), json('[]'), outputs('PO_Detail')?['body/POTEXTHEADER'])"
+              }
+            },
+            "Set_History": {
+              "runAfter": {
+                "Set_SAPErrorMessage": [
+                  "Succeeded",
+                  "Skipped"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "3e393528-ab47-4427-9d04-0cca85e05c3c"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "History",
+                "value": "@if(equals('',outputs('PO_Detail')?['body/POHISTORY']), json('[]'), outputs('PO_Detail')?['body/POHISTORY'])"
               }
             }
           },

@@ -3,7 +3,7 @@ GoodsReceiptSearch As CanvasComponent:
     Height: =App.Height
     OnReset: |
         =Set(
-            varCurrentMaterialSearchTab,//Variable that drives which tab is selected control behavior, default to search all
+            varCurrentGoodsReceiptSearchTab,//Variable that drives which tab is selected control behavior, default to search all
             btnGoodsReceiptSearchAllTab.Text
         );
         Set(
@@ -15,15 +15,15 @@ GoodsReceiptSearch As CanvasComponent:
             btnGoodsReceiptRecentlySearchedTableHeaderLastSearched.Text
         );
         Set(
-            varMaterialSearchAllSortOrder,//Variable that drives the sort order of search all results gallery, default to ascending
+            varGoodsReceiptSearchAllSortByOrder,//Variable that drives the sort order of search all results gallery, default to ascending
             SortOrder.Ascending
         );
         Set(
-            varMaterialSearchAllSortByColumn,//Variable that drives the sort by column of search all results gallery, default to vendor
+            varGoodsReceiptSearchAllSortByColumn,//Variable that drives the sort by column of search all results gallery, default to vendor
             btnGoodsReceiptSearchResultsTableHeaderGoodsReceipt.Text
         );
         //Ensure any cached searched results and recent search history is blank
-        Clear(colMaterialSearchResults);
+        Clear(colPurchaseOrderSearchResults);
     ResetSearch: =true
     Width: =1240
     X: =0
@@ -99,7 +99,7 @@ GoodsReceiptSearch As CanvasComponent:
                 PressedBorderColor: =varThemeColors.primary
                 PressedColor: =varThemeColors.primary
                 PressedFill: =RGBA(0,0,0,0)
-                TabIndex: =1
+                TabIndex: =0
                 Tooltip: |-
                     =// Define a variable named "Text" with the value "{value}"
                     With(
@@ -267,7 +267,6 @@ GoodsReceiptSearch As CanvasComponent:
                     RadiusTopLeft: =0
                     RadiusTopRight: =0
                     Size: =10.5
-                    TabIndex: =2
                     Text: |-
                         =// Define a variable named "Text" with the value "{value}"
                         With(
@@ -382,7 +381,6 @@ GoodsReceiptSearch As CanvasComponent:
                     RadiusTopLeft: =0
                     RadiusTopRight: =0
                     Size: =10.5
-                    TabIndex: =3
                     Text: |-
                         =// Define a variable named "Text" with the value "{value}"
                         With(
@@ -481,7 +479,10 @@ GoodsReceiptSearch As CanvasComponent:
                             )
                         Default: |-
                             =If(
-                                And(GoodsReceiptSearch.ResetSearch, IsBlank(varNewVendorHeader.Vendor)),
+                                And(
+                                    GoodsReceiptSearch.ResetSearch,
+                                    IsBlank(varNewVendorHeader.Vendor)
+                                ),
                                 "",
                                 varNewVendorHeader.Vendor
                             )
@@ -547,7 +548,6 @@ GoodsReceiptSearch As CanvasComponent:
                         RadiusTopRight: =0
                         Reset: =true
                         Size: =10.5
-                        TabIndex: =4
                         Tooltip: |-
                             =Coalesce(
                                 Self.Text,
@@ -601,7 +601,7 @@ GoodsReceiptSearch As CanvasComponent:
                         PressedBorderColor: =
                         PressedColor: =
                         PressedFill: =RGBA(0,0,0,0)
-                        TabIndex: =5
+                        TabIndex: =0
                         Tooltip: |-
                             =// Define a variable named "Text" with the value "{value}"
                             With(
@@ -666,28 +666,6 @@ GoodsReceiptSearch As CanvasComponent:
                                     First(colReadVendorResponseTemp).Status = "Success",
                                     !IsBlank(First(colReadVendorResponseTemp).Header.Vendor)
                                 ),
-                                  Notify(
-                                    With(
-                                        {Text: "Vendor existence verified in SAP"},
-                                        If(
-                                    // If the localized text is blank, return the default text
-                                            IsBlank(
-                                                LookUp(
-                                                    colUserLocalizedStrings,
-                                                    'English Value' = Text
-                                                ).'Localized Value'
-                                            ),
-                                            Text,
-                                    // If a localized text is found, return that instead of the default text
-                                            LookUp(
-                                                colUserLocalizedStrings,
-                                                'English Value' = Text
-                                            ).'Localized Value'
-                                        )
-                                    ),
-                                    NotificationType.Information,
-                                    7000
-                                ),
                                 Set(
                                     varNewVendorHeader,//Variable that stores the returned main vendor header data
                                     First(colReadVendorResponseTemp).Header
@@ -748,6 +726,16 @@ GoodsReceiptSearch As CanvasComponent:
                                     ),
                                     NotificationType.Information,
                                     7000
+                                ),//Error response returned
+                                First(colReadVendorResponseTemp).Status = "Error",
+                                Notify(
+                                    Concat(
+                                        First(colReadVendorResponseTemp).Messages,
+                                        Message,
+                                        " "
+                                    ),
+                                    NotificationType.Error,
+                                    0
                                 ),//Default response for an unhandled error return
                                 Notify(
                                     With(
@@ -925,7 +913,6 @@ GoodsReceiptSearch As CanvasComponent:
                         RadiusTopRight: =0
                         Reset: =true
                         Size: =10.5
-                        TabIndex: =6
                         Tooltip: |-
                             =Coalesce(
                                 Self.Text,
@@ -1051,7 +1038,6 @@ GoodsReceiptSearch As CanvasComponent:
                         RadiusTopRight: =0
                         Reset: =true
                         Size: =10.5
-                        TabIndex: =7
                         Tooltip: |-
                             =Coalesce(
                                 Self.Text,
@@ -1138,7 +1124,15 @@ GoodsReceiptSearch As CanvasComponent:
                                     )
                                 )
                             )
-                        BorderColor: =varThemeColors.primaryGray
+                        BorderColor: |-
+                            =If(
+                                And(
+                                    IsBlank(Self.SelectedDate),
+                                    !IsBlank(dteGoodsReceiptSearchAllDateTo.SelectedDate)
+                                ),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
                         BorderThickness: =1
                         CalendarHeaderFill: =ColorFade(RGBA(105, 121, 126, 1), -30%)
                         Color: =varThemeColors.text
@@ -1190,7 +1184,6 @@ GoodsReceiptSearch As CanvasComponent:
                         SelectedDateFill: =RGBA(105, 121, 126, 1)
                         Size: =10.5
                         StartYear: =2016
-                        TabIndex: =9
                         Tooltip: |-
                             =If(
                                 IsBlank(Self.SelectedDate),
@@ -1236,7 +1229,13 @@ GoodsReceiptSearch As CanvasComponent:
                                         'English Value' = Text
                                     ).'Localized Value'
                                 )
-                            ) 
+                            ) & If(
+                                Or(
+                                    !IsBlank(dteGoodsReceiptSearchAllDateFrom.SelectedDate),
+                                    !IsBlank(dteGoodsReceiptSearchAllDateTo.SelectedDate)
+                                ),
+                                " *"
+                            )
                         Width: =Parent.Width
                         X: =dteGoodsReceiptSearchAllDateFrom.X
                         ZIndex: =2
@@ -1278,7 +1277,15 @@ GoodsReceiptSearch As CanvasComponent:
                                     )
                                 )
                             )
-                        BorderColor: =varThemeColors.primaryGray
+                        BorderColor: |-
+                            =If(
+                                And(
+                                    IsBlank(Self.SelectedDate),
+                                    !IsBlank(dteGoodsReceiptSearchAllDateFrom.SelectedDate)
+                                ),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
                         BorderThickness: =1
                         CalendarHeaderFill: =ColorFade(RGBA(105, 121, 126, 1), -30%)
                         Color: =varThemeColors.text
@@ -1330,7 +1337,6 @@ GoodsReceiptSearch As CanvasComponent:
                         SelectedDateFill: =RGBA(105, 121, 126, 1)
                         Size: =10.5
                         StartYear: =2016
-                        TabIndex: =8
                         Tooltip: |-
                             =If(
                                 IsBlank(Self.SelectedDate),
@@ -1376,7 +1382,13 @@ GoodsReceiptSearch As CanvasComponent:
                                         'English Value' = Text
                                     ).'Localized Value'
                                 )
-                            ) 
+                            ) & If(
+                                Or(
+                                    !IsBlank(dteGoodsReceiptSearchAllDateFrom.SelectedDate),
+                                    !IsBlank(dteGoodsReceiptSearchAllDateTo.SelectedDate)
+                                ),
+                                " *"
+                            )
                         Width: =Parent.Width
                         X: =dteGoodsReceiptSearchAllDateTo.X
                         ZIndex: =2
@@ -1417,117 +1429,177 @@ GoodsReceiptSearch As CanvasComponent:
                     HoverColor: =varThemeColors.altText
                     HoverFill: =varThemeColors.tertiary
                     OnSelect: |
-                        =//Start processing resetting any controls and cached data
-                        Reset(txtGoodsReceiptSearchResultsFilter);
-                        Clear(colGoodsReceiptSearchResults);
-                        Set(
-                            varGoodsReceiptSearchAllSortOrder,//Variable that drives the sort order of search all results gallery, default to ascending
-                            SortOrder.Ascending
-                        );
-                        Set(
-                            varGoodsReceiptSearchAllSortByColumn,//Variable that drives the sort by column of search all results gallery, default to vendor
-                            btnGoodsReceiptSearchResultsTableHeaderGoodsReceipt.Text
-                        );
-                        Set(
-                            varIsProcessing,
-                            true
-                        );
-                        Set(
-                            varFooterMessage,
-                            "Searching"
-                        );
-                        //Invoke the ReadGoodsReceiptList flow and store results in collection
-                        ClearCollect(
-                            colGoodsReceiptSearchResultsResponse,
-                            ReadGoodsReceiptList.Run(
-                                Substitute(
-                                    JSON(
-                                        {
-                                            Vendor: txtGoodsReceiptSearchAllVendor.Text,
-                                            PurchaseOrder: txtGoodsReceiptSearchAllPurchaseOrder.Text,
-                                            Material: txtGoodsReceiptSearchAllMaterial.Text,
-                                            DateTo: Text(
-                                                DateValue(dteGoodsReceiptSearchAllDateTo.SelectedDate),
-                                                "yyyymmdd"
-                                            ),
-                                            DateFrom: Text(
-                                                DateValue(dteGoodsReceiptSearchAllDateFrom.SelectedDate),
-                                                "yyyymmdd"
-                                            )
-                                        },
-                                        JSONFormat.IndentFour
-                                    ),
-                                    "null",
-                                    """"""
-                                )
+                        =//Check if required search fields and store missing fields in a collection
+                        Clear(colRequiredFieldsTemp);
+                        If(
+                            And(
+                                IsBlank(dteGoodsReceiptSearchAllDateFrom.SelectedDate),
+                                !IsBlank(dteGoodsReceiptSearchAllDateTo.SelectedDate)
+                            ),
+                            Collect(
+                                colRequiredFieldsTemp,
+                                lblGoodsReceiptSearchAllDateFrom.Text
                             )
                         );
-                        ClearCollect(
-                            colGoodsReceiptSearchResults,
-                            First(colGoodsReceiptSearchResultsResponse).List
+                        If(
+                            And(
+                                !IsBlank(dteGoodsReceiptSearchAllDateFrom.SelectedDate),
+                                IsBlank(dteGoodsReceiptSearchAllDateTo.SelectedDate)
+                            ),
+                            Collect(
+                                colRequiredFieldsTemp,
+                                lblGoodsReceiptSearchAllDateTo.Text
+                            )
                         );
-                        //Evaluate return statuses to determine what type of notification
-                        With(
-                            {
-                                Text: Switch(
-                                    First(colGoodsReceiptSearchResultsResponse).Status,
-                                    "Information",
-                                    "No goods receipt found based upon your search criteria",
-                                    "Warning",
-                                    "The maximum number of search results were found based upon your criteria and some records may be missing. Please try changing your search criteria.",
-                                    "Error",
-                                    Concat(
-                                        First(colGoodsReceiptSearchResultsResponse).Messages,
-                                        Message,
-                                        " "
-                                    ),
-                                    "goods receipts found based upon your search criteria"
-                                ),
-                                Status: First(colGoodsReceiptSearchResultsResponse).Status
-                            },
+                        //Check to see if required fields collection, notify which fields are missing if so
+                        If(
+                            !IsEmpty(colRequiredFieldsTemp),
                             Notify(
-                                //Append record count to message if success
-                                Concatenate(
-                                    If(
-                                        Status = "Success",
-                                        CountRows(colGoodsReceiptSearchResults)
-                                    ) & " ",
-                                    If(
+                                Substitute(
+                                    With(
+                                        {Text: "The following information is required before searching"},
+                                        If(
                                 // If the localized text is blank, return the default text
-                                        IsBlank(
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                // If a localized text is found, return that instead of the default text
                                             LookUp(
                                                 colUserLocalizedStrings,
                                                 'English Value' = Text
                                             ).'Localized Value'
+                                        )
+                                    ) & ": " & Concat(
+                                        colRequiredFieldsTemp,
+                                        Value,
+                                        ", "
+                                    ),
+                                    " *",
+                                    ""
+                                ),
+                                NotificationType.Error,
+                                0
+                            );
+                            ,
+                        //Start processing resetting any controls and cached data
+                            Reset(txtGoodsReceiptSearchResultsFilter);
+                            Clear(colGoodsReceiptSearchResults);
+                            Set(
+                                varGoodsReceiptSearchAllSortByOrder,//Variable that drives the sort order of search all results gallery, default to ascending
+                                SortOrder.Ascending
+                            );
+                            Set(
+                                varGoodsReceiptSearchAllSortByColumn,//Variable that drives the sort by column of search all results gallery, default to vendor
+                                btnGoodsReceiptSearchResultsTableHeaderGoodsReceipt.Text
+                            );
+                            Set(
+                                varIsProcessing,
+                                true
+                            );
+                            Set(
+                                varFooterMessage,
+                                "Searching"
+                            );
+                            
+                        //Invoke the ReadGoodsReceiptList flow and store results in collection
+                        ClearCollect(
+                                colGoodsReceiptSearchResultsResponse,
+                                ReadGoodsReceiptList.Run(
+                                    Substitute(
+                                        JSON(
+                                            {
+                                                Vendor: txtGoodsReceiptSearchAllVendor.Text,
+                                                PurchaseOrder: txtGoodsReceiptSearchAllPurchaseOrder.Text,
+                                                Material: txtGoodsReceiptSearchAllMaterial.Text,
+                                                DateTo: Text(
+                                                    DateValue(dteGoodsReceiptSearchAllDateTo.SelectedDate),
+                                                    "yyyymmdd"
+                                                ),
+                                                DateFrom: Text(
+                                                    DateValue(dteGoodsReceiptSearchAllDateFrom.SelectedDate),
+                                                    "yyyymmdd"
+                                                )
+                                            },
+                                            JSONFormat.IndentFour
                                         ),
-                                        Text,
-                                // If a localized text is found, return that instead of the default text
-                                        LookUp(
-                                            colUserLocalizedStrings,
-                                            'English Value' = Text
-                                        ).'Localized Value'
+                                        "null",
+                                        """"""
                                     )
-                                ),
-                                    //Set the notification type
-                                Switch(
-                                    Status,
-                                    "Information",
-                                    NotificationType.Information,
-                                    "Warning",
-                                    NotificationType.Warning,
-                                    "Error",
-                                    NotificationType.Error,
-                                    NotificationType.Success
-                                ),
-                                If(
-                                    Status = "Error",
-                                    0,
-                                    7000
                                 )
-                            )
+                            );
+                            ClearCollect(
+                                colGoodsReceiptSearchResults,
+                                First(colGoodsReceiptSearchResultsResponse).List
+                            );
+                            
+                        //Evaluate return statuses to determine what type of notification
+                        With(
+                                {
+                                    Text: Switch(
+                                        First(colGoodsReceiptSearchResultsResponse).Status,
+                                        "Information",
+                                        "No goods receipt found based upon your search criteria",
+                                        "Warning",
+                                        "The maximum number of search results were found based upon your criteria and some records may be missing. Please try changing your search criteria.",
+                                        "Error",
+                                        Concat(
+                                            First(colGoodsReceiptSearchResultsResponse).Messages,
+                                            Message,
+                                            " "
+                                        ),
+                                        "goods receipts found based upon your search criteria"
+                                    ),
+                                    Status: First(colGoodsReceiptSearchResultsResponse).Status
+                                },
+                                Notify(
+                                //Append record count to message if success
+                                    Concatenate(
+                                        If(
+                                            Status = "Success",
+                                            CountRows(colGoodsReceiptSearchResults)
+                                        ) & " ",
+                                        If(
+                                // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    ),
+                                    //Set the notification type
+                                    Switch(
+                                        Status,
+                                        "Information",
+                                        NotificationType.Information,
+                                        "Warning",
+                                        NotificationType.Warning,
+                                        "Error",
+                                        NotificationType.Error,
+                                        NotificationType.Success
+                                    ),
+                                    If(
+                                        Status = "Error",
+                                        0,
+                                        7000
+                                    )
+                                )
+                            );
+                            Reset(galGoodsReceiptSearchResults);
+                            Clear(colGoodsReceiptSearchResultsResponse);
+                            
                         );
-                        Reset(galGoodsReceiptSearchResults);
-                        Clear(colGoodsReceiptSearchResultsResponse);
                         //Search complete
                         Set(
                             varIsProcessing,
@@ -1545,7 +1617,6 @@ GoodsReceiptSearch As CanvasComponent:
                     RadiusTopLeft: =4
                     RadiusTopRight: =4
                     Size: =10.5
-                    TabIndex: =10
                     Text: |-
                         =// Define a variable named "Text" with the value "{value}"
                         With(
@@ -1610,7 +1681,6 @@ GoodsReceiptSearch As CanvasComponent:
                     RadiusTopLeft: =4
                     RadiusTopRight: =4
                     Size: =10.5
-                    TabIndex: =11
                     Text: |-
                         =// Define a variable named "Text" with the value "{value}"
                         With(
@@ -1782,7 +1852,6 @@ GoodsReceiptSearch As CanvasComponent:
                             RadiusTopRight: =0
                             Reset: =true
                             Size: =10.5
-                            TabIndex: =12
                             Tooltip: |-
                                 =Coalesce(
                                     Self.Text,
@@ -1940,13 +2009,13 @@ GoodsReceiptSearch As CanvasComponent:
                                 HoverFill: =
                                 OnSelect: |-
                                     =If(//Stores the sort order of that column
-                                        And(varGoodsReceiptSearchAllSortOrder = SortOrder.Ascending,varGoodsReceiptSearchAllSortByColumn=Self.Text),
+                                        And(varGoodsReceiptSearchAllSortByOrder = SortOrder.Ascending,varGoodsReceiptSearchAllSortByColumn=Self.Text),
                                         Set(
-                                            varGoodsReceiptSearchAllSortOrder,
+                                            varGoodsReceiptSearchAllSortByOrder,
                                             SortOrder.Descending
                                         ),
                                         Set(
-                                            varGoodsReceiptSearchAllSortOrder,
+                                            varGoodsReceiptSearchAllSortByOrder,
                                             SortOrder.Ascending
                                         )
                                     );
@@ -2069,15 +2138,15 @@ GoodsReceiptSearch As CanvasComponent:
                                     );
                                     If(//Stores the sort order of that column
                                         And(
-                                            varGoodsReceiptSearchAllSortOrder = SortOrder.Ascending,
+                                            varGoodsReceiptSearchAllSortByOrder = SortOrder.Ascending,
                                             varGoodsReceiptSearchAllSortByColumn = Self.Text
                                         ),
                                         Set(
-                                            varGoodsReceiptSearchAllSortOrder,
+                                            varGoodsReceiptSearchAllSortByOrder,
                                             SortOrder.Descending
                                         ),
                                         Set(
-                                            varGoodsReceiptSearchAllSortOrder,
+                                            varGoodsReceiptSearchAllSortByOrder,
                                             SortOrder.Ascending
                                         )
                                     );
@@ -2198,15 +2267,15 @@ GoodsReceiptSearch As CanvasComponent:
                                     );
                                     If(//Stores the sort order of that column
                                         And(
-                                            varGoodsReceiptSearchAllSortOrder = SortOrder.Ascending,
+                                            varGoodsReceiptSearchAllSortByOrder = SortOrder.Ascending,
                                             varGoodsReceiptSearchAllSortByColumn = Self.Text
                                         ),
                                         Set(
-                                            varGoodsReceiptSearchAllSortOrder,
+                                            varGoodsReceiptSearchAllSortByOrder,
                                             SortOrder.Descending
                                         ),
                                         Set(
-                                            varGoodsReceiptSearchAllSortOrder,
+                                            varGoodsReceiptSearchAllSortByOrder,
                                             SortOrder.Ascending
                                         )
                                     );
@@ -2326,15 +2395,15 @@ GoodsReceiptSearch As CanvasComponent:
                                     );
                                     If(//Stores the sort order of that column
                                         And(
-                                            varGoodsReceiptSearchAllSortOrder = SortOrder.Ascending,
+                                            varGoodsReceiptSearchAllSortByOrder = SortOrder.Ascending,
                                             varGoodsReceiptSearchAllSortByColumn = Self.Text
                                         ),
                                         Set(
-                                            varGoodsReceiptSearchAllSortOrder,
+                                            varGoodsReceiptSearchAllSortByOrder,
                                             SortOrder.Descending
                                         ),
                                         Set(
-                                            varGoodsReceiptSearchAllSortOrder,
+                                            varGoodsReceiptSearchAllSortByOrder,
                                             SortOrder.Ascending
                                         )
                                     );
@@ -2454,15 +2523,15 @@ GoodsReceiptSearch As CanvasComponent:
                                     );
                                     If(//Stores the sort order of that column
                                         And(
-                                            varGoodsReceiptSearchAllSortOrder = SortOrder.Ascending,
+                                            varGoodsReceiptSearchAllSortByOrder = SortOrder.Ascending,
                                             varGoodsReceiptSearchAllSortByColumn = Self.Text
                                         ),
                                         Set(
-                                            varGoodsReceiptSearchAllSortOrder,
+                                            varGoodsReceiptSearchAllSortByOrder,
                                             SortOrder.Descending
                                         ),
                                         Set(
-                                            varGoodsReceiptSearchAllSortOrder,
+                                            varGoodsReceiptSearchAllSortByOrder,
                                             SortOrder.Ascending
                                         )
                                     );
@@ -2581,15 +2650,15 @@ GoodsReceiptSearch As CanvasComponent:
                                     );
                                     If(//Stores the sort order of that column
                                         And(
-                                            varGoodsReceiptSearchAllSortOrder = SortOrder.Ascending,
+                                            varGoodsReceiptSearchAllSortByOrder = SortOrder.Ascending,
                                             varGoodsReceiptSearchAllSortByColumn = Self.Text
                                         ),
                                         Set(
-                                            varGoodsReceiptSearchAllSortOrder,
+                                            varGoodsReceiptSearchAllSortByOrder,
                                             SortOrder.Descending
                                         ),
                                         Set(
-                                            varGoodsReceiptSearchAllSortOrder,
+                                            varGoodsReceiptSearchAllSortByOrder,
                                             SortOrder.Ascending
                                         )
                                     );
@@ -2708,15 +2777,15 @@ GoodsReceiptSearch As CanvasComponent:
                                     );
                                     If(//Stores the sort order of that column
                                         And(
-                                            varGoodsReceiptSearchAllSortOrder = SortOrder.Ascending,
+                                            varGoodsReceiptSearchAllSortByOrder = SortOrder.Ascending,
                                             varGoodsReceiptSearchAllSortByColumn = Self.Text
                                         ),
                                         Set(
-                                            varGoodsReceiptSearchAllSortOrder,
+                                            varGoodsReceiptSearchAllSortByOrder,
                                             SortOrder.Descending
                                         ),
                                         Set(
-                                            varGoodsReceiptSearchAllSortOrder,
+                                            varGoodsReceiptSearchAllSortByOrder,
                                             SortOrder.Ascending
                                         )
                                     );
@@ -2856,13 +2925,13 @@ GoodsReceiptSearch As CanvasComponent:
                                         btnGoodsReceiptSearchResultsTableHeaderLocation.Text,
                                         "Location"
                                     ),
-                                    varGoodsReceiptSearchAllSortOrder
+                                    varGoodsReceiptSearchAllSortByOrder
                                 )
                             )
                         Layout: =Layout.Vertical
                         LayoutMinHeight: =Self.TemplateHeight*6
                         LayoutMinWidth: =
-                        TabIndex: =13
+                        TabIndex: =0
                         TemplateFill: =RGBA(255, 255, 255, 1)
                         TemplatePadding: =0
                         TemplateSize: =43

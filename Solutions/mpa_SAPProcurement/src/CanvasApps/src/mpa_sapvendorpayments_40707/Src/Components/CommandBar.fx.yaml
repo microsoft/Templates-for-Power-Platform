@@ -74,7 +74,7 @@ CommandBar As CanvasComponent:
                 Tooltip: |-
                     =// Define a variable named "Text" with the value "{value}"
                     With(
-                        {Text: "Advanced search"},
+                        {Text: "Refresh"},
                         // Check if a localized text exists for "Text" in the user's preferred language
                         If(
                             // If the localized text is blank, return the default text
@@ -94,8 +94,6 @@ CommandBar As CanvasComponent:
                     )
                 Visible: |-
                     =!Or(
-                        varIsEdit,
-                        varIsNew,
                         varIsProcessing,
                         IsBlank(varVendorPaymentHeader)
                     )
@@ -181,7 +179,6 @@ CommandBar As CanvasComponent:
                             ).'Localized Value'
                         )
                     )
-                Visible: =!Or(varIsEdit,varIsNew)
                 Width: =30
                 X: =txtCommandBarSearchInput.X+txtCommandBarSearchInput.Width+10
                 Y: =6
@@ -250,7 +247,6 @@ CommandBar As CanvasComponent:
                         Self.Text,
                         Self.HintText
                     )
-                Visible: =!Or(varIsEdit,varIsNew)
                 Width: |-
                     =Max(
                         125,
@@ -297,23 +293,8 @@ CommandBar As CanvasComponent:
                             varVendorPaymentHeader,
                             Blank()
                         );
-                        Set(
-                            varNewPurchaseOrderHeader,
-                            Blank()
-                        );
-                        Set(
-                            varPurchaseOrderNumber,
-                            Blank()
-                        );
-                        Set(
-                            varNewVendorPaymentNumber,
-                            Blank()
-                        );
-                        Set(
-                            varVendorPaymentPostingDate,
-                            Blank()
-                        );
                         Clear(colVendorPaymentItems);
+                        
                     //Call ReadVendorPayment Power Automate to read the vendor Payment from SAP
                     ClearCollect(
                             colReadVendorPaymentResponseTemp,//collection that temporarily stores the vendor Payment response data
@@ -329,8 +310,9 @@ CommandBar As CanvasComponent:
                     Switch(
                             true,
                             And(//Check to see if read vendor Payment call was successful and process happy path logic
-                    First(colReadVendorPaymentResponseTemp).Status = "Success",
-                    !IsBlank(First(colReadVendorPaymentResponseTemp).Payment)),
+                                First(colReadVendorPaymentResponseTemp).Status = "Success",
+                                !IsBlank(First(colReadVendorPaymentResponseTemp).Payment)
+                            ),
                             //Reset the search text input control
                             Reset(txtCommandBarSearchInput);
                             Set(
@@ -341,7 +323,7 @@ CommandBar As CanvasComponent:
                                 varVendorPaymentHeader,//Variable that stores the returned main vendor Payment data
                                 First(colReadVendorPaymentResponseTemp).Header
                             );
-                    Set(//Set default sort column of items table
+                            Set(//Set default sort column of items table
                                 varVendorPaymentItemsSortByColumn,
                                 btnVendorPaymentItemsTableHeaderItem.Text
                             );
@@ -350,8 +332,7 @@ CommandBar As CanvasComponent:
                                 SortOrder.Ascending
                             );
                             //Reset any controls that interact with existing vendor Payment data
-                    Reset(chbVendorPaymentDetailsItemsSelectAll);
-                            Reset(galVendorPaymentItems);
+                    Reset(galVendorPaymentItems);
                             Reset(txtVendorPaymentDetailsItemsFilter);
                          /*Cache associated vendor Payment child records. Collections are used to pass updated data back in update vendor Payment transactions
                         Default CrudType fields to 'R'. CrudType will be changed if user changes/removes child records and used by update vendor Payment flow*/
@@ -364,7 +345,12 @@ CommandBar As CanvasComponent:
                                         LookUp(
                                             First(colReadVendorPaymentResponseTemp).GlAccounts As temp1,
                                             GlAccount = temp1.GlAccount
-                                        ).Description
+                                        ).Description,
+                                        "_PaymentTypeDisplayValue",
+                                        LookUp(
+                                            colPaymentTypes,
+                                            'Value Code' = Type
+                                        ).'Display Value'
                                     )
                                 );
                                 ,
@@ -396,6 +382,7 @@ CommandBar As CanvasComponent:
                                     'Last Searched On': Now()
                                 }
                             );
+                            
                     //Check if the patch function was successful and notify if there was any errors.
                     If(
                                 !IsEmpty(Errors('SAP Search Histories')),
@@ -410,9 +397,10 @@ CommandBar As CanvasComponent:
                         //End if ReadVendorPayment Power Automate call was success
                     ,
                             And(//Flow returned and error
-                     First(colReadVendorPaymentResponseTemp).Status = "Error",
-                    IsBlank(First(colReadVendorPaymentResponseTemp).Header.Vendor)),
-                           Notify(
+                                First(colReadVendorPaymentResponseTemp).Status = "Error",
+                                IsBlank(First(colReadVendorPaymentResponseTemp).Header.Vendor)
+                            ),
+                            Notify(
                                 Concat(
                                     First(colReadVendorPaymentResponseTemp).Messages,
                                     Message,
@@ -422,8 +410,9 @@ CommandBar As CanvasComponent:
                                 0
                             ),
                             And(//Check to see if call was successful, but no vendor Payment was found
-                    First(colReadVendorPaymentResponseTemp).Status = "Information",
-                    IsBlank(First(colReadVendorPaymentResponseTemp).Payment)),
+                                First(colReadVendorPaymentResponseTemp).Status = "Information",
+                                IsBlank(First(colReadVendorPaymentResponseTemp).Payment)
+                            ),
                             Notify(
                                 With(
                                     {Text: "Vendor payment not found"},
@@ -476,7 +465,8 @@ CommandBar As CanvasComponent:
                             varSelectedVendorPaymentID,//done with selected vendor payment ID variable, set back to blank
                             Blank()
                         );
-                       Clear(colReadVendorPaymentResponseTemp);
+                        Clear(colReadVendorPaymentResponseTemp);
+                        
                     //done with read vendor Payment temp collections, clear cache
                     Set(
                             varIsProcessing,//done processing read vendor Payment, set variable back to false stopping any processing control behavior
@@ -515,7 +505,7 @@ CommandBar As CanvasComponent:
                             ).'Localized Value'
                         )
                     )
-                Visible: =!Or(varIsEdit,varIsNew) && !IsBlank(txtCommandBarSearchInput.Text)
+                Visible: =!IsBlank(txtCommandBarSearchInput.Text)
                 Width: =30
                 X: =txtCommandBarSearchInput.X+txtCommandBarSearchInput.Width-Self.Width
                 Y: =6
@@ -635,7 +625,6 @@ CommandBar As CanvasComponent:
                         Self.Selected.Name,
                         Self.AccessibleLabel
                     )
-                Visible: =!Or(varIsEdit,varIsNew)
                 Width: |-
                     =Max(
                         250,
@@ -671,7 +660,6 @@ CommandBar As CanvasComponent:
                 Fill: =varThemeColors.secondaryGray
                 Height: =30
                 OnSelect: =
-                Visible: =!Or(varIsEdit,varIsNew)
                 Width: =2
                 Y: =6
                 ZIndex: =7

@@ -252,7 +252,7 @@
                     },
                     "Success_Response": {
                       "runAfter": {
-                        "If_More_Purchasing_Organizations_or_Company_Codes": [
+                        "If_Phones_Or_Emails_Need_to_Be_Added": [
                           "Succeeded"
                         ]
                       },
@@ -392,6 +392,112 @@
                         }
                       }
                     },
+                    "Update_Vendor_Number_Raw": {
+                      "runAfter": {
+                        "Filter_Messages_for_Vendor_Number": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "ddcdeffe-cfa7-466a-a9b9-1d5e9765d8ab"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "VendorRaw",
+                        "value": "@{body('Filter_Messages_for_Vendor_Number')[0]?['STAPA1']}"
+                      }
+                    },
+                    "If_More_Purchasing_Organizations_or_Company_Codes": {
+                      "actions": {
+                        "Set_Header_(E1LFA1M)_2": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "736203b1-de9e-4e34-b5c4-166f16063c97"
+                          },
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "E1LFA1M",
+                            "value": [
+                              {
+                                "TABNAM": "E1LFA1M",
+                                "MANDT": "@parameters('SAP Client ID (mpa_SAPClientID)')",
+                                "SEGNUM": "000001",
+                                "SEGNAM": "E1LFA1M",
+                                "SDATA": "@concat(substring(concat('001', variables('VendorRaw'), '                                                                                                                                    '), 0, 132), \r\nsubstring(concat(body('Parse_JSON')?['Header']?['AccountGroup'], '              '), 0, 14), \r\nsubstring(concat(body('Parse_JSON')?['Header']?['Country'], '              '), 0, 14), \r\nsubstring(concat(body('Parse_JSON')?['Header']?['VendorName'], '                                                                                                                                            '), 0, 140), \r\nsubstring(concat(body('Parse_JSON')?['Header']?['City'], '                                                                                          '), 0, 90), \r\nsubstring(concat(body('Parse_JSON')?['Header']?['PostalCode'], '          '), 0, 10), \r\nsubstring(concat(body('Parse_JSON')?['Header']?['State'], '               '), 0, 15), \r\nsubstring(concat(body('Parse_JSON')?['Header']?['Language'], '                              '), 0, 30), \r\nsubstring(concat(body('Parse_JSON')?['Header']?['Street'], '                                   '), 0, 35))"
+                              }
+                            ]
+                          }
+                        },
+                        "Update_Vendor": {
+                          "runAfter": {
+                            "Set_Header_(E1LFA1M)_2": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "81ec84ea-9248-43dd-abd8-5c60ddfff82a"
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_saperp",
+                              "operationId": "CallRfcJson",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                            },
+                            "parameters": {
+                              "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                              "rfcName": "IDOC_INBOUND_SYNCHRONOUS:Call inbound processing for transferred IDoc:EDIN",
+                              "rfcGroupFilter": "*",
+                              "autoCommit": false,
+                              "rfcInputs/INT_EDIDC/TABNAM": "EDI_DC",
+                              "rfcInputs/INT_EDIDC/MANDT": "@parameters('SAP Client ID (mpa_SAPClientID)')",
+                              "rfcInputs/INT_EDIDC/STATUS": "30",
+                              "rfcInputs/INT_EDIDC/DOCTYP": "CREMAS05",
+                              "rfcInputs/INT_EDIDC/DIRECT": "2",
+                              "rfcInputs/INT_EDIDC/RCVPRT": "LS",
+                              "rfcInputs/INT_EDIDC/RCVPRN": "@{parameters('SAP System ID (mpa_SAPSystemID)')}CLNT@{parameters('SAP Client ID (mpa_SAPClientID)')}",
+                              "rfcInputs/INT_EDIDC/SNDPOR": "@parameters('SAP System ID (mpa_SAPSystemID)')",
+                              "rfcInputs/INT_EDIDC/SNDPRT": "LS",
+                              "rfcInputs/INT_EDIDC/SNDPRN": "@{parameters('SAP System ID (mpa_SAPSystemID)')}CLNT@{parameters('SAP Client ID (mpa_SAPClientID)')}",
+                              "rfcInputs/INT_EDIDC/MESTYP": "CREMAS",
+                              "rfcInputs/INT_EDIDC/IDOCTYP": "CREMAS05",
+                              "rfcInputs/INT_EDIDC/SNDPFC": "LS",
+                              "rfcInputs/ONLINE": "0",
+                              "rfcInputs/INT_EDIDD": "@union(variables('E1LFA1M'), body('Companies_(E1LFB1M)'), body('Purchasing_Organizations_(E1LFM1M)'))"
+                            },
+                            "authentication": "@parameters('$authentication')",
+                            "retryPolicy": {
+                              "type": "none"
+                            }
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "Emails_X_(BAPIADSMTP_X)": [
+                          "Succeeded"
+                        ]
+                      },
+                      "expression": {
+                        "or": [
+                          {
+                            "greaterOrEquals": [
+                              "@length(skip(body('Companies_(E1LFB1M)'),1))",
+                              1
+                            ]
+                          },
+                          {
+                            "greaterOrEquals": [
+                              "@length(skip(body('Purchasing_Organizations_(E1LFM1M)'),1))",
+                              1
+                            ]
+                          }
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "8f7d50d3-b054-4cb4-9f48-1a8a30013bd5"
+                      },
+                      "type": "If"
+                    },
                     "If_Phones_Or_Emails_Need_to_Be_Added": {
                       "actions": {
                         "Create_stateful_session": {
@@ -477,7 +583,7 @@
                         }
                       },
                       "runAfter": {
-                        "Emails_X_(BAPIADSMTP_X)": [
+                        "If_More_Purchasing_Organizations_or_Company_Codes": [
                           "Succeeded"
                         ]
                       },
@@ -499,97 +605,6 @@
                       },
                       "metadata": {
                         "operationMetadataId": "e9efd70f-e739-4ab6-ad9b-90b1e544b087"
-                      },
-                      "type": "If"
-                    },
-                    "Update_Vendor_Number_Raw": {
-                      "runAfter": {
-                        "Filter_Messages_for_Vendor_Number": [
-                          "Succeeded"
-                        ]
-                      },
-                      "metadata": {
-                        "operationMetadataId": "ddcdeffe-cfa7-466a-a9b9-1d5e9765d8ab"
-                      },
-                      "type": "SetVariable",
-                      "inputs": {
-                        "name": "VendorRaw",
-                        "value": "@{body('Filter_Messages_for_Vendor_Number')[0]?['STAPA1']}"
-                      }
-                    },
-                    "If_More_Purchasing_Organizations_or_Company_Codes": {
-                      "actions": {
-                        "Set_Header_(E1LFA1M)_2": {
-                          "runAfter": {},
-                          "metadata": {
-                            "operationMetadataId": "736203b1-de9e-4e34-b5c4-166f16063c97"
-                          },
-                          "type": "SetVariable",
-                          "inputs": {
-                            "name": "E1LFA1M",
-                            "value": [
-                              {
-                                "TABNAM": "E1LFA1M",
-                                "MANDT": "@parameters('SAP Client ID (mpa_SAPClientID)')",
-                                "SEGNUM": "000001",
-                                "SEGNAM": "E1LFA1M",
-                                "SDATA": "@concat(substring(concat('001', variables('VendorRaw'), '                                                                                                                                    '), 0, 132), \r\nsubstring(concat(body('Parse_JSON')?['Header']?['AccountGroup'], '              '), 0, 14), \r\nsubstring(concat(body('Parse_JSON')?['Header']?['Country'], '              '), 0, 14), \r\nsubstring(concat(body('Parse_JSON')?['Header']?['VendorName'], '                                                                                                                                            '), 0, 140), \r\nsubstring(concat(body('Parse_JSON')?['Header']?['City'], '                                                                                          '), 0, 90), \r\nsubstring(concat(body('Parse_JSON')?['Header']?['PostalCode'], '          '), 0, 10), \r\nsubstring(concat(body('Parse_JSON')?['Header']?['State'], '               '), 0, 15), \r\nsubstring(concat(body('Parse_JSON')?['Header']?['Language'], '                              '), 0, 30), \r\nsubstring(concat(body('Parse_JSON')?['Header']?['Street'], '                                   '), 0, 35))"
-                              }
-                            ]
-                          }
-                        },
-                        "Change_Vendor": {
-                          "runAfter": {
-                            "Set_Header_(E1LFA1M)_2": [
-                              "Succeeded"
-                            ]
-                          },
-                          "metadata": {
-                            "operationMetadataId": "81ec84ea-9248-43dd-abd8-5c60ddfff82a"
-                          },
-                          "type": "OpenApiConnection",
-                          "inputs": {
-                            "host": {
-                              "connectionName": "shared_saperp",
-                              "operationId": "CallRfcJson",
-                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
-                            },
-                            "parameters": {
-                              "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
-                              "rfcName": "IDOC_INBOUND_SYNCHRONOUS:Call inbound processing for transferred IDoc:EDIN",
-                              "rfcGroupFilter": "*",
-                              "autoCommit": false
-                            },
-                            "authentication": "@parameters('$authentication')",
-                            "retryPolicy": {
-                              "type": "none"
-                            }
-                          }
-                        }
-                      },
-                      "runAfter": {
-                        "If_Phones_Or_Emails_Need_to_Be_Added": [
-                          "Succeeded"
-                        ]
-                      },
-                      "expression": {
-                        "or": [
-                          {
-                            "greaterOrEquals": [
-                              "@length(skip(body('Companies_(E1LFB1M)'),1))",
-                              1
-                            ]
-                          },
-                          {
-                            "greaterOrEquals": [
-                              "@length(skip(body('Purchasing_Organizations_(E1LFM1M)'),1))",
-                              1
-                            ]
-                          }
-                        ]
-                      },
-                      "metadata": {
-                        "operationMetadataId": "8f7d50d3-b054-4cb4-9f48-1a8a30013bd5"
                       },
                       "type": "If"
                     }

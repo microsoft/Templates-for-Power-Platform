@@ -619,7 +619,45 @@
                                     );
                                     DropColumns(
                                         colVendorInvoiceItems,
-                                        "UnitPrice","PurchaseRequisitionNumber"
+                                        "UnitPrice",
+                                        "PurchaseRequisitionNumber"
+                                    );
+                                    //Warn if there are already invoices on this purchase order and delete the quantities and amounts in the collection
+                            If(
+                                        Or(
+                                            !IsEmpty(First(colReadPurchaseOrderResponseTemp).Invoices),
+                                            !IsEmpty(First(colReadPurchaseOrderResponseTemp).ParkedInvoices)
+                                        ),
+                                        Notify(
+                                            With(
+                                                {Text: "Purchase order has one or more invoices associated already"},
+                                                If(
+                                    // If the localized text is blank, return the default text
+                                                    IsBlank(
+                                                        LookUp(
+                                                            colUserLocalizedStrings,
+                                                            'English Value' = Text
+                                                        ).'Localized Value'
+                                                    ),
+                                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                                    LookUp(
+                                                        colUserLocalizedStrings,
+                                                        'English Value' = Text
+                                                    ).'Localized Value'
+                                                )
+                                            ),
+                                            NotificationType.Warning,
+                                            7000
+                                        );
+                                        UpdateIf(
+                                            colVendorInvoiceItems,
+                                            true,
+                                            {
+                                                Quantity: Blank(),
+                                                TotalPrice: Blank()
+                                            }
+                                        )
                                     );
                                     Patch(
                                         'SAP Search Histories',
@@ -2514,6 +2552,19 @@
                     Height: =64
                     LayoutMinHeight: =100
                     LayoutMinWidth: =250
+                    Visible: |-
+                        =And(
+                            !IsBlank(varVendorInvoiceNumber),
+                            !varIsEdit,
+                            !varIsNew,
+                            IsBlank(varVendorInvoiceHeader.ReversalDocument),//Populated if the document has already been reversed
+                            varVendorInvoiceHeader.InvoiceDocumentStatus in Table(//Various Parked status's
+                                {Status: "A"},
+                                {Status: "B"},
+                                {Status: "C"},
+                                {Status: "D"}
+                            ).Status
+                        )
                     Width: |-
                         =Max(
                             224,
@@ -4284,7 +4335,7 @@
                                     )
                                 Color: =varThemeColors.tertiaryGray
                                 DisabledColor: =varThemeColors.disabledText
-                                DisplayMode: =btnVendorInvoiceItemsTableHeaderMaterialQuantity.DisplayMode
+                                DisplayMode: =btnVendorInvoiceItemsTableHeaderQuantity.DisplayMode
                                 FocusedBorderColor: =varThemeColors.primary
                                 Height: =12
                                 Icon: |-
@@ -4293,13 +4344,13 @@
                                         Icon.ArrowUp,
                                         Icon.ArrowDown
                                     )
-                                Visible: =varVendorInvoiceItemsSortByColumn = btnVendorInvoiceItemsTableHeaderMaterialQuantity.Text && galVendorInvoiceItems.Visible
+                                Visible: =varVendorInvoiceItemsSortByColumn = btnVendorInvoiceItemsTableHeaderQuantity.Text && galVendorInvoiceItems.Visible
                                 Width: =12
-                                X: =Len(btnVendorInvoiceItemsTableHeaderMaterialQuantity.Text)*8+8
-                                Y: =btnVendorInvoiceItemsTableHeaderMaterialQuantity.Y+btnVendorInvoiceItemsTableHeaderMaterialQuantity.Height/2-Self.Height/2
+                                X: =Len(btnVendorInvoiceItemsTableHeaderQuantity.Text)*8+8
+                                Y: =btnVendorInvoiceItemsTableHeaderQuantity.Y+btnVendorInvoiceItemsTableHeaderQuantity.Height/2-Self.Height/2
                                 ZIndex: =1
 
-                            btnVendorInvoiceItemsTableHeaderMaterialQuantity As button:
+                            btnVendorInvoiceItemsTableHeaderQuantity As button:
                                 Align: =Align.Left
                                 BorderColor: =RGBA(0,0,0,0)
                                 BorderThickness: =1
@@ -5054,7 +5105,7 @@
                                         "Description",
                                         btnVendorInvoiceItemsTableHeaderUnit.Text,
                                         "UnitOfMeasure",
-                                        btnVendorInvoiceItemsTableHeaderMaterialQuantity.Text,
+                                        btnVendorInvoiceItemsTableHeaderQuantity.Text,
                                         "Quantity",
                                         btnVendorInvoiceItemsTableHeaderTotal.Text,
                                         "TotalPrice",

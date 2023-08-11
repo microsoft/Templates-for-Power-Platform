@@ -485,7 +485,7 @@ VendorPaymentSearch As CanvasComponent:
                         BorderThickness: =1
                         Color: |-
                             =If(
-                                IsBlank(Self.Text),
+                                Self.Italic,
                                 varThemeColors.requiredRed,
                                 varThemeColors.text
                             )
@@ -675,28 +675,6 @@ VendorPaymentSearch As CanvasComponent:
                                     First(colReadVendorResponseTemp).Status = "Success",
                                     !IsBlank(First(colReadVendorResponseTemp).Header.Vendor)
                                 ),
-                                    Notify(
-                                    With(
-                                        {Text: "Vendor existence verified in SAP"},
-                                        If(
-                                    // If the localized text is blank, return the default text
-                                            IsBlank(
-                                                LookUp(
-                                                    colUserLocalizedStrings,
-                                                    'English Value' = Text
-                                                ).'Localized Value'
-                                            ),
-                                            Text,
-                                    // If a localized text is found, return that instead of the default text
-                                            LookUp(
-                                                colUserLocalizedStrings,
-                                                'English Value' = Text
-                                            ).'Localized Value'
-                                        )
-                                    ),
-                                    NotificationType.Information,
-                                    7000
-                                ),
                                 Set(
                                     varNewVendorHeader,//Variable that stores the returned main vendor header data
                                     First(colReadVendorResponseTemp).Header
@@ -717,12 +695,7 @@ VendorPaymentSearch As CanvasComponent:
                                     {
                                         'Object ID': varNewVendorHeader.Vendor,
                                         'Object Type': 'Object Type (SAP Search Histories)'.Vendor,
-                                        Name: varNewVendorHeader.VendorName,
-                                        'Attribute 1': Concatenate(
-                                            varNewVendorHeader.Vendor,
-                                            "-",
-                                            varNewVendorHeader.VendorName
-                                        ),
+                                        Name: varNewVendorHeader.FullName,
                                         'Last Searched On': Now()
                                     }
                                 );
@@ -762,16 +735,6 @@ VendorPaymentSearch As CanvasComponent:
                                     ),
                                     NotificationType.Information,
                                     7000
-                                ),//Error response returned
-                                First(colReadVendorResponseTemp).Status = "Error",
-                                Notify(
-                                    Concat(
-                                        First(colReadVendorResponseTemp).Messages,
-                                        Message,
-                                        " "
-                                    ),
-                                    NotificationType.Error,
-                                    0
                                 ),//Default response for an unhandled error return
                                 Notify(
                                     With(
@@ -871,7 +834,7 @@ VendorPaymentSearch As CanvasComponent:
                                         'English Value' = Text
                                     ).'Localized Value'
                                 )
-                            ) & " *"
+                            )
                         Width: =Parent.Width-Self.FocusedBorderThickness*2
                         X: =Self.FocusedBorderThickness
                         ZIndex: =5
@@ -892,9 +855,9 @@ VendorPaymentSearch As CanvasComponent:
                     dteVendorPaymentSearchAllDateFrom As datepicker:
                         AccessibleLabel: |-
                             =If(
-                                    !IsBlank(dteVendorPaymentSearchAllDateFrom.SelectedDate),
+                                    !IsBlank(dteVendorPaymentSearchAllDateTo.SelectedDate),
                                 With(
-                                    {Text: "Select created from date required"},
+                                    {Text: "Select due from date required"},
                                 // Check if a localized text exists for "Text" in the user's preferred language
                                     If(
                                     // If the localized text is blank, return the default text
@@ -913,7 +876,15 @@ VendorPaymentSearch As CanvasComponent:
                                     )
                                 )
                             )
-                        BorderColor: =varThemeColors.primaryGray
+                        BorderColor: |-
+                            =If(
+                                And(
+                                    IsBlank(Self.SelectedDate),
+                                    !IsBlank(dteVendorPaymentSearchAllDateTo.SelectedDate)
+                                ),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
                         BorderThickness: =1
                         CalendarHeaderFill: =ColorFade(RGBA(105, 121, 126, 1), -30%)
                         Color: =varThemeColors.text
@@ -940,7 +911,7 @@ VendorPaymentSearch As CanvasComponent:
                         IconFill: =varThemeColors.text
                         InputTextPlaceholder: |-
                             =With(
-                                {Text: "Select from date"},
+                                {Text: "Select due from date"},
                                 // Check if a localized text exists for "Text" in the user's preferred language
                                 If(
                                     // If the localized text is blank, return the default text
@@ -1012,6 +983,12 @@ VendorPaymentSearch As CanvasComponent:
                                         'English Value' = Text
                                     ).'Localized Value'
                                 )
+                            ) & If(
+                                Or(
+                                    !IsBlank(dteVendorPaymentSearchAllDateFrom.SelectedDate),
+                                    !IsBlank(dteVendorPaymentSearchAllDateTo.SelectedDate)
+                                ),
+                                " *"
                             )
                         Width: =Parent.Width
                         X: =dteVendorPaymentSearchAllDateFrom.X
@@ -1033,9 +1010,9 @@ VendorPaymentSearch As CanvasComponent:
                     dteVendorPaymentSearchAllDateTo As datepicker:
                         AccessibleLabel: |-
                             =If(
-                                    !IsBlank(dteVendorPaymentSearchAllDateTo.SelectedDate),
+                                !IsBlank(dteVendorPaymentSearchAllDateFrom.SelectedDate),
                                 With(
-                                    {Text: "Select created from date required"},
+                                    {Text: "Select due to date required"},
                                 // Check if a localized text exists for "Text" in the user's preferred language
                                     If(
                                     // If the localized text is blank, return the default text
@@ -1054,7 +1031,15 @@ VendorPaymentSearch As CanvasComponent:
                                     )
                                 )
                             )
-                        BorderColor: =varThemeColors.primaryGray
+                        BorderColor: |-
+                            =If(
+                                And(
+                                    IsBlank(Self.SelectedDate),
+                                    !IsBlank(dteVendorPaymentSearchAllDateFrom.SelectedDate)
+                                ),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
                         BorderThickness: =1
                         CalendarHeaderFill: =ColorFade(RGBA(105, 121, 126, 1), -30%)
                         Color: =varThemeColors.text
@@ -1081,7 +1066,7 @@ VendorPaymentSearch As CanvasComponent:
                         IconFill: =varThemeColors.text
                         InputTextPlaceholder: |-
                             =With(
-                                {Text: "Select from date"},
+                                {Text: "Select due to date"},
                                 // Check if a localized text exists for "Text" in the user's preferred language
                                 If(
                                     // If the localized text is blank, return the default text
@@ -1153,6 +1138,12 @@ VendorPaymentSearch As CanvasComponent:
                                         'English Value' = Text
                                     ).'Localized Value'
                                 )
+                            ) & If(
+                                Or(
+                                    !IsBlank(dteVendorPaymentSearchAllDateFrom.SelectedDate),
+                                    !IsBlank(dteVendorPaymentSearchAllDateTo.SelectedDate)
+                                ),
+                                " *"
                             )
                         Width: =Parent.Width
                         X: =dteVendorPaymentSearchAllDateTo.X
@@ -1200,10 +1191,23 @@ VendorPaymentSearch As CanvasComponent:
                         Reset(txtVendorPaymentSearchAllResultsCommandBarFilter);
                         Clear(colRequiredFieldsTemp);
                         If(
-                            IsBlank(txtVendorPaymentSearchAllVendor),
+                            And(
+                                IsBlank(dteVendorPaymentSearchAllDateFrom.SelectedDate),
+                                !IsBlank(dteVendorPaymentSearchAllDateTo.SelectedDate)
+                            ),
                             Collect(
                                 colRequiredFieldsTemp,
-                                lblVendorPaymentSearchAllVendor.Text
+                                lblVendorPaymentSearchAllDateFrom.Text
+                            )
+                        );
+                        If(
+                            And(
+                                !IsBlank(dteVendorPaymentSearchAllDateFrom.SelectedDate),
+                                IsBlank(dteVendorPaymentSearchAllDateTo.SelectedDate)
+                            ),
+                            Collect(
+                                colRequiredFieldsTemp,
+                                lblVendorPaymentSearchAllDateTo.Text
                             )
                         );
                         //Check to see if required fields collection, notify which fields are missing if so
@@ -2624,14 +2628,7 @@ VendorPaymentSearch As CanvasComponent:
                                                 'English Value' = Text
                                             ).'Localized Value'
                                         )
-                                    ) &
-                                    If(IsBlank(colVendorPaymentSearchResults),
-                                    """",
-                                     Concatenate(
-                                        " (",
-                                        First(colVendorPaymentSearchResults).Currency,
-                                        ")"
-                                    ))
+                                    )
                                 Tooltip: =Self.Text
                                 Width: =Parent.Width-Self.X*2
                                 X: =Self.FocusedBorderThickness
@@ -2696,7 +2693,7 @@ VendorPaymentSearch As CanvasComponent:
                         Height: =
                         ItemAccessibleLabel: =ThisItem.Payment
                         Items: |-
-                            =//Display vendor invoice search result items based upon whether filters results further and/or by sort column selected
+                            =//Display vendor payment search result items based upon whether filters results further and/or by sort column selected
                             With(
                                 {
                                     searchResults: If(
@@ -2792,7 +2789,14 @@ VendorPaymentSearch As CanvasComponent:
                             PaddingTop: =0
                             Size: =10.5
                             Text: |-
-                                =Text(ThisItem.Amount,"[$-en-US]#,##0.00")
+                                =Text(
+                                    ThisItem.Amount,
+                                    "[$-en-US]#,##0.00"
+                                ) & Concatenate(
+                                    " (",
+                                    ThisItem.Currency,
+                                    ")"
+                                )
                             Tooltip: =Self.Text
                             Width: =conVendorPaymentSearchAllResultsTableHeaderAmount.Width-15//scrollbar padding
                             Wrap: =false
@@ -3670,7 +3674,7 @@ VendorPaymentSearch As CanvasComponent:
                         AccessibleLabel: |-
                             =// Define a variable named "Text" with the value "{value}"
                             With(
-                                {Text: "Vendor invoices recently searched"},
+                                {Text: "Vendor payments recently searched"},
                                 // Check if a localized text exists for "Text" in the user's preferred language
                                 If(
                                     // If the localized text is blank, return the default text
@@ -3739,7 +3743,7 @@ VendorPaymentSearch As CanvasComponent:
                                 Filter(
                                     'SAP Search Histories',
                                     'SAP Search Histories (Views)'.'My Recent SAP Search History',//Entity view that has filter logic to return user's search history records
-                                    'Object Type' = 'Object Type (SAP Search Histories)'.'Vendor Payment'//Filter on object type vendor invoice
+                                    'Object Type' = 'Object Type (SAP Search Histories)'.'Vendor Payment'//Filter on object type vendor payment
                                 )
                             )
                         Width: =
