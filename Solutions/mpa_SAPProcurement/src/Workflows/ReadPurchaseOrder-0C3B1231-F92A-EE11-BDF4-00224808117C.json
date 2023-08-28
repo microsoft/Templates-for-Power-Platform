@@ -1,7 +1,7 @@
 {
   "properties": {
     "connectionReferences": {
-      "shared_commondataserviceforapps_1": {
+      "shared_commondataserviceforapps": {
         "runtimeSource": "embedded",
         "connection": {
           "connectionReferenceLogicalName": "mpa_SAPDataverse"
@@ -61,7 +61,7 @@
       "triggers": {
         "manual": {
           "metadata": {
-            "operationMetadataId": "8a7dded9-9de6-4925-a7dd-aac67faa7660"
+            "operationMetadataId": "44f65790-a4bd-4dc1-ad8c-abda240b0bdf"
           },
           "type": "Request",
           "kind": "PowerAppV2",
@@ -170,7 +170,7 @@
               "type": "OpenApiConnection",
               "inputs": {
                 "host": {
-                  "connectionName": "shared_commondataserviceforapps_1",
+                  "connectionName": "shared_commondataserviceforapps",
                   "operationId": "CreateRecord",
                   "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                 },
@@ -178,7 +178,6 @@
                   "entityName": "mpa_saperrors",
                   "item/mpa_name": "@outputs('ErrorReturn')?['body'][0]['FlowName']",
                   "item/mpa_action": "@outputs('ErrorReturn')?['body'][0]['Step']",
-                  "item/mpa_additionalinformation": "@triggerBody()['text']",
                   "item/mpa_errormessage": "@outputs('ErrorReturn')?['body'][0]['InnerErrorMessage']",
                   "item/mpa_sourcetype": 865420000,
                   "item/mpa_workflowinstanceurl": "@outputs('ErrorReturn')?['body'][0]['URL']",
@@ -401,19 +400,21 @@
                           "Payment": {
                             "type": "string"
                           },
-                          "ItemNumber": {
+                          "Invoice": {
                             "type": "string"
                           },
-                          "PostingKey": {
+                          "InvoiceFiscalYear": {
                             "type": "string"
                           },
-                          "DebitCreditIndicator": {
+                          "PaymentFiscalYear": {
                             "type": "string"
                           }
                         },
                         "required": [
                           "Payment",
-                          "ItemNumber"
+                          "Invoice",
+                          "InvoiceFiscalYear",
+                          "PaymentFiscalYear"
                         ]
                       }
                     },
@@ -487,9 +488,7 @@
           "runAfter": {
             "Try": [
               "Failed",
-              "TimedOut",
-              "Succeeded",
-              "Skipped"
+              "TimedOut"
             ]
           },
           "metadata": {
@@ -729,7 +728,9 @@
                       "Document": "@item()?['MAT_DOC']",
                       "Process": "@if(isInt(item()?['PROCESS_ID']), int(item()?['PROCESS_ID']), item()?['PROCESS_ID'])",
                       "Quantity": "@if(equals(1,2),string(item()?['QUANTITY']),string(item()?['QUANTITY']))",
-                      "Amount": "@if(equals(1,2),string(item()?['VAL_FORCUR']),string(item()?['VAL_FORCUR']))"
+                      "Amount": "@if(equals(1,2),string(item()?['VAL_FORCUR']),string(item()?['VAL_FORCUR']))",
+                      "DocumentYear": "@item()?['DOC_YEAR']",
+                      "RefrenceKey": "@{item()?['MAT_DOC']}@{item()?['DOC_YEAR']}"
                     }
                   }
                 },
@@ -780,45 +781,14 @@
                 },
                 "If_Invoices_Exist,_Check_for_Payments": {
                   "actions": {
-                    "Parse_Payments": {
+                    "MultiPayments": {
                       "runAfter": {
-                        "Read_Payments": [
+                        "Finalize_IN_Statement": [
                           "Succeeded"
                         ]
                       },
                       "metadata": {
-                        "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
-                      },
-                      "type": "Select",
-                      "inputs": {
-                        "from": "@outputs('Read_Payments')?['body/Rows']",
-                        "select": {
-                          "Payment": "@item()?['BELNR']",
-                          "ItemNumber": "@if(isInt(item()?['EBELP']), string(int(item()?['EBELP'])), item()?['EBELP'])",
-                          "PostingKey": "@item()?['BSCHL']",
-                          "DebitCreditIndicator": "@item()?['SHKZG']"
-                        }
-                      }
-                    },
-                    "Assign_to_Payments_Variable": {
-                      "runAfter": {
-                        "Parse_Payments": [
-                          "Succeeded"
-                        ]
-                      },
-                      "metadata": {
-                        "operationMetadataId": "98c7c3ef-5fc7-4231-b58f-0424e4e24b1d"
-                      },
-                      "type": "SetVariable",
-                      "inputs": {
-                        "name": "Payments",
-                        "value": "@body('Parse_Payments')"
-                      }
-                    },
-                    "Read_Payments": {
-                      "runAfter": {},
-                      "metadata": {
-                        "operationMetadataId": "944bcfac-cda4-4c42-ae5b-da33d1de8c82"
+                        "operationMetadataId": "10604216-c586-4383-b755-40dcc23eb00a"
                       },
                       "type": "OpenApiConnection",
                       "inputs": {
@@ -829,21 +799,77 @@
                         },
                         "parameters": {
                           "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
-                          "inputParameters/tableName": "BSEG",
+                          "inputParameters/tableName": "BKPF",
                           "inputParameters/FieldNames": [
-                            "EBELP:Item Number of Purchasing Document",
                             "BELNR:Accounting Document Number",
-                            "BSCHL:Posting Key",
-                            "SHKZG:Debit/Credit Indicator"
+                            "BUKRS:Company Code",
+                            "GJAHR:Fiscal Year",
+                            "AWKEY:Reference Key"
                           ],
                           "inputParameters/RowCount": "@parameters('SAP Count of Rows To Read (mpa_SAPCountofRowsToRead)')",
-                          "inputParameters/WhereFilters": [
-                            "BSCHL IN ('86','89','96') AND EBELN = '@{variables('Order')}'"
-                          ]
+                          "inputParameters/WhereFilters": "@outputs('Finalize_IN_Statement')"
                         },
                         "authentication": "@parameters('$authentication')",
                         "retryPolicy": {
                           "type": "none"
+                        }
+                      }
+                    },
+                    "Prepare_IN_Statement": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "0cd3f82c-b6aa-450b-9d43-d5e9c1f75a2a"
+                      },
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@body('Filter_Invoices')",
+                        "select": "@concat('''', item()?['RefrenceKey'], '''', ',')"
+                      }
+                    },
+                    "Finalize_IN_Statement": {
+                      "runAfter": {
+                        "Prepare_IN_Statement": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "42c0b6dd-26a1-41e9-b4a7-8d91fc33dd16"
+                      },
+                      "type": "Compose",
+                      "inputs": "@union(json('[\"AWKEY IN (\"]'), body('Prepare_IN_Statement'), json('[\")\"]'))"
+                    },
+                    "Assign_to_Payments_Variable": {
+                      "runAfter": {
+                        "Parse_MultiPayments": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "98c7c3ef-5fc7-4231-b58f-0424e4e24b1d"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "Payments",
+                        "value": "@body('Parse_MultiPayments')"
+                      }
+                    },
+                    "Parse_MultiPayments": {
+                      "runAfter": {
+                        "MultiPayments": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+                      },
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@outputs('MultiPayments')?['body/Rows']",
+                        "select": {
+                          "Payment": "@item()?['BELNR']",
+                          "Invoice": "@trim(substring(item()?['AWKEY'], 0, 10))",
+                          "InvoiceFiscalYear": "@trim(substring(item()?['AWKEY'], 10, 4))",
+                          "PaymentFiscalYear": "@item()?['GJAHR']"
                         }
                       }
                     }
@@ -1176,19 +1202,21 @@
                               "Payment": {
                                 "type": "string"
                               },
-                              "ItemNumber": {
+                              "Invoice": {
                                 "type": "string"
                               },
-                              "PostingKey": {
+                              "InvoiceFiscalYear": {
                                 "type": "string"
                               },
-                              "DebitCreditIndicator": {
+                              "PaymentFiscalYear": {
                                 "type": "string"
                               }
                             },
                             "required": [
                               "Payment",
-                              "ItemNumber"
+                              "Invoice",
+                              "InvoiceFiscalYear",
+                              "PaymentFiscalYear"
                             ]
                           }
                         },
@@ -1558,19 +1586,21 @@
                                 "Payment": {
                                   "type": "string"
                                 },
-                                "ItemNumber": {
+                                "Invoice": {
                                   "type": "string"
                                 },
-                                "PostingKey": {
+                                "InvoiceFiscalYear": {
                                   "type": "string"
                                 },
-                                "DebitCreditIndicator": {
+                                "PaymentFiscalYear": {
                                   "type": "string"
                                 }
                               },
                               "required": [
                                 "Payment",
-                                "ItemNumber"
+                                "Invoice",
+                                "InvoiceFiscalYear",
+                                "PaymentFiscalYear"
                               ]
                             }
                           },
