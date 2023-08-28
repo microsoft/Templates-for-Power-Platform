@@ -24,6 +24,11 @@
             IsEmpty(colVendorRequisitions),
             Reset(dteVendorRequisitionsDateFieldFrom);
             Reset(dteVendorRequisitionsDateFieldTo);   
+            //Ensure refresh button do not show for related requisision and purchase order tabs until user changes default search criteria
+            Set(
+                varShowRequisitionsRefresh,//Variable that shows refresh button if user changes requisition from/to date controls
+                false
+            );
             //Execute flow to query requisitions for given vendor requisitions
             Select(icoVendorRequisitionsDateRefresh)
         );
@@ -575,7 +580,7 @@
                                     ).'Localized Value'
                                 )
                             )
-                        OnChange: =
+                        OnChange: =Set(varShowRequisitionsRefresh,true)
                         PaddingBottom: =6
                         PaddingLeft: =8
                         PaddingRight: =8
@@ -715,7 +720,7 @@
                                     ).'Localized Value'
                                 )
                             )
-                        OnChange: =
+                        OnChange: =Set(varShowRequisitionsRefresh,true)
                         PaddingBottom: =6
                         PaddingLeft: =8
                         PaddingRight: =8
@@ -755,7 +760,7 @@
                         Icon: =Icon.Reload
                         OnSelect: |-
                             =//Check if required search fields and store missing fields in a collection
-                            Clear(colVendorRequisitions);
+                            Clear(colRequiredFieldsTemp);
                             If(
                                 And(
                                     IsBlank(dteVendorRequisitionsDateFieldFrom.SelectedDate),
@@ -872,6 +877,14 @@
                                         ),
                                         Status: First(colVendorRequisitionsTemp).Status
                                     },
+                                    //Keep showing the refreshing button if status is error to allow the user to try again
+                                    If(
+                                        Status <> "Error",
+                                        Set(
+                                            varShowRequisitionsRefresh,
+                                            false
+                                        );
+                                    );
                                     //If success then, build results collection
                             If(
                                         Status = "Success",
@@ -971,6 +984,7 @@
                                     ).'Localized Value'
                                 )
                             )
+                        Visible: =varShowRequisitionsRefresh
                         Width: =30
                         X: =
                         Y: =6
@@ -1994,8 +2008,8 @@
 
                 cmpVendorRequistionsNoItems As NoItemsDisplay:
                     Height: =215
-                    LayoutMinHeight: =
-                    LayoutMinWidth: =
+                    LayoutMinHeight: =640
+                    LayoutMinWidth: =640
                     Visible: =!galVendorRequisitions.Visible
                     Width: =
                     ZIndex: =4
