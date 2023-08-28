@@ -1,0 +1,79 @@
+App As appinfo:
+    BackEnabled: =false
+    ConfirmExit: =
+    OnError: |-
+        =//Patch a new record in dataverse for unhandled or unexpected errors and trace
+        If(
+            !IsBlank(FirstError.Message),
+            Patch(
+                'SAP Errors',
+                Defaults('SAP Errors'),
+                {
+                    Action: FirstError.Source,
+                    'Additional Information': App.ActiveScreen.Name,
+                    'Error Message': FirstError.Message,
+                    Name: "SAP Vendor Payments",
+                    'Source Type': 'Source Type (SAP Errors)'.'Power App',
+                    'Workflow Status': 'Workflow Status (SAP Errors)'.Failed
+                }
+            );
+            
+        //Show the error also in app monitor
+        Trace(FirstError.Message);
+            
+        //Rethrow the error so user can see it
+        Error(FirstError);
+            
+        )
+    OnStart: |-
+        =//One time variable to allow data and key app information to be loaded for first time on Vendor Payment Details Screen. Allows for faster app launch
+        Set(
+            varLoadAppFirstTime,
+            true
+        );
+        //Variable that supports a custom theme in the app. Primary color is usually the only element changed while keeping the remainder the same.
+        Set(
+            varThemeColors,
+            {
+                background: ColorValue("#FAF9F8"),
+                backgroundFill: ColorValue("#FFFFFF"),
+                backgroundFillDisabled: ColorValue("#F3F2F1"),
+                text: ColorValue("#201F1E"),
+                altText: ColorValue("#FFFFFF"),
+                disabledText: ColorValue("#A19F9D"),
+                primary: ColorValue("#0078D4"),
+                secondary: ColorValue("#EFF6FC"),
+                tertiary: ColorValue("#005A9E"),
+                primaryGray: ColorValue("#8A8886"),
+                secondaryGray: ColorValue ("#C8C6C4"),
+                tertiaryGray: ColorValue("#605E5C"),
+                requiredRed: ColorValue("#A80000"),
+                lookupBlue: ColorValue("#005A9E"),
+                templateRowSelectFill: ColorValue("#EDEBE9"),
+                focusBorder:ColorValue("#000000")
+            }
+        );
+        //Variable is set when calls to SAP are made and shows processing indicator
+        Set(
+            varIsProcessing,
+            false
+        );
+        //Collection used by vendor payment tabs component to show list of tabs across screens and driving screen navigation functions when selected
+        ClearCollect(
+            colScreenTabs,
+            Table(
+                {
+                    TabName: "Details",
+                    Screen: 'Vendor Payments Details Screen'
+                }
+            )
+        );
+    Theme: =PowerAppsTheme
+
+    Host As hostControl.DefaultHostControlVariant:
+        OnCancel: =false
+        OnEdit: =false
+        OnNew: =false
+        OnSave: =false
+        OnView: =false
+

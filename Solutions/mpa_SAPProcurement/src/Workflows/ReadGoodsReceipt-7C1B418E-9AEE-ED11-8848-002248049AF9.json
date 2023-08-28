@@ -1,0 +1,1280 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_saperp_2": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_SAPERP"
+        },
+        "api": {
+          "name": "shared_saperp"
+        }
+      },
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_SAPDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "SAP Application Server (mpa_SAPApplicationServer)": {
+          "defaultValue": "{\"AppServerHost\":\"sap.clearsoftware.com\",\"Client\":\"100\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_SAPApplicationServer",
+            "description": "JSON string that contains system parameters, host, system number, client, etc."
+          }
+        },
+        "SAP Count of Rows To Read (mpa_SAPCountofRowsToRead)": {
+          "defaultValue": 1000,
+          "type": "Int",
+          "metadata": {
+            "schemaName": "mpa_SAPCountofRowsToRead",
+            "description": "Sets the maximum number of records to be returned on any search query and helps to alleviate performance concerns"
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "f9a24e1b-b244-4389-9d49-bc25a728fe55"
+          },
+          "type": "Request",
+          "kind": "PowerAppV2",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "Goods Receipt Number",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Initialize_SAPErrorMessage": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "6a6087f9-b1aa-4966-9ea5-0f695d638f87"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "SAPErrorMessage",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Try": {
+          "actions": {
+            "Condition": {
+              "actions": {
+                "Success_Response": {
+                  "runAfter": {
+                    "Parse_Descriptions": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "3acb6b71-7516-4f46-82a7-fe87c0f4120b"
+                  },
+                  "type": "Response",
+                  "kind": "Http",
+                  "inputs": {
+                    "statusCode": 200,
+                    "body": {
+                      "Status": "Success",
+                      "Receipt": "@triggerBody()['text']",
+                      "Header": "@body('Parse_Header')[0]",
+                      "Items": "@body('Parse_Items')",
+                      "ReversedItems": "@body('Parse_Reversed_Items')",
+                      "Vendor": "@first(body('Parse_Vendors'))",
+                      "Materials": "@body('Parse_Descriptions')",
+                      "PurchaseOrderNumber": "@body('Parse_Items')[0]['PurchaseOrderNumber']"
+                    },
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "Status": {
+                          "type": "string"
+                        },
+                        "Receipt": {
+                          "type": "string"
+                        },
+                        "Header": {
+                          "type": "object",
+                          "properties": {
+                            "Type": {
+                              "type": "string"
+                            },
+                            "Receipt": {
+                              "type": "string"
+                            },
+                            "CreatedOn": {
+                              "type": "string"
+                            },
+                            "PostingDate": {
+                              "type": "string"
+                            },
+                            "FiscalYear": {
+                              "type": "string"
+                            },
+                            "Status": {
+                              "type": "string"
+                            },
+                            "DeliveryNote": {
+                              "type": "string"
+                            },
+                            "CreatedBy": {
+                              "type": "string"
+                            },
+                            "DocumentDate": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "Items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ItemNumber": {
+                                "type": "string"
+                              },
+                              "PurchaseOrder": {
+                                "type": "string"
+                              },
+                              "PurchaseOrderItemNumber": {
+                                "type": "string"
+                              },
+                              "MaterialNumber": {
+                                "type": "string"
+                              },
+                              "Location": {
+                                "type": "string"
+                              },
+                              "TotalPrice": {
+                                "type": "number"
+                              },
+                              "Currency": {
+                                "type": "string"
+                              },
+                              "Quantity": {
+                                "type": "number"
+                              },
+                              "Vendor": {
+                                "type": "string"
+                              },
+                              "UnitOfMeasure": {
+                                "type": "string"
+                              },
+                              "StorageLocation": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "ItemNumber",
+                              "PurchaseOrder",
+                              "PurchaseOrderItemNumber",
+                              "MaterialNumber",
+                              "Location",
+                              "TotalPrice",
+                              "Quantity",
+                              "Vendor",
+                              "UnitOfMeasure"
+                            ]
+                          }
+                        },
+                        "ReversedItems": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ItemNumber": {
+                                "type": "string"
+                              },
+                              "PurchaseOrderNumber": {
+                                "type": "string"
+                              },
+                              "PurchaseOrderItemNumber": {
+                                "type": "string"
+                              },
+                              "MaterialNumber": {
+                                "type": "string"
+                              },
+                              "Location": {
+                                "type": "string"
+                              },
+                              "TotalPrice": {
+                                "type": "number"
+                              },
+                              "Currency": {
+                                "type": "string"
+                              },
+                              "Quantity": {
+                                "type": "number"
+                              },
+                              "Vendor": {
+                                "type": "string"
+                              },
+                              "UnitOfMeasure": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "ItemNumber",
+                              "PurchaseOrderNumber",
+                              "PurchaseOrderItemNumber",
+                              "MaterialNumber",
+                              "Location",
+                              "TotalPrice",
+                              "Quantity",
+                              "Vendor",
+                              "UnitOfMeasure"
+                            ]
+                          }
+                        },
+                        "Vendor": {
+                          "type": "object",
+                          "properties": {
+                            "Vendor": {
+                              "type": "string"
+                            },
+                            "VendorName": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "Vendor",
+                            "VendorName"
+                          ]
+                        },
+                        "Materials": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "PurchaseOrderNumber": {
+                                "type": "string"
+                              },
+                              "MaterialDescription": {
+                                "type": "string"
+                              },
+                              "ItemNumber": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "PurchaseOrderNumber",
+                              "MaterialDescription",
+                              "ItemNumber"
+                            ]
+                          }
+                        },
+                        "PurchaseOrderNumber": {
+                          "type": "string"
+                        },
+                        "Messages": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "Message"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "Items": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "7cd63b20-75bc-4488-ad30-7668dba822db"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_saperp_2",
+                      "operationId": "ReadTableVersion3",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                    },
+                    "parameters": {
+                      "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                      "inputParameters/tableName": "MSEG",
+                      "inputParameters/FieldNames": [
+                        "ZEILE",
+                        "EBELN",
+                        "EBELP",
+                        "MATNR",
+                        "WERKS",
+                        "DMBTR",
+                        "MENGE",
+                        "MEINS",
+                        "LIFNR",
+                        "WAERS:Currency Key",
+                        "LGORT:Storage Location"
+                      ],
+                      "inputParameters/RowCount": "@parameters('SAP Count of Rows To Read (mpa_SAPCountofRowsToRead)')",
+                      "inputParameters/WhereFilters": [
+                        "MBLNR LIKE '%@{triggerBody()['text']}%'"
+                      ]
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Parse_Items": {
+                  "runAfter": {
+                    "Reversed_Items": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@outputs('Items')?['body/Rows']",
+                    "select": {
+                      "ItemNumber": "@if(isInt(item()?['ZEILE']), string(int(item()?['ZEILE'])), item()?['ZEILE'])",
+                      "PurchaseOrderNumber": "@if(isInt(item()?['EBELN']), string(int(item()?['EBELN'])), item()?['EBELN'])",
+                      "PurchaseOrderItemNumber": "@if(isInt(item()?['EBELP']), string(int(item()?['EBELP'])), item()?['EBELP'])",
+                      "MaterialNumber": "@if(isInt(item()?['MATNR']), string(int(item()?['MATNR'])), item()?['MATNR'])",
+                      "Location": "@item()?['WERKS']",
+                      "TotalPrice": "@float(item()?['DMBTR'])",
+                      "Quantity": "@float(item()?['MENGE'])",
+                      "Vendor": "@if(isInt(item()?['LIFNR']), string(int(item()?['LIFNR'])), item()?['LIFNR'])",
+                      "UnitOfMeasure": "@item()?['MEINS']",
+                      "VendorRaw": "@item()?['LIFNR']",
+                      "Currency": "@item()?['WAERS']",
+                      "StorageLocation": "@item()?['LGORT']"
+                    }
+                  }
+                },
+                "Reversed_Items": {
+                  "runAfter": {
+                    "Items": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "7cd63b20-75bc-4488-ad30-7668dba822db"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_saperp_2",
+                      "operationId": "ReadTableVersion3",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                    },
+                    "parameters": {
+                      "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                      "inputParameters/tableName": "MSEG",
+                      "inputParameters/FieldNames": [
+                        "ZEILE",
+                        "EBELN",
+                        "EBELP",
+                        "MATNR",
+                        "WERKS",
+                        "DMBTR",
+                        "MENGE",
+                        "MEINS",
+                        "LIFNR",
+                        "WAERS:Currency Key"
+                      ],
+                      "inputParameters/RowCount": "@parameters('SAP Count of Rows To Read (mpa_SAPCountofRowsToRead)')",
+                      "inputParameters/WhereFilters": [
+                        "SMBLN LIKE '%@{triggerBody()['text']}%'"
+                      ]
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Prepare_IN_Statement": {
+                  "runAfter": {
+                    "Parse_Header": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "0cd3f82c-b6aa-450b-9d43-d5e9c1f75a2a"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Parse_Items')",
+                    "select": "@concat('''', item()?['VendorRaw'], '''', ',')"
+                  }
+                },
+                "Finalize_IN_Statement": {
+                  "runAfter": {
+                    "Prepare_IN_Statement": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "42c0b6dd-26a1-41e9-b4a7-8d91fc33dd16"
+                  },
+                  "type": "Compose",
+                  "inputs": "@union(json('[\"LIFNR IN (\"]'), body('Prepare_IN_Statement'), json('[\")\"]'))"
+                },
+                "Vendor_Names": {
+                  "runAfter": {
+                    "Finalize_IN_Statement": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "f4dcb4ce-fd4c-46dc-98e6-5481c066aa43"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_saperp_2",
+                      "operationId": "ReadTableVersion3",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                    },
+                    "parameters": {
+                      "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                      "inputParameters/tableName": "LFA1",
+                      "inputParameters/FieldNames": [
+                        "LIFNR:Account Number of Vendor or Creditor",
+                        "NAME1:Name 1"
+                      ],
+                      "inputParameters/RowCount": "@parameters('SAP Count of Rows To Read (mpa_SAPCountofRowsToRead)')",
+                      "inputParameters/WhereFilters": "@outputs('Finalize_IN_Statement')"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Parse_Vendors": {
+                  "runAfter": {
+                    "Vendor_Names": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@outputs('Vendor_Names')?['body/Rows']",
+                    "select": {
+                      "Vendor": "@if(isInt(item()?['LIFNR']), string(int(item()?['LIFNR'])), item()?['LIFNR'])",
+                      "VendorName": "@item()?['NAME1']",
+                      "VendorRaw": "@item()?['LIFNR']"
+                    }
+                  }
+                },
+                "Parse_Reversed_Items": {
+                  "runAfter": {
+                    "Parse_Items": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@outputs('Reversed_Items')?['body/Rows']",
+                    "select": {
+                      "ItemNumber": "@if(isInt(item()?['ZEILE']), string(int(item()?['ZEILE'])), item()?['ZEILE'])",
+                      "PurchaseOrderNumber": "@if(isInt(item()?['EBELN']), string(int(item()?['EBELN'])), item()?['EBELN'])",
+                      "PurchaseOrderItemNumber": "@if(isInt(item()?['EBELP']), string(int(item()?['EBELP'])), item()?['EBELP'])",
+                      "MaterialNumber": "@if(isInt(item()?['MATNR']), string(int(item()?['MATNR'])), item()?['MATNR'])",
+                      "Location": "@item()?['WERKS']",
+                      "TotalPrice": "@float(item()?['DMBTR'])",
+                      "Quantity": "@float(item()?['MENGE'])",
+                      "Vendor": "@if(isInt(item()?['EMLIF']), string(int(item()?['EMLIF'])), item()?['EMLIF'])",
+                      "UnitOfMeasure": "@item()?['MEINS']",
+                      "Currency": "@item()?['WAERS']"
+                    }
+                  }
+                },
+                "Parse_Header": {
+                  "runAfter": {
+                    "Parse_Reversed_Items": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@outputs('Header')?['body/Rows']",
+                    "select": {
+                      "Type": "@item()?['BLART']",
+                      "Receipt": "@if(isInt(item()?['MBLNR']), string(int(item()?['MBLNR'])), item()?['MBLNR'])",
+                      "CreatedOn": "@item()?['CPUDT']",
+                      "PostingDate": "@item()?['BUDAT']",
+                      "FiscalYear": "@item()?['MJAHR']",
+                      "Status": "@if(equals(length(outputs('Parse_Reversed_Items')?['body']), 0), 'Posted', 'Reversed')",
+                      "CreatedBy": "@item()?['USNAM']",
+                      "DocumentDate": "@item()?['BLDAT']",
+                      "DeliveryNote": "@item()?['BKTXT']"
+                    }
+                  }
+                },
+                "Prepare_IN_Statement_2": {
+                  "runAfter": {
+                    "Parse_Vendors": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "0cd3f82c-b6aa-450b-9d43-d5e9c1f75a2a"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Parse_Items')",
+                    "select": "@concat('''', item()?['PurchaseOrderNumber'], '''', ',')"
+                  }
+                },
+                "Prepare_IN_Statement_3": {
+                  "runAfter": {
+                    "Prepare_IN_Statement_2": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "0cd3f82c-b6aa-450b-9d43-d5e9c1f75a2a"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Parse_Reversed_Items')",
+                    "select": "@concat('''', item()?['PurchaseOrder'], '''', ',')"
+                  }
+                },
+                "Finalize_IN_Statement_2": {
+                  "runAfter": {
+                    "Prepare_IN_Statement_3": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "42c0b6dd-26a1-41e9-b4a7-8d91fc33dd16"
+                  },
+                  "type": "Compose",
+                  "inputs": "@union(json('[\"EBELN IN (\"]'), body('Prepare_IN_Statement_2'), body('Prepare_IN_Statement_3'), json('[\")\"]'))"
+                },
+                "Descriptions": {
+                  "runAfter": {
+                    "Finalize_IN_Statement_2": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "f4dcb4ce-fd4c-46dc-98e6-5481c066aa43"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_saperp_2",
+                      "operationId": "ReadTableVersion3",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                    },
+                    "parameters": {
+                      "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                      "inputParameters/tableName": "EKPO",
+                      "inputParameters/FieldNames": [
+                        "EBELN:Purchasing Document Number",
+                        "TXZ01:Short Text",
+                        "EBELP:Item Number of Purchasing Document"
+                      ],
+                      "inputParameters/RowCount": "@parameters('SAP Count of Rows To Read (mpa_SAPCountofRowsToRead)')",
+                      "inputParameters/WhereFilters": "@outputs('Finalize_IN_Statement_2')"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Parse_Descriptions": {
+                  "runAfter": {
+                    "Descriptions": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "6003c2e5-4622-4651-a22c-4f9c695bbac0"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@outputs('Descriptions')?['body/Rows']",
+                    "select": {
+                      "PurchaseOrderNumber": "@if(isInt(item()?['EBELN']), string(int(item()?['EBELN'])), item()?['EBELN'])",
+                      "MaterialDescription": "@item()?['TXZ01']",
+                      "ItemNumber": "@if(isInt(item()?['EBELP']), string(int(item()?['EBELP'])), item()?['EBELP'])"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Header": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Information_Response": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "0e444872-e5c1-4764-880c-6c2baeb05cf7"
+                    },
+                    "type": "Response",
+                    "kind": "Http",
+                    "inputs": {
+                      "statusCode": 200,
+                      "body": {
+                        "Status": "Information",
+                        "Messages": [
+                          {
+                            "Message": "Receipt @{triggerBody()['text']} does not exist."
+                          }
+                        ]
+                      },
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "Status": {
+                            "type": "string"
+                          },
+                          "Receipt": {
+                            "type": "string"
+                          },
+                          "Header": {
+                            "type": "object",
+                            "properties": {
+                              "Type": {
+                                "type": "string"
+                              },
+                              "Receipt": {
+                                "type": "string"
+                              },
+                              "CreatedOn": {
+                                "type": "string"
+                              },
+                              "PostingDate": {
+                                "type": "string"
+                              },
+                              "FiscalYear": {
+                                "type": "string"
+                              },
+                              "Status": {
+                                "type": "string"
+                              },
+                              "DeliveryNote": {
+                                "type": "string"
+                              },
+                              "CreatedBy": {
+                                "type": "string"
+                              },
+                              "DocumentDate": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "Items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "ItemNumber": {
+                                  "type": "string"
+                                },
+                                "PurchaseOrder": {
+                                  "type": "string"
+                                },
+                                "PurchaseOrderItemNumber": {
+                                  "type": "string"
+                                },
+                                "MaterialNumber": {
+                                  "type": "string"
+                                },
+                                "Location": {
+                                  "type": "string"
+                                },
+                                "TotalPrice": {
+                                  "type": "number"
+                                },
+                                "Currency": {
+                                  "type": "string"
+                                },
+                                "Quantity": {
+                                  "type": "number"
+                                },
+                                "Vendor": {
+                                  "type": "string"
+                                },
+                                "UnitOfMeasure": {
+                                  "type": "string"
+                                },
+                                "StorageLocation": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "ItemNumber",
+                                "PurchaseOrder",
+                                "PurchaseOrderItemNumber",
+                                "MaterialNumber",
+                                "Location",
+                                "TotalPrice",
+                                "Quantity",
+                                "Vendor",
+                                "UnitOfMeasure"
+                              ]
+                            }
+                          },
+                          "ReversedItems": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "ItemNumber": {
+                                  "type": "string"
+                                },
+                                "PurchaseOrderNumber": {
+                                  "type": "string"
+                                },
+                                "PurchaseOrderItemNumber": {
+                                  "type": "string"
+                                },
+                                "MaterialNumber": {
+                                  "type": "string"
+                                },
+                                "Location": {
+                                  "type": "string"
+                                },
+                                "TotalPrice": {
+                                  "type": "number"
+                                },
+                                "Currency": {
+                                  "type": "string"
+                                },
+                                "Quantity": {
+                                  "type": "number"
+                                },
+                                "Vendor": {
+                                  "type": "string"
+                                },
+                                "UnitOfMeasure": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "ItemNumber",
+                                "PurchaseOrderNumber",
+                                "PurchaseOrderItemNumber",
+                                "MaterialNumber",
+                                "Location",
+                                "TotalPrice",
+                                "Quantity",
+                                "Vendor",
+                                "UnitOfMeasure"
+                              ]
+                            }
+                          },
+                          "Vendor": {
+                            "type": "object",
+                            "properties": {
+                              "Vendor": {
+                                "type": "string"
+                              },
+                              "VendorName": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "Vendor",
+                              "VendorName"
+                            ]
+                          },
+                          "Materials": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "PurchaseOrderNumber": {
+                                  "type": "string"
+                                },
+                                "MaterialDescription": {
+                                  "type": "string"
+                                },
+                                "ItemNumber": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "PurchaseOrderNumber",
+                                "MaterialDescription",
+                                "ItemNumber"
+                              ]
+                            }
+                          },
+                          "PurchaseOrderNumber": {
+                            "type": "string"
+                          },
+                          "Messages": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "Message": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "Message"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "greater": [
+                  "@length(outputs('Header')?['body/Rows'])",
+                  0
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "da1616ba-2830-4fbe-85b1-a97ea5aaa52e"
+              },
+              "type": "If"
+            },
+            "Header": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "7cd63b20-75bc-4488-ad30-7668dba822db"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_saperp_2",
+                  "operationId": "ReadTableVersion3",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                },
+                "parameters": {
+                  "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                  "inputParameters/tableName": "MKPF",
+                  "inputParameters/FieldNames": [
+                    "MBLNR",
+                    "BLART",
+                    "CPUDT",
+                    "BUDAT",
+                    "BLDAT",
+                    "MJAHR",
+                    "USNAM",
+                    "BKTXT:Document Header Text"
+                  ],
+                  "inputParameters/RowCount": 1,
+                  "inputParameters/WhereFilters": [
+                    "MBLNR LIKE '%@{triggerBody()['text']}%'"
+                  ]
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_SAPErrorMessage": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "f4c91db1-9e19-492b-90d1-4e7eb18416d7"
+          },
+          "type": "Scope"
+        },
+        "Catch": {
+          "actions": {
+            "Filter_array": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "e4ff6915-74dd-4ad8-aeb5-69689f7cd846"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@result('Try')",
+                "where": "@or(equals(item()?['Status'], 'Failed'), equals(item()?['Status'], 'TimedOut'))"
+              }
+            },
+            "ErrorTable": {
+              "runAfter": {
+                "Filter_array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "a4543bb1-084d-4bd9-865a-d59ec8caa8fc"
+              },
+              "type": "Table",
+              "inputs": {
+                "from": "@body('Filter_array')",
+                "format": "HTML",
+                "columns": [
+                  {
+                    "header": "Step",
+                    "value": "@item()?['name']"
+                  },
+                  {
+                    "header": "Status",
+                    "value": "@item()?['Status']"
+                  },
+                  {
+                    "header": "Code",
+                    "value": "@item()?['code']"
+                  },
+                  {
+                    "header": "InnerErrorMessage",
+                    "value": "@{item()?['outputs']?['body']?['error']?['innerError']?['error']?['message']}@{item()?['error']?['message']}@{variables('SAPErrorMessage')}"
+                  },
+                  {
+                    "header": "Input",
+                    "value": "@triggerBody()['text']"
+                  }
+                ]
+              }
+            },
+            "ErrorReturn": {
+              "runAfter": {
+                "ErrorTable": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6ea00725-e758-40bb-9cc7-b69d0a65d01b"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Filter_array')",
+                "select": {
+                  "Step": "@item()?['name']",
+                  "Status": "@item()?['Status']",
+                  "Code": "@item()?['code']",
+                  "InnerErrorMessage": "@{item()?['outputs']?['body']?['error']?['innerError']?['error']?['message']} @{item()?['error']?['message']} @{variables('SAPErrorMessage')}",
+                  "Input": "@triggerBody()['text']",
+                  "FlowName": "@workflow()?['tags']['flowDisplayName']",
+                  "URL": "@concat('https://flow.microsoft.com/manage/environments/', workflow()?['tags']['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']['name'])"
+                }
+              }
+            },
+            "Create_Integration_Log_Error": {
+              "runAfter": {
+                "ErrorReturn": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "65c53a8f-bba5-4aee-a2c2-1bbea7395180"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "CreateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_saperrors",
+                  "item/mpa_name": "@outputs('ErrorReturn')?['body'][0]['FlowName']",
+                  "item/mpa_action": "@outputs('ErrorReturn')?['body'][0]['Step']",
+                  "item/mpa_additionalinformation": "@triggerBody()['text']",
+                  "item/mpa_errormessage": "@outputs('ErrorReturn')?['body'][0]['InnerErrorMessage']",
+                  "item/mpa_sourcetype": 865420000,
+                  "item/mpa_workflowinstanceurl": "@outputs('ErrorReturn')?['body'][0]['URL']",
+                  "item/mpa_workflowstatus": "@If(equals(item()?['Status'], 'Failed'), '865420001', '865420000')"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Exception_Response": {
+              "runAfter": {
+                "Create_Integration_Log_Error": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "1a07fe00-c854-4b19-9f61-ff2091a0b894"
+              },
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "Status": "Error",
+                  "Messages": [
+                    {
+                      "Message": "@outputs('Create_Integration_Log_Error')?['body/mpa_errormessage']"
+                    }
+                  ]
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Status": {
+                      "type": "string"
+                    },
+                    "Receipt": {
+                      "type": "string"
+                    },
+                    "Header": {
+                      "type": "object",
+                      "properties": {
+                        "Type": {
+                          "type": "string"
+                        },
+                        "Receipt": {
+                          "type": "string"
+                        },
+                        "CreatedOn": {
+                          "type": "string"
+                        },
+                        "PostingDate": {
+                          "type": "string"
+                        },
+                        "FiscalYear": {
+                          "type": "string"
+                        },
+                        "Status": {
+                          "type": "string"
+                        },
+                        "DeliveryNote": {
+                          "type": "string"
+                        },
+                        "CreatedBy": {
+                          "type": "string"
+                        },
+                        "DocumentDate": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "Items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ItemNumber": {
+                            "type": "string"
+                          },
+                          "PurchaseOrder": {
+                            "type": "string"
+                          },
+                          "PurchaseOrderItemNumber": {
+                            "type": "string"
+                          },
+                          "MaterialNumber": {
+                            "type": "string"
+                          },
+                          "Location": {
+                            "type": "string"
+                          },
+                          "TotalPrice": {
+                            "type": "number"
+                          },
+                          "Currency": {
+                            "type": "string"
+                          },
+                          "Quantity": {
+                            "type": "number"
+                          },
+                          "Vendor": {
+                            "type": "string"
+                          },
+                          "UnitOfMeasure": {
+                            "type": "string"
+                          },
+                          "StorageLocation": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "ItemNumber",
+                          "PurchaseOrder",
+                          "PurchaseOrderItemNumber",
+                          "MaterialNumber",
+                          "Location",
+                          "TotalPrice",
+                          "Quantity",
+                          "Vendor",
+                          "UnitOfMeasure"
+                        ]
+                      }
+                    },
+                    "ReversedItems": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ItemNumber": {
+                            "type": "string"
+                          },
+                          "PurchaseOrderNumber": {
+                            "type": "string"
+                          },
+                          "PurchaseOrderItemNumber": {
+                            "type": "string"
+                          },
+                          "MaterialNumber": {
+                            "type": "string"
+                          },
+                          "Location": {
+                            "type": "string"
+                          },
+                          "TotalPrice": {
+                            "type": "number"
+                          },
+                          "Currency": {
+                            "type": "string"
+                          },
+                          "Quantity": {
+                            "type": "number"
+                          },
+                          "Vendor": {
+                            "type": "string"
+                          },
+                          "UnitOfMeasure": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "ItemNumber",
+                          "PurchaseOrderNumber",
+                          "PurchaseOrderItemNumber",
+                          "MaterialNumber",
+                          "Location",
+                          "TotalPrice",
+                          "Quantity",
+                          "Vendor",
+                          "UnitOfMeasure"
+                        ]
+                      }
+                    },
+                    "Vendor": {
+                      "type": "object",
+                      "properties": {
+                        "Vendor": {
+                          "type": "string"
+                        },
+                        "VendorName": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "Vendor",
+                        "VendorName"
+                      ]
+                    },
+                    "Materials": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "PurchaseOrderNumber": {
+                            "type": "string"
+                          },
+                          "MaterialDescription": {
+                            "type": "string"
+                          },
+                          "ItemNumber": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "PurchaseOrderNumber",
+                          "MaterialDescription",
+                          "ItemNumber"
+                        ]
+                      }
+                    },
+                    "PurchaseOrderNumber": {
+                      "type": "string"
+                    },
+                    "Messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Message"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "Terminate": {
+              "runAfter": {
+                "Exception_Response": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "598ddc72-179c-4176-92f1-e39c4e45d44e"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed"
+              }
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "acddc208-94dd-4daf-9177-fa386ba1baec"
+          },
+          "type": "Scope"
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

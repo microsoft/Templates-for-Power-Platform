@@ -1,0 +1,2018 @@
+"'Vendor Invoices Screen' As screen":
+    Fill: =varThemeColors.background
+    LoadingSpinner: =LoadingSpinner.Data
+    LoadingSpinnerColor: =varThemeColors.primary
+    OnHidden: =
+    OnVisible: |-
+        =Reset(txtVendorInvoicesFilter);
+        //Set default sort variable
+        Set(
+            varVendorInvoicesSortByColumn,//default sort by column of vendor invoices gallery
+            btnVendorInvoicesTableHeaderCreatedOn.Text
+        );
+        Set(
+            varVendorInvoicesSortOrder,//default sort order of vendor purchase orders gallery
+            SortOrder.Descending
+        );
+        //Collection that tracks cross screen navigation thread and allows to back out in reverse sequence, remove from "thread" if navigating back to this screen
+        RemoveIf(
+            colAppNavigationThreads,
+            Screen = App.ActiveScreen
+        );
+        //If first time user is clicking on the tab since last purchase order search, then query list of purchase orders
+        If(
+            IsEmpty(colVendorInvoices),
+            Reset(dteVendorInvoicesDateFieldFrom);
+            Reset(dteVendorInvoicesDateFieldTo);
+            Set(
+                varShowVendorInvoicesRefresh,//Variable that shows refresh button if user changes vendor invoice from/to date controls
+                false
+            );
+            //Execute flow to query invoices for given vendor
+        Select(icoVendorInvoicesDateRefresh)
+        );
+        //Workaround for resetting components
+        UpdateContext({_resetCommandBar:false});
+        UpdateContext({_resetCommandBar:true});
+
+    conVendorInvoicesMain As groupContainer.verticalAutoLayoutContainer:
+        Height: =Parent.Height-Self.Y
+        LayoutAlignItems: =LayoutAlignItems.Stretch
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutMode: =LayoutMode.Auto
+        LayoutOverflowX: =LayoutOverflow.Scroll
+        LayoutOverflowY: =LayoutOverflow.Scroll
+        Width: =Parent.Width-Self.X
+        X: =cmpVendorInvoicesLeftNavigation.Width
+        Y: =cmpVendorInvoicesHeader.Height
+        ZIndex: =4
+
+        cmpVendorInvoicesCommandBar As CommandBar:
+            Fill: =RGBA(255, 255, 255, 1)
+            Height: =45
+            LayoutMinHeight: =640
+            LayoutMinWidth: =conVendorInvoicesData.LayoutMinWidth
+            ResetCommandBar: =_resetCommandBar
+
+        shpVendorInvoicesCommandBarDivider As rectangle:
+            AccessibleLabel: |-
+                =// Define a variable named "Text" with the value "{value}"
+                With(
+                    {
+                        Text: "Divider"
+                    },
+                    If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colUserLocalizedStrings,
+                            'English Value' = Text
+                        ).'Localized Value'
+                    )
+                )
+            Fill: =varThemeColors.secondaryGray
+            Height: =1
+            LayoutMinWidth: =conVendorInvoicesData.LayoutMinWidth
+            Width: =1692
+            ZIndex: =2
+
+        lblVendorInvoicesName As label:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =varThemeColors.text
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            Fill: =RGBA(255, 255, 255, 1)
+            FocusedBorderColor: =varThemeColors.primary
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Semibold
+            Height: =37
+            LayoutMinWidth: =conVendorInvoicesData.LayoutMinWidth
+            PaddingBottom: =15
+            PaddingLeft: =32
+            PaddingRight: =32
+            PaddingTop: =22
+            Role: =TextRole.Heading1
+            Size: =14.5
+            Text: |-
+                =// Define a variable named "Text" with the value "{value}"
+                If(
+                    !varIsNew && !IsBlank(varVendorHeader),
+                    varVendorHeader.FullName,
+                    With(
+                        {
+                            Text: If(
+                                varIsNew,
+                                "New vendor",
+                                "Vendor"
+                            )
+                        },
+                      If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colUserLocalizedStrings,
+                            'English Value' = Text 
+                        ).'Localized Value'
+                    )
+                ))
+            Width: =1692
+            Wrap: =false
+            ZIndex: =3
+
+        cmpVendorInvoicesTabs As ScreenTabs:
+            LayoutMinHeight: =640
+            LayoutMinWidth: =conVendorInvoicesData.LayoutMinWidth
+            Width: =1692
+            ZIndex: =4
+
+        conVendorInvoicesData As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Height: =257
+            LayoutAlignItems: =LayoutAlignItems.Stretch
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutMinHeight: =
+            LayoutMinWidth: =conVendorInvoicesCommandBar.LayoutMinWidth + Self.PaddingLeft + Self.PaddingRight
+            LayoutMode: =LayoutMode.Auto
+            LayoutOverflowY: =LayoutOverflow.Scroll
+            PaddingBottom: =20
+            PaddingLeft: =32
+            PaddingRight: =32
+            PaddingTop: =20
+            Width: =Parent.Width-Parent.PaddingLeft-Parent.PaddingRight
+            ZIndex: =9
+
+            conVendorInvoicesCommandBar As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                Fill: =RGBA(255, 255, 255, 1)
+                FillPortions: =0
+                Height: =39
+                LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+                LayoutMinHeight: =
+                LayoutMinWidth: =lblVendorInvoicesTableHeader.Width + conVendorInvoicesCommandBarFilterFields.LayoutMinWidth + Self.PaddingLeft + Self.PaddingRight
+                LayoutMode: =LayoutMode.Auto
+                PaddingRight: =2
+                Width: =
+                ZIndex: =1
+
+                lblVendorInvoicesTableHeader As label:
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    BorderThickness: =2
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                    Fill: =RGBA(255, 255, 255, 1)
+                    FocusedBorderColor: =varThemeColors.primary
+                    FocusedBorderThickness: =4
+                    Font: =Font.'Segoe UI'
+                    FontWeight: =FontWeight.Semibold
+                    Height: =Parent.Height
+                    LayoutMinHeight: =
+                    LayoutMinWidth: =
+                    PaddingBottom: =0
+                    PaddingLeft: =8
+                    PaddingRight: =0
+                    PaddingTop: =0
+                    Role: =TextRole.Heading2
+                    Size: =10.5
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {
+                                Text: "Related invoices"
+                            },
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Width: =Len(Self.Text)*8
+                    ZIndex: =1
+
+                conVendorInvoicesCommandBarFilterFields As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    Height: =Parent.Height
+                    LayoutAlignItems: =LayoutAlignItems.Center
+                    LayoutGap: =10
+                    LayoutJustifyContent: =LayoutJustifyContent.End
+                    LayoutMinHeight: =43
+                    LayoutMinWidth: |-
+                        =conVendorInvoicesCommandBarFilter.Width + lblVendorInvoicesCommandBarFilterFrom.Width + dteVendorInvoicesDateFieldFrom.Width + lblVendorInvoicesCommandBarFilterTo.Width + dteVendorInvoicesDateFieldTo.Width + If(
+                            icoVendorInvoicesDateRefresh.Visible,
+                            icoVendorInvoicesDateRefresh.Width
+                        ) + Self.LayoutGap * 6
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingRight: =2
+                    Width: =
+                    ZIndex: =3
+
+                    conVendorInvoicesCommandBarFilter As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        FillPortions: =0
+                        Height: =Parent.Height
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        Width: =txtVendorInvoicesFilter.X+txtVendorInvoicesFilter.Width+txtVendorInvoicesFilter.FocusedBorderThickness
+                        ZIndex: =1
+
+                        txtVendorInvoicesFilter As text:
+                            AccessibleLabel: =Self.HintText
+                            BorderColor: =varThemeColors.primaryGray
+                            BorderThickness: =1
+                            Clear: =true
+                            Color: =varThemeColors.text
+                            Default: =
+                            DelayOutput: =true
+                            DisabledBorderColor: =varThemeColors.primaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    Or(
+                                        IsEmpty(First(colVendorInvoices).List),
+                                        varIsProcessing
+                                    ),
+                                    DisplayMode.Disabled,
+                                    DisplayMode.Edit
+                                )
+                            Fill: =varThemeColors.backgroundFill
+                            FocusedBorderColor: =varThemeColors.focusBorder
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =32
+                            HintText: |-
+                                =With(
+                                    {Text: "Filter vendor invoices"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            HoverBorderColor: =varThemeColors.tertiaryGray
+                            HoverColor: =varThemeColors.text
+                            HoverFill: =varThemeColors.backgroundFill
+                            MaxLength: =70
+                            OnChange: =
+                            PaddingBottom: =6
+                            PaddingLeft: =8
+                            PaddingRight: =8
+                            PaddingTop: =6
+                            PressedBorderColor: =varThemeColors.tertiaryGray
+                            PressedColor: =
+                            PressedFill: =varThemeColors.backgroundFill
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Reset: =true
+                            Size: =10.5
+                            Tooltip: |-
+                                =Coalesce(
+                                    Self.Text,
+                                    Self.HintText
+                                )
+                            Width: =248
+                            X: =shpVendorInvoicesCommandBarFilterDivider.X+shpVendorInvoicesCommandBarFilterDivider.Width+7
+                            Y: =Parent.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        shpVendorInvoicesCommandBarFilterDivider As rectangle:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: "Divider"
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Fill: =varThemeColors.secondaryGray
+                            Height: =30
+                            OnSelect: =
+                            Width: =2
+                            Y: =6
+                            ZIndex: =2
+
+                    lblVendorInvoicesCommandBarFilterFrom As label:
+                        Align: =Align.Right
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: |-
+                            =With(
+                                {Text: "Created from"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            ) & If(
+                                Or(
+                                    !IsBlank(dteVendorInvoicesDateFieldFrom.SelectedDate),
+                                    !IsBlank(dteVendorInvoicesDateFieldTo.SelectedDate)
+                                ),
+                                " *"
+                            )
+                        Width: =Len(Self.Text)*8
+                        X: =dteVendorInvoicesDateFieldFrom.X
+                        ZIndex: =2
+
+                    dteVendorInvoicesDateFieldFrom As datepicker:
+                        AccessibleLabel: |-
+                            =With(
+                                {Text: "Select created from date required"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: |-
+                            =If(
+                                Or(
+                                    IsBlank(dteVendorInvoicesDateFieldFrom.SelectedDate),
+                                    IsBlank(dteVendorInvoicesDateFieldTo.SelectedDate)
+                                ),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
+                        BorderThickness: =1
+                        CalendarHeaderFill: =ColorFade(RGBA(105, 121, 126, 1), -30%)
+                        Color: =varThemeColors.text
+                        DefaultDate: =DateAdd(Today(),-1,TimeUnit.Years)
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayMode: |-
+                            =If(
+                                Or(IsBlank(varVendorHeader),varIsProcessing),
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )
+                        EndYear: =2025
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: |-
+                            =If(
+                                Self.BorderColor = varThemeColors.requiredRed,
+                                Self.BorderColor,
+                                varThemeColors.focusBorder
+                            )
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HoverDateFill: =RGBA(200, 200, 200, 1)
+                        IconBackground: =varThemeColors.backgroundFill
+                        IconFill: =varThemeColors.text
+                        InputTextPlaceholder: |-
+                            =With(
+                                {Text: "Select from date"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        OnChange: =Set(varShowVendorInvoicesRefresh,true)
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        SelectedDateFill: =RGBA(105, 121, 126, 1)
+                        Size: =10.5
+                        StartYear: =2016
+                        Tooltip: |-
+                            =If(
+                                IsBlank(Self.SelectedDate),
+                                Self.InputTextPlaceholder,
+                                Self.SelectedDate
+                            )
+                        Width: =125
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =3
+
+                    lblVendorInvoicesCommandBarFilterTo As label:
+                        Align: =Align.Right
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =30
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: |-
+                            =With(
+                                {Text: "Created to"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            ) & If(
+                                Or(
+                                    !IsBlank(dteVendorInvoicesDateFieldFrom.SelectedDate),
+                                    !IsBlank(dteVendorInvoicesDateFieldTo.SelectedDate)
+                                ),
+                                " *"
+                            )
+                        Width: =Len(Self.Text)*8
+                        X: =dteVendorInvoicesDateFieldTo.X
+                        ZIndex: =4
+
+                    dteVendorInvoicesDateFieldTo As datepicker:
+                        AccessibleLabel: |-
+                            =With(
+                                {Text: "Select created to date required"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: |-
+                            =If(
+                                Or(
+                                    IsBlank(dteVendorInvoicesDateFieldFrom.SelectedDate),
+                                    IsBlank(dteVendorInvoicesDateFieldTo.SelectedDate)
+                                ),
+                                varThemeColors.requiredRed,
+                                varThemeColors.primaryGray
+                            )
+                        BorderThickness: =1
+                        CalendarHeaderFill: =ColorFade(RGBA(105, 121, 126, 1), -30%)
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =varThemeColors.primaryGray
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =varThemeColors.backgroundFillDisabled
+                        DisplayMode: |-
+                            =If(
+                                Or(IsBlank(varVendorHeader),varIsProcessing),
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )
+                        EndYear: =2025
+                        Fill: =varThemeColors.backgroundFill
+                        FocusedBorderColor: |-
+                            =If(
+                                Self.BorderColor = varThemeColors.requiredRed,
+                                Self.BorderColor,
+                                varThemeColors.focusBorder
+                            )
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        Height: =32
+                        HoverDateFill: =RGBA(200, 200, 200, 1)
+                        IconBackground: =varThemeColors.backgroundFill
+                        IconFill: =varThemeColors.text
+                        InputTextPlaceholder: |-
+                            =With(
+                                {Text: "Select to date"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        OnChange: =Set(varShowVendorInvoicesRefresh,true)
+                        PaddingBottom: =6
+                        PaddingLeft: =8
+                        PaddingRight: =8
+                        PaddingTop: =6
+                        SelectedDateFill: =RGBA(105, 121, 126, 1)
+                        Size: =10.5
+                        StartYear: =2016
+                        Tooltip: |-
+                            =If(
+                                IsBlank(Self.SelectedDate),
+                                Self.InputTextPlaceholder,
+                                Self.SelectedDate
+                            )
+                        Width: =125
+                        X: =Self.FocusedBorderThickness
+                        ZIndex: =5
+
+                    "icoVendorInvoicesDateRefresh As icon.'3DPrinting'":
+                        AccessibleLabel: =Self.Tooltip
+                        BorderColor: =varThemeColors.primary
+                        Color: =varThemeColors.primary
+                        DisabledBorderColor: =varThemeColors.disabledText
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =RGBA(0,0,0,0)
+                        DisplayMode: |-
+                            =If(
+                                varIsProcessing,
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )
+                        Fill: =RGBA(0,0,0,0)
+                        FocusedBorderColor: =varThemeColors.focusBorder
+                        Height: =30
+                        HoverBorderColor: =
+                        HoverColor: =varThemeColors.primary
+                        HoverFill: =RGBA(0,0,0,0)
+                        Icon: =Icon.Reload
+                        OnSelect: |-
+                            =//Check if required search fields and store missing fields in a collection
+                            Clear(colRequiredFieldsTemp);
+                            If(
+                                And(
+                                    IsBlank(dteVendorInvoicesDateFieldFrom.SelectedDate),
+                                    !IsBlank(dteVendorInvoicesDateFieldTo.SelectedDate)
+                                ),
+                                Collect(
+                                    colRequiredFieldsTemp,
+                                    lblVendorInvoicesCommandBarFilterFrom.Text
+                                )
+                            );
+                            If(
+                                And(
+                                    !IsBlank(dteVendorInvoicesDateFieldFrom.SelectedDate),
+                                    IsBlank(dteVendorInvoicesDateFieldTo.SelectedDate)
+                                ),
+                                Collect(
+                                    colRequiredFieldsTemp,
+                                    lblVendorInvoicesCommandBarFilterTo.Text
+                                )
+                            );
+                            //Check to see if required fields collection, notify which fields are missing if so
+                            If(
+                                !IsEmpty(colRequiredFieldsTemp),
+                                Notify(
+                                    Substitute(
+                                        With(
+                                            {Text: "The following information is required before searching"},
+                                            If(
+                                    // If the localized text is blank, return the default text
+                                                IsBlank(
+                                                    LookUp(
+                                                        colUserLocalizedStrings,
+                                                        'English Value' = Text
+                                                    ).'Localized Value'
+                                                ),
+                                                Text,
+                                    // If a localized text is found, return that instead of the default text
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            )
+                                        ) & ": " & Concat(
+                                            colRequiredFieldsTemp,
+                                            Value,
+                                            ", "
+                                        ),
+                                        " *",
+                                        ""
+                                    ),
+                                    NotificationType.Error,
+                                    0
+                                );
+                                ,
+                                Reset(txtVendorInvoicesFilter);
+                                Set(
+                                    varVendorInvoicesSortByColumn,//default sort by column of vendor invoices gallery
+                                    btnVendorInvoicesTableHeaderCreatedOn.Text
+                                );
+                                Set(
+                                    varVendorInvoicesSortOrder,//default sort order of vendor invoices gallery
+                                    SortOrder.Descending
+                                );
+                                Set(
+                                    varIsProcessing,
+                                    true
+                                );
+                                Set(
+                                    varFooterMessage,
+                                    "Loading"
+                                );
+                                ClearCollect(
+                                    colVendorInvoices,
+                                    ReadVendorInvoiceList.Run(
+                                        Substitute(
+                                            JSON(
+                                                {
+                                                    Vendor: varVendorHeader.Vendor,
+                                                    DateFrom: Text(
+                                                        dteVendorInvoicesDateFieldFrom.SelectedDate,
+                                                        "yyyymmdd",
+                                                        "en-US"
+                                                    ),
+                                                    DateTo: Text(
+                                                        dteVendorInvoicesDateFieldTo.SelectedDate,
+                                                        "yyyymmdd",
+                                                        "en-US"
+                                                    )
+                                                },
+                                                JSONFormat.IndentFour
+                                            ),
+                                            "null",
+                                            """"""
+                                        )
+                                    )
+                                );
+                                 //Evaluate return statuses to determine what type of notification
+                            With(
+                                    {
+                                        Text: Switch(
+                                            First(colVendorInvoices).Status,
+                                            "Information",
+                                            "No vendor invoices were found based on your search criteria",
+                                            "Warning",
+                                            "The maximum number of search results were found based upon your criteria and some records may be missing. Please try changing your search criteria.",
+                                            "Error",
+                                            Concat(
+                                                First(colVendorInvoices).Messages,
+                                                Message,
+                                                " "
+                                            ),
+                                            "vendor invoices found based upon your search criteria"
+                                        ),
+                                        Status: First(colVendorInvoices).Status
+                                    },
+                                    If(
+                                        Status <> "Error",
+                                        Set(
+                                            varShowVendorInvoicesRefresh,
+                                            false
+                                        );
+                                    );
+                                    Notify(
+                                    //Append record count to message if success
+                                        Concatenate(
+                                            If(
+                                                Status = "Success",
+                                                CountRows(First(colVendorInvoices).List)
+                                            ) & " ",
+                                            If(
+                                    // If the localized text is blank, return the default text
+                                                IsBlank(
+                                                    LookUp(
+                                                        colUserLocalizedStrings,
+                                                        'English Value' = Text
+                                                    ).'Localized Value'
+                                                ),
+                                                Text,
+                                    // If a localized text is found, return that instead of the default text
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            )
+                                        ),
+                                        //Set the notification type
+                                        Switch(
+                                            Status,
+                                            "Information",
+                                            NotificationType.Information,
+                                            "Warning",
+                                            NotificationType.Warning,
+                                            "Error",
+                                            NotificationType.Error,
+                                            NotificationType.Success
+                                        ),
+                                        If(
+                                            Status = "Error",
+                                            0,
+                                            7000
+                                        )
+                                    );
+                                );
+                                
+                            );
+                            Reset(galVendorInvoices);
+                            Clear(colRequiredFieldsTemp);
+                            Set(
+                                varIsProcessing,
+                                false
+                            );
+                            Set(
+                                varFooterMessage,
+                                Blank()
+                            );
+                            //Set the focus on the filter field if results returned
+                            If(
+                                !IsEmpty(colVendorInvoices),
+                                SetFocus(txtVendorInvoicesFilter)
+                            )
+                        PaddingBottom: =5
+                        PaddingLeft: =5
+                        PaddingRight: =5
+                        PaddingTop: =5
+                        PressedBorderColor: =
+                        PressedColor: =
+                        PressedFill: =RGBA(0,0,0,0)
+                        TabIndex: =0
+                        Tooltip: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Refresh vendor purchase orders"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Visible: =varShowVendorInvoicesRefresh
+                        Width: =30
+                        X: =
+                        Y: =6
+                        ZIndex: =6
+
+            shpVendorInvoicesTableHeaderDivider As rectangle:
+                AccessibleLabel: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {
+                            Text: "Divider"
+                        },
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Fill: =varThemeColors.secondaryGray
+                Height: =1
+                LayoutMinHeight: =
+                LayoutMinWidth: =conVendorInvoicesCommandBar.LayoutMinWidth
+                Width: =
+                ZIndex: =3
+
+            conVendorInvoicesTable As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                Fill: =RGBA(255, 255, 255, 1)
+                LayoutAlignItems: =LayoutAlignItems.Stretch
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutMinHeight: |-
+                    =conVendorRequistionsTableHeader.Height + shpVendorRequisitionsTabelHeaderDivider.Height + If(
+                        galVendorInvoices.Visible,
+                        galVendorInvoices.LayoutMinHeight,
+                        cmpVendorInvoicesNoResults.Height
+                    ) + Self.PaddingTop + Self.PaddingBottom
+                LayoutMinWidth: =conVendorInvoicesCommandBar.LayoutMinWidth
+                LayoutMode: =LayoutMode.Auto
+                PaddingBottom: =2
+                PaddingLeft: =16
+                PaddingRight: =16
+                ZIndex: =8
+
+                conVendorInvoicesTableHeader As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    Fill: =RGBA(255, 255, 255, 1)
+                    FillPortions: =0
+                    Height: =43
+                    LayoutAlignItems: =LayoutAlignItems.Center
+                    LayoutMinHeight: =
+                    LayoutMinWidth: =conVendorVendorInvoicesTableHeaderPurchaseOrder.LayoutMinWidth + conVendorInvoicesTableHeaderCreatedOn.LayoutMinWidth + conVendorInvoiesTableHeaderCompanyCode.LayoutMinWidth + conVendorInvoicesTableHeaderDocumentType.LayoutMinWidth + conVendorInvoiesTableHeaderAmount.LayoutMinWidth
+                    LayoutMode: =LayoutMode.Auto
+                    Width: =
+                    ZIndex: =1
+
+                    conVendorVendorInvoicesTableHeaderPurchaseOrder As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Height: =44
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =icoVendorVendorInvoicesTableHeaderPurchaseOrder.X+icoVendorVendorInvoicesTableHeaderPurchaseOrder.Width+10
+                        Width: =
+                        Y: =37
+                        ZIndex: =1
+
+                        icoVendorVendorInvoicesTableHeaderPurchaseOrder As icon.Save:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: If(
+                                            Self.Icon = Icon.ArrowUp,
+                                            "Sorted ascending",
+                                            "Sorted descending"
+                                        )
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.tertiaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =btnVendorVendorInvoicesTableHeaderPurchaseOrder.DisplayMode
+                            FocusedBorderColor: =varThemeColors.primary
+                            Height: =12
+                            Icon: |-
+                                =If(
+                                    varVendorInvoicesSortOrder = SortOrder.Ascending,
+                                    Icon.ArrowUp,
+                                    Icon.ArrowDown
+                                )
+                            Visible: =varVendorInvoicesSortByColumn = btnVendorVendorInvoicesTableHeaderPurchaseOrder.Text && galVendorInvoices.Visible
+                            Width: =12
+                            X: =Len(btnVendorVendorInvoicesTableHeaderPurchaseOrder.Text)*8+8
+                            Y: =btnVendorVendorInvoicesTableHeaderPurchaseOrder.Y+btnVendorVendorInvoicesTableHeaderPurchaseOrder.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        btnVendorVendorInvoicesTableHeaderPurchaseOrder As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            BorderThickness: =1
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        galVendorInvoices.Visible,
+                                        !varIsProcessing
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.View
+                                )
+                            Fill: =RGBA(0,0,0,0)
+                            FocusedBorderColor: =varThemeColors.focusBorder
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =Parent.Height-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |-
+                                =Set(//Stores which column is currently being sorted
+                                    varVendorInvoicesSortByColumn,
+                                    Self.Text
+                                );
+                                If(//Stores the sort order of that column
+                                    And(
+                                        varVendorInvoicesSortOrder = SortOrder.Ascending,
+                                        varVendorInvoicesSortByColumn = Self.Text
+                                    ),
+                                    Set(
+                                        varVendorInvoicesSortOrder,
+                                        SortOrder.Descending
+                                    ),
+                                    Set(
+                                        varVendorInvoicesSortOrder,
+                                        SortOrder.Ascending
+                                    )
+                                );
+                                Reset(galVendorInvoices)//Resets the gallery to move the scrollbar to the top
+                            PaddingLeft: =12
+                            PressedBorderColor: =
+                            PressedColor: =varThemeColors.text
+                            PressedFill: =
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Invoice number"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =2
+
+                    conVendorInvoicesTableHeaderCreatedOn As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Height: =44
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =icoVendorInvoicesTableHeaderCreatedOn.X+icoVendorInvoicesTableHeaderCreatedOn.Width+10
+                        Width: =
+                        Y: =37
+                        ZIndex: =2
+
+                        icoVendorInvoicesTableHeaderCreatedOn As icon.Save:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: If(
+                                            Self.Icon = Icon.ArrowUp,
+                                            "Sorted ascending",
+                                            "Sorted descending"
+                                        )
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.tertiaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =btnVendorInvoicesTableHeaderCreatedOn.DisplayMode
+                            FocusedBorderColor: =varThemeColors.primary
+                            Height: =12
+                            Icon: |-
+                                =If(
+                                    varVendorInvoicesSortOrder = SortOrder.Ascending,
+                                    Icon.ArrowUp,
+                                    Icon.ArrowDown
+                                )
+                            Visible: =varVendorInvoicesSortByColumn = btnVendorInvoicesTableHeaderCreatedOn.Text && galVendorInvoices.Visible
+                            Width: =12
+                            X: =Len(btnVendorInvoicesTableHeaderCreatedOn.Text)*8+8
+                            Y: =btnVendorInvoicesTableHeaderCreatedOn.Y+btnVendorInvoicesTableHeaderCreatedOn.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        btnVendorInvoicesTableHeaderCreatedOn As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            BorderThickness: =1
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        galVendorInvoices.Visible,
+                                        !varIsProcessing
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.View
+                                )
+                            Fill: =RGBA(0,0,0,0)
+                            FocusedBorderColor: =varThemeColors.focusBorder
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =Parent.Height-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |-
+                                =Set(//Stores which column is currently being sorted
+                                    varVendorInvoicesSortByColumn,
+                                    Self.Text
+                                );
+                                If(//Stores the sort order of that column
+                                    And(
+                                        varVendorInvoicesSortOrder = SortOrder.Ascending,
+                                        varVendorInvoicesSortByColumn = Self.Text
+                                    ),
+                                    Set(
+                                        varVendorInvoicesSortOrder,
+                                        SortOrder.Descending
+                                    ),
+                                    Set(
+                                        varVendorInvoicesSortOrder,
+                                        SortOrder.Ascending
+                                    )
+                                );
+                                Reset(galVendorInvoices)//Resets the gallery to move the scrollbar to the top
+                            PaddingLeft: =10
+                            PressedBorderColor: =
+                            PressedColor: =varThemeColors.text
+                            PressedFill: =
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Created on"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =2
+
+                    conVendorInvoicesTableHeaderDocumentType As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Height: =44
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =icoVendorInvoicesTableHeaderDocumentType.X+icoVendorInvoicesTableHeaderDocumentType.Height
+                        Width: =
+                        Y: =37
+                        ZIndex: =3
+
+                        icoVendorInvoicesTableHeaderDocumentType As icon.Save:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: If(
+                                            Self.Icon = Icon.ArrowUp,
+                                            "Sorted ascending",
+                                            "Sorted descending"
+                                        )
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.tertiaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =btnVendorInvoicesTableHeaderDocumentType.DisplayMode
+                            FocusedBorderColor: =varThemeColors.primary
+                            Height: =12
+                            Icon: |-
+                                =If(
+                                    varVendorInvoicesSortOrder = SortOrder.Ascending,
+                                    Icon.ArrowUp,
+                                    Icon.ArrowDown
+                                )
+                            Visible: =varVendorInvoicesSortByColumn=btnVendorInvoicesTableHeaderDocumentType.Text && galVendorInvoices.Visible
+                            Width: =12
+                            X: =Len(btnVendorInvoicesTableHeaderDocumentType.Text)*8.5+8
+                            Y: =btnVendorInvoicesTableHeaderDocumentType.Y+btnVendorInvoicesTableHeaderDocumentType.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        btnVendorInvoicesTableHeaderDocumentType As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            BorderThickness: =1
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        galVendorInvoices.Visible,
+                                        !varIsProcessing
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.View
+                                )
+                            Fill: =RGBA(0,0,0,0)
+                            FocusedBorderColor: =varThemeColors.focusBorder
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =Parent.Height-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |-
+                                =Set(//Stores which column is currently being sorted
+                                    varVendorInvoicesSortByColumn,
+                                    Self.Text
+                                );
+                                If(//Stores the sort order of that column
+                                    And(
+                                        varVendorInvoicesSortOrder = SortOrder.Ascending,
+                                        varVendorInvoicesSortByColumn = Self.Text
+                                    ),
+                                    Set(
+                                        varVendorInvoicesSortOrder,
+                                        SortOrder.Descending
+                                    ),
+                                    Set(
+                                        varVendorInvoicesSortOrder,
+                                        SortOrder.Ascending
+                                    )
+                                );
+                                Reset(galVendorInvoices)//Resets the gallery to move the scrollbar to the top
+                            PaddingLeft: =10
+                            PressedBorderColor: =
+                            PressedColor: =varThemeColors.text
+                            PressedFill: =
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Document type"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =2
+
+                    conVendorInvoiesTableHeaderCompanyCode As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Height: =44
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =icoVendorInvoiesTableHeaderCompanyCode.X+icoVendorInvoiesTableHeaderCompanyCode.Width+10
+                        Width: =
+                        X: =icoVendorInvoiesTableHeaderCompanyCode.X+icoVendorInvoiesTableHeaderCompanyCode.Width+10
+                        Y: =37
+                        ZIndex: =4
+
+                        icoVendorInvoiesTableHeaderCompanyCode As icon.Save:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: If(
+                                            Self.Icon = Icon.ArrowUp,
+                                            "Sorted ascending",
+                                            "Sorted descending"
+                                        )
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.tertiaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =btnVendorInvoiesTableHeaderCompanyCode.DisplayMode
+                            FocusedBorderColor: =varThemeColors.primary
+                            Height: =12
+                            Icon: |-
+                                =If(
+                                    varVendorInvoicesSortOrder = SortOrder.Ascending,
+                                    Icon.ArrowUp,
+                                    Icon.ArrowDown
+                                )
+                            Visible: =varVendorInvoicesSortByColumn=btnVendorInvoiesTableHeaderCompanyCode.Text && galVendorInvoices.Visible
+                            Width: =12
+                            X: =Len(btnVendorInvoiesTableHeaderCompanyCode.Text)*9+8
+                            Y: =btnVendorInvoiesTableHeaderCompanyCode.Y+btnVendorInvoiesTableHeaderCompanyCode.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        btnVendorInvoiesTableHeaderCompanyCode As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            BorderThickness: =1
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        galVendorInvoices.Visible,
+                                        !varIsProcessing
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.View
+                                )
+                            Fill: =RGBA(0,0,0,0)
+                            FocusedBorderColor: =varThemeColors.focusBorder
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =Parent.Height-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |-
+                                =Set(//Stores which column is currently being sorted
+                                    varVendorInvoicesSortByColumn,
+                                    Self.Text
+                                );
+                                If(//Stores the sort order of that column
+                                    And(
+                                        varVendorInvoicesSortOrder = SortOrder.Ascending,
+                                        varVendorInvoicesSortByColumn = Self.Text
+                                    ),
+                                    Set(
+                                        varVendorInvoicesSortOrder,
+                                        SortOrder.Descending
+                                    ),
+                                    Set(
+                                        varVendorInvoicesSortOrder,
+                                        SortOrder.Ascending
+                                    )
+                                );
+                                Reset(galVendorInvoices)//Resets the gallery to move the scrollbar to the top
+                            PaddingLeft: =10
+                            PressedBorderColor: =
+                            PressedColor: =varThemeColors.text
+                            PressedFill: =
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Company code"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =2
+
+                    conVendorInvoiesTableHeaderAmount As groupContainer.manualLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        Height: =44
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =icoVendorInvoiesTableHeaderAmount.X+icoVendorInvoiesTableHeaderAmount.Width+10
+                        Width: =
+                        Y: =37
+                        ZIndex: =5
+
+                        icoVendorInvoiesTableHeaderAmount As icon.Save:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: If(
+                                            Self.Icon = Icon.ArrowUp,
+                                            "Sorted ascending",
+                                            "Sorted descending"
+                                        )
+                                    },
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Color: =varThemeColors.tertiaryGray
+                            DisabledColor: =varThemeColors.disabledText
+                            DisplayMode: =btnVendorInvoiesTableHeaderAmount.DisplayMode
+                            FocusedBorderColor: =varThemeColors.primary
+                            Height: =12
+                            Icon: |-
+                                =If(
+                                    varVendorInvoicesSortOrder = SortOrder.Ascending,
+                                    Icon.ArrowUp,
+                                    Icon.ArrowDown
+                                )
+                            Visible: =varVendorInvoicesSortByColumn=btnVendorInvoiesTableHeaderAmount.Text && galVendorInvoices.Visible
+                            Width: =12
+                            X: =Len(btnVendorInvoiesTableHeaderAmount.Text)*10+8
+                            Y: =btnVendorInvoiesTableHeaderAmount.Y+btnVendorInvoiesTableHeaderAmount.Height/2-Self.Height/2
+                            ZIndex: =1
+
+                        btnVendorInvoiesTableHeaderAmount As button:
+                            Align: =Align.Left
+                            BorderColor: =RGBA(0,0,0,0)
+                            BorderThickness: =1
+                            Color: =varThemeColors.text
+                            DisabledBorderColor: =varThemeColors.backgroundFillDisabled
+                            DisabledColor: =varThemeColors.disabledText
+                            DisabledFill: =varThemeColors.backgroundFillDisabled
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        galVendorInvoices.Visible,
+                                        !varIsProcessing
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.View
+                                )
+                            Fill: =RGBA(0,0,0,0)
+                            FocusedBorderColor: =varThemeColors.focusBorder
+                            FocusedBorderThickness: =2
+                            Font: =Font.'Segoe UI'
+                            Height: =Parent.Height-Self.Y*2
+                            HoverBorderColor: =
+                            HoverColor: =varThemeColors.primary
+                            HoverFill: =
+                            OnSelect: |-
+                                =Set(//Stores which column is currently being sorted
+                                    varVendorInvoicesSortByColumn,
+                                    Self.Text
+                                );
+                                If(//Stores the sort order of that column
+                                    And(
+                                        varVendorInvoicesSortOrder = SortOrder.Ascending,
+                                        varVendorInvoicesSortByColumn = Self.Text
+                                    ),
+                                    Set(
+                                        varVendorInvoicesSortOrder,
+                                        SortOrder.Descending
+                                    ),
+                                    Set(
+                                        varVendorInvoicesSortOrder,
+                                        SortOrder.Ascending
+                                    )
+                                );
+                                Reset(galVendorInvoices)//Resets the gallery to move the scrollbar to the top
+                            PaddingLeft: =10
+                            PressedBorderColor: =
+                            PressedColor: =varThemeColors.text
+                            PressedFill: =
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =10.5
+                            Text: |
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Total"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width-Self.X*2
+                            X: =Self.FocusedBorderThickness
+                            Y: =Self.FocusedBorderThickness
+                            ZIndex: =2
+
+                shpVendorInvoicesTabelHeaderDivider As rectangle:
+                    AccessibleLabel: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {
+                                Text: "Divider"
+                            },
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Fill: =varThemeColors.secondaryGray
+                    Height: =1
+                    LayoutMinHeight: =
+                    Width: =
+                    ZIndex: =2
+
+                galVendorInvoices As gallery.galleryVertical:
+                    AccessibleLabel: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {Text: "Vendor requisitions"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    DisplayMode: |-
+                        =If(
+                            varIsProcessing,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    FocusedBorderColor: =varThemeColors.focusBorder
+                    FocusedBorderThickness: =2
+                    Height: =Self.TemplateHeight * 6
+                    ItemAccessibleLabel: =Concatenate(ThisItem.InvoiceNumber," - ",ThisItem.Vendor)
+                    Items: |-
+                        =//Display vendor invoice search result items based upon whether filters results further and/or by sort column selected
+                        With(
+                            {
+                                searchResults: If(
+                                    IsBlank(txtVendorInvoicesFilter.Text),//If additional filter text not entered, then just display results
+                                    First(colVendorInvoices).List,
+                                    Search(//Otherwise, search on cached results based upon entered text
+                                        First(colVendorInvoices).List,
+                                        txtVendorInvoicesFilter.Text,
+                                        "InvoiceNumber",
+                                        "Type",
+                                        "CompanyCode"
+                                    )
+                                )
+                            },
+                            SortByColumns(
+                                searchResults,
+                                Switch(
+                                    varVendorInvoicesSortByColumn,//determine which field to sort by based upon the tabel header column value selected and stored in variable
+                                    btnVendorVendorInvoicesTableHeaderPurchaseOrder.Text,
+                                    "InvoiceNumber",
+                                    btnVendorInvoicesTableHeaderCreatedOn.Text,
+                                    "CreatedOn",
+                                    btnVendorInvoiesTableHeaderCompanyCode.Text,
+                                    "CompanyCode",
+                                    btnVendorInvoiesTableHeaderAmount.Text,
+                                    "Amount"
+                                ),
+                                varVendorInvoicesSortOrder//sort ascending or descending based upon value stored in variable
+                            )
+                        )
+                    Layout: =Layout.Vertical
+                    LayoutMinHeight: =Self.TemplateHeight * 6
+                    LayoutMinWidth: =320
+                    TabIndex: =0
+                    TemplateFill: =RGBA(255, 255, 255, 1)
+                    TemplatePadding: =0
+                    TemplateSize: =43
+                    Visible: =CountRows(First(colVendorInvoices).List) > 0
+                    Width: =
+                    ZIndex: =3
+
+                    shpVendorInvoicesTableDivider As rectangle:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {
+                                    Text: "Divider"
+                                },
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Fill: =varThemeColors.secondaryGray
+                        Height: =1
+                        Width: =Parent.Width
+                        Y: =Parent.TemplateHeight-Self.Height
+                        ZIndex: =1
+
+                    lblVendorInvoiceAmount As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        Height: =43
+                        PaddingBottom: =0
+                        PaddingLeft: =12
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: |
+                            =Text(
+                                ThisItem.Amount,
+                                "[$-en-US]#,##0.00"
+                            ) & Concatenate(
+                                " (",
+                                ThisItem.Currency,
+                                ")"
+                            )
+                        Width: =conVendorInvoiesTableHeaderAmount.Width
+                        X: =conVendorInvoiesTableHeaderAmount.X
+                        ZIndex: =2
+
+                    lblVendorInvoiceCompanyCode As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        Height: =43
+                        PaddingBottom: =0
+                        PaddingLeft: =12
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: =ThisItem.CompanyCode
+                        Width: =conVendorInvoiesTableHeaderCompanyCode.Width
+                        X: =conVendorInvoiesTableHeaderCompanyCode.X
+                        ZIndex: =3
+
+                    lblVendorInvoiceDocumentType As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        Height: =43
+                        PaddingBottom: =0
+                        PaddingLeft: =12
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: =ThisItem.Type
+                        Width: =conVendorInvoicesTableHeaderDocumentType.Width
+                        X: =conVendorInvoicesTableHeaderDocumentType.X
+                        ZIndex: =4
+
+                    lblVendorInvoiceCreatedOn As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        Height: =43
+                        PaddingBottom: =0
+                        PaddingLeft: =12
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: |-
+                            =Text(
+                                DateValue(ThisItem.CreatedOn),
+                                DateTimeFormat.ShortDate
+                            )
+                        Width: =conVendorInvoicesTableHeaderCreatedOn.Width
+                        X: =conVendorInvoicesTableHeaderCreatedOn.X
+                        ZIndex: =5
+
+                    lblVendorInvoiceNumber As label:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =2
+                        Color: =varThemeColors.text
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.primary
+                        FocusedBorderThickness: =4
+                        Font: =Font.'Segoe UI'
+                        Height: =43
+                        PaddingBottom: =0
+                        PaddingLeft: =12
+                        PaddingTop: =0
+                        Size: =10.5
+                        Text: =ThisItem.InvoiceNumber
+                        Visible: =IsBlank(varVendorInvoiceAccess)
+                        Width: =conVendorVendorInvoicesTableHeaderPurchaseOrder.Width
+                        X: =conVendorVendorInvoicesTableHeaderPurchaseOrder.X
+                        ZIndex: =6
+
+                    btnVendorInvoiceNumberSelect As button:
+                        Align: =Align.Left
+                        BorderColor: =RGBA(0,0,0,0)
+                        BorderThickness: =0
+                        Color: =varThemeColors.lookupBlue
+                        DisabledBorderColor: =
+                        DisabledColor: =varThemeColors.disabledText
+                        DisabledFill: =
+                        DisplayMode: |-
+                            =/*If(
+                                Or(
+                                    IsBlank(txtVendor.Text),
+                                    IsBlank(cmbPOOrderType.Selected),
+                                    IsBlank(cmbPOPurchOrg.Selected),
+                                    IsBlank(cmbPOPurchGroup.Selected)
+                                ),
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )*/
+                        Fill: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =varThemeColors.focusBorder
+                        FocusedBorderThickness: =2
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Normal
+                        Height: =Parent.TemplateHeight-Self.Y*2
+                        HoverBorderColor: =
+                        HoverColor: =varThemeColors.primary
+                        HoverFill: =
+                        OnSelect: |-
+                            =Launch(
+                                varVendorInvoiceAccess.'Application URL',
+                                {invoice: Self.Text}
+                            )
+                        PaddingLeft: =12
+                        PressedColor: =Self.Color
+                        PressedFill: =Color.Transparent
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Size: =10.5
+                        Text: =ThisItem.InvoiceNumber
+                        Tooltip: =Self.Text
+                        Visible: =!IsBlank(varVendorInvoiceAccess)
+                        Width: =conVendorVendorInvoicesTableHeaderPurchaseOrder.Width-Self.X
+                        X: =1
+                        Y: =Self.FocusedBorderThickness
+                        ZIndex: =7
+
+                cmpVendorInvoicesNoResults As NoItemsDisplay:
+                    LayoutMinHeight: =
+                    LayoutMinWidth: =640
+                    Visible: =!galVendorInvoices.Visible
+                    Width: =
+                    ZIndex: =4
+
+            conVendorInvoicesDataFooter As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                FillPortions: =0
+                Height: =30
+                LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                ZIndex: =10
+
+                lblVendorInvoicesNumberOfRecords As label:
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    BorderThickness: =2
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                    FillPortions: =1
+                    FocusedBorderColor: =varThemeColors.primary
+                    FocusedBorderThickness: =4
+                    Font: =Font.'Segoe UI'
+                    FontWeight: =FontWeight.Lighter
+                    Height: =30
+                    LayoutMinWidth: =
+                    PaddingLeft: =btnVendorRequistionsTableHeaderRequisition.PaddingLeft
+                    Size: =10.5
+                    Text: |-
+                        =//Show how many rows are returned in the results
+                        CountRows(galVendorInvoices.AllItems) & " " &//Count the rows in the gallery
+                        // Define a variable named "Text" with the value "{value}"
+                         With(
+                            {Text: "record(s)"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Visible: |+
+                        =galVendorInvoices.Visible
+                        
+                    Width: =
+                    X: =1
+                    ZIndex: =1
+
+                lblVendorInvoicesFooterMessage As label:
+                    Align: =Align.Right
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    BorderThickness: =2
+                    Color: =varThemeColors.text
+                    DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                    FillPortions: =1
+                    FocusedBorderColor: =varThemeColors.primary
+                    FocusedBorderThickness: =4
+                    Font: =Font.'Segoe UI'
+                    Height: =34
+                    Italic: =true
+                    LayoutMinHeight: =
+                    LayoutMinWidth: =
+                    Live: =Live.Assertive
+                    PaddingBottom: =0
+                    PaddingLeft: =32
+                    PaddingRight: =32
+                    PaddingTop: =0
+                    Role: =TextRole.Heading2
+                    Size: =10.5
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {Text: varFooterMessage},
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        ) & If(varIsProcessing, "...")
+                    Width: =
+                    ZIndex: =2
+
+    cmpVendorInvoicesLeftNavigation As LeftNavigation:
+        Height: =Parent.Height-Self.Y
+        Width: =cmpVendorInvoicesLeftNavigation.MenuWidth
+        Y: =cmpVendorInvoicesHeader.Height
+        ZIndex: =5
+
+    cmpVendorInvoicesHeader As ScreenHeader:
+        Width: =Parent.Width
+        ZIndex: =6
+

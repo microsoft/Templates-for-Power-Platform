@@ -1,0 +1,87 @@
+App As appinfo:
+    BackEnabled: =false
+    ConfirmExit: |-
+        =//If creating or editing a record, warn before closing the app
+        varIsNew
+    OnError: |-
+        =//Patch a new record in dataverse for unhandled or unexpected errors and trace
+        If(
+            !IsBlank(FirstError.Message),
+            Patch(
+                'SAP Errors',
+                Defaults('SAP Errors'),
+                {
+                    Action: FirstError.Source,
+                    'Additional Information': App.ActiveScreen.Name,
+                    'Error Message': FirstError.Message,
+                    Name: "SAP Goods Receipts",
+                    'Source Type': 'Source Type (SAP Errors)'.'Power App',
+                    'Workflow Status': 'Workflow Status (SAP Errors)'.Failed
+                }
+            );
+        //Show the error also in app monitor
+        Trace(FirstError.Message);
+        //Rethrow the error so user can see it
+        Error(FirstError);
+            
+        )
+    OnStart: |-
+        =//One time variable to allow data and key app information to be loaded for first time on goods receipt details screen. Allows for faster app launch
+        Set(
+            varLoadAppFirstTime,
+            true
+        );
+        //Variable that supports a custom theme in the app. Primary color is usually the only element changed while keeping the remainder the same.
+        Set(
+            varThemeColors,
+            {
+                background: ColorValue("#FAF9F8"),
+                backgroundFill: ColorValue("#FFFFFF"),
+                backgroundFillDisabled: ColorValue("#F3F2F1"),
+                text: ColorValue("#201F1E"),
+                altText: ColorValue("#FFFFFF"),
+                disabledText: ColorValue("#A19F9D"),
+                primary: ColorValue("#0078D4"),
+                secondary: ColorValue("#EFF6FC"),
+                tertiary: ColorValue("#005A9E"),
+                primaryGray: ColorValue("#8A8886"),
+                secondaryGray: ColorValue ("#C8C6C4"),
+                tertiaryGray: ColorValue("#605E5C"),
+                requiredRed: ColorValue("#A80000"),
+                lookupBlue: ColorValue("#0078D4"),
+                focusBorder:ColorValue("#000000")
+            }
+        );
+        //Variable drives whether a new goods receipt record process has started and drives various control behavior
+        Set(
+            varIsNew,
+            false
+        );
+        //Variable is set when calls to SAP are made and shows processing indicator
+        Set(
+            varIsProcessing,
+            false
+        );
+        //Variable used as a workaround to reset gallerys selected row checkbox and highlighted row since controls within galleries cannot be called to be reset outside of the gallery
+        Set(
+            varResetSelectRows,
+            false
+        );
+        //Collection used by goods receipt tabs component to show list of tabs across screens and driving screen navigation functions when selected
+        ClearCollect(
+            colScreenTabs,
+            Table(
+                {
+                    TabName: "Details",
+                    Screen: 'Goods Receipt Details Screen'
+                }
+            )
+        );
+
+    Host As hostControl.DefaultHostControlVariant:
+        OnCancel: =false
+        OnEdit: =false
+        OnNew: =false
+        OnSave: =false
+        OnView: =false
+

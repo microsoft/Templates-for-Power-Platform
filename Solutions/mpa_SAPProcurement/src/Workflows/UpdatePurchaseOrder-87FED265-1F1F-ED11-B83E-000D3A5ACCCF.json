@@ -39,7 +39,8 @@
           "defaultValue": "{\"AppServerHost\":\"sap.clearsoftware.com\",\"Client\":\"100\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
           "type": "String",
           "metadata": {
-            "schemaName": "mpa_SAPApplicationServer"
+            "schemaName": "mpa_SAPApplicationServer",
+            "description": "JSON string that contains system parameters, host, system number, client, etc."
           }
         }
       },
@@ -290,12 +291,9 @@
                   "rfcInputs/POSCHEDULEX": "@body('POSCHEDULEX')",
                   "rfcInputs/POTEXTHEADER": "@body('POTEXTHEADER')"
                 },
+                "authentication": "@parameters('$authentication')",
                 "retryPolicy": {
                   "type": "none"
-                },
-                "authentication": {
-                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']",
-                  "type": "Raw"
                 }
               }
             },
@@ -335,12 +333,9 @@
                       "autoCommit": false,
                       "sessionId": "@outputs('Create_stateful_session')?['body/SessionId']"
                     },
+                    "authentication": "@parameters('$authentication')",
                     "retryPolicy": {
                       "type": "none"
-                    },
-                    "authentication": {
-                      "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']",
-                      "type": "Raw"
                     }
                   }
                 },
@@ -747,7 +742,7 @@
                 }
               }
             },
-            "Response_3": {
+            "Error_Response": {
               "runAfter": {
                 "Create_Integration_Log_Error": [
                   "Succeeded"
@@ -793,6 +788,20 @@
                     }
                   }
                 }
+              }
+            },
+            "Terminate": {
+              "runAfter": {
+                "Error_Response": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "ac853f4f-99e9-4086-ba90-d2fa9de64634"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed"
               }
             }
           },
