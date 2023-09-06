@@ -62,8 +62,15 @@ jobs:
           $output = pac solution list
           echo $output
           $lines = $output -split "`n"
-          $versionLine = $lines | Where-Object { $_ -match "${{ github.event.inputs.solution_name }}" }
-          $version = ($versionLine -split "\s+")[3]
+          $headerLine = $lines[4]
+          $uniqueNameStart = $headerLine.IndexOf("Unique Name")
+          $friendlyNameStart = $headerLine.IndexOf("Friendly Name")
+          $versionStart = $headerLine.IndexOf("Version")
+          $managedStart = $headerLine.IndexOf("Managed")
+          $line = $lines | Where-Object { $_ -match "mpa_Kudos" }
+          $uniqueName = $line.Substring($uniqueNameStart, $friendlyNameStart - $uniqueNameStart).Trim()
+          $version = $line.Substring($versionStart, $managedStart - $versionStart).Trim()
+          $managed = $line.Substring($managedStart).Trim()
           echo "current_version=$version" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
           # Split the version into its components
           $versionParts = $version.Split('.')
