@@ -15,7 +15,7 @@ Learn more: [ABAP Development Tools](https://help.sap.com/docs/btp/sap-business-
 Use TCode: BAPI. You can then drill down the hierarchy and find a specific action you want to take. You then select that action and find the specific function module to call.
 
 Here is an example of how you can find the function module BAPI_PO_CREATE1.
-![Screenshot of BAPI Explorer]
+![Screenshot of BAPI Explorer](https://github.com/microsoft/Templates-for-Power-Platform/blob/FY24HackathonSAPRA/InformationArchitecture/BAPI-EXPLORER.pdf.png)
 
 ## Test the function module
 
