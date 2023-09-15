@@ -14,13 +14,12 @@ Learn more: [ABAP Development Tools](https://help.sap.com/docs/btp/sap-business-
 
 Use TCode: BAPI. You can then drill down the hierarchy and find a specific action you want to take. You then select that action and find the specific function module to call.
 
-Here is an example of how you can find the function module BAPI_PO_CREATE1. 
-
+Here is an example of how you can find the function module BAPI_PO_CREATE1.
 ![Screenshot of BAPI Explorer]
 
 ## Test the function module
 
-Here is an example of how you can find the function module BAPI_PO_CREATE1.
+Here is how you can test the function module.
 
 - Use Purchase Order as an example of a standard SAP document that has a header and at least one set of line-item tables. You will only concern yourself with the Header and Line Items table (EKKO/EKPO in this example) and will not cover any connected tables for statuses or pricing conditions.
 - You know when each of the 4 CRUD (create, read, update, delete) operations will be called, and you call the corresponding Power Automate flow. Creating a new Purchase Order happens when the Create button is selected. Reading an existing Purchase Order happens when an existing Purchase Order number is entered in the Purchase Order number field, or the previous Purchase Order number drop down list is selected. You can only update a Purchase Order after it has been read and the edit button is selected. A Purchase Order cannot be deleted, but individual line items of the purchase order can be deleted. When this occurs, it is treated like an update, and the appropriate values are sent to SAP to indicate the specific line(s) to be deleted.
