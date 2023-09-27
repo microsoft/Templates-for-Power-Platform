@@ -1,0 +1,607 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_sharedcommondataserviceforapps_718d7"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      },
+      "shared_office365": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_sharedoffice365_2fd76"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "startTime": "2023-07-01T18:00:00Z"
+          },
+          "metadata": {
+            "operationMetadataId": "05d5b609-d3c5-49c8-b34d-93b8475832d4"
+          },
+          "type": "Recurrence"
+        }
+      },
+      "actions": {
+        "List_Onboarders": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "34862ced-ece8-4b57-af27-5e4776bcc18d"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "mpa_onboarderses",
+              "fetchXml": "<fetch version='1.0' output-format='xml-platform' mapping='logical' distinct='false'>\n<entity name='mpa_onboarders'>\n<attribute name='mpa_startdate'/>\n<attribute name='mpa_enddate'/>\n<attribute name='mpa_daysaftermatchtosendfirstnudge'/>\n<attribute name='mpa_dayspriortoendonmatchperiod'/>\n<attribute name='mpa_initialemailflag'/>\n<filter type='and'>\n<condition attribute='statecode' operator='eq' value='0'/>\n<condition attribute='mpa_startdate' operator='not-null'/>\n<condition attribute='mpa_enddate' operator='not-null'/>\n</filter>\n<link-entity name='mpa_buddylist' from='mpa_assignedonboarder' to='mpa_onboardersid' link-type='inner' alias='ab'>\n<attribute name='mpa_buddylistid'/>\n<filter type='and'>\n<condition attribute='mpa_assignedonboarder' operator='not-null'/>\n</filter>\n</link-entity>\n</entity>\n</fetch>"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Initialize_Start_Date": {
+          "runAfter": {
+            "Initialize_End_Nudge": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "bf3a5955-1e68-432f-95b6-06d1fcf776a7"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Start Date",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Apply_to_each": {
+          "foreach": "@outputs('List_Onboarders')?['body/value']",
+          "actions": {
+            "Set_Start_Date": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "c68c2ac0-af01-49e7-bc91-765f64d8d5dd"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "Start Date",
+                "value": "@items('Apply_to_each')?['mpa_startdate']"
+              }
+            },
+            "Condition_to_check_First_Nudge": {
+              "actions": {
+                "First_Nudge_Email_to_Buddy": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "d841771c-c3d9-41c9-a955-d5101de84703"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@outputs('Get_Buddy')?['body/mpa_email']",
+                      "emailMessage/Subject": "Onboarding Buddy Program – Getting started with your match",
+                      "emailMessage/Body": "<p>&lt;p&gt;Hello @{outputs('Get_Buddy')?['body/mpa_name']},&lt;br&gt;<br>\n&lt;br&gt;<br>\nYou have been assigned to help onboard @{outputs('Get_Onboarder')?['body/mpa_name']} (@{outputs('Get_Onboarder')?['body/mpa_email']}). Hopefully you two have already connected. If not, please reach out to each other as soon as possible to introduce yourselves and kick off the onboarding process.&lt;br&gt;<br>\n&lt;br&gt;<br>\nSome suggestions to move forward with onboarding:&lt;br&gt;<br>\n&lt;br&gt;<br>\nGet introduced to your greater organization and leadership.&lt;br&gt;<br>\nTraining and Compliance&lt;br&gt;<br>\nOnboarding Checklist&lt;br&gt;<br>\n&lt;br&gt;<br>\nWishing you a successful onboarding journey together!&lt;br&gt;<br>\n&lt;br&gt;<br>\nThis was sent from an unmonitored account. If you have any questions about this process or your match, please reach out to your manager.&lt;br&gt;<br>\n</p>",
+                      "emailMessage/Importance": "Normal"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "First_Nudge_Email_to_Onboarder": {
+                  "runAfter": {
+                    "First_Nudge_Email_to_Buddy": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "4af5eb44-489b-44e9-a4e7-095caeadb0a3"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@outputs('Get_Onboarder')?['body/mpa_email']",
+                      "emailMessage/Subject": "Onboarding Buddy Program – Getting started with your match",
+                      "emailMessage/Body": "<p>&lt;p&gt;Hello @{outputs('Get_Onboarder')?['body/mpa_name']},&lt;br&gt;<br>\n&lt;br&gt;<br>\nYou have been assigned an onboarding buddy, @{outputs('Get_Buddy')?['body/mpa_name']} (@{outputs('Get_Buddy')?['body/mpa_email']}). Hopefully you two have already connected. If not, please reach out to each other as soon as possible to introduce yourselves and kick off the onboarding process.&lt;br&gt;<br>\n&lt;br&gt;<br>\nSome suggestions to move forward with onboarding:&lt;br&gt;<br>\n&lt;br&gt;<br>\nGet introduced to your greater organization and leadership.&lt;br&gt;<br>\nTraining and Compliance&lt;br&gt;<br>\nOnboarding Checklist&lt;br&gt;<br>\n&lt;br&gt;<br>\nWishing you a successful onboarding journey together!&lt;br&gt;<br>\n&lt;br&gt;<br>\nThis was sent from an unmonitored account. If you have any questions about this process or your match, please reach out to your manager.&lt;br&gt;<br>\n</p>",
+                      "emailMessage/Importance": "Normal"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Condition_to_check_End_Date": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "equals": [
+                  "@formatDateTime(variables('First Nudge'),'yyyy-MM-dd')",
+                  "@formatDateTime(utcNow(),'yyyy-MM-dd')"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "0849e2df-d7a6-4787-a1fa-fbac89ca365d"
+              },
+              "type": "If"
+            },
+            "Set_End_Nudge": {
+              "runAfter": {
+                "Set_First_Nudge": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "a790fd3b-0c8d-4287-9444-fa08524803ba"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "End Nudge",
+                "value": "@{addDays(variables('End Date'),mul(items('Apply_to_each')?['mpa_dayspriortoendonmatchperiod'],-1))}"
+              }
+            },
+            "Set_End_Date": {
+              "runAfter": {
+                "Set_Start_Date": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "5bb5c8a2-4b86-4a9e-a4b6-b0e13aa09110"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "End Date",
+                "value": "@items('Apply_to_each')?['mpa_enddate']"
+              }
+            },
+            "Condition_to_check_End_Nudge": {
+              "actions": {
+                "End_Nudge_Email_to_Buddy": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "be3884c3-3f73-4ef3-ab9d-dab0f3f7aa01"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@outputs('Get_Buddy')?['body/mpa_email']",
+                      "emailMessage/Subject": "Onboarding Buddy Program – Coming to an end",
+                      "emailMessage/Body": "<p>&lt;p&gt;Hello @{outputs('Get_Buddy')?['body/mpa_name']},&lt;br&gt;<br>\n&lt;br&gt;<br>\nWith the conclusion of the Buddy Program approaching, this is a quick reminder to ensure any pending items are closed out.&lt;br&gt;<br>\n&lt;br&gt;<br>\n@{outputs('Get_Buddy')?['body/mpa_name']}, the organization appreciates your support and assistance throughout the program. Please make sure to connect with @{outputs('Get_Onboarder')?['body/mpa_name']} &nbsp;to provide any remaining guidance and finalize any outstanding items with them.&lt;br&gt;<br>\n&lt;br&gt;<br>\nThank you for your active participation in the Buddy Program! When the program period ends, you will automatically be available again to help onboard someone new. &lt;br&gt;<br>\n&lt;br&gt;<br>\nThis was sent from an unmonitored account.&lt;br&gt;<br>\n</p>",
+                      "emailMessage/Importance": "Normal"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "End_Nudge_Email_to_Onboarder_": {
+                  "runAfter": {
+                    "End_Nudge_Email_to_Buddy": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "18673931-9252-4340-938b-4bdf36140ce1"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@outputs('Get_Onboarder')?['body/mpa_email']",
+                      "emailMessage/Subject": "Onboarding Buddy Program – Coming to an end",
+                      "emailMessage/Body": "<p>&lt;p&gt;Hello @{outputs('Get_Onboarder')?['body/mpa_name']},&lt;br&gt;<br>\n&lt;br&gt;<br>\nWith the conclusion of the Buddy Program approaching, this is a quick reminder to ensure any pending items are closed out with your onboarding buddy.&lt;br&gt;<br>\n&lt;br&gt;<br>\n@{outputs('Get_Onboarder')?['body/mpa_name']}, if there are any final questions or guidance needed, please reach out to @{outputs('Get_Buddy')?['body/mpa_name']}.&lt;br&gt;<br>\n&lt;br&gt;<br>\n@{outputs('Get_Buddy')?['body/mpa_name']}, we hope that this program has helped you to onboard successfully.&lt;br&gt;<br>\n&lt;br&gt;<br>\nThis was sent from an unmonitored account. If you have any questions about this process or your match, please reach out to your manager.&lt;br&gt;</p>",
+                      "emailMessage/Importance": "Normal"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Condition_to_check_First_Nudge": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "equals": [
+                  "@formatDateTime(variables('End Nudge'),'yyyy-MM-dd')",
+                  "@formatDateTime(utcNow(),'yyyy-MM-dd')"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6a662ccb-6c1a-4d27-905e-a1f8a98de572"
+              },
+              "type": "If"
+            },
+            "Get_Buddy": {
+              "runAfter": {
+                "Set_End_Nudge": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "402606c7-6af7-4ca0-96ba-174facad555e"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_buddylists",
+                  "recordId": "@items('Apply_to_each')?['ab.mpa_buddylistid']"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Get_Onboarder": {
+              "runAfter": {
+                "Get_Buddy": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "61c1a587-ac3b-49c6-a50d-8f3f1f92096a"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_onboarderses",
+                  "recordId": "@items('Apply_to_each')?['mpa_onboardersid']"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Condition_to_check_Start_Date": {
+              "actions": {
+                "Start_Notification_Email_to_Buddy": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "0023feea-e49b-481f-b90a-81779b5bd56a"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@outputs('Get_Buddy')?['body/mpa_email']",
+                      "emailMessage/Subject": "You’ve been matched as an Onboarding Buddy!",
+                      "emailMessage/Body": "<p>&lt;p&gt;Hello @{outputs('Get_Buddy')?['body/mpa_name']},&lt;br&gt;<br>\n&lt;br&gt;<br>\nThanks for volunteering to be an Onboarding Buddy. You have been matched with @{outputs('Get_Onboarder')?['body/mpa_name']}!&lt;br&gt;<br>\nWe appreciate your willingness to support and guide them as they embark on their journey with our company.&lt;br&gt;<br>\n&lt;br&gt;<br>\nPlease reach out to @{outputs('Get_Onboarder')?['body/mpa_name']} to introduce yourself.&lt;br&gt;<br>\nHelp them to get familiar with our company culture and values.&lt;br&gt;<br>\nIntroduce them to our tools, systems, and processes.&lt;br&gt;<br>\nHelp them establish connections within the team.&lt;br&gt;<br>\nAddress any questions or concerns they may have.&lt;br&gt;<br>\n&lt;br&gt;<br>\nThank you once again for taking on this important role!&lt;br&gt;<br>\n&lt;br&gt;<br>\nThis was sent from an unmonitored account. If you have any questions about this process or your match, please reach out to your manager.&lt;br&gt;<br>\n<br>\n</p>",
+                      "emailMessage/Importance": "Normal"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Start_Notification_Email_to_Onboarder": {
+                  "runAfter": {
+                    "Start_Notification_Email_to_Buddy": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "a3754960-08e3-45a1-ab6b-995237a011d2"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@outputs('Get_Onboarder')?['body/mpa_email']",
+                      "emailMessage/Subject": "You’ve been matched with an Onboarding Buddy!",
+                      "emailMessage/Body": "<p>&lt;p&gt;Welcome @{outputs('Get_Onboarder')?['body/mpa_name']},&lt;br&gt;<br>\n&lt;br&gt;<br>\nCongratulations on joining our team!&lt;br&gt;<br>\nYou have been matched with @{outputs('Get_Buddy')?['body/mpa_name']} Onboarding Buddy who is experienced employee in @{outputs('Get_Buddy')?['body/mpa_organization']}. They will assist you in getting acquainted with our company, helping you through onboarding tasks, and help to answer any questions you may have.&lt;br&gt;<br>\n@{outputs('Get_Buddy')?['body/mpa_name']} - @{outputs('Get_Buddy')?['body/mpa_email']} - will reach out to you soon to provide more information and guidance.&lt;br&gt;<br>\n&lt;br&gt;<br>\nWelcome aboard!&lt;br&gt;<br>\n&lt;br&gt;<br>\nThis was sent from an unmonitored account. If you have any questions about this process or your match, please reach out to your manager.&lt;br&gt;<br>\n</p>",
+                      "emailMessage/Importance": "Normal"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Update_a_row": {
+                  "runAfter": {
+                    "Start_Notification_Email_to_Onboarder": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "6233e005-d28a-4667-a05b-88e7e06a4b72"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "UpdateRecord",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_onboarderses",
+                      "recordId": "@items('Apply_to_each')?['mpa_onboardersid']",
+                      "item/mpa_initialemailflag": "true"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Get_Onboarder": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "equals": [
+                  "@outputs('Get_Onboarder')?['body/mpa_initialemailflag']",
+                  "@null"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6bb4c07f-743b-443e-b12a-8a3c3dc04d53"
+              },
+              "type": "If"
+            },
+            "Condition_to_check_End_Date": {
+              "actions": {
+                "End_Notification_Email_to_Buddy": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "60f707b0-d30c-4a42-a6ad-25501e977e7d"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@outputs('Get_Buddy')?['body/mpa_email']",
+                      "emailMessage/Subject": "Onboarding Buddy Program – All done!",
+                      "emailMessage/Body": "<p>Hello @{outputs('Get_Buddy')?['body/mpa_name']},<br>\n<br>\nA quick reminder that the Onboarding Buddy Program is ending today.<br>\nPlease connect with each other one last time to confirm there are no remaining questions to answer or tasks to complete.<br>\n<br>\nAnd remember, this is just the beginning!<br>\n<br>\nThis was sent from an unmonitored account.<br>\n</p>",
+                      "emailMessage/Importance": "Normal"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "End_Notification_Email_to_Onboarder": {
+                  "runAfter": {
+                    "End_Notification_Email_to_Buddy": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "40b195f8-9aab-4859-8938-9c2e573bc9dd"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@outputs('Get_Onboarder')?['body/mpa_email']",
+                      "emailMessage/Subject": "Onboarding Buddy Program – All done!",
+                      "emailMessage/Body": "<p>Hello @{outputs('Get_Onboarder')?['body/mpa_name']},<br>\n<br>\nA quick reminder that the Onboarding Buddy Program is ending today.<br>\nPlease connect with each other one last time to confirm there are no remaining questions to answer or tasks to complete.<br>\n<br>\nAnd remember, this is just the beginning!<br>\n<br>\nThis was sent from an unmonitored account.</p>",
+                      "emailMessage/Importance": "Normal"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Remove_Assigned_New_Onboarder_from_Buddy": {
+                  "runAfter": {
+                    "End_Notification_Email_to_Onboarder": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "bd8f08d2-9eaf-416e-ba58-2dd20c436ced"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "UpdateRecord",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_buddylists",
+                      "recordId": "@outputs('Get_Buddy')?['body/mpa_buddylistid']",
+                      "item/mpa_AssignedOnboarder@odata.bind": "@null",
+                      "item/mpa_availability": 865420000,
+                      "item/mpa_isavailable": true,
+                      "item/statuscode": 1
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Change_Onboarder_record_to_Inactive": {
+                  "runAfter": {
+                    "Remove_Assigned_New_Onboarder_from_Buddy": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "a0bf3a9f-2c65-4cb8-8897-c39f7a96d2a0"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "UpdateRecord",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_onboarderses",
+                      "recordId": "@items('Apply_to_each')?['mpa_onboardersid']",
+                      "item/statecode": 1,
+                      "item/statuscode": 865420001
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Condition_to_check_Start_Date": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "equals": [
+                  "@formatDateTime(variables('End Date'),'yyyy-MM-dd')",
+                  "@formatDateTime(utcNow(),'yyyy-MM-dd')"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "d312a414-dc83-403e-96dd-4230fe8f022d"
+              },
+              "type": "If"
+            },
+            "Set_First_Nudge": {
+              "runAfter": {
+                "Set_End_Date": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "be804c0b-3c0c-43eb-82b6-f4aade3aff41"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "First Nudge",
+                "value": "@{addDays(variables('Start Date'),items('Apply_to_each')?['mpa_daysaftermatchtosendfirstnudge'])}"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_End_Date": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "cd69ed94-e37c-40b5-ba28-d40f3a627bc4"
+          },
+          "type": "Foreach",
+          "runtimeConfiguration": {
+            "concurrency": {
+              "repetitions": 1
+            }
+          }
+        },
+        "Initialize_End_Nudge": {
+          "runAfter": {
+            "Initialize_First_Nudge": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "9b33668e-1bd8-4f5f-bea4-00f58bf3932f"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "End Nudge",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_First_Nudge": {
+          "runAfter": {
+            "List_Onboarders": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "929f14e3-ca38-4c81-9ef2-cf8459d89d76"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "First Nudge",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_End_Date": {
+          "runAfter": {
+            "Initialize_Start_Date": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "bce584cd-96dd-46c7-90b7-9e7a1f299795"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "End Date",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

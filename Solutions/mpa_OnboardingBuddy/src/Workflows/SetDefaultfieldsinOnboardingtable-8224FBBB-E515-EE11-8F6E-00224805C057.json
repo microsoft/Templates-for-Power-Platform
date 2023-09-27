@@ -1,0 +1,154 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "impersonation": {},
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_sharedcommondataserviceforapps_718d7"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_Buddy_List_is_modified": {
+          "metadata": {
+            "operationMetadataId": "dd9890f3-06fe-4fe0-9c2e-c8aa9ba7df2a"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "SubscribeWebhookTrigger"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 3,
+              "subscriptionRequest/entityname": "mpa_buddylist",
+              "subscriptionRequest/scope": 4,
+              "subscriptionRequest/filteringattributes": "mpa_assignedonboarder",
+              "subscriptionRequest/name": "8224fbbb-e515-ee11-8f6e-00224805c057"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      },
+      "actions": {
+        "Condition_to_check_if_Assigned_Onboarder_lookup_has_value": {
+          "actions": {
+            "Apply_to_each": {
+              "foreach": "@outputs('List_configurations')?['body/value']",
+              "actions": {
+                "Update_Onboarder": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "0c968278-bbf4-485b-b19b-b832e63ccb2a"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "UpdateRecord"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_onboarderses",
+                      "recordId": "@outputs('Get_a_Onboarder_by_ID')?['body/mpa_onboardersid']",
+                      "item/mpa_daysaftermatchtosendfirstnudge": "@items('Apply_to_each')?['mpa_daysaftermatchtosendfirstnudge']",
+                      "item/mpa_dayspriortoendonmatchperiod": "@items('Apply_to_each')?['mpa_dayspriortoendonmatchperiod']",
+                      "item/mpa_enddate": "@addDays(utcNow(),Int(first(outputs('List_configurations')?['body/value'])['mpa_lengthofbuddymatch@OData.Community.Display.V1.FormattedValue']))",
+                      "item/mpa_lengthofbuddymatch": "@items('Apply_to_each')?['mpa_lengthofbuddymatch']",
+                      "item/mpa_startdate": "@utcNow()"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "8a13e6c1-562f-4bac-b1be-96ee08dac0ff"
+              },
+              "type": "Foreach"
+            }
+          },
+          "runAfter": {
+            "Get_a_Onboarder_by_ID": [
+              "Succeeded"
+            ]
+          },
+          "expression": {
+            "not": {
+              "equals": [
+                "@triggerOutputs()?['body/_mpa_assignedonboarder_value']",
+                "@null"
+              ]
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "cbddbf98-0cef-40e2-b4c1-4a093fb9fd78"
+          },
+          "type": "If"
+        },
+        "List_configurations": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "63caec10-d914-46da-828f-8ad55804d6e9"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "ListRecords"
+            },
+            "parameters": {
+              "entityName": "mpa_configurations",
+              "$top": 1
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Get_a_Onboarder_by_ID": {
+          "runAfter": {
+            "List_configurations": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "698c7440-1ff5-4eff-a0aa-f140c76ce015"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "GetItem"
+            },
+            "parameters": {
+              "entityName": "mpa_onboarderses",
+              "recordId": "@triggerOutputs()?['body/_mpa_assignedonboarder_value']"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}
