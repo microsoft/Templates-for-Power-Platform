@@ -1,0 +1,345 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_office365groups": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_sharedoffice365groups_f3249"
+        },
+        "api": {
+          "name": "shared_office365groups"
+        }
+      },
+      "shared_office365users": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_sharedoffice365users_3b08c"
+        },
+        "api": {
+          "name": "shared_office365users"
+        }
+      },
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_sharedcommondataserviceforapps_718d7"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "recurrence": {
+            "frequency": "Week",
+            "interval": 1,
+            "startTime": "2023-07-02T03:00:00Z",
+            "schedule": {
+              "weekDays": [
+                "Saturday"
+              ]
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "2d0223fa-831e-49a1-8a5d-ebf2312fdb08"
+          },
+          "type": "Recurrence"
+        }
+      },
+      "actions": {
+        "Send_an_HTTP_request": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "b809821a-e6e4-4426-860b-723f4037a27e"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365groups",
+              "operationId": "HttpRequest",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365groups"
+            },
+            "parameters": {
+              "Uri": "https://graph.microsoft.com/v1.0/users/?$filter=CreatedDateTime ge @{addDays(utcNow(),-8,'yyyy-MM-ddTHH:mm:ssZ')}",
+              "Method": "GET",
+              "ContentType": "application/json"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Apply_to_each": {
+          "foreach": "@body('parse_JSON')['value']",
+          "actions": {
+            "Get_user_profile_(V2)": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "a22dab4a-bcb6-4d0e-8012-d3c7cd733d07"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365users",
+                  "operationId": "UserProfile_V2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365users"
+                },
+                "parameters": {
+                  "id": "@item()?['id']"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "List_existing_matching_Onboarders": {
+              "runAfter": {
+                "Get_user_profile_(V2)": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "ec69b1f2-3d3b-4062-aa61-ec9480a545e2"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_onboarderses",
+                  "fetchXml": "<fetch version='1.0' output-format='xml-platform' mapping='logical' distinct='false'>\n<entity name='mpa_onboarders'>\n<attribute name='mpa_onboardersid'/>\n<attribute name='mpa_name'/>\n<attribute name='createdon'/>\n<order attribute='mpa_name' descending='false'/>\n<filter type='and'>\n<condition attribute='mpa_onboarderid' operator='eq' value='@{outputs('Get_user_profile_(V2)')?['body/id']}'/>\n</filter>\n</entity>\n</fetch>"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Condition_to_check_if_there_is_existing_Onboarders_already": {
+              "actions": {
+                "Condition_-_Is_Hire_Date_Missing": {
+                  "actions": {
+                    "Add_a_new_Onboarder_record_without_hire_date": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "0ec78a4c-3a33-4ee6-98cd-c4e73d8e1568"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps",
+                          "operationId": "CreateRecord",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "mpa_onboarderses",
+                          "item/mpa_aboutme": "@outputs('Get_user_profile_(V2)')?['body/aboutMe']",
+                          "item/mpa_city": "@outputs('Get_user_profile_(V2)')?['body/city']",
+                          "item/mpa_email": "@outputs('Get_user_profile_(V2)')?['body/mail']",
+                          "item/mpa_jobtitle": "@outputs('Get_user_profile_(V2)')?['body/jobTitle']",
+                          "item/mpa_mobilephone": "@outputs('Get_user_profile_(V2)')?['body/mobilePhone']",
+                          "item/mpa_name": "@outputs('Get_user_profile_(V2)')?['body/displayName']",
+                          "item/mpa_onboarderid@odata.bind": "aadusers(@{outputs('Get_user_profile_(V2)')?['body/id']})",
+                          "item/mpa_state": "@outputs('Get_user_profile_(V2)')?['body/state']"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Update_Onboarder_record": {
+                      "runAfter": {
+                        "Get_manager_(V2)": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "96da39ef-add2-4132-a0ce-48be0ef14ec8"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps",
+                          "operationId": "UpdateRecord",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "mpa_onboarderses",
+                          "recordId": "@outputs('Add_a_new_Onboarder_record_without_hire_date')?['body/mpa_onboardersid']",
+                          "item/mpa_managerid@odata.bind": "aadusers(@{outputs('Get_manager_(V2)')?['body/id']})"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Get_manager_(V2)": {
+                      "runAfter": {
+                        "Add_a_new_Onboarder_record_without_hire_date": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "028229d2-e39b-4d0c-aa7a-f67ad3b616d7"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365users",
+                          "operationId": "Manager_V2",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365users"
+                        },
+                        "parameters": {
+                          "id": "@outputs('Get_user_profile_(V2)')?['body/id']"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    }
+                  },
+                  "runAfter": {},
+                  "else": {
+                    "actions": {
+                      "Add_a_new_Onboarder_record_with_hire_date": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "ec07430f-ae4d-4f62-9cff-67004f659162"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_commondataserviceforapps",
+                            "operationId": "CreateRecord",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                          },
+                          "parameters": {
+                            "entityName": "mpa_onboarderses",
+                            "item/mpa_aboutme": "@outputs('Get_user_profile_(V2)')?['body/aboutMe']",
+                            "item/mpa_city": "@outputs('Get_user_profile_(V2)')?['body/city']",
+                            "item/mpa_email": "@outputs('Get_user_profile_(V2)')?['body/mail']",
+                            "item/mpa_jobtitle": "@outputs('Get_user_profile_(V2)')?['body/jobTitle']",
+                            "item/mpa_mobilephone": "@outputs('Get_user_profile_(V2)')?['body/mobilePhone']",
+                            "item/mpa_name": "@outputs('Get_user_profile_(V2)')?['body/displayName']",
+                            "item/mpa_onboarderid@odata.bind": "aadusers(@{outputs('Get_user_profile_(V2)')?['body/id']})",
+                            "item/mpa_onboardingdate": "@outputs('Get_user_profile_(V2)')?['body/hireDate']",
+                            "item/mpa_state": "@outputs('Get_user_profile_(V2)')?['body/state']"
+                          },
+                          "authentication": "@parameters('$authentication')"
+                        }
+                      },
+                      "Get_manager_(V2)_alt": {
+                        "runAfter": {
+                          "Add_a_new_Onboarder_record_with_hire_date": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "23b93b6f-d8aa-47f4-8462-9d7bfab9a7ec"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_office365users",
+                            "operationId": "Manager_V2",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365users"
+                          },
+                          "parameters": {
+                            "id": "@outputs('Get_user_profile_(V2)')?['body/id']"
+                          },
+                          "authentication": "@parameters('$authentication')"
+                        }
+                      },
+                      "Update_Onboarder_record_alt": {
+                        "runAfter": {
+                          "Get_manager_(V2)_alt": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "b60b1b38-40b4-49d2-9728-6fed52853892"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_commondataserviceforapps",
+                            "operationId": "UpdateRecord",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                          },
+                          "parameters": {
+                            "entityName": "mpa_onboarderses",
+                            "recordId": "@outputs('Add_a_new_Onboarder_record_with_hire_date')?['body/mpa_onboardersid']",
+                            "item/mpa_managerid@odata.bind": "aadusers(@{outputs('Get_manager_(V2)_alt')?['body/id']})"
+                          },
+                          "authentication": "@parameters('$authentication')"
+                        }
+                      }
+                    }
+                  },
+                  "expression": {
+                    "less": [
+                      "@formatDateTime(outputs('Get_user_profile_(V2)')?['body/hireDate'],'dd/mm/yyyy')",
+                      "'01/01/1753'"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "e4606515-0c70-4b80-9a24-9e2dcb06a538"
+                  },
+                  "type": "If"
+                }
+              },
+              "runAfter": {
+                "List_existing_matching_Onboarders": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "equals": [
+                  "@length(outputs('List_existing_matching_Onboarders')?['body/value'])",
+                  0
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "39e45291-cc2c-43a6-b1be-7c5ea36015ce"
+              },
+              "type": "If"
+            }
+          },
+          "runAfter": {
+            "Parse_JSON": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "09478b29-cc39-4307-aa30-80e4f88e96d1"
+          },
+          "type": "Foreach"
+        },
+        "Parse_JSON": {
+          "runAfter": {
+            "Send_an_HTTP_request": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "5f85c49f-80c6-4f93-badd-8ec40fa51f66"
+          },
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@body('Send_an_HTTP_request')",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}
