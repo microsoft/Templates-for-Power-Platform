@@ -9,7 +9,7 @@
                 {withDirectReport: ThisRecord.mail},
                     LookUp(
                         'Buddy Lists',
-                        Email = withDirectReport &&  Available = true && Status = 'Status (Buddy Lists)'.Active && 'Status Reason'='Status Reason (Buddy Lists)'.Matched
+                        Email = withDirectReport && Status = 'Status (Buddy Lists)'.Active && 'Status Reason'='Status Reason (Buddy Lists)'.Matched
                     )
                 )
             ) 
@@ -17,7 +17,7 @@
 
     conContent_CurrentMatchesBuddy As groupContainer.verticalAutoLayoutContainer:
         Fill: =ColorValue(varThemeColors.background)
-        Height: =Parent.Height - compHeader_CurrentMatchesOnboarder.Height
+        Height: =Parent.Height - compHeader_CurrentBuddies.Height
         LayoutAlignItems: =LayoutAlignItems.Stretch
         LayoutDirection: =LayoutDirection.Vertical
         LayoutGap: =20
@@ -34,7 +34,6 @@
             )
         PaddingRight: =Self.PaddingLeft
         Width: =Parent.Width
-        Y: =compHeader_CurrentMatchesOnboarder.Height + compHeader_CurrentMatchesOnboarder.Y
         ZIndex: =1
 
         conPrompt_CurrentMatchesBuddy As groupContainer.horizontalAutoLayoutContainer:
@@ -426,7 +425,7 @@
                                     'English Value' = Text 
                                 ).'Localized Value'
                             )
-                        )&" "& ThisItem.'Assigned Onboarder'.Name //.'Assigned New Hire'.Name
+                        )&" "& ThisItem.mpa_AssignedOnboarder.Name
                     Width: =Parent.Width*.75
                     X: =imgUserPFP_CurrentMatchesBuddy.Width+grpUserImage_CurrentMatchesBuddy.X/2
                     Y: =lblPositionGallery_CurrentMatchesBuddy.Y+lblPositionGallery_CurrentMatchesBuddy.Height
@@ -454,9 +453,9 @@
                         =varThemeFont.B2.size
                     Text: |-
                         =If(
-                            IsBlank(ThisItem.Buddy.'Job Title'),// Define a variable named "Text" with the value "{value}"
+                            IsBlankOrError(Office365Users.UserProfileV2(ThisItem.mpa_email).jobTitle),
                             With(
-                                {Text: "Job title not currently in system"},
+                                {Text: "Job Title is not currently in the system."},
                             // Check if a localized text exists for "Text" in the user's preferred language
                                 If(
                                 // If the localized text is blank, return the default text
@@ -474,7 +473,7 @@
                                     ).'Localized Value'
                                 )
                             ),
-                            ThisItem.Buddy.'Job Title'
+                            Office365Users.UserProfileV2(ThisItem.mpa_email).jobTitle
                         )
                     Width: =Parent.Width*.75
                     X: =imgUserPFP_CurrentMatchesBuddy.Width+grpUserImage_CurrentMatchesBuddy.X/2
@@ -499,7 +498,30 @@
                     Role: =TextRole.Heading1
                     Size: |
                         =varThemeFont.H3.size
-                    Text: =ThisItem.Name
+                    Text: |-
+                        =If(
+                            IsBlankOrError(Office365Users.UserProfileV2(ThisItem.mpa_email).displayName),
+                            With(
+                                {Text: "Job Title is not currently in the system."},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            ),
+                            Office365Users.UserProfileV2(ThisItem.mpa_email).displayName
+                        )
                     Width: =Parent.Width*.75
                     X: =imgUserPFP_CurrentMatchesBuddy.Width+grpUserImage_CurrentMatchesBuddy.X/2
                     Y: =17
@@ -541,6 +563,31 @@
                     Width: =50
                     X: =Parent.TemplateWidth-Self.Width
                     ZIndex: =9
+
+                btnClickForDetail_CurrentMatches As button:
+                    BorderColor: =Color.Transparent
+                    Color: =Color.Transparent
+                    DisabledBorderColor: =Color.Transparent
+                    DisabledColor: =Color.Transparent
+                    DisabledFill: =Color.Transparent
+                    Fill: =Color.Transparent
+                    FocusedBorderColor: =ColorValue(varThemeColors.info)
+                    Height: =Parent.TemplateHeight
+                    HoverBorderColor: =Color.Transparent
+                    HoverColor: =Color.Transparent
+                    HoverFill: =Color.Transparent
+                    OnSelect: |-
+                        =Select(Parent);
+                        Set(varMatchedBuddy, ThisItem);
+                        Set(varFromCurrentMatchedBuddy, false);
+                        Navigate('Buddy Profile');
+                    PressedBorderColor: =Color.Transparent
+                    PressedColor: =Color.Transparent
+                    PressedFill: =Color.Transparent
+                    Size: =24
+                    Text: ="Button"
+                    Width: =Parent.TemplateWidth
+                    ZIndex: =10
 
                 grpUserImage_CurrentMatchesBuddy As group:
                     Height: =5
@@ -627,10 +674,10 @@
                 Height: =Parent.Height*.8
                 LayoutDirection: =LayoutDirection.Vertical
                 LayoutGap: =25
+                LayoutJustifyContent: =LayoutJustifyContent.Center
                 LayoutMinHeight: =112
                 LayoutMinWidth: =250
                 LayoutMode: =LayoutMode.Auto
-                PaddingTop: =75
                 RadiusBottomLeft: =10
                 RadiusBottomRight: =10
                 RadiusTopLeft: =10
@@ -661,11 +708,11 @@
                             )
                         )
                     AlignInContainer: =AlignInContainer.Center
-                    Height: =Parent.Height / 2
-                    Image: =Buddy
+                    Height: =150
+                    Image: =CircleCollab
                     LayoutMinHeight: =320
                     LayoutMinWidth: =320
-                    Width: =Parent.Width*2/3
+                    Width: =150
                     ZIndex: =1
 
                 lblNoMatches_CurrentMatchesBuddies As label:
