@@ -13,7 +13,11 @@ Enables individual teammates to celebrate co-workers for their contributions. Th
 
 ### Employee Awards and Recognition
 
-The Awards and Recognition template streamlines and automates the process of acknowledging outstanding efforts in an organization. By facilitating an engaging, inclusive, and efficient awards system, the app aims to encourage a positive work culture that recognizes and appreciates exceptional contributions
+The Awards and Recognition template streamlines and automates the process of acknowledging outstanding efforts in an organization. By facilitating an engaging, inclusive, and efficient awards system, the app aims to encourage a positive work culture that recognizes and appreciates exceptional contributions.
+
+### Onboarding Buddy
+
+The Onboarding Buddy template helps your organization set up and automate a new or transfer employee's mentoring experience. Existing employees sign up to be onboarding buddies and are paired with folks that are onboarding to help them onboard and ramp up successfully. By implementing Onboarding Buddy and customizing it for their unique needs, organizations can create a more engaging, supportive, and efficient onboarding process, optimally leading to benefits such as: reduced time-to-be-productive, increased employee engagement, strengthened community and culture, and reduced turnover. 
 
 ## Access on AppSource
 
@@ -28,6 +32,8 @@ The Awards and Recognition template streamlines and automates the process of ack
 #### [Employee Kudos Template](https://aka.ms/LearnEmployeeKudosTemplate)
 
 #### [Employee Awards and Recognition](https://aka.ms/LearnAwardsAndRecognitionTemplate)
+
+#### [Onboarding Buddy](https://aka.ms/LearnOnboardingBuddyTemplate)
 
 #### [SAP Procurement Template](https://aka.ms/LearnSAPProcurementTemplate)
 
