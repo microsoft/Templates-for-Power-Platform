@@ -27,8 +27,6 @@ The Onboarding Buddy template helps your organization set up and automate a new 
 
 #### [Onboarding Buddy](https://aka.ms/AccessOnboardingBuddyTemplate)
 
-Note: Onboarding Buddy is currently being published to AppSource. In the meantime, the link above takes you to the 2 solution files on our Git repository that you can install manually.
-
 #### [SAP Procurement Template on AppSource](https://aka.ms/AccessSAPProcurementTemplate)
 
 ## Documentation
