@@ -1,0 +1,111 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "impersonation": {},
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_sharedcommondataserviceforapps_718d7"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_configurations_record_is_added_or_modified": {
+          "metadata": {
+            "operationMetadataId": "c06f3a22-a900-40f9-808c-1b6871356077"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "SubscribeWebhookTrigger"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 4,
+              "subscriptionRequest/entityname": "mpa_configuration",
+              "subscriptionRequest/scope": 4,
+              "subscriptionRequest/name": "1795f55b-7b17-ee11-8f6e-00224803a83a"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      },
+      "actions": {
+        "List_Onboarders": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "c80bee1d-54b7-488a-9760-5ce7704fd766"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "ListRecords"
+            },
+            "parameters": {
+              "entityName": "mpa_onboarderses",
+              "fetchXml": "<fetch version='1.0' output-format='xml-platform' mapping='logical' distinct='false'>\n<entity name='mpa_onboarders'>\n<attribute name='mpa_daysaftermatchtosendfirstnudge'/>\n<attribute name='mpa_dayspriortoendonmatchperiod'/>\n<filter type='and'>\n<condition attribute='statecode' operator='eq' value='0'/>\n<condition attribute='mpa_startdate' operator='not-null'/>\n<condition attribute='mpa_enddate' operator='not-null'/>\n</filter>\n<link-entity name='mpa_buddylist' from='mpa_assignedonboarder' to='mpa_onboardersid' link-type='inner' alias='ab'>\n<attribute name='mpa_buddylistid'/>\n<filter type='and'>\n<condition attribute='mpa_assignedonboarder' operator='not-null'/>\n</filter>\n</link-entity>\n</entity>\n</fetch>"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Apply_to_each": {
+          "foreach": "@outputs('List_Onboarders')?['body/value']",
+          "actions": {
+            "Update_Onboarder": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "fd8ec0cf-22cc-4504-ad96-8f3c13ad3d45"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "UpdateRecord"
+                },
+                "parameters": {
+                  "entityName": "mpa_onboarderses",
+                  "recordId": "@items('Apply_to_each')?['mpa_onboardersid']",
+                  "item/mpa_daysaftermatchtosendfirstnudge": "@triggerOutputs()?['body/mpa_daysaftermatchtosendfirstnudge']",
+                  "item/mpa_dayspriortoendonmatchperiod": "@triggerOutputs()?['body/mpa_dayspriortoendonmatchperiod']",
+                  "item/mpa_lengthofbuddymatch": "@triggerOutputs()?['body/mpa_lengthofbuddymatch']"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "runAfter": {
+            "List_Onboarders": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b0b89dcf-85ec-4ba5-96ef-bc3eed36db3b"
+          },
+          "type": "Foreach"
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

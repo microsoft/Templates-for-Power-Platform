@@ -1,0 +1,210 @@
+App As appinfo:
+    BackEnabled: =false
+    OnStart: |-
+        =Set(
+            varMobileFonts,
+            {
+                H1: {
+                    face: Font.'Segoe UI',
+                    size: 24,
+                    weight: FontWeight.Normal,
+                    weightBold: FontWeight.Semibold,
+                    italic: false
+                },
+                H2: {
+                    face: Font.'Segoe UI',
+                    size: 21,
+                    weight: FontWeight.Normal,
+                    weightBold: FontWeight.Semibold,
+                    italic: false
+                },
+                H3: {
+                    face: Font.'Segoe UI',
+                    size: 18,
+                    weight: FontWeight.Normal,
+                    weightBold: FontWeight.Semibold,
+                    italic: false
+                },
+                B1: {
+                    face: Font.'Segoe UI',
+                    size: 15,
+                    weight: FontWeight.Normal,
+                    weightBold: FontWeight.Semibold,
+                    italic: false
+                },
+                B2: {
+                    face: Font.'Segoe UI',
+                    size: 13,
+                    weight: FontWeight.Normal,
+                    weightBold: FontWeight.Semibold,
+                    italic: false
+                },
+                B3: {
+                    face: Font.'Segoe UI',
+                    size: 11,
+                    weight: FontWeight.Normal,
+                    weightBold: FontWeight.Semibold,
+                    italic: false
+                },
+                CTA: {
+                    face: Font.'Segoe UI',
+                    size: 15,
+                    weight: FontWeight.Semibold,
+                    italic: false
+                }
+            }
+        );
+        Set(
+            varThemeFont,
+            varMobileFonts
+            //varDesktopFonts
+        );
+        // set theme colors
+        Set(
+            varLightTheme,
+            {
+                name: "light",
+                background: "#FAF9F8",
+                backgroundFill: "#FFFFFF",
+                backgroundFillDisabled: "#F3F2F1",
+                text: "#201F1E",
+                altText: "#FFFFFF",
+                disabledText: "#A19F9D",
+                primary: "#6C47A7",
+                secondary: "#EFF6FC",
+                tertiary: "#BD8DE9",
+                primaryGray: "#8A8886",
+                secondaryGray: "#EDEBE9",
+                tertiaryGray: "#605E5C",
+                confirmation: "#107C10",
+                warning: "#FDE300",
+                error: "#A80000",
+                info: "#000000",
+                iconimg: LogoLight
+            }
+        );
+        Set(
+            varDarkTheme,
+            {
+                name: "dark",
+                background: "#201F1E",
+                backgroundFill: "#000000",
+                backgroundFillDisabled: "#323130",
+                text: "#FAF9F8",
+                altText: "#000000",
+                disabledText: "#A19F90",
+                primary: "#6C47A7",
+                secondary: "#004578",
+                tertiary: "#ECC5FF",
+                primaryGray: "#605E5C",
+                secondaryGray: "#323130",
+                tertiaryGray: "#E1DFDD",
+                confirmation: "#107c10",
+                warning: "#FDE300",
+                error: "#A80000",
+                info: "#FFFFFF",
+                iconimg: LogoLight
+            }
+        );
+        Set(
+            varContrastTheme,
+            {
+                name: "contrast",
+                background: "#000000",
+                backgroundFill: "#000000",
+                backgroundFillDisabled: "#6B6B6B",
+                text: "#FFFFFF",
+                altText: "#000000",
+                disabledText: "#FFFFFF",
+                primary: "#1AEBFF",
+                secondary: "#000000",
+                tertiary: "#FFFF00",
+                primaryGray: "#FFFFFF",
+                secondaryGray: "#6B6B6B",
+                tertiaryGray: "#FFFFFF",
+                confirmation: "#107c10",
+                warning: "#fde300",
+                error: "#A80000",
+                info: "#f00ed9",
+                iconimg: LogoDark
+            }
+        );
+        Set(
+            varThemeColors,
+            varLightTheme
+        );
+        //Lookup and set localized text, remove region 
+        Set(
+            varISOUserLanguageCode,//Get user's language and map to existing choice values that are supported by the 'EE Localizations' entity which can be customized to support more languages
+            Switch(
+                Left(
+                    Language(),
+                    2
+                ),
+                "ar",
+                'ISO EE Language Code'.ar,
+                "de",
+                'ISO EE Language Code'.de,
+                "en",
+                'ISO EE Language Code'.en,
+                "es",
+                'ISO EE Language Code'.es,
+                "fr",
+                'ISO EE Language Code'.fr,
+                "he",
+                'ISO EE Language Code'.he,
+                "it",
+                'ISO EE Language Code'.it,
+                "ja",
+                'ISO EE Language Code'.ja,
+                "pt",
+                'ISO EE Language Code'.pt,
+                "zh",
+                'ISO EE Language Code'.zh,
+                'ISO EE Language Code'.en
+            )
+        );
+        ClearCollect(
+            colUserLocalizedStrings,//Collection used to display localized value according to user's language value
+            Filter(
+                'Employee Experience Localizations',
+                Language = varISOUserLanguageCode,
+                'Employee Experience Localizations (Views)'.'Active EE Localizations'
+            )
+        );
+        //Get current user
+        Set(
+            varCurrentUser, 
+            User()
+        );
+        //Get Buddy record of current user
+        Set(
+            varCurrentBuddy,
+            LookUp(
+                'Buddy Lists',
+                Email = varCurrentUser.Email
+            )
+        );
+        //Get direct reports of current user
+        ClearCollect(
+            colDirectReports,
+            Office365Users.DirectReportsV2(varCurrentUser.Email).value
+        );
+        //If user has at least one direct report, they are a manager
+        If(
+            CountRows(colDirectReports) > 0,
+            Set(
+                varisManager,
+                true
+            )
+        )
+    StartScreen: ='FP Landing Screen'
+    Theme: =PowerAppsTheme
+
+    Host As hostControl.DefaultHostControlVariant:
+        OnCancel: =false
+        OnEdit: =false
+        OnNew: =false
+        OnSave: =false
+        OnView: =false
+
