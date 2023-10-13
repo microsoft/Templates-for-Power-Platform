@@ -1,10 +1,11 @@
-# Templates for Power Platform 
+# Templates for Power Platform
 
 Solutions designed to expedite the implementation of the Power Platform within large-scale enterprises.
 
 ## Currently Offered Solutions
 
 ### SAP Procurement
+
 This solution allows you to extend your core procure-to-pay business processes enabled within SAP. The accelerator contains the building blocks necessary to streamline all the SAP screens and attributes related to a core procure-to-pay process into one simple screen in Power Apps. The Power Apps are supported by further automation of processes behind the scenes using Power Automate flows, SAP ERP Connector and Microsoft Dataverse. These components are fully extensible to rapidly deploy and meet your business requirements including connecting into additional line of business systems and workflows.
 
 ### Employee Kudos
@@ -17,7 +18,7 @@ The Awards and Recognition template streamlines and automates the process of ack
 
 ### Onboarding Buddy
 
-The Onboarding Buddy template helps your organization set up and automate a new or transfer employee's mentoring experience. Existing employees sign up to be onboarding buddies and are paired with folks that are onboarding to help them onboard and ramp up successfully. By implementing Onboarding Buddy and customizing it for their unique needs, organizations can create a more engaging, supportive, and efficient onboarding process, optimally leading to benefits such as: reduced time-to-productivity, increased employee engagement, strengthened community and culture, and reduced turnover. 
+The Onboarding Buddy template helps your organization set up and automate a new or transfer employee's mentoring experience. Existing employees sign up to be onboarding buddies and are paired with folks that are onboarding to help them onboard and ramp up successfully. By implementing Onboarding Buddy and customizing it for their unique needs, organizations can create a more engaging, supportive, and efficient onboarding process, optimally leading to benefits such as: reduced time-to-productivity, increased employee engagement, strengthened community and culture, and reduced turnover.
 
 ## Access on AppSource
 
