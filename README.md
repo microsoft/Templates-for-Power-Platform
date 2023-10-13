@@ -5,6 +5,7 @@ Solutions designed to expedite the implementation of the Power Platform within l
 ## Currently Offered Solutions
 
 ### SAP Procurement
+
 The SAP Procurement template allows you to extend your core procure-to-pay business processes enabled within SAP. The template contains the building blocks necessary to streamline all the SAP screens and attributes related to a core procure-to-pay process into one simple screen in Power Apps. Behind the scenes, Power Automate flows, the SAP ERP connector, and Microsoft Dataverse support process automation. All solution components are fully extensible so you can configure and customize to meet your business requirements, connect to additional line-of-business systems and workflows, and rapidly deploy.
 
 ### Employee Kudos
@@ -17,7 +18,7 @@ The Awards and Recognition template contains the building blocks necessary to de
 
 ### Onboarding Buddy
 
-The Onboarding Buddy template contains the building blocks necessary to deploy a Power Apps mobile app that helps your organization set up and automate a new or transfer employee's mentoring experience. Existing employees sign up to be onboarding buddies and are paired with folks that are onboarding to help them onboard and ramp up successfully. By implementing Onboarding Buddy and customizing it for their unique needs, organizations can create a more engaging, supportive, and efficient onboarding process—optimally leading to benefits such as: reduced time-to-be-productive, increased employee engagement, strengthened community and culture, and reduced turnover. 
+The Onboarding Buddy template contains the building blocks necessary to deploy a Power Apps mobile app that helps your organization set up and automate a new or transfer employee's mentoring experience. Existing employees sign up to be onboarding buddies and are paired with folks that are onboarding to help them onboard and ramp up successfully. By implementing Onboarding Buddy and customizing it for their unique needs, organizations can create a more engaging, supportive, and efficient onboarding process—optimally leading to benefits such as: reduced time-to-productivity, increased employee engagement, strengthened community and culture, and reduced turnover. 
 
 ## Access on AppSource
 
