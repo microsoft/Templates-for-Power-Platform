@@ -5,7 +5,7 @@ Solutions designed to expedite the implementation of the Power Platform within l
 ## Currently Offered Solutions
 
 ### SAP Procurement
-The SAP Procurement template allows you to extend your core procure-to-pay business processes enabled within SAP. The template contains the building blocks necessary to streamline all the SAP screens and attributes related to a core procure-to-pay process into one simple screen in Power Apps. Behind the scenes, Power Automate flows, the SAP ERP connector, and Microsoft Dataverse support process automation. All soluiton components are fully extensible so you can configure and customize to meet your business requirements, connect to additional line-of-business systems and workflows, and rapidly deploy.
+The SAP Procurement template allows you to extend your core procure-to-pay business processes enabled within SAP. The template contains the building blocks necessary to streamline all the SAP screens and attributes related to a core procure-to-pay process into one simple screen in Power Apps. Behind the scenes, Power Automate flows, the SAP ERP connector, and Microsoft Dataverse support process automation. All solution components are fully extensible so you can configure and customize to meet your business requirements, connect to additional line-of-business systems and workflows, and rapidly deploy.
 
 ### Employee Kudos
 
