@@ -5,19 +5,19 @@ Solutions designed to expedite the implementation of the Power Platform within l
 ## Currently Offered Solutions
 
 ### SAP Procurement
-This solution allows you to extend your core procure-to-pay business processes enabled within SAP. The accelerator contains the building blocks necessary to streamline all the SAP screens and attributes related to a core procure-to-pay process into one simple screen in Power Apps. The Power Apps are supported by further automation of processes behind the scenes using Power Automate flows, SAP ERP Connector and Microsoft Dataverse. These components are fully extensible to rapidly deploy and meet your business requirements including connecting into additional line of business systems and workflows.
+The SAP Procurement template allows you to extend your core procure-to-pay business processes enabled within SAP. The template contains the building blocks necessary to streamline all the SAP screens and attributes related to a core procure-to-pay process into one simple screen in Power Apps. Behind the scenes, Power Automate flows, the SAP ERP connector, and Microsoft Dataverse support process automation. All solution components are fully extensible so you can configure and customize to meet your business requirements, connect to additional line-of-business systems and workflows, and rapidly deploy.
 
 ### Employee Kudos
 
-Enables individual teammates to celebrate co-workers for their contributions. There are many more exciting solutions on the roadmap such as Awards & Recognitions which enables employees to nominate individuals & teams for awards and Employee Onboarding which partners new employees with current employees and mentors to facilitate new employee onboarding, especially in a hybrid work environment. All with easy to use interface with data stored in Microsoft Dataverse. Available for both web and mobile devices.
+The Employee Kudos template contains the building blocks necessary to to deploy a Power Apps mobile app that allows individual teammates to celebrate coworkers for their contributions. The mobile app has an easy-to-use interface with data stored in Microsoft Dataverse.
 
 ### Employee Awards and Recognition
 
-The Awards and Recognition template streamlines and automates the process of acknowledging outstanding efforts in an organization. By facilitating an engaging, inclusive, and efficient awards system, the app aims to encourage a positive work culture that recognizes and appreciates exceptional contributions.
+The Awards and Recognition template contains the building blocks necessary to deploy a Power Apps mobile app that streamlines and automates the process of acknowledging outstanding efforts in an organization. By facilitating an engaging, inclusive, and efficient awards system, the app aims to encourage a positive work culture that recognizes and appreciates exceptional contributions.
 
 ### Onboarding Buddy
 
-The Onboarding Buddy template helps your organization set up and automate a new or transfer employee's mentoring experience. Existing employees sign up to be onboarding buddies and are paired with folks that are onboarding to help them onboard and ramp up successfully. By implementing Onboarding Buddy and customizing it for their unique needs, organizations can create a more engaging, supportive, and efficient onboarding process, optimally leading to benefits such as: reduced time-to-be-productive, increased employee engagement, strengthened community and culture, and reduced turnover. 
+The Onboarding Buddy template contains the building blocks necessary to deploy a Power Apps mobile app that helps your organization set up and automate a new or transfer employee's mentoring experience. Existing employees sign up to be onboarding buddies and are paired with folks that are onboarding to help them onboard and ramp up successfully. By implementing Onboarding Buddy and customizing it for their unique needs, organizations can create a more engaging, supportive, and efficient onboarding process—optimally leading to benefits such as: reduced time-to-be-productive, increased employee engagement, strengthened community and culture, and reduced turnover. 
 
 ## Access on AppSource
 
