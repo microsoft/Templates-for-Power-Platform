@@ -1,0 +1,1194 @@
+"'Device List Screen' As screen":
+    Fill: =ColorValue(varThemeColors.background)
+    ImagePosition: =ImagePosition.Fill
+    OnVisible: |
+        =//Build a local collection of products for given Product Type appending quantity column
+        /*ClearCollect(
+            colFilteredProducts,
+            AddColumns(
+                Filter(
+                    'Products',
+                    'Product Type'.'Product Type' = varSelectedProductType.'Product Type'
+                ),
+                "Qty",
+                0
+            )
+        );
+        */
+        ClearCollect(
+            colProductsSelectedQuantities,
+            Table(
+                {
+                    Product: GUID(),
+                    Quantity: 0
+                }
+            )
+        );
+        Clear(colProductsSelectedQuantities);
+        Reset(cmbProductListFilterBrand);
+        // clear combobox
+        Reset(cmbProductListFilterSubType);
+        // clear combobox
+        Reset(txtProductListSearch);
+        //Clear search  
+        Reset(galProductList)
+        //Reset product list gallery 
+
+    conProductList As groupContainer.verticalAutoLayoutContainer:
+        Fill: =ColorValue(varThemeColors.background)
+        Height: =App.Height-Self.Y
+        LayoutAlignItems: =LayoutAlignItems.Stretch
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutMode: =LayoutMode.Auto
+        LayoutWrap: =true
+        PaddingBottom: =20
+        PaddingLeft: =20
+        PaddingRight: |-
+            =Switch(App.ActiveScreen.Size,
+            5, App.Width - 1580,
+            4, 20,
+            3, 20,
+            2, 20,
+            1, 20
+            )
+        PaddingTop: =2
+        Width: =App.Width-Self.X
+        Y: =conProductListHeader.Y+conProductListHeader.Height
+        ZIndex: =2
+
+        "galProductList As gallery.'BrowseLayout_Vertical_ThreeTextVariant_ver5.0'":
+            AccessibleLabel: |-
+                =With(
+                    {Text: "Products"},
+                    If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text 
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colUserLocalizedStrings,
+                            'English Value' = Text 
+                        ).'Localized Value'
+                    )
+                )
+            AlignInContainer: =AlignInContainer.SetByContainer
+            BorderColor: =RGBA(166, 166, 166, 1)
+            DelayItemLoading: =true
+            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+            FocusedBorderThickness: =2
+            Height: =
+            ItemAccessibleLabel: =ThisItem.Name
+            Items: |-
+                =With(
+                    {
+                        _searchProducts: AddColumns(If(
+                            Len(txtProductListSearch.Text) >= 2,
+                            Search(
+                                Filter(
+                            Products,
+                            'Product Type'.'Product Type' = varSelectedProductType.'Product Type'
+                        ),
+                                txtProductListSearch.Text,
+                                "mpa_description",
+                                "mpa_manufacturer",
+                                "mpa_partnumber",
+                                "mpa_name",
+                                "mpa_modelnumber"
+                            ),
+                            Filter(
+                            Products,
+                            'Product Type'.'Product Type' = varSelectedProductType.'Product Type'
+                        )
+                        ),"_SubTypeName",'Product Subtype'.'Subtype Name')
+                    },
+                    Filter(
+                        _searchProducts,
+                        If(
+                            IsBlank(cmbProductListFilterBrand.Selected.Value),
+                            true,
+                            Manufacturer in cmbProductListFilterBrand.Selected.Value
+                        ),
+                        If(
+                            IsBlank(cmbProductListFilterSubType.Selected.Value),
+                            true,
+                            _SubTypeName in cmbProductListFilterSubType.Selected.Value
+                        )
+                    )
+                )
+            Layout: =Layout.Vertical
+            LayoutMinHeight: =287
+            LayoutMinWidth: =320
+            LoadingSpinner: =LoadingSpinner.Data
+            TabIndex: =0
+            TemplateFill: =ColorValue(varThemeColors.backgroundFill)
+            TemplatePadding: =30
+            TemplateSize: =400
+            Visible: =!IsEmpty(Self.AllItems)
+            Width: =Parent.Width
+            WrapCount: |-
+                =Switch(
+                    App.ActiveScreen.Size,
+                    ScreenSize.Small,
+                    1,
+                    ScreenSize.Medium,
+                    2,
+                    ScreenSize.Large,
+                    3,
+                    ScreenSize.ExtraLarge,
+                    4,
+                    4
+                )
+            ZIndex: =2
+
+            btnProductListAddToCart As button:
+                BorderColor: =ColorValue(varThemeColors.primary)
+                BorderThickness: =1
+                Color: =ColorValue(varThemeColors.primary)
+                DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                DisabledColor: =ColorValue(varThemeColors.disabledText)
+                DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                DisplayMode: =If(Value(txtProductListQuantity.Text) < 1 , DisplayMode.Disabled , DisplayMode.Edit)
+                Fill: =ColorValue(varThemeColors.backgroundFill)
+                FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                FocusedBorderThickness: =2
+                Font: =varThemeFont.CTA.face
+                FontWeight: =varThemeFont.CTA.weight
+                Height: =35
+                HoverBorderColor: =ColorValue(varThemeColors.primary)
+                HoverColor: =ColorValue(varThemeColors.altText)
+                HoverFill: =ColorValue(varThemeColors.tertiary)
+                Italic: =varThemeFont.CTA.italic
+                OnSelect: |-
+                    =If(
+                        ThisItem.Product in colProductsSelected.ProductID,
+                        Patch(
+                            colProductsSelected,
+                            First(
+                                Filter(
+                                    colProductsSelected,
+                                    ProductID = ThisItem.Product
+                                )
+                            ),
+                            {
+                                ProductQty: LookUp(
+                                    colProductsSelectedQuantities,
+                                    Product = ThisItem.Product
+                                ).Quantity
+                            }
+                        ),
+                        Collect(
+                            colProductsSelected,
+                            {
+                                ProductName: ThisItem.Name,
+                                ProductID: ThisItem.Product,
+                                ProductType: ThisItem.'Product Type',
+                                ProductPrice: ThisItem.'Default Price',
+                                ProductQty: LookUp(
+                                    colProductsSelectedQuantities,
+                                    Product = ThisItem.Product
+                                ).Quantity,
+                                ProductPartNumber: ThisItem.'Part Number',
+                                ProductModelNumber: ThisItem.'Model Number',
+                                ProductImage: ThisItem.Image,
+                                ProductCurrency: ThisItem.Currency
+                            }
+                        )
+                    );
+                    Notify(
+                        With(
+                            {Text: "Items added to cart"},
+                            If(
+                            // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                            // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        ),
+                        NotificationType.Success,
+                        2000
+                    )
+                PaddingLeft: =10
+                PressedBorderColor: =ColorValue(varThemeColors.primary)
+                PressedColor: =ColorValue(varThemeColors.altText)
+                PressedFill: =ColorValue(varThemeColors.primary)
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Size: =varThemeFont.CTA.size
+                Text: |-
+                    =With(
+                        {Text: "Add to cart"},
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text 
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text 
+                            ).'Localized Value'
+                        )
+                    )
+                Tooltip: =Self.Text
+                Width: =Parent.TemplateWidth
+                Y: =Parent.TemplateHeight - Self.Height
+                ZIndex: =1
+
+            lblProductListPrice As label:
+                Color: =ColorValue(varThemeColors.text)
+                DisabledColor: =ColorValue(varThemeColors.text)
+                FocusedBorderThickness: =4
+                Font: =varThemeFont.B1.face
+                FontWeight: =varThemeFont.B1.weight
+                Height: =30
+                HoverColor: =ColorValue(varThemeColors.text)
+                Italic: =varThemeFont.B1.italic
+                OnSelect: =
+                PaddingBottom: =0
+                PaddingLeft: =10
+                PaddingRight: =0
+                PaddingTop: =0
+                PressedColor: =ColorValue(varThemeColors.text)
+                Size: =varThemeFont.B1.size
+                Text: |-
+                    =ThisItem.Currency.'Currency Symbol' & " " & Text(
+                        ThisItem.'Default Price',
+                        "#,###.00"
+                    )
+                Tooltip: =Self.Text
+                Width: =100
+                Y: =btnProductListAddToCart.Y - Self. Height - 15
+                ZIndex: =2
+
+            btnProductListSubtractQuantity As button:
+                BorderColor: =ColorValue(varThemeColors.primaryGray)
+                BorderThickness: =0
+                Color: =ColorValue(varThemeColors.text)
+                DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                DisabledColor: =ColorValue(varThemeColors.disabledText)
+                DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                Fill: =ColorValue(varThemeColors.backgroundFill)
+                FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                FocusedBorderThickness: =2
+                Font: =varThemeFont.H3.face
+                FontWeight: =varThemeFont.H3.weight
+                Height: =lblProductListPrice.Height
+                HoverBorderColor: =ColorValue(varThemeColors.primary)
+                HoverColor: =ColorValue(varThemeColors.altText)
+                HoverFill: =ColorValue(varThemeColors.tertiary)
+                Italic: =varThemeFont.H3.italic
+                OnSelect: |-
+                    =If(
+                        Value(txtProductListQuantity.Text) > 0,
+                        Patch(
+                            colProductsSelectedQuantities,
+                            Coalesce(
+                                LookUp(
+                                    colProductsSelectedQuantities,
+                                    Product = ThisItem.Product
+                                ),
+                                Defaults(colProductsSelectedQuantities)
+                            ),
+                            {
+                                Quantity: Value(txtProductListQuantity.Text) - 1,
+                                Product: ThisItem.Product
+                            }
+                        )
+                    );
+                    SetFocus(Self)
+                PaddingBottom: =10
+                PressedBorderColor: =ColorValue(varThemeColors.primary)
+                PressedColor: =ColorValue(varThemeColors.altText)
+                PressedFill: =ColorValue(varThemeColors.primary)
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Size: =varThemeFont.H3.size
+                Text: |-
+                    =With(
+                        {Text: "-"},
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text 
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text 
+                            ).'Localized Value'
+                        )
+                    )
+                Tooltip: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {Text: "Decrease quantity"},
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text 
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text 
+                            ).'Localized Value'
+                        )
+                    )
+                Width: =30
+                X: =txtProductListQuantity.X - Self.Width - Self.FocusedBorderThickness
+                Y: =lblProductListPrice.Y
+                ZIndex: =3
+
+            txtProductListQuantity As text:
+                AccessibleLabel: |-
+                    =With(
+                        {Text: "Quantity of products"},
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text 
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text 
+                            ).'Localized Value'
+                        )
+                    )
+                Align: =Align.Center
+                BorderColor: =ColorValue(varThemeColors.primaryGray)
+                BorderThickness: =1
+                Color: =ColorValue(varThemeColors.text)
+                Default: |-
+                    =Coalesce(
+                        LookUp(
+                            colProductsSelectedQuantities,
+                            Product = ThisItem.Product
+                        ).Quantity,
+                        0
+                    )
+                DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+                DisabledColor: =ColorValue(varThemeColors.disabledText)
+                DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                Fill: =ColorValue(varThemeColors.backgroundFill)
+                FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                FocusedBorderThickness: =2
+                Font: =varThemeFont.B1.face
+                FontWeight: =varThemeFont.B1.weight
+                Height: =lblProductListPrice.Height
+                HintText: |-
+                    =With(
+                        {Text: "0"},
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text 
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text 
+                            ).'Localized Value'
+                        )
+                    )
+                HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                HoverColor: =ColorValue(varThemeColors.text)
+                HoverFill: =ColorValue(varThemeColors.backgroundFill)
+                Italic: =varThemeFont.B1.italic
+                OnChange: |-
+                    =Patch(
+                        colProductsSelectedQuantities,
+                        Coalesce(
+                            LookUp(
+                                colProductsSelectedQuantities,
+                                Product = ThisItem.Product
+                            ),
+                            Defaults(colProductsSelectedQuantities)
+                        ),
+                        {
+                            Quantity: Value(Self.Text),
+                            Product: ThisItem.Product
+                        }
+                    );
+                    SetFocus(Self)
+                PaddingBottom: =0
+                PaddingLeft: =0
+                PaddingRight: =0
+                PaddingTop: =0
+                PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                PressedColor: =ColorValue(varThemeColors.text)
+                PressedFill: =ColorValue(varThemeColors.backgroundFill)
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Size: =varThemeFont.B1.size
+                Tooltip: =Self.Text
+                Width: =30
+                X: =btnProductListAddQuantity.X-Self.Width-Self.FocusedBorderThickness
+                Y: =lblProductListPrice.Y
+                ZIndex: =4
+
+            btnProductListAddQuantity As button:
+                BorderColor: =ColorValue(varThemeColors.primaryGray)
+                BorderThickness: =0
+                Color: =ColorValue(varThemeColors.text)
+                DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                DisabledColor: =ColorValue(varThemeColors.disabledText)
+                DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                Fill: =ColorValue(varThemeColors.backgroundFill)
+                FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                FocusedBorderThickness: =2
+                Font: =varThemeFont.H3.face
+                FontWeight: =varThemeFont.H3.weight
+                Height: =lblProductListPrice.Height
+                HoverBorderColor: =ColorValue(varThemeColors.primary)
+                HoverColor: =ColorValue(varThemeColors.altText)
+                HoverFill: =ColorValue(varThemeColors.tertiary)
+                Italic: =varThemeFont.H3.italic
+                OnSelect: |-
+                    =Patch(
+                        colProductsSelectedQuantities,
+                        Coalesce(
+                            LookUp(
+                                colProductsSelectedQuantities,
+                                Product = ThisItem.Product
+                            ),
+                            Defaults(colProductsSelectedQuantities)
+                        ),
+                        {
+                            Quantity: Value(txtProductListQuantity.Text) + 1,
+                            Product: ThisItem.Product
+                        }
+                    );
+                    SetFocus(Self)
+                PaddingBottom: =10
+                PressedBorderColor: =ColorValue(varThemeColors.primary)
+                PressedColor: =ColorValue(varThemeColors.altText)
+                PressedFill: =ColorValue(varThemeColors.primary)
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Size: =varThemeFont.H3.size
+                Text: |-
+                    =With(
+                        {Text: "+"},
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text 
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text 
+                            ).'Localized Value'
+                        )
+                    )
+                Tooltip: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {Text: "Increase quantity"},
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text 
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text 
+                            ).'Localized Value'
+                        )
+                    )
+                Width: =30
+                X: =Parent.TemplateWidth-Self.Width-5
+                Y: =lblProductListPrice.Y
+                ZIndex: =5
+
+            lblProductListManufacturer As label:
+                AutoHeight: =true
+                Color: =ColorValue(varThemeColors.text)
+                DisabledColor: =ColorValue(varThemeColors.text)
+                FocusedBorderThickness: =4
+                Font: =varThemeFont.B1.face
+                FontWeight: =varThemeFont.B1.weight
+                Height: =lblProductListDetails.Height - 30
+                HoverColor: =ColorValue(varThemeColors.text)
+                Italic: =varThemeFont.B1.italic
+                OnSelect: =
+                PaddingBottom: =0
+                PaddingLeft: =10
+                PaddingRight: =0
+                PaddingTop: =0
+                PressedColor: =ColorValue(varThemeColors.text)
+                Size: =varThemeFont.B1.size
+                Text: =ThisItem.Manufacturer
+                Tooltip: =Self.Text
+                Width: =Parent.TemplateWidth
+                Y: =lblProductListPrice.Y - Self.Height - 15
+                ZIndex: =6
+
+            lblProductListPartNumber As label:
+                AutoHeight: =true
+                Color: =ColorValue(varThemeColors.tertiaryGray)
+                DisabledColor: =ColorValue(varThemeColors.text)
+                FocusedBorderThickness: =4
+                Font: =varThemeFont.B3.face
+                Height: =25
+                HoverColor: =ColorValue(varThemeColors.text)
+                Italic: =varThemeFont.B3.italic
+                OnSelect: =
+                PaddingBottom: =0
+                PaddingLeft: =10
+                PaddingRight: =0
+                PaddingTop: =0
+                PressedColor: =ColorValue(varThemeColors.text)
+                Size: =9
+                Text: =ThisItem.Description
+                Width: =Parent.TemplateWidth
+                Y: =lblProductListDetails.Y + lblProductListDetails.Height + 10
+                ZIndex: =8
+
+            lblProductListDetails As label:
+                AutoHeight: =true
+                Color: =ColorValue(varThemeColors.primary)
+                DisabledColor: =ColorValue(varThemeColors.text)
+                FocusedBorderThickness: =4
+                Font: =varThemeFont.H3.face
+                FontWeight: =varThemeFont.H3.weight
+                Height: =
+                Italic: =varThemeFont.H3.italic
+                OnSelect: =
+                PaddingLeft: =10
+                PaddingRight: =10
+                PressedColor: =ColorValue(varThemeColors.text)
+                Size: =varThemeFont.H3.size
+                Text: =ThisItem.Name
+                VerticalAlign: =VerticalAlign.Top
+                Width: =Parent.TemplateWidth
+                Y: =imgProductList.Y + imgProductList.Height + 10
+                ZIndex: =9
+
+            btnProductListDetails As button:
+                Align: =Align.Left
+                BorderColor: =ColorValue(varThemeColors.primary)
+                BorderThickness: =0
+                Color: =ColorValue(varThemeColors.primary)
+                Fill: =Color.Transparent
+                FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                FocusedBorderThickness: =2
+                Font: =varThemeFont.B2.face
+                FontWeight: =varThemeFont.B2.weight
+                Height: =lblProductListDetails.Height
+                HoverColor: =ColorValue(varThemeColors.primary)
+                HoverFill: =Color.Transparent
+                Italic: =varThemeFont.B2.italic
+                OnSelect: =Launch(ThisItem.'Product Details Link')
+                PaddingLeft: =10
+                PaddingRight: =10
+                PressedColor: =ColorValue(varThemeColors.primary)
+                PressedFill: =Color.Transparent
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Size: =varThemeFont.B2.size
+                Text: =
+                Tooltip: =lblProductListDetails.Text
+                Underline: =true
+                Width: =Parent.TemplateWidth
+                Y: =lblProductListDetails.Y
+                ZIndex: =10
+
+            imgProductList As image:
+                AccessibleLabel: |-
+                    =With(
+                        {Text: "Product image"},
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text 
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text 
+                            ).'Localized Value'
+                        )
+                    ) & " " & ThisItem.Name
+                DisplayMode: =DisplayMode.View
+                Image: |-
+                    =If(
+                        IsBlank(ThisItem.Image.Full),
+                        'no-image',
+                        ThisItem.Image.Full
+                    )
+                ImagePosition: =If(IsBlank(ThisItem.Image.Full) , ImagePosition.Fit , ImagePosition.Fill)
+                OnSelect: =
+                PaddingBottom: =5
+                PaddingLeft: =5
+                PaddingRight: =5
+                PaddingTop: =5
+                X: =(Parent.TemplateWidth-Self.Width)/2
+                Y: =Parent.Y
+                ZIndex: =11
+
+        lblProductListNoItems As label:
+            Align: =Align.Center
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =ColorValue(varThemeColors.tertiaryGray)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            Fill: |-
+                =If(
+                    varThemeColors.name = "contrast",
+                    ColorValue(varThemeColors.secondaryGray),
+                    ColorValue(varThemeColors.backgroundFill)
+                )
+            FillPortions: =1
+            FocusedBorderColor: =ColorValue(varThemeColors.info)
+            FocusedBorderThickness: =4
+            Font: =varThemeFont.H3.face
+            FontWeight: =varThemeFont.H3.weight
+            Height: =Self.Size *2.5
+            Italic: =varThemeFont.H3.italic
+            Live: =Live.Assertive
+            PaddingBottom: =0
+            PaddingLeft: =10
+            PaddingTop: =0
+            Role: =TextRole.Heading1
+            Size: =varThemeFont.H3.size
+            Text: |
+                =// Define a variable named "Text" with the value "{value}"
+                With(
+                    {Text: "No items" },
+                    // Check if a localized text exists for "Text" in the user's preferred language
+                    If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text 
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colUserLocalizedStrings,
+                            'English Value' = Text 
+                        ).'Localized Value'
+                    )
+                )
+            Visible: =!galProductList.Visible
+            Width: =(Parent.Width - Parent.PaddingLeft - Parent.PaddingRight)
+            X: =20
+            Y: =20
+            ZIndex: =4
+
+    conProductListHeader As groupContainer.horizontalAutoLayoutContainer:
+        DropShadow: =DropShadow.None
+        Height: |-
+            =With(
+                {_baseHeight: 50},
+                Switch(
+                    App.ActiveScreen.Size,
+                    ScreenSize.Small,
+                    3 * _baseHeight,
+                    ScreenSize.Medium,
+                    2 * _baseHeight,
+                    ScreenSize.Large,
+                    2*_baseHeight,
+                    ScreenSize.ExtraLarge,
+                    lblProductListHeader.Height
+                )
+            )
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutGap: =10
+        LayoutJustifyContent: |-
+            =If(
+                Self.Height > lblProductListHeader.Height,
+                LayoutJustifyContent.Start,
+                LayoutJustifyContent.End
+            )
+        LayoutMode: =LayoutMode.Auto
+        LayoutWrap: =true
+        PaddingLeft: =45
+        PaddingRight: =45
+        Width: =App.Width-Self.X
+        X: |-
+            =If(
+                Self.Height > 90,
+                0,
+                lblProductListHeader.X + lblProductListHeader.Width
+            )
+        Y: |-
+            =If(
+                Self.X = 0,
+                lblProductListHeader.Y + lblProductListHeader.Height,
+                cmpProductListHeader.Height
+            )
+        ZIndex: =3
+
+        cmbProductListFilterBrand As combobox:
+            AccessibleLabel: |-
+                =With(
+                    {Text: "Filter brand"},
+                    If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text 
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colUserLocalizedStrings,
+                            'English Value' = Text 
+                        ).'Localized Value'
+                    )
+                )
+            BorderColor: =ColorValue(varThemeColors.primaryGray)
+            BorderThickness: =1
+            ChevronBackground: =ColorValue(varThemeColors.backgroundFill)
+            ChevronDisabledBackground: =ColorValue(varThemeColors.backgroundFillDisabled)
+            ChevronDisabledFill: |
+                =ColorValue(varThemeColors.text)
+            ChevronFill: =ColorValue(varThemeColors.text)
+            ChevronHoverBackground: =ColorValue(varThemeColors.secondaryGray)
+            ChevronHoverFill: |
+                =ColorValue(varThemeColors.text)
+            Color: =ColorValue(varThemeColors.text)
+            DefaultSelectedItems: =
+            DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+            DisabledColor: =ColorValue(varThemeColors.disabledText)
+            DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+            DisplayFields: =["Value"]
+            Fill: =ColorValue(varThemeColors.backgroundFill)
+            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+            FocusedBorderThickness: =2
+            Font: =varThemeFont.B1.face
+            FontWeight: =varThemeFont.B1.weight
+            HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+            HoverColor: =ColorValue(varThemeColors.text)
+            HoverFill: =ColorValue(varThemeColors.secondaryGray)
+            InputTextPlaceholder: |-
+                =With(
+                    {Text: "Filter brand"},
+                    If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text 
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colUserLocalizedStrings,
+                            'English Value' = Text 
+                        ).'Localized Value'
+                    )
+                )
+            IsSearchable: =false
+            Italic: =varThemeFont.B1.italic
+            Items: |-
+                =Sort(
+                    Distinct(
+                        If(
+                            Len(txtProductListSearch.Text) >= 2,
+                            Search(
+                                Filter(
+                                    Products,
+                                    'Product Type'.'Product Type' = varSelectedProductType.'Product Type'
+                                ),
+                                txtProductListSearch.Text,
+                                "mpa_description",
+                                "mpa_manufacturer",
+                                "mpa_partnumber",
+                                "mpa_name",
+                                "mpa_modelnumber"
+                            ),
+                            Filter(
+                                Products,
+                                'Product Type'.'Product Type' = varSelectedProductType.'Product Type'
+                            )
+                        ),
+                        Manufacturer
+                    ),
+                    Value
+                )
+            NoSelectionText: |-
+                =With(
+                    {Text: "Filter brand"},
+                    If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text 
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colUserLocalizedStrings,
+                            'English Value' = Text 
+                        ).'Localized Value'
+                    )
+                )
+            PaddingLeft: =12
+            PaddingRight: =10
+            PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+            PressedColor: =ColorValue(varThemeColors.altText)
+            PressedFill: =ColorValue(varThemeColors.backgroundFill)
+            SearchFields: =["Value"]
+            SearchItems: =[]
+            SelectionColor: =ColorValue(varThemeColors.text)
+            SelectionFill: =ColorValue(varThemeColors.secondaryGray)
+            SelectionTagColor: =ColorValue(varThemeColors.altText)
+            SelectionTagFill: =ColorValue(varThemeColors.tertiary)
+            Size: =varThemeFont.B1.size
+            Tooltip: |-
+                =Coalesce(
+                    Self.Selected.Value,
+                    With(
+                        {Text: "Filter brand"},
+                        If(
+                        // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                        // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                )
+            Width: =250
+            X: =cmbProductListFilterSubType.X - Self.Width - 10
+            Y: =30
+            ZIndex: =2
+
+        cmbProductListFilterSubType As combobox:
+            AccessibleLabel: |-
+                =With(
+                    {Text: "Filter Subtype"},
+                    If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text 
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colUserLocalizedStrings,
+                            'English Value' = Text 
+                        ).'Localized Value'
+                    )
+                )
+            BorderColor: =ColorValue(varThemeColors.primaryGray)
+            BorderThickness: =1
+            ChevronBackground: =ColorValue(varThemeColors.backgroundFill)
+            ChevronDisabledBackground: =ColorValue(varThemeColors.backgroundFillDisabled)
+            ChevronDisabledFill: |
+                =ColorValue(varThemeColors.text)
+            ChevronFill: =ColorValue(varThemeColors.text)
+            ChevronHoverBackground: =ColorValue(varThemeColors.secondaryGray)
+            ChevronHoverFill: |
+                =ColorValue(varThemeColors.text)
+            Color: =ColorValue(varThemeColors.text)
+            DefaultSelectedItems: =
+            DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+            DisabledColor: =ColorValue(varThemeColors.disabledText)
+            DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+            DisplayFields: =["Value"]
+            Fill: =ColorValue(varThemeColors.backgroundFill)
+            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+            FocusedBorderThickness: =2
+            Font: =varThemeFont.B1.face
+            FontWeight: =varThemeFont.B1.weight
+            HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+            HoverColor: =ColorValue(varThemeColors.text)
+            HoverFill: =ColorValue(varThemeColors.secondaryGray)
+            InputTextPlaceholder: |-
+                =With(
+                    {Text: "Device Type"},
+                    If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text 
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colUserLocalizedStrings,
+                            'English Value' = Text 
+                        ).'Localized Value'
+                    )
+                )
+            IsSearchable: =false
+            Italic: =varThemeFont.B1.italic
+            Items: |-
+                =Sort(
+                    Distinct(
+                        If(
+                            Len(txtProductListSearch.Text) >= 2,
+                            Search(
+                                Filter(
+                                    Products,
+                                    'Product Type'.'Product Type' = varSelectedProductType.'Product Type'
+                                ),
+                                txtProductListSearch.Text,
+                                "mpa_description",
+                                "mpa_manufacturer",
+                                "mpa_partnumber",
+                                "mpa_name",
+                                "mpa_modelnumber"
+                            ),
+                            Filter(
+                                Products,
+                                'Product Type'.'Product Type' = varSelectedProductType.'Product Type'
+                            )
+                        ),
+                        'Product Subtype'.'Subtype Name'
+                    ),
+                    Value
+                )
+            NoSelectionText: |-
+                =With(
+                    {Text: "Filter Subtype"},
+                    If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text 
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colUserLocalizedStrings,
+                            'English Value' = Text 
+                        ).'Localized Value'
+                    )
+                )
+            PaddingLeft: =12
+            PaddingRight: =10
+            PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+            PressedColor: =ColorValue(varThemeColors.altText)
+            PressedFill: =ColorValue(varThemeColors.backgroundFill)
+            SearchFields: =["Value"]
+            SearchItems: =[]
+            SelectionColor: =ColorValue(varThemeColors.text)
+            SelectionFill: =ColorValue(varThemeColors.secondaryGray)
+            SelectionTagColor: =ColorValue(varThemeColors.altText)
+            SelectionTagFill: =ColorValue(varThemeColors.tertiary)
+            Size: =varThemeFont.B1.size
+            Tooltip: |-
+                =Coalesce(
+                    Self.Selected.Value,
+                    With(
+                        {Text: "Filter Subtype"},
+                        If(
+                        // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                        // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                )
+            Width: =250
+            X: =416
+            Y: =30
+            ZIndex: =3
+
+        txtProductListSearch As text:
+            AccessibleLabel: |-
+                =With(
+                    {Text: "Search devices"},
+                    If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text 
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colUserLocalizedStrings,
+                            'English Value' = Text 
+                        ).'Localized Value'
+                    )
+                )
+            BorderColor: =ColorValue(varThemeColors.primaryGray)
+            BorderThickness: =1
+            Clear: =true
+            Color: =ColorValue(varThemeColors.text)
+            Default: =_searchText
+            DelayOutput: =true
+            DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+            DisabledColor: =ColorValue(varThemeColors.disabledText)
+            DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+            Fill: =ColorValue(varThemeColors.backgroundFill)
+            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+            FocusedBorderThickness: =2
+            Font: =varThemeFont.B1.face
+            FontWeight: =varThemeFont.B1.weight
+            HintText: =Self.AccessibleLabel
+            HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+            HoverColor: =ColorValue(varThemeColors.text)
+            HoverFill: =ColorValue(varThemeColors.backgroundFill)
+            Italic: =varThemeFont.B1.italic
+            OnChange: =
+            PaddingLeft: =15
+            PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+            PressedColor: =ColorValue(varThemeColors.text)
+            PressedFill: =ColorValue(varThemeColors.backgroundFill)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Size: =varThemeFont.B1.size
+            Tooltip: |-
+                =Coalesce(
+                    Self.Text,
+                    Self.HintText
+                )
+            Width: =250
+            X: =
+            Y: =(Parent.Height-Self.Height)/2
+            ZIndex: =4
+
+    lblProductListHeader As label:
+        BorderColor: =RGBA(0, 0, 0, 0)
+        BorderStyle: =BorderStyle.None
+        BorderThickness: =2
+        Color: =ColorValue(varThemeColors.text)
+        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+        Fill: =RGBA(0,0,0,0)
+        FocusedBorderColor: =ColorValue(varThemeColors.info)
+        FocusedBorderThickness: =4
+        Font: =varThemeFont.H1.face
+        FontWeight: =varThemeFont.H1.weight
+        Height: =90
+        Italic: =varThemeFont.H1.italic
+        PaddingLeft: =45
+        Role: =TextRole.Heading1
+        Size: |
+            =varThemeFont.H1.size
+        Text: |-
+            =// Define a variable named "Text" with the value "{value}"
+            With(
+                {Text: varSelectedProductType.Name},
+                // Check if a localized text exists for "Text" in the user's preferred language
+                If(
+                    // If the localized text is blank, return the default text
+                    IsBlank(
+                        LookUp(
+                            colUserLocalizedStrings,
+                            'English Value' = Text 
+                        ).'Localized Value'
+                    ),
+                    Text,
+                    // If a localized text is found, return that instead of the default text
+                    LookUp(
+                        colUserLocalizedStrings,
+                        'English Value' = Text 
+                    ).'Localized Value'
+                )
+            )
+        Width: =400
+        Wrap: =false
+        Y: =cmpProductListHeader.Height
+        ZIndex: =4
+
+    cmpProductListHeader As cmpHeader:
+        HeaderWidth: =Parent.Width
+        Height: =cmpProductListHeader.HeaderHeight
+        MyCart: ='Request Details Screen'
+        SettingsPageScreen: ='Settings Screen'
+        Width: =Parent.Width
+        ZIndex: =5
+

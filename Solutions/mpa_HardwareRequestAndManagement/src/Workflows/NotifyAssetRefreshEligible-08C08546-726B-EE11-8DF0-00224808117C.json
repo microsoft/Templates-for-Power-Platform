@@ -1,0 +1,361 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_HardwareRequestAndManagementDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      },
+      "shared_office365": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_HardwareRequestAndManagementOffice365Outlook"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "Hardware Request App URL (mpa_HardwareRequestAppURL)": {
+          "defaultValue": "https://apps.powerapps.com/play/e/eeaa0e43-89e2-e04a-b9b3-eba854640e09/a/d738957b-cd2b-4b09-9f46-da1af634515a?tenantId=fe2dcd3b-6648-414a-8c8e-8761944769ce&hint=797af261-6a59-48f7-a8cd-76686b5cbcb0&sourcetime=1696528616029",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_HardwareRequestAppURL",
+            "description": "Environment Variable for Asset Management"
+          }
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "recurrence": {
+            "frequency": "Week",
+            "interval": 1,
+            "schedule": {
+              "weekDays": [
+                "Monday"
+              ],
+              "hours": [
+                "8"
+              ]
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "237916e9-d2f4-40d0-9a8f-0890eb4477c9"
+          },
+          "type": "Recurrence"
+        }
+      },
+      "actions": {
+        "Try": {
+          "actions": {
+            "Compose_-_CSS_Table_Style": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "ad7ea4c4-31a7-49f7-b5c0-2c5a0f959cd0"
+              },
+              "type": "Compose",
+              "inputs": "<style>\nTable {\n  font-family: Arial, Helvetica, sans-serif;\n  background-color: #EEEEEE;\n  border-collapse: collapse;\n  width: 100%;\n}\n\nTable td, Table th {\n  border: 1px solid #ddd;\n  padding: 3px 3px;\n}\n\nTable th {\n  font-size: 15px;\n  font-weight: bold;\n  padding-top: 12px;\n  padding-bottom: 12px;\n  text-align: left;\n  background-color: #1C6EA4;\n  color: white;\n}\n</style>"
+            },
+            "Compose_-_href": {
+              "runAfter": {
+                "Compose_-_CSS_Table_Style": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "583add5f-9c8a-4e0b-80b7-d6aeca8cbbb3"
+              },
+              "type": "Compose",
+              "inputs": "@concat('<a href=\"',parameters('Hardware Request App URL (mpa_HardwareRequestAppURL)'),'\">here</a>')"
+            },
+            "Get_Refresh_Eligible_Assets": {
+              "runAfter": {
+                "Compose_-_href": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "d1fa2155-6f8d-4086-9d1d-94ba7a594c0d"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "ListRecords",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_assets",
+                  "$filter": " mpa_refresheligibleon lt '@{utcNow()}' and mpa_refresheligiblenotificationsenton eq null and mpa_assettatus eq 865420001"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Compose_-_Distinct_Owners": {
+              "runAfter": {
+                "Select_-_Owners": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "a999fae5-3f65-4ad8-9749-9b241b5e6d6d"
+              },
+              "type": "Compose",
+              "inputs": "@union(body('Select_-_Owners'),body('Select_-_Owners'))"
+            },
+            "Select_-_Owners": {
+              "runAfter": {
+                "Get_Refresh_Eligible_Assets": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "aa0967ca-599d-4cc6-beb9-5eec6c86a12e"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@outputs('Get_Refresh_Eligible_Assets')?['body/value']",
+                "select": {
+                  "Asset Owner": "@item()?['_ownerid_value']"
+                }
+              }
+            },
+            "Apply_to_each_-_Distinct_Owner": {
+              "foreach": "@outputs('Compose_-_Distinct_Owners')",
+              "actions": {
+                "Filter_array_-_Assets_For_Owner": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "eef057f9-f3c4-40ff-8bf2-bfa5f5dce805"
+                  },
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@outputs('Get_Refresh_Eligible_Assets')?['body/value']",
+                    "where": "@equals(items('Apply_to_each_-_Distinct_Owner')?['Asset Owner'], item()?['_ownerid_value'])"
+                  }
+                },
+                "Select_-_Owner_Assets": {
+                  "runAfter": {
+                    "Filter_array_-_Assets_For_Owner": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "8e7a304f-69fc-4286-8ec5-75f070466ece"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Filter_array_-_Assets_For_Owner')",
+                    "select": {
+                      "Asset Number": "@body('Filter_array_-_Assets_For_Owner')[0]['mpa_assetnumber']",
+                      "Name": "@body('Filter_array_-_Assets_For_Owner')[0]['mpa_name']",
+                      "Delivered On": "@formatDateTime(parseDateTime(body('Filter_array_-_Assets_For_Owner')[0]['mpa_deliveredon']),'MM/dd/yyyy','en-US')",
+                      "Refresh Eligible On": "@formatDateTime(parseDateTime(body('Filter_array_-_Assets_For_Owner')[0]['mpa_refresheligibleon']),'MM/dd/yyyy','en-US')"
+                    }
+                  }
+                },
+                "Create_HTML_table_-_Assets": {
+                  "runAfter": {
+                    "Select_-_Owner_Assets": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "a904cf67-7254-44d2-ad6e-af1b2c744bd2"
+                  },
+                  "type": "Table",
+                  "inputs": {
+                    "from": "@body('Select_-_Owner_Assets')",
+                    "format": "HTML"
+                  }
+                },
+                "Send_an_email_-_Assets": {
+                  "runAfter": {
+                    "Get_Owner": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "b4ed978d-b939-4267-91e3-b813c9ac7881"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@outputs('Get_Owner')?['body/domainname']",
+                      "emailMessage/Subject": "You have hardware assets that are eligible for a refresh",
+                      "emailMessage/Body": "<p>One or more of your hardware assets summarized below that are in within your possession are eligible for a refresh. Please access the hardware request application @{outputs('Compose_-_href')} to request a new device.<br>\n<br>\n<strong>Refresh Eligible Assets</strong><br>\n@{outputs('Compose_-_CSS_Table_Style')}@{body('Create_HTML_table_-_Assets')}<br>\n<br>\n</p>",
+                      "emailMessage/Importance": "Normal"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Apply_to_each_-_Asset": {
+                  "foreach": "@body('Filter_array_-_Assets_For_Owner')",
+                  "actions": {
+                    "Update_a_row": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "8889dc80-8ee7-47f1-af73-297fae5388da"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps_1",
+                          "operationId": "UpdateRecord",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "mpa_assets",
+                          "recordId": "@body('Filter_array_-_Assets_For_Owner')[0]['mpa_assetnumber']",
+                          "item/mpa_assettatus": 865420003,
+                          "item/mpa_refresheligiblenotificationsenton": "@utcNow()"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Send_an_email_-_Assets": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "d498b294-6f13-4c30-a15c-5c08d29de505"
+                  },
+                  "type": "Foreach"
+                },
+                "Get_Owner": {
+                  "runAfter": {
+                    "Create_HTML_table_-_Assets": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "73c13dcf-3253-4741-abb8-2436517bc0bb"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "GetItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "systemusers",
+                      "recordId": "@items('Apply_to_each_-_Distinct_Owner')?['Asset Owner']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Compose_-_Distinct_Owners": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "983eab18-b339-430e-b182-22af27749765"
+              },
+              "type": "Foreach"
+            }
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "8ef86d6a-f230-4bc4-b2ab-a8a893928238"
+          },
+          "type": "Scope"
+        },
+        "Catch": {
+          "actions": {
+            "Filter_array": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "7c6ea790-c936-46aa-83db-be2ec1ccd40e"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@result('Try')",
+                "where": "@or(equals(item()?['Status'], 'Failed'), equals(item()?['Status'], 'TimedOut'))"
+              }
+            },
+            "Create_Error": {
+              "runAfter": {
+                "Filter_array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "5c35d961-18c9-4833-a8ab-0e2b67d4e70e"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "CreateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_iterrors",
+                  "item/mpa_name": "@workflow()?['tags']['flowDisplayName']",
+                  "item/mpa_action": "@outputs('Filter_array')?['body'][0]['name']",
+                  "item/mpa_additionalinformation": "Name: , Request Number: ",
+                  "item/mpa_errormessage": "@concat(item()?['outputs']?['body']?['error']?['innerError']?['error']?['message'],' ',item()?['error']?['message'])",
+                  "item/mpa_sourcetype": 865420001,
+                  "item/mpa_workflowinstanceurl": "@concat('https://flow.microsoft.com/manage/environments/', workflow()?['tags']['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']['name'])"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Terminate": {
+              "runAfter": {
+                "Create_Error": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "4b0b3204-edb6-46b9-9ec9-ad13db87f56a"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed"
+              }
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "f8635815-3d8c-47f4-953a-1b0282c82f23"
+          },
+          "type": "Scope"
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

@@ -1,0 +1,178 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_HardwareRequestAndManagementDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_Submitted_By_Changes": {
+          "metadata": {
+            "operationMetadataId": "426dca78-37dc-46b8-9d0d-b829e33fb515"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "SubscribeWebhookTrigger",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 3,
+              "subscriptionRequest/entityname": "mpa_hardwarerequest",
+              "subscriptionRequest/scope": 4,
+              "subscriptionRequest/filteringattributes": "mpa_submittedby",
+              "subscriptionRequest/runas": 1
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      },
+      "actions": {
+        "Try": {
+          "actions": {
+            "Share_record_with_Submitted_By": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "982544f2-1c17-4887-acf5-333cf95c3f11"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "PerformUnboundAction",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "actionName": "GrantAccess",
+                  "item/Target": "mpa_hardwarerequests(@{triggerOutputs()?['body/mpa_hardwarerequestid']})",
+                  "item/PrincipalAccess": {
+                    "Principal": {
+                      "systemuserid": "@{triggerOutputs()?['body/_mpa_submittedby_value']}",
+                      "@{variables('At')}odata.type": "Microsoft.Dynamics.CRM.systemuser"
+                    },
+                    "AccessMask": "ReadAccess,WriteAccess,AppendAccess,AppendToAccess,CreateAccess,AssignAccess,DeleteAccess,ShareAccess"
+                  }
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_variable_-_At": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6a70f222-2e6f-4745-8a14-e91ebcb1a414"
+          },
+          "type": "Scope"
+        },
+        "Initialize_variable_-_At": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "975425fa-94a6-404f-a127-59266df7064f"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "At",
+                "type": "string",
+                "value": "@@"
+              }
+            ]
+          }
+        },
+        "Catch": {
+          "actions": {
+            "Filter_array": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "6cef464e-2b0f-48d0-8f6e-0953b47a9618"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@result('Try')",
+                "where": "@or(equals(item()?['Status'], 'Failed'), equals(item()?['Status'], 'TimedOut'))"
+              }
+            },
+            "Create_Error_Record": {
+              "runAfter": {
+                "Filter_array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "cda9cd33-65dc-4f62-8152-6a2803534850"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "CreateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_iterrors",
+                  "item/mpa_name": "@workflow()?['tags']['flowDisplayName']",
+                  "item/mpa_action": "@outputs('Filter_array')?['body'][0]['name']",
+                  "item/mpa_additionalinformation": "Name: @{triggerOutputs()?['body/mpa_name']}, Request Number: @{triggerOutputs()?['body/mpa_requestnumber']}",
+                  "item/mpa_errormessage": "@concat(item()?['outputs']?['body']?['error']?['innerError']?['error']?['message'],' ',item()?['error']?['message'])",
+                  "item/mpa_sourcetype": 865420001,
+                  "item/mpa_workflowinstanceurl": "@concat('https://flow.microsoft.com/manage/environments/', workflow()?['tags']['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']['name'])"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Terminate": {
+              "runAfter": {
+                "Create_Error_Record": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "75c89baf-40ec-4992-a17c-b5694353076a"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed"
+              }
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "e6ec2560-aa0f-4119-9b98-fb7385c8148a"
+          },
+          "type": "Scope"
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}
