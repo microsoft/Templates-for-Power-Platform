@@ -1,0 +1,1599 @@
+"'New Booking Screen' As screen":
+    OnVisible: |-
+        =Reset(cmbRequestorName_NewBooking);
+        Reset(cmbAppointmentType_NewBooking);
+        Reset(cmbAppointmentContact_NewBooking);
+        Reset(cmbLocation_NewBooking);
+        Set(
+            varSearch, false
+        );
+        
+        UpdateContext(//Get the Monday of the current Date 
+            {
+                var1stWeek: DateAdd(
+                    DateAdd(
+                        DateAdd(
+                            Today(),
+                            (-1) * (Weekday(Today()) - 2),
+                            TimeUnit.Days
+                        ),
+                        23,
+                        TimeUnit.Hours
+                    ),
+                    59,
+                    TimeUnit.Minutes
+                )
+            }
+        );
+        Concurrent(
+            UpdateContext( //2nd week
+                {
+                    var2ndWeek: DateAdd(
+                        var1stWeek,
+                        7,
+                        TimeUnit.Days
+                    )
+                }
+            ),
+            UpdateContext( //3rd week
+                {
+                    var3rdWeek: DateAdd(
+                        var1stWeek,
+                        14,
+                        TimeUnit.Days
+                    )
+                }
+            ),
+            UpdateContext(//4th week
+                {
+                    var4thWeek: DateAdd(
+                        var1stWeek,
+                        21,
+                        TimeUnit.Days
+                    )
+                }
+            ),
+            UpdateContext(//5th week
+                {
+                    var5thWeek: DateAdd(
+                        var1stWeek,
+                        28,
+                        TimeUnit.Days
+                    )
+                }
+            ),
+            UpdateContext(//6th week
+                {
+                    var6thWeek: DateAdd(
+                        var1stWeek,
+                        35,
+                        TimeUnit.Days
+                    )
+                }
+            ),
+            ForAll(//Adding idCountList for their numbering
+                'Appointment Types',
+                Collect(
+                    colAppointmentCount,
+                    Last(
+                        FirstN(
+                            AddColumns(
+                                'Appointment Types',
+                                "idcountlist",
+                                CountRows(colAppointmentCount) + 1
+                            ),
+                            CountRows(colAppointmentCount) + 1
+                        )
+                    )
+                )
+            )
+        );
+        
+        //If Reschedule booking screen fire the submit button logic
+        If(
+            varRescheduleBooking,
+            Select(btnSubmit_NewBooking);
+            
+        );
+        // Set the 'varSelectedDate' variable to the current date.
+        Set(
+            varSelectedDate,
+            DateValue(Today())
+        );
+        Reset(cmbShiftStart_Calendar);
+        Reset(cmbShiftEnd_Calendar);
+        Reset(cmbInterval_Calendar)
+
+    conMain_NewBooking As groupContainer.verticalAutoLayoutContainer:
+        Fill: =ColorValue(varThemeColors.background)
+        Height: =App.Height-Self.Y
+        LayoutAlignItems: =LayoutAlignItems.Stretch
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutMode: =LayoutMode.Auto
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =Parent.Width - compDetailsLeftNavigation_NewBooking.Width
+        X: =compDetailsLeftNavigation_NewBooking.Width
+        Y: =compHeader_NewBooking.Height
+        ZIndex: =1
+
+        conNewBookingContent_NewBooking As groupContainer.verticalAutoLayoutContainer:
+            LayoutAlignItems: =LayoutAlignItems.Stretch
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            PaddingBottom: =20
+            PaddingLeft: =20
+            PaddingRight: =20
+            PaddingTop: =20
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            ZIndex: =1
+
+            conUpper_NewBooking As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.Start
+                Fill: =ColorValue(varThemeColors.backgroundFill)
+                FillPortions: =0
+                Height: =conRequestorDetails_NewBooking.Height + conRequestorDetails_NewBooking.Y + Self.PaddingBottom
+                LayoutDirection: =If('New Booking Screen'.Size < 3, LayoutDirection.Vertical, LayoutDirection.Horizontal)
+                LayoutGap: =10
+                LayoutMinHeight: |
+                    =conRequestorDetails_NewBooking.Height + conRequestorDetails_NewBooking.Y + Self.PaddingBottom
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                LayoutOverflowY: =LayoutOverflow.Scroll
+                LayoutWrap: =If('New Booking Screen'.Size < 3, false, true)
+                PaddingBottom: =20
+                PaddingLeft: =20
+                PaddingRight: =20
+                PaddingTop: =20
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Width: =Parent.Width - (Parent.PaddingLeft + Parent.PaddingRight)
+                ZIndex: =1
+
+                conRequestorName_NewBooking As groupContainer.verticalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.Center
+                    DropShadow: =DropShadow.None
+                    Fill: =ColorValue(varThemeColors.backgroundFill)
+                    FillPortions: =0
+                    Height: =lblRequestorName_NewBooking.Height + cmbRequestorName_NewBooking.Height + Self.PaddingBottom
+                    LayoutDirection: =LayoutDirection.Vertical
+                    LayoutGap: =1
+                    LayoutMinHeight: =lblRequestorName_NewBooking.Height + cmbRequestorName_NewBooking.Height
+                    LayoutMinWidth: =Parent.Width / 5
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingBottom: =2
+                    PaddingLeft: =1
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Width: =If('New Booking Screen'.Size < 3, (Parent.Width - (Parent.PaddingLeft + Parent.PaddingRight)), (Parent.Width - (Parent.PaddingLeft + Parent.PaddingRight)) / 5.2)
+                    ZIndex: =1
+
+                    lblRequestorName_NewBooking As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        FocusedBorderColor: =ColorValue(varThemeColors.info)
+                        Font: =varThemeFont.B2.face
+                        FontWeight: =varThemeFont.B2.weightBold
+                        Height: =23
+                        Italic: =
+                        PaddingBottom: =10
+                        PaddingLeft: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.B2.size
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Requestor"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Tooltip: =Self.Text
+                        VerticalAlign: =VerticalAlign.Top
+                        Width: =Self.Size * Len(Self.Text)
+                        X: =70
+                        Y: =25
+                        ZIndex: =1
+
+                    cmbRequestorName_NewBooking As combobox:
+                        AccessibleLabel: |-
+                            =With(
+                                {Text: "Requestor Name"},
+                                If(
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: =ColorValue(varThemeColors.primaryGray)
+                        BorderThickness: =1
+                        ChevronBackground: =ColorValue(varThemeColors.backgroundFill)
+                        ChevronDisabledBackground: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        ChevronDisabledFill: |
+                            =ColorValue(varThemeColors.text)
+                        ChevronFill: =ColorValue(varThemeColors.text)
+                        ChevronHoverBackground: =ColorValue(varThemeColors.secondaryGray)
+                        ChevronHoverFill: |
+                            =ColorValue(varThemeColors.text)
+                        Color: =ColorValue(varThemeColors.text)
+                        DefaultSelectedItems: |+
+                            =If(varRescheduleBooking,varSelRequestor,Blank())
+                            
+                        DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+                        DisabledColor: =ColorValue(varThemeColors.disabledText)
+                        DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        DisplayFields: =["City","Mail"]
+                        DisplayMode: |+
+                            =If(varRescheduleBooking,DisplayMode.View,DisplayMode.Edit)
+                            
+                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                        FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                        FocusedBorderThickness: =Value(varThemeColors.focusBorderThickness)
+                        Font: =varThemeFont.B1.face
+                        FontWeight: =varThemeFont.B1.weight
+                        Height: =32 - Parent.PaddingBottom
+                        HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                        HoverColor: =ColorValue(varThemeColors.text)
+                        HoverFill: =ColorValue(varThemeColors.secondaryGray)
+                        InputTextPlaceholder: |-
+                            =With(
+                                {Text: "Select one"},
+                                If(
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        IsSearchable: =false
+                        Italic: =varThemeFont.B1.italic
+                        Items: |-
+                            =// Fetch all Office365 users. 
+                            // Specifically extracting the 'DisplayName' field for each user.
+                            Office365Users.SearchUser()
+                        LayoutMinWidth: =Parent.Width - 10
+                        NoSelectionText: |-
+                            =With(
+                                {Text: "Select one"},
+                                If(
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        OnChange: |
+                            =Set(varConfirmExit, true);
+                            Set(
+                                varSearch, false
+                            );
+                            If(IsBlank(Self.Selected) , Reset(cmbAppointmentType_NewBooking)); //Reset combobox Appointment Type if Requestor is blank
+                        OnSelect: =
+                        PaddingLeft: =If(varRescheduleBooking, 0, 12)
+                        PaddingRight: =10
+                        PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                        PressedColor: =ColorValue(varThemeColors.altText)
+                        PressedFill: =ColorValue(varThemeColors.backgroundFill)
+                        SearchFields: =["City"]
+                        SearchItems: =[]
+                        SelectionColor: =ColorValue(varThemeColors.text)
+                        SelectionFill: |
+                            =ColorValue(varThemeColors.secondaryGray)
+                        SelectionTagColor: =ColorValue(varThemeColors.altText)
+                        SelectionTagFill: =ColorValue(varThemeColors.primary)
+                        SelectMultiple: =false
+                        Size: =varThemeFont.B1.size
+                        Template: =ListItemTemplate.Double
+                        Tooltip: =Self.AccessibleLabel
+                        Width: =Parent.Width - 10
+                        X: =lblRequestorName_NewBooking.X
+                        Y: =lblRequestorName_NewBooking.Y + lblRequestorName_NewBooking.Height
+                        ZIndex: =2
+
+                conAppointmentType_NewBooking As groupContainer.verticalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.Center
+                    DropShadow: =DropShadow.None
+                    Fill: =ColorValue(varThemeColors.backgroundFill)
+                    FillPortions: =0
+                    Height: =conRequestorName_NewBooking.Height
+                    LayoutAlignItems: =LayoutAlignItems.Stretch
+                    LayoutDirection: =LayoutDirection.Vertical
+                    LayoutGap: =1
+                    LayoutMinHeight: =conRequestorName_NewBooking.Height
+                    LayoutMinWidth: =Parent.Width / 5
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingBottom: =2
+                    PaddingLeft: =1
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Width: =If('New Booking Screen'.Size < 3, (Parent.Width - (Parent.PaddingLeft + Parent.PaddingRight)), (Parent.Width - (Parent.PaddingLeft + Parent.PaddingRight)) / 5.2)
+                    ZIndex: =2
+
+                    lblAppointmentType_NewBooking As label:
+                        Color: =ColorValue(varThemeColors.text)
+                        FocusedBorderColor: =ColorValue(varThemeColors.info)
+                        Font: =varThemeFont.B2.face
+                        FontWeight: =varThemeFont.B2.weightBold
+                        Height: =lblRequestorName_NewBooking.Height
+                        Italic: =varThemeFont.B2.italic
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.B2.size
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Appointment Type"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Tooltip: =Self.Text
+                        VerticalAlign: =VerticalAlign.Top
+                        Width: =Self.Size * Len(Self.Text)
+                        X: =
+                        Y: =8
+                        ZIndex: =1
+
+                    cmbAppointmentType_NewBooking As combobox:
+                        AccessibleLabel: |-
+                            =With(
+                                {Text: "Appointment Type"},
+                                If(
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        AlignInContainer: =AlignInContainer.Start
+                        BorderColor: =ColorValue(varThemeColors.primaryGray)
+                        BorderThickness: =1
+                        ChevronBackground: =ColorValue(varThemeColors.backgroundFill)
+                        ChevronDisabledBackground: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        ChevronDisabledFill: |
+                            =ColorValue(varThemeColors.text)
+                        ChevronFill: =ColorValue(varThemeColors.text)
+                        ChevronHoverBackground: =ColorValue(varThemeColors.secondaryGray)
+                        ChevronHoverFill: |
+                            =ColorValue(varThemeColors.text)
+                        Color: =ColorValue(varThemeColors.text)
+                        DefaultSelectedItems: =If(varRescheduleBooking , LookUp('Appointment Slots' , 'Appointment Slot ID' = varSelectedBooking.'Appointment Slot'.'Appointment Slot ID').'Appointment Type')
+                        DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+                        DisabledColor: =ColorValue(varThemeColors.disabledText)
+                        DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        DisplayFields: =["mpa_mpa_aptbk_appointmenttypename"]
+                        DisplayMode: |-
+                            =If(
+                                varRescheduleBooking,
+                                DisplayMode.View,
+                                If(
+                                    IsBlank(cmbRequestorName_NewBooking.Selected),
+                                    DisplayMode.Disabled,
+                                    DisplayMode.Edit
+                                )
+                            )
+                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                        FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                        FocusedBorderThickness: =Value(varThemeColors.focusBorderThickness)
+                        Font: =varThemeFont.B1.face
+                        FontWeight: =varThemeFont.B1.weight
+                        Height: =cmbRequestorName_NewBooking.Height
+                        HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                        HoverColor: =ColorValue(varThemeColors.text)
+                        HoverFill: =ColorValue(varThemeColors.secondaryGray)
+                        InputTextPlaceholder: |-
+                            =With(
+                                {Text: "Select one"},
+                                If(
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        IsSearchable: =false
+                        Italic: =varThemeFont.B1.italic
+                        Items: |-
+                            =Sort(
+                                Filter(
+                                    'Appointment Types',
+                                    'Appointment Types (Views)'.'Active Appointment Types'
+                                ),
+                                'Appointment Type Name'
+                            )
+                        LayoutMinWidth: =
+                        NoSelectionText: |-
+                            =With(
+                                {Text: "Select one"},
+                                If(
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        OnChange: |-
+                            =Reset(cmbLocation_NewBooking);
+                            Reset(cmbAppointmentContact_NewBooking);
+                        PaddingLeft: =If(varRescheduleBooking, 0, 12)
+                        PaddingRight: =10
+                        PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                        PressedColor: =ColorValue(varThemeColors.altText)
+                        PressedFill: =ColorValue(varThemeColors.backgroundFill)
+                        SearchFields: =["mpa_mpa_aptbk_appointmenttypename"]
+                        SearchItems: =[]
+                        SelectionColor: =ColorValue(varThemeColors.text)
+                        SelectionFill: =ColorValue(varThemeColors.secondaryGray)
+                        SelectionTagColor: =ColorValue(varThemeColors.altText)
+                        SelectionTagFill: =ColorValue(varThemeColors.primary)
+                        SelectMultiple: =false
+                        Size: =varThemeFont.B1.size
+                        Tooltip: =Self.AccessibleLabel
+                        Width: =Parent.Width - 10
+                        X: =lblAppointmentType_NewBooking.X
+                        Y: =lblAppointmentType_NewBooking.Y + lblAppointmentType_NewBooking.Height + 5
+                        ZIndex: =2
+
+                conAppointmentContact_NewBooking As groupContainer.verticalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.Center
+                    DropShadow: =DropShadow.None
+                    Fill: =ColorValue(varThemeColors.backgroundFill)
+                    FillPortions: =0
+                    Height: =conRequestorName_NewBooking.Height
+                    LayoutAlignItems: =LayoutAlignItems.Stretch
+                    LayoutDirection: =LayoutDirection.Vertical
+                    LayoutGap: =1
+                    LayoutMinHeight: =conRequestorName_NewBooking.Height
+                    LayoutMinWidth: =Parent.Width / 5
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingBottom: =2
+                    PaddingLeft: =1
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Width: =If('New Booking Screen'.Size < 3, (Parent.Width - (Parent.PaddingLeft + Parent.PaddingRight)), (Parent.Width - (Parent.PaddingLeft + Parent.PaddingRight)) / 5.2)
+                    ZIndex: =3
+
+                    lblLocation_AppointmentContact_NewBooking As label:
+                        Color: =ColorValue(varThemeColors.text)
+                        FocusedBorderColor: =ColorValue(varThemeColors.info)
+                        Font: =varThemeFont.B2.face
+                        FontWeight: =varThemeFont.B2.weightBold
+                        Height: =lblRequestorName_NewBooking.Height
+                        Italic: =varThemeFont.B2.italic
+                        PaddingBottom: =10
+                        PaddingLeft: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.B2.size
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Meeting Provider (Optional)"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Tooltip: =Self.Text
+                        VerticalAlign: =VerticalAlign.Top
+                        Width: =Parent.Width
+                        Wrap: =false
+                        X: =5
+                        Y: =25
+                        ZIndex: =1
+
+                    cmbAppointmentContact_NewBooking As combobox:
+                        AccessibleLabel: |-
+                            =With(
+                                {Text: "Appointment Contact"},
+                                If(
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        AlignInContainer: =AlignInContainer.Start
+                        BorderColor: =ColorValue(varThemeColors.primaryGray)
+                        BorderThickness: =1
+                        ChevronBackground: =ColorValue(varThemeColors.backgroundFill)
+                        ChevronDisabledBackground: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        ChevronDisabledFill: |
+                            =ColorValue(varThemeColors.text)
+                        ChevronFill: =ColorValue(varThemeColors.text)
+                        ChevronHoverBackground: =ColorValue(varThemeColors.secondaryGray)
+                        ChevronHoverFill: |
+                            =ColorValue(varThemeColors.text)
+                        Color: =ColorValue(varThemeColors.text)
+                        DefaultSelectedItems: =
+                        DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+                        DisabledColor: =ColorValue(varThemeColors.disabledText)
+                        DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        DisplayFields: =["fullname","internalemailaddress"]
+                        DisplayMode: =If(IsBlank(cmbAppointmentType_NewBooking.Selected) , DisplayMode.Disabled , DisplayMode.Edit)
+                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                        FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                        FocusedBorderThickness: =Value(varThemeColors.focusBorderThickness)
+                        Font: =varThemeFont.B1.face
+                        FontWeight: =varThemeFont.B1.weight
+                        Height: =cmbRequestorName_NewBooking.Height
+                        HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                        HoverColor: =ColorValue(varThemeColors.text)
+                        HoverFill: =ColorValue(varThemeColors.secondaryGray)
+                        InputTextPlaceholder: |-
+                            =With(
+                                {Text: "Select one"},
+                                If(
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        IsSearchable: =If(IsBlank(cmbAppointmentType_NewBooking.Selected) , false , true)
+                        Italic: =varThemeFont.B1.italic
+                        Items: |-
+                            =Sort(
+                                Filter(
+                                Users,
+                                !StartsWith('Full Name', "#")), 'Full Name', SortOrder.Ascending
+                            )
+                        LayoutMinWidth: =Parent.Width
+                        NoSelectionText: |-
+                            =With(
+                                {Text: "Select one"},
+                                If(
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        PaddingLeft: =12
+                        PaddingRight: =10
+                        PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                        PressedColor: =ColorValue(varThemeColors.altText)
+                        PressedFill: =ColorValue(varThemeColors.backgroundFill)
+                        SearchFields: =["fullname","internalemailaddress"]
+                        SearchItems: |-
+                            =Search(Sort(
+                                Filter(
+                                Users,
+                                !StartsWith('Full Name', "#")), 'Full Name', SortOrder.Ascending
+                            ),cmbAppointmentContact_NewBooking.SearchText,"fullname","internalemailaddress")
+                        SelectionColor: =ColorValue(varThemeColors.text)
+                        SelectionFill: =ColorValue(varThemeColors.secondaryGray)
+                        SelectionTagColor: =ColorValue(varThemeColors.altText)
+                        SelectionTagFill: =ColorValue(varThemeColors.primary)
+                        SelectMultiple: =false
+                        Size: =varThemeFont.B1.size
+                        Template: =ListItemTemplate.Double
+                        Tooltip: =Self.AccessibleLabel
+                        Width: =Parent.Width - 10
+                        X: =5
+                        Y: =lblRequestorName_NewBooking.Y + lblRequestorName_NewBooking.Height
+                        ZIndex: =2
+
+                conLocation_NewBooking As groupContainer.verticalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.Center
+                    DropShadow: =DropShadow.None
+                    Fill: =ColorValue(varThemeColors.backgroundFill)
+                    FillPortions: =0
+                    Height: =conRequestorName_NewBooking.Height
+                    LayoutAlignItems: =LayoutAlignItems.Stretch
+                    LayoutDirection: =LayoutDirection.Vertical
+                    LayoutGap: =1
+                    LayoutMinHeight: =conRequestorName_NewBooking.Height
+                    LayoutMinWidth: =Parent.Width / 5
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingBottom: =2
+                    PaddingLeft: =1
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Width: =If('New Booking Screen'.Size < 3, (Parent.Width - (Parent.PaddingLeft + Parent.PaddingRight)), (Parent.Width - (Parent.PaddingLeft + Parent.PaddingRight)) / 5.2)
+                    ZIndex: =4
+
+                    lblLocation_NewBooking As label:
+                        Color: =ColorValue(varThemeColors.text)
+                        FocusedBorderColor: =ColorValue(varThemeColors.info)
+                        Font: =varThemeFont.B2.face
+                        FontWeight: =varThemeFont.B2.weightBold
+                        Height: =lblRequestorName_NewBooking.Height
+                        Italic: =varThemeFont.B2.italic
+                        PaddingBottom: =10
+                        PaddingLeft: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.B2.size
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Meeting Via (Optional)"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Tooltip: =Self.Text
+                        VerticalAlign: =VerticalAlign.Top
+                        Width: =Self.Size * Len(Self.Text)
+                        X: =5
+                        Y: =25
+                        ZIndex: =1
+
+                    cmbLocation_NewBooking As combobox:
+                        AccessibleLabel: |-
+                            =With(
+                                {Text: "Location"},
+                                If(
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        AlignInContainer: =AlignInContainer.Start
+                        BorderColor: =ColorValue(varThemeColors.primaryGray)
+                        BorderThickness: =1
+                        ChevronBackground: =ColorValue(varThemeColors.backgroundFill)
+                        ChevronDisabledBackground: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        ChevronDisabledFill: |
+                            =ColorValue(varThemeColors.text)
+                        ChevronFill: =ColorValue(varThemeColors.text)
+                        ChevronHoverBackground: =ColorValue(varThemeColors.secondaryGray)
+                        ChevronHoverFill: |
+                            =ColorValue(varThemeColors.text)
+                        Color: =ColorValue(varThemeColors.text)
+                        DefaultSelectedItems: =
+                        DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+                        DisabledColor: =ColorValue(varThemeColors.disabledText)
+                        DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        DisplayFields: =["Value"]
+                        DisplayMode: =If(IsBlank(cmbAppointmentType_NewBooking.Selected) , DisplayMode.Disabled , DisplayMode.Edit)
+                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                        FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                        FocusedBorderThickness: =Value(varThemeColors.focusBorderThickness)
+                        Font: =varThemeFont.B1.face
+                        FontWeight: =varThemeFont.B1.weight
+                        Height: =cmbRequestorName_NewBooking.Height
+                        HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                        HoverColor: =ColorValue(varThemeColors.text)
+                        HoverFill: =ColorValue(varThemeColors.secondaryGray)
+                        InputTextPlaceholder: |-
+                            =With(
+                                {Text: "Select one or more"},
+                                If(
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        IsSearchable: =false
+                        Italic: =varThemeFont.B1.italic
+                        Items: =Sort(Choices('Appointment Slots'.Location),Value)
+                        LayoutMinWidth: =Parent.Width
+                        NoSelectionText: |-
+                            =With(
+                                {Text: "Select one or more"},
+                                If(
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        PaddingLeft: =12
+                        PaddingRight: =10
+                        PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                        PressedColor: =ColorValue(varThemeColors.altText)
+                        PressedFill: =ColorValue(varThemeColors.backgroundFill)
+                        SearchFields: =["Value"]
+                        SearchItems: =[]
+                        SelectionColor: =ColorValue(varThemeColors.text)
+                        SelectionFill: =ColorValue(varThemeColors.secondaryGray)
+                        SelectionTagColor: =ColorValue(varThemeColors.altText)
+                        SelectionTagFill: =ColorValue(varThemeColors.primary)
+                        Size: =varThemeFont.B1.size
+                        Tooltip: =Self.AccessibleLabel
+                        Width: =Parent.Width - 10
+                        X: =5
+                        Y: =lblRequestorName_NewBooking.Y + lblRequestorName_NewBooking.Height
+                        ZIndex: =2
+
+                conBtnSubmit_NewBooking As groupContainer.verticalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    DropShadow: =DropShadow.None
+                    Fill: =ColorValue(varThemeColors.backgroundFill)
+                    FillPortions: =0
+                    Height: =conRequestorName_NewBooking.Height
+                    LayoutAlignItems: =LayoutAlignItems.Stretch
+                    LayoutDirection: =LayoutDirection.Vertical
+                    LayoutGap: =1
+                    LayoutMinHeight: =conRequestorName_NewBooking.Height
+                    LayoutMinWidth: =Parent.Width / 5
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingBottom: =2
+                    PaddingTop: =lblLocation_NewBooking.Height
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Width: =If('New Booking Screen'.Size < 3, (Parent.Width - (Parent.PaddingLeft + Parent.PaddingRight)), (Parent.Width - (Parent.PaddingLeft + Parent.PaddingRight)) / 5.2)
+                    Y: =20
+                    ZIndex: =5
+
+                    btnSubmit_NewBooking As button:
+                        AlignInContainer: =AlignInContainer.Center
+                        BorderColor: =ColorValue(varThemeColors.primary)
+                        BorderThickness: =1
+                        Color: =ColorValue(varThemeColors.altText)
+                        DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        DisabledColor: =ColorValue(varThemeColors.disabledText)
+                        DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        DisplayMode: |
+                            =If(IsBlank(cmbAppointmentType_NewBooking.Selected) , DisplayMode.Disabled , DisplayMode.Edit)
+                        Fill: =ColorValue(varThemeColors.primary)
+                        FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                        FocusedBorderThickness: =Value(varThemeColors.focusBorderThickness)
+                        Font: =varThemeFont.B1.face
+                        FontWeight: =varThemeFont.B1.weight
+                        Height: =cmbRequestorName_NewBooking.Height
+                        HoverBorderColor: =ColorValue(varThemeColors.primary)
+                        HoverColor: =ColorValue(varThemeColors.altText)
+                        HoverFill: =ColorValue(varThemeColors.tertiary)
+                        Italic: =
+                        LayoutMinWidth: =Parent.Width
+                        OnSelect: |-
+                            =Set(
+                                varAppointmentType,
+                                cmbAppointmentType_NewBooking.Selected
+                            );
+                            
+                            Set(
+                                varLocation,
+                                cmbLocation_NewBooking.SelectedItems);
+                            
+                            Set(
+                                varSelRequestor,
+                                cmbRequestorName_NewBooking.Selected
+                            );
+                            Set(
+                                varSearch,
+                                true
+                            );
+                            
+                            Set(varConfirmExit, false);
+                        PressedBorderColor: =ColorValue(varThemeColors.primary)
+                        PressedColor: =ColorValue(varThemeColors.altText)
+                        PressedFill: =ColorValue(varThemeColors.primary)
+                        RadiusBottomLeft: =6
+                        RadiusBottomRight: =6
+                        RadiusTopLeft: =6
+                        RadiusTopRight: =6
+                        Size: =varThemeFont.B1.size
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Show Appointments"},
+                                If(
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Tooltip: =Self.Text
+                        Width: =Parent.Width
+                        X: =9
+                        Y: =cmbLocation_NewBooking.Y
+                        ZIndex: =1
+
+                conRequestorDetails_NewBooking As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    DropShadow: =DropShadow.None
+                    FillPortions: =0
+                    Height: =If('New Booking Screen'.Size < 3, 70, 30)
+                    LayoutDirection: =If('New Booking Screen'.Size < 3, LayoutDirection.Vertical, LayoutDirection.Horizontal)
+                    LayoutGap: =20
+                    LayoutMinHeight: =lblName_Requestor.Height
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Width: =If('New Booking Screen'.Size < 3, Parent.Width, Parent.Width - (Parent.PaddingLeft + Parent.PaddingRight))
+                    Y: =conRequestorName_NewBooking.Height
+                    ZIndex: =6
+
+                    lblName_Requestor As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                        Font: =  varThemeFont.H3.face
+                        Height: =Self.Size *2.5
+                        Italic: =varThemeFont.H3.italic
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingTop: =0
+                        Role: =TextRole.Heading1
+                        Size: =varThemeFont.H3.size
+                        Text: |-
+                            =
+                            // Define a variable named "Text" with the value "{value}"
+                            With(
+                                {
+                                    Text: If(
+                                        varSearch,
+                                        varSelRequestor.DisplayName,
+                                        "-"
+                                    )
+                                },
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        VerticalAlign: =VerticalAlign.Top
+                        Width: =cmbRequestorName_NewBooking.Width
+                        Wrap: =false
+                        X: =40
+                        Y: =25
+                        ZIndex: =1
+
+                    lblEmail As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        FocusedBorderColor: =ColorValue(varThemeColors.info)
+                        Font: =varThemeFont.B2.face
+                        FontWeight: =varThemeFont.B2.weightBold
+                        Height: =Self.Size * 2.5
+                        Italic: =varThemeFont.B2.italic
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        Size: =varThemeFont.B2.size
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: $"Email   {If(
+                                        varSearch,
+                                        varSelRequestor.UserPrincipalName,
+                                        "-"
+                                    )}"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        VerticalAlign: =VerticalAlign.Top
+                        Width: =Len(Self.Text) * 8
+                        X: =30
+                        Y: =25
+                        ZIndex: =2
+
+            conLower_NewBooking As groupContainer.verticalAutoLayoutContainer:
+                Fill: =ColorValue(varThemeColors.backgroundFill)
+                FillPortions: =0
+                Height: =Parent.Height - conUpper_NewBooking.Height - Parent.PaddingBottom -Parent.PaddingTop
+                LayoutAlignItems: =LayoutAlignItems.Stretch
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                LayoutOverflowY: =LayoutOverflow.Scroll
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Width: =Parent.Width - (Parent.PaddingLeft + Parent.PaddingRight)
+                ZIndex: =2
+
+                conNotification_NewBooking As groupContainer.verticalAutoLayoutContainer:
+                    ContentLanguage: =false
+                    DropShadow: =DropShadow.None
+                    Fill: =ColorValue(varThemeColors.backgroundFill)
+                    FillPortions: =0
+                    Height: =lblAvailableTimes_NewBooking.Height + lblNotification_NewBooking.Height + 30
+                    LayoutDirection: =LayoutDirection.Vertical
+                    LayoutGap: =5
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingBottom: =10
+                    PaddingLeft: =20
+                    PaddingTop: =20
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Width: =Parent.Width
+                    ZIndex: =1
+
+                    lblAvailableTimes_NewBooking As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        FocusedBorderColor: =ColorValue(varThemeColors.info)
+                        Font: |-
+                            =If(
+                               And(
+                                    varSearch = true,
+                                    Or(
+                                        conGallery1st_NewBooking.Visible,
+                                        conGallery2nd_NewBooking.Visible,
+                                        conGallery3rd_NewBooking.Visible,
+                                        conGallery4th_NewBooking.Visible,
+                                        conGallery5th_NewBooking.Visible,
+                                        conGallery6th_NewBooking.Visible
+                                    )
+                                ),
+                                varThemeFont.H1.face,
+                                varThemeFont.H3.face
+                            )
+                        FontWeight: =varThemeFont.H3.weight
+                        Height: =Self.Size *2.5
+                        Italic: |-
+                            =If(
+                               And(
+                                    varSearch = true,
+                                    Or(
+                                        conGallery1st_NewBooking.Visible,
+                                        conGallery2nd_NewBooking.Visible,
+                                        conGallery3rd_NewBooking.Visible,
+                                        conGallery4th_NewBooking.Visible,
+                                        conGallery5th_NewBooking.Visible,
+                                        conGallery6th_NewBooking.Visible
+                                    )
+                                ),
+                                varThemeFont.H1.italic,
+                                varThemeFont.H3.italic
+                            )
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingTop: =0
+                        Role: =TextRole.Heading1
+                        Size: =varThemeFont.H3.size
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: If(varRescheduleBooking,"Available Times for Reschedule","Available Times")},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Tooltip: =Self.Text
+                        VerticalAlign: =VerticalAlign.Top
+                        Width: =Self.Size * Len(Self.Text)
+                        X: =28
+                        Y: =20
+                        ZIndex: =1
+
+                    lblNotification_NewBooking As label:
+                        Color: =ColorValue(varThemeColors.text)
+                        FocusedBorderColor: =ColorValue(varThemeColors.info)
+                        Font: |-
+                            =If(
+                               And(
+                                    varSearch = true,
+                                    Or(
+                                        conGallery1st_NewBooking.Visible,
+                                        conGallery2nd_NewBooking.Visible,
+                                        conGallery3rd_NewBooking.Visible,
+                                        conGallery4th_NewBooking.Visible,
+                                        conGallery5th_NewBooking.Visible,
+                                        conGallery6th_NewBooking.Visible
+                                    )
+                                ),
+                                varThemeFont.H1.face,
+                                varThemeFont.H3.face
+                            )
+                        FontWeight: = varThemeFont.B2.weight
+                        Height: =Self.Size *2.5
+                        Italic: |-
+                            =If(
+                               And(
+                                    varSearch = true,
+                                    Or(
+                                        conGallery1st_NewBooking.Visible,
+                                        conGallery2nd_NewBooking.Visible,
+                                        conGallery3rd_NewBooking.Visible,
+                                        conGallery4th_NewBooking.Visible,
+                                        conGallery5th_NewBooking.Visible,
+                                        conGallery6th_NewBooking.Visible
+                                    )
+                                ),
+                                varThemeFont.H1.italic,
+                                varThemeFont.H3.italic
+                            )
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingTop: =0
+                        Role: =TextRole.Heading1
+                        Size: =varThemeFont.B2.size
+                        Text: |+
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: If(
+                               And(
+                                    varSearch = true,
+                                    Or(
+                                        conGallery1st_NewBooking.Visible,
+                                        conGallery2nd_NewBooking.Visible,
+                                        conGallery3rd_NewBooking.Visible,
+                                        conGallery4th_NewBooking.Visible,
+                                        conGallery5th_NewBooking.Visible,
+                                        conGallery6th_NewBooking.Visible
+                                    )
+                                ),
+                                Blank(),
+                                If(
+                                    varSearch,
+                                    "No appointments available",
+                                    "Please select ‘Requestor’ and ‘Appointment Type’ to view available appointment times."
+                                )    
+                            )},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                            
+                        Tooltip: =Self.Text
+                        VerticalAlign: =VerticalAlign.Top
+                        Width: =Parent.Width-Parent.PaddingLeft
+                        Wrap: =false
+                        X: =28
+                        Y: =lblAvailableTimes_NewBooking.Height + 20
+                        ZIndex: =2
+
+                conNoResult_NewBooking As groupContainer.horizontalAutoLayoutContainer:
+                    Fill: =ColorValue(varThemeColors.backgroundFill)
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingLeft: =20
+                    Visible: =!conNotification_NewBooking.Visible
+                    Width: =Parent.Width
+                    ZIndex: =5
+
+                    lblNoResult_NewBooking As label:
+                        Align: =Align.Center
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        FocusedBorderColor: =ColorValue(varThemeColors.info)
+                        Font: =varThemeFont.H3.face
+                        FontWeight: =varThemeFont.B1.weight
+                        Height: =Self.Size *2.5
+                        Italic: =varThemeFont.H3.italic
+                        PaddingBottom: =0
+                        PaddingLeft: =0
+                        PaddingTop: =0
+                        Role: =TextRole.Heading1
+                        Size: |
+                            =varThemeFont.H3.size
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text:If(varSearch ,"No appointments available" , "Please select ‘Requestor’ and ‘Appointment Type’ to view available appointment times.")},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        VerticalAlign: =VerticalAlign.Top
+                        Width: =Len(Self.Text) * 10
+                        X: =(Parent.Width - Self.Width) / 2
+                        Y: =RoundUp((Parent.Height - Self.Height) / 3 , 0)
+                        ZIndex: =1
+
+                conGalleries_NewBooking As groupContainer.verticalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    DropShadow: =DropShadow.None
+                    Fill: =ColorValue(varThemeColors.backgroundFill)
+                    Height: =100
+                    LayoutDirection: =LayoutDirection.Vertical
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    LayoutOverflowY: =LayoutOverflow.Scroll
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Visible: |-
+                        =If(
+                            And(
+                                varSearch = true,
+                                Or(
+                                    conGallery1st_NewBooking.Visible,
+                                    conGallery2nd_NewBooking.Visible,
+                                    conGallery3rd_NewBooking.Visible,
+                                    conGallery4th_NewBooking.Visible,
+                                    conGallery5th_NewBooking.Visible,
+                                    conGallery6th_NewBooking.Visible
+                                )
+                            ),
+                            true,
+                            false
+                        )
+                    Width: =Parent.Width
+                    X: =60
+                    ZIndex: =6
+
+                    conGallery1st_NewBooking As groupContainer.horizontalAutoLayoutContainer:
+                        DropShadow: =DropShadow.None
+                        FillPortions: =0
+                        Height: =If(varSearch = false || CountRows(compGallery1st_NewBooking.compGalleryData) = 0 , 0,350)
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Visible: =If(varSearch = false || CountRows(compGallery1st_NewBooking.compGalleryData) = 0 , false,true)
+                        Width: =Parent.Width
+                        ZIndex: =1
+
+                        compGallery1st_NewBooking As compGallery:
+                            compGalleryData: |-
+                                =Filter(
+                                    Filter(
+                                        'Appointment Slots',
+                                        'Appointment Slots (Views)'.'Appointment Slot with No Booking'
+                                    ),
+                                    And(
+                                        'Start Date' >= Now(),
+                                        'End Date' <= DateAdd(
+                                            Self.compGalleryWeek,
+                                            7,
+                                            TimeUnit.Days
+                                        ),
+                                        IsBlank(varAppointmentType.'Appointment Type ID') || 'Appointment Type'.'Appointment Type ID' = varAppointmentType.'Appointment Type ID',
+                                        IsBlank(varLocation.Value) || IsEmpty(varLocation) || Location in varLocation,
+                                        IsBlank(cmbAppointmentContact_NewBooking.Selected) || 'Meeting Provider'.'Primary Email' = cmbAppointmentContact_NewBooking.Selected.'Primary Email'
+                                    )
+                                )
+                            compGalleryWeek: =var1stWeek
+                            compGalleryWidth: =Parent.Width - Self.X
+                            Height: =compGallery1st_NewBooking.compGalleryHeight
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =640
+                            Width: =Parent.Width
+
+                    conGallery2nd_NewBooking As groupContainer.horizontalAutoLayoutContainer:
+                        DropShadow: =DropShadow.None
+                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                        FillPortions: =0
+                        Height: =If(varSearch = false || CountRows(compGallery2nd_NewBooking.compGalleryData) = 0 , 0,350)
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Visible: =If(varSearch = false || CountRows(compGallery2nd_NewBooking.compGalleryData) = 0 , false,true)
+                        Width: =
+                        ZIndex: =2
+
+                        compGallery2nd_NewBooking As compGallery:
+                            compGalleryData: |-
+                                =Filter(
+                                    Filter(
+                                        'Appointment Slots',
+                                        'Appointment Slots (Views)'.'Appointment Slot with No Booking'
+                                    ),
+                                    And(
+                                        'Start Date' >= Self.compGalleryWeek,
+                                        'End Date' <= DateAdd(
+                                            Self.compGalleryWeek,
+                                            7,
+                                            TimeUnit.Days
+                                        ),
+                                        IsBlank(varAppointmentType.'Appointment Type ID') || 'Appointment Type'.'Appointment Type ID' = varAppointmentType.'Appointment Type ID',
+                                        IsBlank(varLocation.Value) || IsEmpty(varLocation) || Location in varLocation,
+                                        IsBlank(cmbAppointmentContact_NewBooking.Selected) || 'Meeting Provider'.'Primary Email' = cmbAppointmentContact_NewBooking.Selected.'Primary Email'
+                                    )
+                                )
+                            compGalleryWeek: =var2ndWeek
+                            Height: =compGallery2nd_NewBooking.compGalleryHeight
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =640
+                            Width: =Parent.Width
+
+                    conGallery3rd_NewBooking As groupContainer.horizontalAutoLayoutContainer:
+                        DropShadow: =DropShadow.None
+                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                        FillPortions: =0
+                        Height: =If(varSearch = false || CountRows(compGallery3rd_NewBooking.compGalleryData) = 0 , 0,350)
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Visible: =If(varSearch = false || CountRows(compGallery3rd_NewBooking.compGalleryData) = 0 , false,true)
+                        Width: =Parent.Width
+                        ZIndex: =3
+
+                        compGallery3rd_NewBooking As compGallery:
+                            compGalleryData: |-
+                                =Filter(
+                                    Filter(
+                                        'Appointment Slots',
+                                        'Appointment Slots (Views)'.'Appointment Slot with No Booking'
+                                    ),
+                                    And(
+                                        'Start Date' >= Self.compGalleryWeek,
+                                        'End Date' <= DateAdd(
+                                            Self.compGalleryWeek,
+                                            7,
+                                            TimeUnit.Days
+                                        ),
+                                        IsBlank(varAppointmentType.'Appointment Type ID') || 'Appointment Type'.'Appointment Type ID' = varAppointmentType.'Appointment Type ID',
+                                        IsBlank(varLocation.Value) || IsEmpty(varLocation) || Location in varLocation,
+                                        IsBlank(cmbAppointmentContact_NewBooking.Selected) || 'Meeting Provider'.'Primary Email' = cmbAppointmentContact_NewBooking.Selected.'Primary Email'
+                                    )
+                                )
+                            compGalleryWeek: =var3rdWeek
+                            Height: =compGallery3rd_NewBooking.compGalleryHeight
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =640
+                            Width: =Parent.Width
+
+                    conGallery4th_NewBooking As groupContainer.horizontalAutoLayoutContainer:
+                        DropShadow: =DropShadow.None
+                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                        FillPortions: =0
+                        Height: =If(varSearch = false || CountRows(compGallery4th_NewBooking.compGalleryData) = 0 , 0,350)
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Visible: =If(varSearch = false || CountRows(compGallery4th_NewBooking.compGalleryData) = 0 , false,true)
+                        Width: =Parent.Width
+                        ZIndex: =4
+
+                        compGallery4th_NewBooking As compGallery:
+                            compGalleryData: |-
+                                =Filter(
+                                    Filter(
+                                        'Appointment Slots',
+                                        'Appointment Slots (Views)'.'Appointment Slot with No Booking'
+                                    ),
+                                    And(
+                                        'Start Date' >= Self.compGalleryWeek,
+                                        'End Date' <= DateAdd(
+                                            Self.compGalleryWeek,
+                                            7,
+                                            TimeUnit.Days
+                                        ),
+                                        IsBlank(varAppointmentType.'Appointment Type ID') || 'Appointment Type'.'Appointment Type ID' = varAppointmentType.'Appointment Type ID',
+                                        IsBlank(varLocation.Value) || IsEmpty(varLocation) || Location in varLocation,
+                                        IsBlank(cmbAppointmentContact_NewBooking.Selected) || 'Meeting Provider'.'Primary Email' = cmbAppointmentContact_NewBooking.Selected.'Primary Email'
+                                    )
+                                )
+                            compGalleryWeek: =var4thWeek
+                            Height: =compGallery4th_NewBooking.compGalleryHeight
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =640
+                            Width: =Parent.Width
+
+                    conGallery5th_NewBooking As groupContainer.horizontalAutoLayoutContainer:
+                        DropShadow: =DropShadow.None
+                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                        FillPortions: =0
+                        Height: =If(varSearch = false || CountRows(compGallery5th_NewBooking.compGalleryData) = 0 , 0,350)
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Visible: =If(varSearch = false || CountRows(compGallery5th_NewBooking.compGalleryData) = 0 , false,true)
+                        Width: =Parent.Width
+                        ZIndex: =5
+
+                        compGallery5th_NewBooking As compGallery:
+                            compGalleryData: |-
+                                =Filter(
+                                    Filter(
+                                        'Appointment Slots',
+                                        'Appointment Slots (Views)'.'Appointment Slot with No Booking'
+                                    ),
+                                    And(
+                                        'Start Date' >= Self.compGalleryWeek,
+                                        'End Date' <= DateAdd(
+                                            Self.compGalleryWeek,
+                                            7,
+                                            TimeUnit.Days
+                                        ),
+                                        IsBlank(varAppointmentType.'Appointment Type ID') || 'Appointment Type'.'Appointment Type ID' = varAppointmentType.'Appointment Type ID',
+                                        IsBlank(varLocation.Value) || IsEmpty(varLocation) || Location in varLocation,
+                                        IsBlank(cmbAppointmentContact_NewBooking.Selected) || 'Meeting Provider'.'Primary Email' = cmbAppointmentContact_NewBooking.Selected.'Primary Email'
+                                    )
+                                )
+                            compGalleryWeek: =var5thWeek
+                            Height: =compGallery5th_NewBooking.compGalleryHeight
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =640
+                            Width: =Parent.Width
+
+                    conGallery6th_NewBooking As groupContainer.horizontalAutoLayoutContainer:
+                        DropShadow: =DropShadow.None
+                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                        FillPortions: =0
+                        Height: =If(varSearch = false || CountRows(compGallery6th_NewBooking.compGalleryData) = 0 , 0,350)
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Visible: =If(varSearch = false || CountRows(compGallery6th_NewBooking.compGalleryData) = 0 , false,true)
+                        Width: =Parent.Width
+                        ZIndex: =7
+
+                        compGallery6th_NewBooking As compGallery:
+                            compGalleryData: |-
+                                =Filter(
+                                    Filter(
+                                        'Appointment Slots',
+                                        'Appointment Slots (Views)'.'Appointment Slot with No Booking'
+                                    ),
+                                    And(
+                                        'Start Date' >= Self.compGalleryWeek,
+                                        'End Date' <= DateAdd(
+                                            Self.compGalleryWeek,
+                                            7,
+                                            TimeUnit.Days
+                                        ),
+                                        IsBlank(varAppointmentType.'Appointment Type ID') || 'Appointment Type'.'Appointment Type ID' = varAppointmentType.'Appointment Type ID',
+                                        IsBlank(varLocation.Value) || IsEmpty(varLocation) || Location in varLocation,
+                                        IsBlank(cmbAppointmentContact_NewBooking.Selected) || 'Meeting Provider'.'Primary Email' = cmbAppointmentContact_NewBooking.Selected.'Primary Email'
+                                    )
+                                )
+                            compGalleryWeek: =var6thWeek
+                            Height: =compGallery6th_NewBooking.compGalleryHeight
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =640
+                            Width: =Parent.Width
+
+    compDetailsLeftNavigation_NewBooking As LeftNavigation:
+        Height: =App.Height-Self.Y
+        Width: =compDetailsLeftNavigation_NewBooking.MenuWidth
+        Y: =compHeader_NewBooking.Height
+        ZIndex: =2
+
+    compHeader_NewBooking As compHeader:
+        CurrentPage: =If(varRescheduleBooking, 'Manage Booking Screen', 'New Booking Screen')
+        Height: =compHeader_NewBooking.HeaderHeight
+        Width: =App.Width
+        ZIndex: =3
+

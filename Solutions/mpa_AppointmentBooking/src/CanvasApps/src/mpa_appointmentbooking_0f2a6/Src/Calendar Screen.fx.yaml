@@ -1,0 +1,2534 @@
+"'Calendar Screen' As screen":
+    OnVisible: |+
+        =// Clearing any existing data in colCurrentSchedules collection
+        Clear(colCurrentSchedules);
+        // Reset the 'galCalendarBody_Calendar' gallery control.
+        // This clears any selections and resets all input controls to their default values.
+        Reset(galCalendarBody_Calendar);
+        // Looping through each available slot
+        ForAll(
+            Filter(
+                'Appointment Slots',
+                'Meeting Provider'.'Primary Email' = varUserEmailAddress && ('Status Reason' = 'Status Reason (Appointment Slots)'.Available || 'Status Reason' = 'Status Reason (Appointment Slots)'.Booked)
+            ),
+            With(
+                {
+                    startDate: DateValue('Start Date'),
+                    // Converting start date to date value
+        sequenceDays: Sequence(
+                        DateDiff(
+                            DateValue('Start Date'),// Calculating the number of days between start and end dates, and generating a sequence of those days
+                            DateValue('End Date')
+                        ) + 1
+                    )
+                },
+                  // Collecting date-related information for each day in the sequence
+                Collect(
+                    colCurrentSchedules,
+                    AddColumns(
+                        sequenceDays,
+                        "Date",// Calculating the date for each day in the sequence
+                        DateAdd(
+                            'Start Date',
+                            Value - 1,
+                            TimeUnit.Days
+                        ),
+                        "Day Num",// Assigning a day number for each day in the sequence
+                        "Day " & Value,
+                        "Day Name",// Getting the day name for each date
+                        Text(
+                            DateAdd(
+                                'Start Date',
+                                Value - 1,
+                                TimeUnit.Days
+                            ),
+                            "dddd"
+                        ),
+                        "Title",// Adding the appointment slot name as the title
+                        'Appointment Slot Name',
+                        "Start Date",// Adding the start date of the slot
+                        'Start Date',
+                        "End Date",// Adding the end date of the slot
+                        'End Date',
+                        "Type",// Specifying the type of slot
+                        Text('Status Reason'),
+                        "Email",// Adding the user's email address
+                        varUserEmailAddress,
+                        "Location",// Adding the location of the slot
+                        Text(Location),
+                        "Duration",
+                        Duration
+                    )
+                )
+            )
+        );
+        ClearCollect(
+            colTimeValues, // Generate a collection of time slots for each hour of the day, with a one-hour interval between each slot
+            ForAll(
+                // Create a sequence of 24 numbers starting from 0, incremented by 1 each time (representing each hour of the day)
+                Sequence(
+                    24,
+                    0,
+                    1
+                ),
+                {
+                    // Convert each number in the sequence to a time slot string in the format "HH:MM"
+                    Value: Text(
+                        RoundDown(
+                            Value,
+                            0
+                        ),
+                        "00"
+                    ) & ":" & Text(
+                        Mod(
+                            Value * 60,
+                            60
+                        ),
+                        "00"
+                    ),
+         
+                    Display: Text(TimeValue(Text(
+                        RoundDown(
+                            Value,
+                            0
+                        ),
+                        "00"
+                    ) & ":" & Text(
+                        Mod(
+                            Value * 60,
+                            60
+                        ),
+                        "00"
+                    )), "HH:mm") // Changed to 24-hour format
+                }
+            )
+        );
+        // Add a new record to the collection 'colTimeValues'
+        Collect(
+            colTimeValues,
+        
+            // Define the record to be added
+            {
+                // Set the 'Value' field of the record to the text "24:00"
+                Value: Text("24:00"),
+        
+                // Set the 'Display' field of the record to the text "24:00"
+                Display: Text("24:00")
+            }
+        );
+        
+
+    conMain_Calendar As groupContainer.horizontalAutoLayoutContainer:
+        Fill: =ColorValue(varThemeColors.background)
+        Height: =App.Height - Self.Y
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutMode: =LayoutMode.Auto
+        PaddingBottom: =40
+        PaddingLeft: =40
+        PaddingRight: =40
+        PaddingTop: =40
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =App.Width-Self.X
+        X: =compLeftNav_Calendar.Width
+        Y: =compHeader_Calendar.Height
+        ZIndex: =1
+
+        lblTitle_Calendar As label:
+            AutoHeight: =true
+            Color: =ColorValue(varThemeColors.text)
+            Fill: =ColorValue(varThemeColors.background)
+            FocusedBorderColor: =ColorValue(varThemeColors.info)
+            Font: =varThemeFont.H1.face
+            FontWeight: =varThemeFont.H1.weight
+            Height: =Self.Size * 2.5    
+            Italic: =varThemeFont.H1.italic
+            PaddingBottom: =0
+            PaddingRight: =0
+            PaddingTop: =0
+            Role: =TextRole.Heading3
+            Size: =varThemeFont.H1.size
+            Text: |-
+                =// Define a variable named "Text" with the value "{value}"
+                With(
+                    {Text: "Appointment Slots"},
+                    // Check if a localized text exists for "Text" in the user's preferred language
+                    If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colUserLocalizedStrings,
+                            'English Value' = Text
+                        ).'Localized Value'
+                    )
+                )
+            Tooltip: =Self.Text
+            Width: =If(conMain_Calendar.Width <= 270 , 230 ,350)
+            Wrap: =false
+            Y: =200
+            ZIndex: =1
+
+        conMainDropDowns_Calendar As groupContainer.horizontalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            DropShadow: =DropShadow.None
+            Fill: =ColorValue(varThemeColors.background)
+            Height: |
+                =If('Calendar Screen'.Size < 3,  conDelegate_Calendar.Height + conCalendarFilter_Calendar.Height  , conDelegate_Calendar.Height) 
+            LayoutAlignItems: =LayoutAlignItems.Center
+            LayoutGap: =10
+            LayoutMinHeight: |
+                =If('Calendar Screen'.Size < 3,  conDelegate_Calendar.Height + conCalendarFilter_Calendar.Height 
+                 , conDelegate_Calendar.Height) + 30
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            LayoutWrap: =true
+            PaddingLeft: =1
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            ZIndex: =3
+
+            conDelegate_Calendar As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                DropShadow: =DropShadow.None
+                Fill: =ColorValue(varThemeColors.background)
+                Height: =lblDelegate_Calendar.Height + cmbDelegate_Calendar.Height 
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutGap: =1
+                LayoutJustifyContent: =LayoutJustifyContent.Center
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                PaddingBottom: =2
+                PaddingLeft: =1
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Width: =conMainCalendar_Calendar.Width - Self.PaddingLeft - Self.PaddingRight
+                Y: =
+                ZIndex: =1
+
+                lblDelegate_Calendar As label:
+                    AutoHeight: =true
+                    Color: =ColorValue(varThemeColors.text)
+                    FocusedBorderColor: =ColorValue(varThemeColors.info)
+                    Font: =varThemeFont.B2.face
+                    FontWeight: =varThemeFont.B2.weightBold
+                    Height: =19
+                    Italic: =
+                    PaddingBottom: =10
+                    PaddingLeft: =0
+                    PaddingTop: =0
+                    Size: =varThemeFont.B2.size
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        With(
+                            {Text: "Calendar"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Tooltip: =Self.Text
+                    VerticalAlign: =VerticalAlign.Top
+                    Width: =Self.Size * Len(Self.Text)
+                    X: =70
+                    Y: =25
+                    ZIndex: =1
+
+                cmbDelegate_Calendar As combobox:
+                    AccessibleLabel: |
+                        =// Using the With function to create a temporary local variable named 'Text'.
+                        With(
+                            // Initializing the 'Text' variable with the value "Requestor Name".
+                            {Text: "Calendar Name"},
+                            
+                            // Using the If function to perform a conditional check.
+                            If(
+                                // Checking if the 'Localized Value' corresponding to "Requestor Name" in the 'colUserLocalizedStrings' collection is blank.
+                                IsBlank(
+                                    LookUp(
+                                        // Searching within the 'colUserLocalizedStrings' collection.
+                                        colUserLocalizedStrings,
+                                        // Looking for a record where the 'English Value' field is equal to "Requestor Name".
+                                        'English Value' = Text
+                                    ).'Localized Value' // Accessing the 'Localized Value' field of the found record.
+                                ),
+                                
+                                // If the 'Localized Value' is blank, return the original English text "Requestor Name".
+                                Text,
+                                
+                                // If a localized value is found, return the 'Localized Value'.
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    BorderColor: =ColorValue(varThemeColors.primaryGray)
+                    BorderThickness: =1
+                    ChevronBackground: =ColorValue(varThemeColors.backgroundFill)
+                    ChevronDisabledBackground: =ColorValue(varThemeColors.backgroundFillDisabled)
+                    ChevronDisabledFill: |
+                        =ColorValue(varThemeColors.text)
+                    ChevronFill: =ColorValue(varThemeColors.text)
+                    ChevronHoverBackground: =ColorValue(varThemeColors.secondaryGray)
+                    ChevronHoverFill: |
+                        =ColorValue(varThemeColors.text)
+                    Color: =ColorValue(varThemeColors.text)
+                    Default: =User()
+                    DefaultSelectedItems: =[User().FullName]
+                    DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+                    DisabledColor: =ColorValue(varThemeColors.disabledText)
+                    DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                    DisplayFields: =["fullname","internalemailaddress"]
+                    DisplayMode: |+
+                        =If(varIsAdmin, DisplayMode.Edit, DisplayMode.View)
+                        
+                    Fill: =ColorValue(varThemeColors.backgroundFill)
+                    FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                    FocusedBorderThickness: =Value(varThemeColors.focusBorderThickness)
+                    Font: =varThemeFont.B1.face
+                    FontWeight: =varThemeFont.B1.weight
+                    Height: =32
+                    HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                    HoverColor: =ColorValue(varThemeColors.text)
+                    HoverFill: =ColorValue(varThemeColors.secondaryGray)
+                    InputTextPlaceholder: |
+                        =// Using the With function to create a temporary variable 'Text' and perform operations inside its scope.
+                        With(
+                            {Text: "Select one"},
+                            // Check if a corresponding localized value exists in 'colUserLocalizedStrings' for the English value "Select one".
+                            If(
+                                // IsBlank checks if the resulting value from the LookUp function is blank (null or empty).
+                                IsBlank(
+                                    // LookUp searches through 'colUserLocalizedStrings' for a record where 'English Value' equals "Select one".
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text // Text is "Select one" as defined at the start of the With function.
+                                    ).'Localized Value' // Extract the 'Localized Value' field from the found record.
+                                ),
+                                Text, // If the LookUp result is blank (meaning no localized value was found), use the original English text "Select one".
+                                // If a localized value is found, use it.
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Italic: =varThemeFont.B1.italic
+                    Items: =Sort(Filter(Users,'Users (Views)'.'All Users'),'Full Name')
+                    NoSelectionText: |
+                        =// Using the With function to create a temporary variable 'Text' and perform operations inside its scope.
+                        With(
+                            {Text: "Select one"},
+                            // Check if a corresponding localized value exists in 'colUserLocalizedStrings' for the English value "Select one".
+                            If(
+                                // IsBlank checks if the resulting value from the LookUp function is blank (null or empty).
+                                IsBlank(
+                                    // LookUp searches through 'colUserLocalizedStrings' for a record where 'English Value' equals "Select one".
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text // Text is "Select one" as defined at the start of the With function.
+                                    ).'Localized Value' // Extract the 'Localized Value' field from the found record.
+                                ),
+                                Text, // If the LookUp result is blank (meaning no localized value was found), use the original English text "Select one".
+                                // If a localized value is found, use it.
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    OnChange: |
+                        =// Set varUserEmailAddress to the 'Primary Email' of the selected item in cmbDelegate_Calendar
+                        Set(varUserEmailAddress, cmbDelegate_Calendar.Selected.'Primary Email');
+                        
+                        // Clear existing data in the collections to start fresh
+                        Clear(colCurrentSchedules);
+                        // Loop through all collected slots, calculate the date range for each slot, and collect detailed information for each date in the range
+                            
+                        ForAll(Filter('Appointment Slots', 'Meeting Provider'.'Primary Email' = varUserEmailAddress && ( 'Status Reason' = 'Status Reason (Appointment Slots)'.Available || 'Status Reason' = 'Status Reason (Appointment Slots)'.Booked) ),
+                        With({startDate:DateValue('Start Date'),
+                              sequenceDays: Sequence(DateDiff(DateValue('Start Date'),
+                                                              DateValue('End Date')) + 1)
+                              },
+                              
+                              Collect(colCurrentSchedules, 
+                                           AddColumns(sequenceDays,
+                                                      "Date",
+                                                       DateAdd('Start Date', Value - 1, TimeUnit.Days),
+                                                      "Day Num",
+                                                      "Day " & (Value),
+                                                      "Day Name",                              
+                                                      Text(DateAdd('Start Date', Value - 1, TimeUnit.Days),
+                                                           "dddd"
+                                                      ),
+                                                      "Title",
+                                                      'Appointment Slot Name',
+                                                      "Start Date",
+                                                      'Start Date',
+                                                      "End Date",
+                                                      'End Date',
+                                                     "Email",
+                                                     varUserEmailAddress,
+                                                     "Type",
+                                                      Text('Status Reason'),
+                                                      "Location",
+                                                      Text(Location)
+                        
+                                           )
+                              )
+                        ));
+                    PaddingLeft: =If(varRescheduleBooking, 0, 12)
+                    PaddingRight: =10
+                    PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                    PressedColor: =ColorValue(varThemeColors.altText)
+                    PressedFill: =ColorValue(varThemeColors.backgroundFill)
+                    SearchFields: =["fullname"]
+                    SearchItems: =Search(Sort(Filter(Users,'Users (Views)'.'All Users'),'Full Name'),cmbDelegate_Calendar.SearchText,"fullname")
+                    SelectionColor: =ColorValue(varThemeColors.text)
+                    SelectionFill: |
+                        =ColorValue(varThemeColors.secondaryGray)
+                    SelectionTagColor: =ColorValue(varThemeColors.altText)
+                    SelectionTagFill: =ColorValue(varThemeColors.primary)
+                    SelectMultiple: =false
+                    Size: =varThemeFont.B1.size
+                    Template: =ListItemTemplate.Double
+                    Tooltip: =Self.AccessibleLabel
+                    Width: =Parent.Width - 5
+                    X: =lblDelegate_Calendar.X
+                    Y: =lblDelegate_Calendar.Y + lblDelegate_Calendar.Height
+                    ZIndex: =2
+
+            conCalendarFilter_Calendar As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                DropShadow: =DropShadow.None
+                Fill: =ColorValue(varThemeColors.backgroundFill)
+                Height: =conDelegate_Calendar.Height
+                LayoutAlignItems: =LayoutAlignItems.Center
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Width: =conMainSchedule_Calendar.Width
+                ZIndex: =5
+
+                conInterval_Calendar As groupContainer.verticalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    DropShadow: =DropShadow.None
+                    Fill: =ColorValue(varThemeColors.background)
+                    Height: =Parent.Height
+                    LayoutDirection: =LayoutDirection.Vertical
+                    LayoutGap: =1
+                    LayoutJustifyContent: =LayoutJustifyContent.Center
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =100
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingBottom: =2
+                    PaddingLeft: =5
+                    PaddingRight: =5
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Width: =
+                    X: =conMainSchedule_Calendar.X
+                    Y: =
+                    ZIndex: =1
+
+                    lblInterval_Calendar As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        FocusedBorderColor: =ColorValue(varThemeColors.info)
+                        Font: =varThemeFont.B2.face
+                        FontWeight: =varThemeFont.B2.weightBold
+                        Height: =19
+                        Italic: =
+                        PaddingBottom: =10
+                        PaddingLeft: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.B2.size
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Interval"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Tooltip: =Self.Text
+                        VerticalAlign: =VerticalAlign.Top
+                        Width: =Self.Size * Len(Self.Text)
+                        X: =70
+                        Y: =25
+                        ZIndex: =1
+
+                    cmbInterval_Calendar As combobox:
+                        AccessibleLabel: |
+                            =// Using the With function to create a temporary local variable named 'Text'.
+                            With(
+                                // Initializing the 'Text' variable with the value "Requestor Name".
+                                {Text: "Interval"},
+                                
+                                // Using the If function to perform a conditional check.
+                                If(
+                                    // Checking if the 'Localized Value' corresponding to "Requestor Name" in the 'colUserLocalizedStrings' collection is blank.
+                                    IsBlank(
+                                        LookUp(
+                                            // Searching within the 'colUserLocalizedStrings' collection.
+                                            colUserLocalizedStrings,
+                                            // Looking for a record where the 'English Value' field is equal to "Requestor Name".
+                                            'English Value' = Text
+                                        ).'Localized Value' // Accessing the 'Localized Value' field of the found record.
+                                    ),
+                                    
+                                    // If the 'Localized Value' is blank, return the original English text "Requestor Name".
+                                    Text,
+                                    
+                                    // If a localized value is found, return the 'Localized Value'.
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: =ColorValue(varThemeColors.primaryGray)
+                        BorderThickness: =1
+                        ChevronBackground: =ColorValue(varThemeColors.backgroundFill)
+                        ChevronDisabledBackground: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        ChevronDisabledFill: |
+                            =ColorValue(varThemeColors.text)
+                        ChevronFill: =ColorValue(varThemeColors.text)
+                        ChevronHoverBackground: =ColorValue(varThemeColors.secondaryGray)
+                        ChevronHoverFill: |
+                            =ColorValue(varThemeColors.text)
+                        Color: =ColorValue(varThemeColors.text)
+                        DefaultSelectedItems: =Filter(colTimeOptions, InMinutes = 30)
+                        DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+                        DisabledColor: =ColorValue(varThemeColors.disabledText)
+                        DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        DisplayFields: =["Name"]
+                        DisplayMode: |-
+                            =// Set the display mode of the control based on the value of varRescheduleBooking
+                            DisplayMode.Edit  
+                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                        FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                        FocusedBorderThickness: =Value(varThemeColors.focusBorderThickness)
+                        Font: =varThemeFont.B1.face
+                        FontWeight: =varThemeFont.B1.weight
+                        Height: =cmbDelegate_Calendar.Height
+                        HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                        HoverColor: =ColorValue(varThemeColors.text)
+                        HoverFill: =ColorValue(varThemeColors.secondaryGray)
+                        InputTextPlaceholder: |
+                            =// Using the With function to create a temporary variable 'Text' and perform operations inside its scope.
+                            With(
+                                {Text: "Select one"},
+                                // Check if a corresponding localized value exists in 'colUserLocalizedStrings' for the English value "Select one".
+                                If(
+                                    // IsBlank checks if the resulting value from the LookUp function is blank (null or empty).
+                                    IsBlank(
+                                        // LookUp searches through 'colUserLocalizedStrings' for a record where 'English Value' equals "Select one".
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text // Text is "Select one" as defined at the start of the With function.
+                                        ).'Localized Value' // Extract the 'Localized Value' field from the found record.
+                                    ),
+                                    Text, // If the LookUp result is blank (meaning no localized value was found), use the original English text "Select one".
+                                    // If a localized value is found, use it.
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        IsSearchable: =false
+                        Italic: =varThemeFont.B1.italic
+                        Items: =Sort(colTimeOptions, Value, SortOrder.Ascending)
+                        NoSelectionText: |
+                            =// Using the With function to create a temporary variable 'Text' and perform operations inside its scope.
+                            With(
+                                {Text: "Select one"},
+                                // Check if a corresponding localized value exists in 'colUserLocalizedStrings' for the English value "Select one".
+                                If(
+                                    // IsBlank checks if the resulting value from the LookUp function is blank (null or empty).
+                                    IsBlank(
+                                        // LookUp searches through 'colUserLocalizedStrings' for a record where 'English Value' equals "Select one".
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text // Text is "Select one" as defined at the start of the With function.
+                                        ).'Localized Value' // Extract the 'Localized Value' field from the found record.
+                                    ),
+                                    Text, // If the LookUp result is blank (meaning no localized value was found), use the original English text "Select one".
+                                    // If a localized value is found, use it.
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        OnChange: |-
+                            =If(IsBlank(Self.Selected.Value),Reset(Self));
+                            UpdateContext({locSelectedInterval: Self.Selected});
+                            // Clear existing data and collect a new set of time slots into the colMyTimeCollection collection
+                            
+                            // Check if the selected time in the cmbShiftEnd_Calendar control is "24:00"
+                            If(cmbShiftEnd_Calendar.Selected.Value = "24:00",
+                            
+                                // If it is "24:00", set varshiftEnd to one day after the time value of "24:00"
+                                // This is to handle the edge case where a shift ends at midnight (start of the next day)
+                                Set(varshiftEnd, DateAdd(TimeValue(cmbShiftEnd_Calendar.Selected.Value), 1, TimeUnit.Days)),
+                            
+                                // If the selected time is not "24:00", set varshiftEnd to the time value of the selected time
+                                Set(varshiftEnd, TimeValue(cmbShiftEnd_Calendar.Selected.Value))
+                            );
+                            
+                            If(
+                                !IsBlank(locSelectedInterval.InMinutes),
+                                ClearCollect(
+                                    colMyTimeCollection,
+                                    ForAll(
+                                    // Generate a sequence of numbers representing each time slot, calculated based on the start time, end time, and interval
+                                        Sequence(
+                                        // Calculate the total number of time slots by dividing the difference in minutes between the end time and start time by the interval
+                                            ((varshiftEnd - TimeValue(cmbShiftStart_Calendar.Selected.Value)) / 60000) / Int(Self.Selected.InMinutes),
+                                        // Start the sequence from the start time, converting it to a decimal number
+                                            Substitute(
+                                                cmbShiftStart_Calendar.Selected.Value,
+                                                ":00",
+                                                ""
+                                            ),
+                                        // Define the step size for the sequence as the selected interval in minutes
+                                            cmbInterval_Calendar.Selected.Value
+                                        ),
+                                        // For each number in the sequence, convert it back to a time string in HH:MM format
+                                        Text(
+                                        // Round down to get the hours part
+                                            RoundDown(
+                                                Value,
+                                                0
+                                            ),
+                                            "00"
+                                        ) & ":" & Text(
+                                        // Calculate the minutes part and ensure it is a two-digit number
+                                            Mod(
+                                                Value * 60,
+                                                60
+                                            ),
+                                            "00"
+                                        )
+                                    )
+                                )
+                            )
+                        OnSelect: =Reset(cmbAppointmentType_NewBooking); //Reset combobox Appointment Type
+                        PaddingLeft: |
+                            =// Using the If function to set the PaddingLeft property conditionally.
+                            If(
+                                // Checking the value of the variable varRescheduleBooking.
+                                varRescheduleBooking,
+                                
+                                // If varRescheduleBooking is true, set the PaddingLeft to 0.
+                                0,
+                                
+                                // If varRescheduleBooking is false, set the PaddingLeft to 12.
+                                12
+                            )
+                        PaddingRight: =10
+                        PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                        PressedColor: =ColorValue(varThemeColors.altText)
+                        PressedFill: =ColorValue(varThemeColors.backgroundFill)
+                        SearchFields: =["Name"]
+                        SearchItems: =[]
+                        SelectionColor: =ColorValue(varThemeColors.text)
+                        SelectionFill: |
+                            =ColorValue(varThemeColors.secondaryGray)
+                        SelectionTagColor: =ColorValue(varThemeColors.altText)
+                        SelectionTagFill: =ColorValue(varThemeColors.primary)
+                        SelectMultiple: =false
+                        Size: =varThemeFont.B1.size
+                        Tooltip: =Self.AccessibleLabel
+                        Width: =Parent.Width - 10
+                        X: =conMainSchedule_Calendar.X
+                        Y: =lblInterval_Calendar.Y + lblInterval_Calendar.Height
+                        ZIndex: =2
+
+                conShiftStart_Calendar As groupContainer.verticalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    DropShadow: =DropShadow.None
+                    Fill: =ColorValue(varThemeColors.background)
+                    Height: =Parent.Height
+                    LayoutDirection: =LayoutDirection.Vertical
+                    LayoutGap: =1
+                    LayoutJustifyContent: =LayoutJustifyContent.Center
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =100
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingBottom: =2
+                    PaddingLeft: =5
+                    PaddingRight: =5
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Width: =
+                    Y: =
+                    ZIndex: =2
+
+                    lblShiftStart_Calendar As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        FocusedBorderColor: =ColorValue(varThemeColors.info)
+                        Font: =varThemeFont.B2.face
+                        FontWeight: =varThemeFont.B2.weightBold
+                        Height: =19
+                        Italic: =
+                        PaddingBottom: =10
+                        PaddingLeft: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.B2.size
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Shift Start"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Tooltip: =Self.Text
+                        VerticalAlign: =VerticalAlign.Top
+                        Width: =Self.Size * Len(Self.Text)
+                        X: =70
+                        Y: =25
+                        ZIndex: =1
+
+                    cmbShiftStart_Calendar As combobox:
+                        AccessibleLabel: |
+                            =// Using the With function to create a temporary local variable named 'Text'.
+                            With(
+                                // Initializing the 'Text' variable with the value "Requestor Name".
+                                {Text: "Shift Start"},
+                                
+                                // Using the If function to perform a conditional check.
+                                If(
+                                    // Checking if the 'Localized Value' corresponding to "Requestor Name" in the 'colUserLocalizedStrings' collection is blank.
+                                    IsBlank(
+                                        LookUp(
+                                            // Searching within the 'colUserLocalizedStrings' collection.
+                                            colUserLocalizedStrings,
+                                            // Looking for a record where the 'English Value' field is equal to "Requestor Name".
+                                            'English Value' = Text
+                                        ).'Localized Value' // Accessing the 'Localized Value' field of the found record.
+                                    ),
+                                    
+                                    // If the 'Localized Value' is blank, return the original English text "Requestor Name".
+                                    Text,
+                                    
+                                    // If a localized value is found, return the 'Localized Value'.
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: =ColorValue(varThemeColors.primaryGray)
+                        BorderThickness: =1
+                        ChevronBackground: =ColorValue(varThemeColors.backgroundFill)
+                        ChevronDisabledBackground: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        ChevronDisabledFill: |
+                            =ColorValue(varThemeColors.text)
+                        ChevronFill: =ColorValue(varThemeColors.text)
+                        ChevronHoverBackground: =ColorValue(varThemeColors.secondaryGray)
+                        ChevronHoverFill: |
+                            =ColorValue(varThemeColors.text)
+                        Color: =ColorValue(varThemeColors.text)
+                        DefaultSelectedItems: |-
+                            =Filter(colTimeValues, Value = "08:00")
+                        DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+                        DisabledColor: =ColorValue(varThemeColors.disabledText)
+                        DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        DisplayFields: =["Display"]
+                        DisplayMode: |-
+                            =// Using the If function to set the DisplayMode property conditionally.
+                            DisplayMode.Edit  
+                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                        FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                        FocusedBorderThickness: =Value(varThemeColors.focusBorderThickness)
+                        Font: =varThemeFont.B1.face
+                        FontWeight: =varThemeFont.B1.weight
+                        Height: =cmbDelegate_Calendar.Height
+                        HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                        HoverColor: =ColorValue(varThemeColors.text)
+                        HoverFill: =ColorValue(varThemeColors.secondaryGray)
+                        InputTextPlaceholder: |
+                            =// Using the With function to create a temporary variable 'Text' and perform operations inside its scope.
+                            With(
+                                {Text: "Select one"},
+                                // Check if a corresponding localized value exists in 'colUserLocalizedStrings' for the English value "Select one".
+                                If(
+                                    // IsBlank checks if the resulting value from the LookUp function is blank (null or empty).
+                                    IsBlank(
+                                        // LookUp searches through 'colUserLocalizedStrings' for a record where 'English Value' equals "Select one".
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text // Text is "Select one" as defined at the start of the With function.
+                                        ).'Localized Value' // Extract the 'Localized Value' field from the found record.
+                                    ),
+                                    Text, // If the LookUp result is blank (meaning no localized value was found), use the original English text "Select one".
+                                    // If a localized value is found, use it.
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        IsSearchable: =false
+                        Italic: =varThemeFont.B1.italic
+                        Items: =colTimeValues
+                        NoSelectionText: |
+                            =// Using the With function to create a temporary variable 'Text' and perform operations inside its scope.
+                            With(
+                                {Text: "Select one"},
+                                // Check if a corresponding localized value exists in 'colUserLocalizedStrings' for the English value "Select one".
+                                If(
+                                    // IsBlank checks if the resulting value from the LookUp function is blank (null or empty).
+                                    IsBlank(
+                                        // LookUp searches through 'colUserLocalizedStrings' for a record where 'English Value' equals "Select one".
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text // Text is "Select one" as defined at the start of the With function.
+                                        ).'Localized Value' // Extract the 'Localized Value' field from the found record.
+                                    ),
+                                    Text, // If the LookUp result is blank (meaning no localized value was found), use the original English text "Select one".
+                                    // If a localized value is found, use it.
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        OnChange: |-
+                            =If(IsBlank(Self.Selected.Value),Reset(Self));
+                            // Check if the selected time in the cmbShiftEnd_Calendar control is "24:00"
+                            If(cmbShiftEnd_Calendar.Selected.Value = "24:00",
+                            
+                                // If it is "24:00", set varshiftEnd to one day after the time value of "24:00"
+                                // This is to handle the edge case where a shift ends at midnight (start of the next day)
+                                Set(varshiftEnd, DateAdd(TimeValue(cmbShiftEnd_Calendar.Selected.Value), 1, TimeUnit.Days)),
+                            
+                                // If the selected time is not "24:00", set varshiftEnd to the time value of the selected time
+                                Set(varshiftEnd, TimeValue(cmbShiftEnd_Calendar.Selected.Value))
+                            );
+                            
+                            
+                            //Reset if shift end is lesser than shift start
+                            If(varshiftEnd < TimeValue(cmbShiftStart_Calendar.Selected.Value), Notify("End date must be passed the start date", NotificationType.Warning); Reset(Self));
+                            
+                            // Clear existing data and collect a new set of time slots into the colMyTimeCollection collection
+                            If(!IsBlank(locSelectedInterval.InMinutes) And !IsBlank(Self.Selected.Value),
+                            ClearCollect(
+                                colMyTimeCollection,
+                                ForAll(
+                                    // Generate a sequence of numbers representing each time slot, calculated based on the start time, end time, and interval
+                                    Sequence(
+                                        // Calculate the total number of time slots by dividing the difference in minutes between the end time and start time by the interval
+                                        (varshiftEnd - TimeValue(cmbShiftStart_Calendar.Selected.Value)) / 60000 / locSelectedInterval.InMinutes,
+                                        // Start the sequence from the start time, converting it to a decimal number
+                                        Substitute(
+                                            cmbShiftStart_Calendar.Selected.Value,
+                                            ":00",
+                                            ""
+                                        ),
+                                        // Define the step size for the sequence as the selected interval in minutes
+                                        cmbInterval_Calendar.Selected.Value
+                                    ),
+                                    // For each number in the sequence, convert it back to a time string in HH:MM format
+                                    Text(
+                                        // Round down to get the hours part
+                                        RoundDown(
+                                            Value,
+                                            0
+                                        ),
+                                        "00"
+                                    ) & ":" & Text(
+                                        // Calculate the minutes part and ensure it is a two-digit number
+                                        Mod(
+                                            Value * 60,
+                                            60
+                                        ),
+                                        "00"
+                                    )
+                                )
+                            )
+                            )
+                        OnSelect: =Reset(cmbAppointmentType_NewBooking); //Reset combobox Appointment Type
+                        PaddingLeft: =If(varRescheduleBooking, 0, 12)
+                        PaddingRight: =10
+                        PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                        PressedColor: =ColorValue(varThemeColors.altText)
+                        PressedFill: =ColorValue(varThemeColors.backgroundFill)
+                        SearchFields: =["Value"]
+                        SearchItems: =[]
+                        SelectionColor: =ColorValue(varThemeColors.text)
+                        SelectionFill: |
+                            =ColorValue(varThemeColors.secondaryGray)
+                        SelectionTagColor: =ColorValue(varThemeColors.altText)
+                        SelectionTagFill: =ColorValue(varThemeColors.primary)
+                        SelectMultiple: =false
+                        Size: =varThemeFont.B1.size
+                        Tooltip: =Self.AccessibleLabel
+                        Width: =Parent.Width - 10
+                        X: =lblShiftStart_Calendar.X
+                        Y: =lblShiftStart_Calendar.Y + lblShiftStart_Calendar.Height
+                        ZIndex: =2
+
+                conShiftEnd_Calendar As groupContainer.verticalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    DropShadow: =DropShadow.None
+                    Fill: =ColorValue(varThemeColors.background)
+                    Height: =Parent.Height
+                    LayoutDirection: =LayoutDirection.Vertical
+                    LayoutGap: =1
+                    LayoutJustifyContent: =LayoutJustifyContent.Center
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =100
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingBottom: =2
+                    PaddingLeft: =5
+                    PaddingRight: =5
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Width: =
+                    Y: =
+                    ZIndex: =3
+
+                    lblShiftEnd_Calendar As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        FocusedBorderColor: =ColorValue(varThemeColors.info)
+                        Font: =varThemeFont.B2.face
+                        FontWeight: =varThemeFont.B2.weightBold
+                        Height: =19
+                        Italic: =
+                        PaddingBottom: =10
+                        PaddingLeft: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.B2.size
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Shift End"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Tooltip: =Self.Text
+                        VerticalAlign: =VerticalAlign.Top
+                        Width: =Self.Size * Len(Self.Text)
+                        X: =70
+                        Y: =25
+                        ZIndex: =1
+
+                    cmbShiftEnd_Calendar As combobox:
+                        AccessibleLabel: |-
+                            =With(
+                                {Text: "Shift End"},
+                                If(
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: =ColorValue(varThemeColors.primaryGray)
+                        BorderThickness: =1
+                        ChevronBackground: =ColorValue(varThemeColors.backgroundFill)
+                        ChevronDisabledBackground: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        ChevronDisabledFill: |
+                            =ColorValue(varThemeColors.text)
+                        ChevronFill: =ColorValue(varThemeColors.text)
+                        ChevronHoverBackground: =ColorValue(varThemeColors.secondaryGray)
+                        ChevronHoverFill: |
+                            =ColorValue(varThemeColors.text)
+                        Color: =ColorValue(varThemeColors.text)
+                        DefaultSelectedItems: |-
+                            =Filter(colTimeValues, Value = "18:00")
+                        DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+                        DisabledColor: =ColorValue(varThemeColors.disabledText)
+                        DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        DisplayFields: =["Display"]
+                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                        FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                        FocusedBorderThickness: =Value(varThemeColors.focusBorderThickness)
+                        Font: =varThemeFont.B1.face
+                        FontWeight: =varThemeFont.B1.weight
+                        Height: =cmbDelegate_Calendar.Height
+                        HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                        HoverColor: =ColorValue(varThemeColors.text)
+                        HoverFill: =ColorValue(varThemeColors.secondaryGray)
+                        InputTextPlaceholder: |-
+                            =With(
+                                {Text: "Select one"},
+                                If(
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        IsSearchable: =false
+                        Italic: =varThemeFont.B1.italic
+                        Items: =colTimeValues
+                        NoSelectionText: |-
+                            =With(
+                                {Text: "Select one"},
+                                If(
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        OnChange: |-
+                            =If(IsBlank(Self.Selected.Value),Reset(Self));
+                            // Check if the selected time in the cmbShiftEnd_Calendar control is "24:00"
+                            If(cmbShiftEnd_Calendar.Selected.Value = "24:00",
+                            
+                                // If it is "24:00", set varshiftEnd to one day after the time value of "24:00"
+                                // This is to handle the edge case where a shift ends at midnight (start of the next day)
+                                Set(varshiftEnd, DateAdd(TimeValue(cmbShiftEnd_Calendar.Selected.Value), 1, TimeUnit.Days)),
+                            
+                                // If the selected time is not "24:00", set varshiftEnd to the time value of the selected time
+                                Set(varshiftEnd, TimeValue(cmbShiftEnd_Calendar.Selected.Value))
+                            );
+                            
+                            
+                            //Reset if shift end is lesser than shift start
+                            If(varshiftEnd < TimeValue(cmbShiftStart_Calendar.Selected.Value), Notify("End date must be passed the start date", NotificationType.Warning); Reset(Self));
+                            
+                            // Clear existing data and collect a new set of time slots into the colMyTimeCollection collection
+                            If(!IsBlank(locSelectedInterval.InMinutes) And !IsBlank(Self.Selected.Value),
+                            ClearCollect(
+                                colMyTimeCollection,
+                                ForAll(
+                                    // Generate a sequence of numbers representing each time slot, calculated based on the start time, end time, and interval
+                                    Sequence(
+                                        // Calculate the total number of time slots by dividing the difference in minutes between the end time and start time by the interval
+                            
+                                                (varshiftEnd - TimeValue(cmbShiftStart_Calendar.Selected.Value)) / 60000 / locSelectedInterval.InMinutes,
+                                        // Start the sequence from the start time, converting it to a decimal numbe
+                                        Substitute(
+                                            cmbShiftStart_Calendar.Selected.Value,
+                                            ":00",
+                                            ""
+                                        ),
+                                        // Define the step size for the sequence as the selected interval in minutes
+                                        cmbInterval_Calendar.Selected.Value
+                                    ),
+                                    // For each number in the sequence, convert it back to a time string in HH:MM format
+                                    Text(
+                                        // Round down to get the hours part
+                                        RoundDown(
+                                            Value,
+                                            0
+                                        ),
+                                        "00"
+                                    ) & ":" & Text(
+                                        // Calculate the minutes part and ensure it is a two-digit number
+                                        Mod(
+                                            Value * 60,
+                                            60
+                                        ),
+                                        "00"
+                                    )
+                                )
+                            )
+                            )
+                        OnSelect: |
+                            =Reset(cmbAppointmentType_NewBooking); //Reset combobox Appointment Type
+                        PaddingLeft: |
+                            =// Set the left padding of the control
+                            If(
+                                varRescheduleBooking, // Check the value of the variable varRescheduleBooking
+                                0, // If varRescheduleBooking is true (or equivalent to true), set the left padding to 0
+                                12 // If varRescheduleBooking is false (or equivalent to false), set the left padding to 12
+                            )
+                        PaddingRight: =10
+                        PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                        PressedColor: =ColorValue(varThemeColors.altText)
+                        PressedFill: =ColorValue(varThemeColors.backgroundFill)
+                        SearchFields: =["Value"]
+                        SearchItems: =[]
+                        SelectionColor: =ColorValue(varThemeColors.text)
+                        SelectionFill: |
+                            =ColorValue(varThemeColors.secondaryGray)
+                        SelectionTagColor: =ColorValue(varThemeColors.altText)
+                        SelectionTagFill: =ColorValue(varThemeColors.primary)
+                        SelectMultiple: =false
+                        Size: =varThemeFont.B1.size
+                        Tooltip: =Self.AccessibleLabel
+                        Width: =Parent.Width - 10
+                        X: =lblShiftEnd_Calendar.X
+                        Y: =lblShiftEnd_Calendar.Y + lblShiftEnd_Calendar.Height
+                        ZIndex: =2
+
+        conMainAppointments_Calendar As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            DropShadow: =DropShadow.None
+            Fill: =ColorValue(varThemeColors.background)
+            FillPortions: =5
+            Height: =100
+            LayoutDirection: =If('Calendar Screen'.Size < 3, LayoutDirection.Vertical, LayoutDirection.Horizontal)
+            LayoutGap: =15
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            LayoutOverflowY: =LayoutOverflow.Scroll
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            ZIndex: =4
+
+            conMainCalendar_Calendar As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                Fill: =ColorValue(varThemeColors.backgroundFill)
+                FillPortions: =0
+                Height: =Parent.Height
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Width: =If('Calendar Screen'.Size < 3, Parent.Width - 13, Parent.Width / 2.02)
+                ZIndex: =1
+
+                conCalendarHead_Calendar As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    DropShadow: =DropShadow.None
+                    Fill: =ColorValue(varThemeColors.backgroundFill)
+                    FillPortions: =0
+                    Height: =40
+                    LayoutAlignItems: =LayoutAlignItems.Center
+                    LayoutMinHeight: =20
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Width: =Parent.Width
+                    ZIndex: =2
+
+                    "icoCalendarPrevious_Calendar As icon.'3DPrinting'":
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Back"},
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text 
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text 
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: =ColorValue(varThemeColors.text)
+                        Color: =ColorValue(varThemeColors.text)
+                        DisabledBorderColor: =ColorValue(varThemeColors.disabledText)
+                        DisabledColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        DisabledFill: =RGBA(0,0,0,0)
+                        Fill: =RGBA(0,0,0,0)
+                        FocusedBorderColor: =ColorValue(varThemeColors.info)
+                        FocusedBorderThickness: =4
+                        Height: =Parent.Height 
+                        HoverBorderColor: =Color.Transparent
+                        HoverColor: =Self.Color
+                        HoverFill: =RGBA(0,0,0,0)
+                        Icon: =Icon.ChevronLeft
+                        OnSelect: |
+                            =// This line is used to decrement the current date stored in varCalendar by one month.
+                            // The DateAdd function is used to add (or subtract) a specific interval of time to a date.
+                            // In this case, it's subtracting one month from varCalendar.
+                            Set(
+                                varCalendar, 
+                                DateAdd(
+                                    varCalendar, 
+                                    -1, 
+                                    TimeUnit.Months
+                                )
+                            );
+                            
+                            // This line sets the varCalendarFirstDay variable to the first day of the updated month in varCalendar.
+                            // It calculates the weekday of the first day of the month and subtracts that number from the date 
+                            // to move back to the first day of the month.
+                            // The Weekday function returns a number representing the day of the week (Sunday=1, Monday=2, ..., Saturday=7).
+                            // So if varCalendar is now February 15, 2023, and February 1, 2023, is a Wednesday (4),
+                            // the Weekday function would return 4, and the DateAdd function would subtract 4 days,
+                            // setting varCalendarFirstDay to February 1, 2023.
+                            Set(
+                                varCalendarFirstDay, 
+                                DateAdd(
+                                    varCalendar, 
+                                    - Weekday(varCalendar), 
+                                    TimeUnit.Days
+                                )
+                            );
+                        PaddingBottom: =5
+                        PaddingLeft: =10
+                        PaddingRight: =5
+                        PaddingTop: =5
+                        PressedBorderColor: =Color.Transparent
+                        PressedColor: =Self.Color
+                        PressedFill: =RGBA(0,0,0,0)
+                        TabIndex: =0
+                        Width: =Self.Height
+                        ZIndex: =1
+
+                    lblCalendarMonthYear_Calendar As label:
+                        Align: =Align.Center
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                        FocusedBorderColor: =ColorValue(varThemeColors.info)
+                        Font: =varThemeFont.H1.face
+                        FontWeight: =varThemeFont.H1.weight
+                        Height: =Parent.Height
+                        Italic: =varThemeFont.H1.italic
+                        PaddingBottom: =0
+                        PaddingRight: =0
+                        PaddingTop: =0
+                        Role: =TextRole.Heading3
+                        Size: =varThemeFont.H3.size
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: Text(varCalendar,"mmmm yyyy")},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Tooltip: =Self.Text
+                        Width: =Parent.Width - icoCalendarPrevious_Calendar.Width - icoCalendarNext_Calendar.Width
+                        Y: =200
+                        ZIndex: =2
+
+                    icoCalendarNext_Calendar As icon.ChevronRight:
+                        AccessibleLabel: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: "Back"},
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text 
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text 
+                                    ).'Localized Value'
+                                )
+                            )
+                        BorderColor: =ColorValue(varThemeColors.text)
+                        Color: =ColorValue(varThemeColors.text)
+                        DisabledBorderColor: =ColorValue(varThemeColors.disabledText)
+                        DisabledColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        DisabledFill: =RGBA(0, 0, 0, 0)
+                        FocusedBorderColor: =ColorValue(varThemeColors.info)
+                        FocusedBorderThickness: =4
+                        Height: =Parent.Height 
+                        HoverBorderColor: =Color.Transparent
+                        HoverColor: =Self.Color
+                        HoverFill: =RGBA(0, 0, 0, 0)
+                        Icon: =Icon.ChevronRight
+                        OnSelect: |
+                            =// This line is used to increment the current date stored in varCalendar by one month.
+                            // The DateAdd function is used to add a specific interval of time to a date.
+                            Set(
+                                varCalendar, 
+                                DateAdd(
+                                    varCalendar, 
+                                    1, 
+                                    TimeUnit.Months
+                                )
+                            );
+                            
+                            // This line sets the varCalendarFirstDay variable to the first day of the updated month in varCalendar.
+                            // It subtracts the weekday number of the first day of the month from the date to get back to the first day.
+                            // Weekday function returns a number representing the day of the week (Sunday=1, Monday=2, ..., Saturday=7).
+                            Set(
+                                varCalendarFirstDay, 
+                                DateAdd(
+                                    varCalendar, 
+                                    - Weekday(varCalendar), 
+                                    TimeUnit.Days
+                                )
+                            );
+                        PaddingBottom: =5
+                        PaddingLeft: =10
+                        PaddingRight: =5
+                        PaddingTop: =5
+                        PressedBorderColor: =Color.Transparent
+                        PressedColor: =Self.Color
+                        PressedFill: =RGBA(0, 0, 0, 0)
+                        TabIndex: =0
+                        Width: =Self.Height
+                        ZIndex: =3
+
+                "galCalendarHeader_Calendar As gallery.'BrowseLayout_Vertical_OneTextVariant_ver4.0'":
+                    AccessibleLabel: |-
+                        =With(
+                            {Text: "Calendar - Calendar Head"},
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text 
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text 
+                                ).'Localized Value'
+                            )
+                        )
+                    FillPortions: =0
+                    Height: =If(App.Height < 500, 0, 60)
+                    Items: |
+                        =// Setting the items property of the 'galCalendarHeader_Calendar' gallery to display short names of weekdays.
+                        Calendar.WeekdaysShort()
+                        // This function is assumed to return an array of abbreviated names for each day of the week.
+                        // For example: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] for English locale.
+                    Layout: =Layout.Vertical
+                    LayoutMinHeight: =20
+                    LayoutMinWidth: =320
+                    ShowScrollbar: =false
+                    TabIndex: =0
+                    TemplatePadding: =0
+                    TemplateSize: =50
+                    Width: =Parent.Width
+                    WrapCount: =7
+                    X: =40
+                    Y: =72
+                    ZIndex: =3
+
+                    conCalendarHeadName_Calendar As groupContainer.horizontalAutoLayoutContainer:
+                        DropShadow: =DropShadow.None
+                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                        Height: =Parent.TemplateHeight
+                        LayoutAlignItems: =LayoutAlignItems.Center
+                        LayoutDirection: =LayoutDirection.Vertical
+                        LayoutJustifyContent: =LayoutJustifyContent.End
+                        LayoutMode: =LayoutMode.Auto
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Width: =Parent.TemplateWidth
+                        X: =2.842170943040401e-14
+                        ZIndex: =6
+
+                        lblDaysName_Calendar As label:
+                            Align: =Align.Center
+                            AutoHeight: =true
+                            Color: =ColorValue(varThemeColors.text)
+                            FocusedBorderColor: =ColorValue(varThemeColors.info)
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weightBold
+                            Height: =
+                            Italic: =
+                            PaddingBottom: =10
+                            PaddingLeft: =0
+                            PaddingRight: =0
+                            PaddingTop: =0
+                            Size: =varThemeFont.B2.size
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: ThisItem.Value},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width
+                            Y: =1
+                            ZIndex: =1
+
+                        shpgalCalendarHeadName_Calendar As rectangle:
+                            Height: =1
+                            OnSelect: =
+                            Width: =Parent.Width
+                            Y: =18
+                            ZIndex: =2
+
+                "galCalendarBody_Calendar As gallery.'BrowseLayout_Vertical_OneTextVariant_ver4.0'":
+                    AccessibleLabel: |-
+                        =With(
+                            {Text: "Calendar - Calendar Body"},
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text 
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text 
+                                ).'Localized Value'
+                            )
+                        )
+                    AlignInContainer: =AlignInContainer.Center
+                    BorderColor: =
+                    Fill: |
+                        =ColorValue(varThemeColors.backgroundFill)
+                    FillPortions: =0
+                    Height: =If(App.Height < 500, 200, Parent.Height - conCalendarHead_Calendar.Height - galCalendarHeader_Calendar.Height)
+                    Items: |
+                        =// The Sequence function generates a table of sequential numbers starting from 1.
+                        // Here, Sequence(35) will create a table with 35 rows.
+                        // Each row will have a single column named "Value" that contains a unique number from 1 to 35.
+                        Sequence(35)
+                    Layout: =Layout.Vertical
+                    LayoutMinHeight: =287
+                    LayoutMinWidth: =320
+                    OnSelect: |-
+                        =
+                        // Setting the value of the global variable 'varSelectedDate'
+                        Set(
+                            varSelectedDate,
+                            
+                            // Convert a date and time value to a date-only value
+                            DateValue(
+                                // Add a specific number of time units to a date/time value
+                                DateAdd(
+                                    varCalendarFirstDay,
+                                    ThisItem.Value,      // The number of days to add. 'ThisItem' refers to the current item in a gallery or data table.
+                                    TimeUnit.Days        // The unit of time to add (in this case, days)
+                                )
+                            )
+                        )
+                    ShowScrollbar: =false
+                    TabIndex: =0
+                    TemplatePadding: =0
+                    TemplateSize: =galCalendarBody_Calendar.Height / 5.02
+                    Width: =Parent.Width
+                    WrapCount: =7
+                    X: =40
+                    Y: =150
+                    ZIndex: =4
+
+                    shpgalCalendarBackground_Calendar As rectangle:
+                        AccessibleLabel: |-
+                            =With(
+                                {Text: "Calendar - Calendar Days"},
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text 
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text 
+                                    ).'Localized Value'
+                                )
+                            )
+                        Fill: |-
+                            =// This expression determines the background color of a calendar item based on a specific condition.
+                            If(
+                                // Check if the month of the calculated date is different from the current month.
+                                Text(
+                                    // Add a certain number of days (ThisItem.Value) to a starting date (varCalendarFirstDay).
+                                    DateAdd(
+                                        varCalendarFirstDay, 
+                                        ThisItem.Value,       // The number of days to add to the starting date. 
+                                        TimeUnit.Days         // Specify that the value to be added is in days.
+                                    ),
+                                    "mm" // Format the resulting date to extract just the month part as a two-digit number.
+                                ) <> Text(
+                                    varCalendar, // Get the current date.
+                                    "mm"      // Format the current date to extract just the month part as a two-digit number.
+                                ),
+                                
+                                // If the months are different, set the background color to the disabled fill color.
+                                ColorValue(varThemeColors.backgroundFillDisabled),
+                                
+                                // If the months are the same, set the background color to the normal fill color.
+                                Color.Transparent
+                            )
+                            
+                            //Color.Transparent
+                        Height: =Parent.TemplateHeight
+                        OnSelect: |-
+                            =Set(
+                                varSelectedDate, 
+                                DateValue(
+                                    DateAdd(
+                                        varCalendarFirstDay,  // Starting date (usually the first day of a calendar or a specific month)
+                                        ThisItem.Value,       // Number of days to add. 'ThisItem' refers to the current item in a collection or a data source being processed.
+                                        TimeUnit.Days         // The unit of time to add, in this case, days.
+                                    )
+                                )
+                            )
+                        TabIndex: =0
+                        Width: =Parent.TemplateWidth
+                        ZIndex: =1
+
+                    conCalendarSlotCount_Calendar As groupContainer.horizontalAutoLayoutContainer:
+                        BorderColor: =RGBA(255, 255, 255, 1)
+                        DropShadow: =DropShadow.None
+                        Fill: =Color.Transparent
+                        Height: |+
+                            =Parent.TemplateHeight/1.5
+                            
+                        LayoutAlignItems: =LayoutAlignItems.Center
+                        LayoutGap: =5
+                        LayoutMode: =LayoutMode.Auto
+                        PaddingLeft: =10
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Visible: =If(Int(Text(DateAdd(varCalendarFirstDay,ThisItem.Value,TimeUnit.Days),"yymm")) < Int(Text(Today(),"yymm")),false,true)
+                        Width: |
+                            =Parent.TemplateWidth
+                        Y: =shpgalCalendarBody_Calendar.Y/2
+                        ZIndex: =2
+
+                        shpgalCalendarEvents_Calendar As circle:
+                            DisplayMode: =DisplayMode.Disabled
+                            Fill: =ColorValue(varThemeColors.confirmation)
+                            Height: =5
+                            OnSelect: =
+                            Width: =5
+                            X: |
+                                =29.214285714285715
+                            Y: =4
+                            ZIndex: =1
+
+                        lblCalendarSlotCount As label:
+                            BorderColor: =RGBA(0, 0, 0, 0)
+                            Color: =ColorValue(varThemeColors.text)
+                            FocusedBorderThickness: =1
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weightBold
+                            Height: =32
+                            OnSelect: |-
+                                =Set(
+                                    varSelectedDate, 
+                                    DateValue(
+                                        DateAdd(
+                                            varCalendarFirstDay,  // Starting date (usually the first day of a calendar or a specific month)
+                                            ThisItem.Value,       // Number of days to add. 'ThisItem' refers to the current item in a collection or a data source being processed.
+                                            TimeUnit.Days         // The unit of time to add, in this case, days.
+                                        )
+                                    )
+                                )
+                            PressedBorderColor: =Color.Transparent
+                            Size: =varThemeFont.B3.size
+                            TabIndex: =
+                            Text: |-
+                                =If(!IsBlank(cmbInterval_Calendar.Selected.InMinutes),
+                                // Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {
+                                        Text: // The expression is used to display the number of available slots on a specific date in a calendar.
+                                Concatenate(
+                                    // Calculate the number of available slots by subtracting the number of booked slots from the total number of slots.
+                                            (RoundDown(
+                                    ((galSchedule_Calendar.AllItemsCount * cmbInterval_Calendar.Selected.InMinutes) - Sum(
+                                        Filter(
+                                            colCurrentSchedules,
+                                            Text('Start Date', "mm/dd/yyyy") = Text(DateAdd(varCalendarFirstDay, ThisItem.Value, TimeUnit.Days), "mm/dd/yyyy") &&
+                                            TimeValue(cmbShiftStart_Calendar.Selected.Value) <= TimeValue('Start Date') && 
+                                            TimeValue(cmbShiftEnd_Calendar.Selected.Value) >= TimeValue('End Date')
+                                        ),
+                                        Duration
+                                    )) / cmbInterval_Calendar.Selected.InMinutes,
+                                    0
+                                )),
+                                            " slots available"// Concatenate the " slots available" text to the result
+                                        )
+                                    },
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                                )
+                            Tooltip: =Self.Text
+                            Visible: |
+                                =If(Int(Text(DateAdd(varCalendarFirstDay,ThisItem.Value,TimeUnit.Days),"yymm")) < Int(Text(Today(),"yymm")),false,true)
+                            Width: |-
+                                =//87.14285714285714
+                                //Self.Size * Len(Self.Text)
+                                Parent.Width - shpgalCalendarEvents_Calendar.Width - 15
+                            Wrap: =If('Calendar Screen'.Size < 3, false, true)
+                            Y: =congalScheduleSlot_Calendar.Y + 60
+                            ZIndex: =2
+
+                    shpgalCalendarBody_Calendar As rectangle:
+                        Fill: =RGBA(227, 234, 243, 1)
+                        Height: =1
+                        OnSelect: =
+                        Width: =Parent.TemplateWidth
+                        Y: =Parent.TemplateHeight - 1
+                        ZIndex: =3
+
+                    conCalendarDays_Calendar As groupContainer.manualLayoutContainer:
+                        DropShadow: =DropShadow.None
+                        Fill: |
+                            =If(
+                                // First, check if the current item is selected.
+                                // Convert the date, calculated by adding the value of the current item to the first day of the calendar month, to a short date string format.
+                                // Compare it to the selected date (varSelectedDate) and today's date, converted to a short date string format.
+                                Text(DateAdd(varCalendarFirstDay, ThisItem.Value, TimeUnit.Days), DateTimeFormat.ShortDate) = Text(varSelectedDate) || 
+                                Text(DateAdd(varCalendarFirstDay, ThisItem.Value, TimeUnit.Days), DateTimeFormat.ShortDate) = Text(DateValue(Today())),
+                                
+                                // If the current item is selected (either it matches the selected date or it is today's date), 
+                                // set the color to the primary color defined in varThemeColors.
+                                ColorValue(varThemeColors.primary),
+                                
+                                // If the current item is not selected, proceed to the next condition.
+                                If(
+                                    // Check if the month of the current item’s date is different from the current month.
+                                    Text(DateAdd(varCalendarFirstDay, ThisItem.Value, TimeUnit.Days), "mm") <> Text(varCalendar, "mm"),
+                                    
+                                    // If the months are different, set the color to the backgroundFillDisabled color defined in varThemeColors.
+                                    ColorValue(varThemeColors.backgroundFillDisabled),
+                                    
+                                    // If the months are the same, set the color to the backgroundFill color defined in varThemeColors.
+                                    ColorValue(varThemeColors.backgroundFill)
+                                )
+                            )
+                        Height: =Parent.TemplateHeight/2-5
+                        RadiusBottomLeft: |
+                            =If(
+                                ThisItem.IsSelected, // Check if the current item is selected
+                                0, // If the item is selected, return 0 (likely used for some visual indication)
+                                If(
+                                    // Compare the date of the current item with the selected date
+                                    Text(
+                                        DateAdd(
+                                            varCalendarFirstDay, // Starting point: the first day of the calendar
+                                            ThisItem.Value, // Number of days to add based on the current item's value
+                                            TimeUnit.Days // Add the days to the starting date
+                                        ),
+                                        DateTimeFormat.ShortDate // Format the resulting date as a short date string
+                                    ) = Text(varSelectedDate), // Compare the formatted date to the selected date
+                                    0, // If the dates match, return 0 (again, likely for visual changes)
+                                    25 // If the dates do not match, return 25 (possibly for spacing or visual offset)
+                                )
+                            )
+                        RadiusBottomRight: |
+                            =If(
+                                ThisItem.IsSelected, // Check if the current item is selected
+                                0, // If the item is selected, return 0 (likely used for some visual indication)
+                                If(
+                                    // Compare the date of the current item with the selected date
+                                    Text(
+                                        DateAdd(
+                                            varCalendarFirstDay, // Starting point: the first day of the calendar
+                                            ThisItem.Value, // Number of days to add based on the current item's value
+                                            TimeUnit.Days // Add the days to the starting date
+                                        ),
+                                        DateTimeFormat.ShortDate // Format the resulting date as a short date string
+                                    ) = Text(varSelectedDate), // Compare the formatted date to the selected date
+                                    0, // If the dates match, return 0 (again, likely for visual changes)
+                                    25 // If the dates do not match, return 25 (possibly for spacing or visual offset)
+                                )
+                            )
+                        RadiusTopLeft: |
+                            =If(
+                                ThisItem.IsSelected, // Check if the current item is selected
+                                0, // If the item is selected, return 0 (likely used for some visual indication)
+                                If(
+                                    // Compare the date of the current item with the selected date
+                                    Text(
+                                        DateAdd(
+                                            varCalendarFirstDay, // Starting point: the first day of the calendar
+                                            ThisItem.Value, // Number of days to add based on the current item's value
+                                            TimeUnit.Days // Add the days to the starting date
+                                        ),
+                                        DateTimeFormat.ShortDate // Format the resulting date as a short date string
+                                    ) = Text(varSelectedDate), // Compare the formatted date to the selected date
+                                    0, // If the dates match, return 0 (again, likely for visual changes)
+                                    25 // If the dates do not match, return 25 (possibly for spacing or visual offset)
+                                )
+                            )
+                        RadiusTopRight: |
+                            =If(
+                                ThisItem.IsSelected, // Check if the current item is selected
+                                0, // If the item is selected, return 0 (likely used for some visual indication)
+                                If(
+                                    // Compare the date of the current item with the selected date
+                                    Text(
+                                        DateAdd(
+                                            varCalendarFirstDay, // Starting point: the first day of the calendar
+                                            ThisItem.Value, // Number of days to add based on the current item's value
+                                            TimeUnit.Days // Add the days to the starting date
+                                        ),
+                                        DateTimeFormat.ShortDate // Format the resulting date as a short date string
+                                    ) = Text(varSelectedDate), // Compare the formatted date to the selected date
+                                    0, // If the dates match, return 0 (again, likely for visual changes)
+                                    25 // If the dates do not match, return 25 (possibly for spacing or visual offset)
+                                )
+                            )
+                        Width: =Self.Height
+                        X: =Parent.TemplateWidth / 2 - (lblDates_Calendar.Width / 2)
+                        Y: =Parent.TemplateHeight/6
+                        ZIndex: =4
+
+                        lblDates_Calendar As label:
+                            Align: =Align.Center
+                            Color: |
+                                =If(
+                                    // Check if the current item is selected.
+                                    // Convert the date, calculated by adding the value of the current item to the first day of the calendar month, to a short date string format.
+                                    // Compare it to the selected date (varSelectedDate) and today's date, converted to a short date string format.
+                                    Text(DateAdd(varCalendarFirstDay, ThisItem.Value, TimeUnit.Days), DateTimeFormat.ShortDate) = Text(varSelectedDate) ||
+                                    Text(DateAdd(varCalendarFirstDay, ThisItem.Value, TimeUnit.Days), DateTimeFormat.ShortDate) = Text(DateValue(Today())),
+                                    
+                                    // If the current item is selected (either it matches the selected date or it is today's date),
+                                    // set the color to the white color that is not affected by themes.
+                                    RGBA(255,255,255,1),
+                                    
+                                    // If the current item is not selected, set the color to the text color defined in varThemeColors.
+                                    ColorValue(varThemeColors.text)
+                                )
+                            FocusedBorderColor: =ColorValue(varThemeColors.info)
+                            FocusedBorderThickness: =1
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weightBold
+                            Height: =Parent.Height
+                            Italic: =
+                            OnSelect: |-
+                                =Set(
+                                    varSelectedDate, 
+                                    DateValue(
+                                        DateAdd(
+                                            varCalendarFirstDay,  // Starting date (usually the first day of a calendar or a specific month)
+                                            ThisItem.Value,       // Number of days to add. 'ThisItem' refers to the current item in a collection or a data source being processed.
+                                            TimeUnit.Days         // The unit of time to add, in this case, days.
+                                        )
+                                    )
+                                )
+                            PaddingBottom: =0
+                            PaddingLeft: =0
+                            PaddingRight: =0
+                            PaddingTop: =0
+                            Size: =varThemeFont.B2.size
+                            TabIndex: =
+                            Text: |
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: Text(DateAdd(varCalendarFirstDay,ThisItem.Value,TimeUnit.Days),"d")},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width
+                            ZIndex: =1
+
+            conMainSchedule_Calendar As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                BorderColor: =
+                DropShadow: =DropShadow.None
+                Fill: =ColorValue(varThemeColors.backgroundFill)
+                FillPortions: =0
+                Height: =conMainCalendar_Calendar.Height
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Width: =If('Calendar Screen'.Size < 3, Parent.Width, Parent.Width / 2.02)
+                ZIndex: =2
+
+                conSelectedDate_Calendar As groupContainer.horizontalAutoLayoutContainer:
+                    DropShadow: =DropShadow.None
+                    Fill: =ColorValue(varThemeColors.backgroundFill)
+                    FillPortions: =0
+                    Height: =40
+                    LayoutDirection: =LayoutDirection.Vertical
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingLeft: =15
+                    PaddingTop: =5
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Width: =Parent.Width - 125
+                    X: =40
+                    ZIndex: =1
+
+                    lblSelectedDate_Calendar As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        DisabledFill: =ColorValue(varThemeColors.backgroundFill)
+                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                        FocusedBorderColor: =ColorValue(varThemeColors.info)
+                        Font: =varThemeFont.B2.face
+                        FontWeight: =varThemeFont.B3.weightBold
+                        Height: =30
+                        Italic: =
+                        Size: =varThemeFont.B2.size
+                        Text: |+
+                            =// Define a variable named "Text" with the value "{value}"
+                            With(
+                                {Text: Text(varSelectedDate, "dddd") & ", " & Text(varSelectedDate, "mmmm dd, yyyy")
+                            },
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                            
+                        Tooltip: =Self.Text
+                        VerticalAlign: =VerticalAlign.Top
+                        Width: =Parent.Width
+                        X: =1
+                        ZIndex: =1
+
+                galSchedule_Calendar As gallery.variableTemplateHeightGallery:
+                    AccessibleLabel: |-
+                        =With(
+                            {Text: "Calendar - Calendar Events"},
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text 
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text 
+                                ).'Localized Value'
+                            )
+                        )
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    BorderColor: =
+                    DelayItemLoading: =true
+                    Fill: =ColorValue(varThemeColors.backgroundFill)
+                    Items: =colMyTimeCollection
+                    Layout: =Layout.Vertical
+                    LayoutMinHeight: =287
+                    LayoutMinWidth: =320
+                    LoadingSpinner: =LoadingSpinner.Data
+                    TabIndex: =0
+                    TemplateFill: =ColorValue(varThemeColors.backgroundFill)
+                    TemplatePadding: =0
+                    TemplateSize: =1
+                    Width: =If('Calendar Screen'.Size < 3, Parent.Width - 13, Parent.Width)
+                    ZIndex: =3
+
+                    shpgalSchedulebuttomseparator_Calendar As rectangle:
+                        Fill: =RGBA(215, 223, 240, 1)
+                        Height: =1
+                        OnSelect: =
+                        Width: =Parent.Width
+                        Y: =congalScheduleSlot_Calendar.Height
+                        ZIndex: =2
+
+                    congalScheduleSlot_Calendar As groupContainer.verticalAutoLayoutContainer:
+                        DropShadow: =DropShadow.None
+                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                        Height: =congalScheduleDetails_Calendar.Height + 10
+                        LayoutAlignItems: =LayoutAlignItems.Center
+                        LayoutGap: =5
+                        LayoutMode: =LayoutMode.Auto
+                        PaddingBottom: =5
+                        PaddingLeft: =20
+                        PaddingTop: =5
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Width: =Parent.TemplateWidth
+                        Y: =
+                        ZIndex: =3
+
+                        shpgalScheduleIndicator_Calendar As rectangle:
+                            Fill: |-
+                                =//If(First(Filter(colCurrentSchedules, Text('Start Date', "mm/dd/yyyy") = Text(varSelectedDate, "mm/dd/yyyy") && TimeValue('Start Date') = TimeValue(ThisItem.Value))).Type = "Outlook",ColorValue(varThemeColors.error), ColorValue(varThemeColors.primaryGray))
+                                If(
+                                    LookUp(
+                                        colCurrentSchedules,
+                                                        // Filter to find entries in 'colCurrentSchedules' where the 'Start Date' matches 'varSelectedDate' and the time matches 'ThisItem.Value'
+                                        (Text(
+                                            'Start Date',
+                                            "mm/dd/yyyy"
+                                        ) = Text(
+                                            varSelectedDate,
+                                            "mm/dd/yyyy"
+                                        ) && TimeValue(ThisItem.Value) >= TimeValue('Start Date') && DateAdd(
+                                            TimeValue(ThisItem.Value),// Take the start time of the time slot
+                                            cmbInterval_Calendar.Selected.TimeValue,// Add the duration of the time slot
+                                            cmbInterval_Calendar.Selected.Unit// Specify the unit of time for the duration (e.g., minutes, hours)
+                                        ) <= TimeValue('End Date')) || (Text(
+                                            'Start Date',
+                                            "mm/dd/yyyy"
+                                        ) = Text(
+                                            varSelectedDate,
+                                            "mm/dd/yyyy"
+                                        ) && TimeValue('Start Date') >= TimeValue(ThisItem.Value) && TimeValue('End Date') <= DateAdd(
+                                            TimeValue(ThisItem.Value),// Take the start time of the time slot
+                                            cmbInterval_Calendar.Selected.TimeValue,// Add the duration of the time slot
+                                            cmbInterval_Calendar.Selected.Unit// Specify the unit of time for the duration (e.g., minutes, hours)
+                                        )),
+                                        Type
+                                    ) = Text('Status Reason (Appointment Slots)'.Available),
+                                    ColorValue(varThemeColors.primaryGray),
+                                    If(
+                                        LookUp(
+                                            colCurrentSchedules,
+                                                        (// Filter to find entries in 'colCurrentSchedules' where the 'Start Date' matches 'varSelectedDate' and the time matches 'ThisItem.Value'
+                                            Text('Start Date',"mm/dd/yyyy") = Text(varSelectedDate,"mm/dd/yyyy") && 
+                                            TimeValue(ThisItem.Value) >= TimeValue('Start Date') && 
+                                            DateAdd(
+                                            TimeValue(ThisItem.Value),// Take the start time of the time slot
+                                            cmbInterval_Calendar.Selected.TimeValue,// Add the duration of the time slot
+                                            cmbInterval_Calendar.Selected.Unit// Specify the unit of time for the duration (e.g., minutes, hours)
+                                        ) <= TimeValue('End Date')) || (// Filter to find entries in 'colCurrentSchedules' where the 'Start Date' matches 'varSelectedDate' and the time matches 'ThisItem.Value'
+                                            Text('Start Date',"mm/dd/yyyy") = Text(varSelectedDate,"mm/dd/yyyy") && 
+                                            TimeValue('Start Date') >= TimeValue(ThisItem.Value) && 
+                                            TimeValue('End Date') <= DateAdd(
+                                            TimeValue(ThisItem.Value),// Take the start time of the time slot
+                                            cmbInterval_Calendar.Selected.TimeValue,// Add the duration of the time slot
+                                            cmbInterval_Calendar.Selected.Unit// Specify the unit of time for the duration (e.g., minutes, hours)
+                                        )),
+                                            Type
+                                        ) = Text('Status Reason (Appointment Slots)'.Booked),
+                                        ColorValue(varThemeColors.error),
+                                        ColorValue(varThemeColors.confirmation)
+                                    )
+                                )
+                            Height: =Parent.Height - Parent.PaddingBottom - Parent.PaddingTop
+                            OnSelect: =
+                            Width: =4
+                            ZIndex: =1
+
+                        congalScheduleDetails_Calendar As groupContainer.horizontalAutoLayoutContainer:
+                            AlignInContainer: =AlignInContainer.SetByContainer
+                            BorderColor: =
+                            DropShadow: =DropShadow.None
+                            Fill: =ColorValue(varThemeColors.backgroundFill)
+                            FillPortions: =0
+                            Height: =lblEventNamegalSchedule_Calendar.Height + lblDategalSchedule_Calendar.Height + lblLocationgalSchedule_Calendar.Height
+                            LayoutDirection: =LayoutDirection.Vertical
+                            LayoutMinHeight: =100
+                            LayoutMinWidth: =250
+                            LayoutMode: =LayoutMode.Auto
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Width: = If('Calendar Screen'.Size < 3 , Parent.Width - btnAddSlot_Calendar.Width - 50 , Parent.Width - btnAddSlot_Calendar.Width - 70)
+                            ZIndex: =2
+
+                            lblEventNamegalSchedule_Calendar As label:
+                                AutoHeight: =true
+                                BorderColor: =
+                                Color: =ColorValue(varThemeColors.text)
+                                DisabledBorderColor: =
+                                DisabledColor: =
+                                DisabledFill: =ColorValue(varThemeColors.backgroundFill)
+                                Fill: =ColorValue(varThemeColors.backgroundFill)
+                                FocusedBorderColor: =ColorValue(varThemeColors.info)
+                                Font: =varThemeFont.B2.face
+                                FontWeight: =varThemeFont.B3.weightBold
+                                Height: =30
+                                Italic: =
+                                Size: =varThemeFont.B2.size
+                                Text: |-
+                                    =// Define a local variable named "Text" to store a specific text value based on certain conditions
+                                    With(
+                                        {
+                                            Text: // Define a local variable named "Text" to store a specific text value based on certain conditions
+                                    If(
+                                        (CountRows(
+                                            Filter(
+                                                colCurrentSchedules,
+                                                // Filter to find entries in 'colCurrentSchedules' where 'Start Date' is before or equal to 'varSelectedDate' and 'End Date' is after 'varSelectedDate' and the current time is within the start and end times
+                                                Text('Start Date', "mm/dd/yyyy") = Text(varSelectedDate, "mm/dd/yyyy") &&
+                                                TimeValue('Start Date') >= TimeValue(ThisItem.Value) &&
+                                                TimeValue('End Date') <=
+                                             DateAdd(
+                                                    TimeValue(ThisItem.Value),  // Take the start time of the time slot
+                                                    cmbInterval_Calendar.Selected.TimeValue,  // Add the duration of the time slot
+                                                    cmbInterval_Calendar.Selected.Unit // Specify the unit of time for the duration (e.g., minutes, hours)
+                                                )
+                                            )
+                                        )) || (CountRows(
+                                            Filter(
+                                                colCurrentSchedules,
+                                                // Filter to find entries in 'colCurrentSchedules' where 'Start Date' is before or equal to 'varSelectedDate' and 'End Date' is after 'varSelectedDate' and the current time is within the start and end times
+                                                Text('Start Date', "mm/dd/yyyy") = Text(varSelectedDate, "mm/dd/yyyy") &&
+                                                 TimeValue(ThisItem.Value) >= TimeValue('Start Date') &&
+                                             DateAdd(
+                                                    TimeValue(ThisItem.Value),  // Take the start time of the time slot
+                                                    cmbInterval_Calendar.Selected.TimeValue,  // Add the duration of the time slot
+                                                    cmbInterval_Calendar.Selected.Unit // Specify the unit of time for the duration (e.g., minutes, hours)
+                                                ) <= TimeValue('End Date')
+                                            )
+                                        )) > 0,
+                                        LookUp(
+                                            colCurrentSchedules,
+                                            (Text('Start Date', "mm/dd/yyyy") = Text(varSelectedDate, "mm/dd/yyyy") &&
+                                            TimeValue('Start Date') >= TimeValue(ThisItem.Value) &&
+                                            TimeValue('End Date') <=
+                                             DateAdd(
+                                                    TimeValue(ThisItem.Value),  // Take the start time of the time slot
+                                                    cmbInterval_Calendar.Selected.TimeValue,  // Add the duration of the time slot
+                                                    cmbInterval_Calendar.Selected.Unit // Specify the unit of time for the duration (e.g., minutes, hours)
+                                                )) ||
+                                                (Text('Start Date', "mm/dd/yyyy") = Text(varSelectedDate, "mm/dd/yyyy") &&
+                                            TimeValue(ThisItem.Value) >= TimeValue('Start Date')  &&
+                                             DateAdd(
+                                                    TimeValue(ThisItem.Value),  // Take the start time of the time slot
+                                                    cmbInterval_Calendar.Selected.TimeValue,  // Add the duration of the time slot
+                                                    cmbInterval_Calendar.Selected.Unit // Specify the unit of time for the duration (e.g., minutes, hours)
+                                                ) <= TimeValue('End Date')),
+                                            Title
+                                        ),
+                                        "Free"
+                                    )
+                                    
+                                        },
+                                        // Attempt to localize the text stored in the "Text" variable based on the user's preferred language
+                                        If(
+                                            // Check if a localized version of the text exists
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            // If no localized version exists, return the default text
+                                            Text,
+                                            // If a localized version exists, return that text instead
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Tooltip: =Self.Text
+                                VerticalAlign: =VerticalAlign.Top
+                                Width: |-
+                                    =//Self.Size * Len(Self.Text)
+                                    Parent.Width
+                                X: =1
+                                ZIndex: =1
+
+                            lblDategalSchedule_Calendar As label:
+                                AutoHeight: =true
+                                BorderColor: =
+                                Color: =ColorValue(varThemeColors.text)
+                                DisabledBorderColor: =
+                                DisabledColor: =
+                                DisabledFill: =ColorValue(varThemeColors.background)
+                                Fill: =ColorValue(varThemeColors.backgroundFill)
+                                FocusedBorderColor: =ColorValue(varThemeColors.info)
+                                Font: =varThemeFont.B2.face
+                                FontWeight: =varThemeFont.B2.weightBold
+                                Height: =28
+                                Italic: =
+                                Size: =varThemeFont.B3.size
+                                Text: |-
+                                    =// Define a local variable named "Text" to store the time slot information in a specific format
+                                    With(
+                                        {
+                                            Text: 
+                                            // Construct the text string for the time slot
+                                            "(" & cmbInterval_Calendar.Selected.InMinutes & " mins) " & // Show the duration of the time slot in minutes
+                                            TimeValue(ThisItem.Value) & " - " &  // Show the start time of the time slot
+                                            Text(
+                                                // Calculate and show the end time of the time slot
+                                                DateAdd(
+                                                    TimeValue(ThisItem.Value),  // Take the start time of the time slot
+                                                    cmbInterval_Calendar.Selected.TimeValue,  // Add the duration of the time slot
+                                                    cmbInterval_Calendar.Selected.Unit  // Specify the unit of time for the duration (e.g., minutes, hours)
+                                                )
+                                            )
+                                        },
+                                        // After constructing the time slot text, check if there's a localized version available
+                                        If(
+                                            // Check if there's no localized text for the constructed time slot text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,  // If no localized text is found, use the default text
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Tooltip: =Self.Text
+                                VerticalAlign: =VerticalAlign.Top
+                                Width: =Parent.Width 
+                                X: =1
+                                Y: =40
+                                ZIndex: =2
+
+                            lblLocationgalSchedule_Calendar As label:
+                                AutoHeight: =true
+                                BorderColor: =
+                                Color: =ColorValue(varThemeColors.text)
+                                DisabledBorderColor: =
+                                DisabledColor: =
+                                DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                                Fill: =ColorValue(varThemeColors.backgroundFill)
+                                FocusedBorderColor: =ColorValue(varThemeColors.info)
+                                Font: =varThemeFont.B2.face
+                                FontWeight: =varThemeFont.B2.weightBold
+                                Height: =28
+                                Italic: =
+                                Size: =varThemeFont.B3.size
+                                Text: |
+                                    =// Define a local variable named "Text" to store the location information based on the time slot and type
+                                    With(
+                                        {
+                                            Text: 
+                                            // Evaluate the type of the event and return the appropriate location
+                                            If(
+                                                CountRows( Filter(
+                                                            colCurrentSchedules,
+                                                            Text('Start Date', "mm/dd/yyyy") = Text(varSelectedDate, "mm/dd/yyyy") &&
+                                                            TimeValue('Start Date') = TimeValue(ThisItem.Value)
+                                                        )) > 0,
+                                                    LookUp(
+                                                            colCurrentSchedules,
+                                                            // Filter to find entries in 'colCurrentSchedules' where the 'Start Date' matches 'varSelectedDate' and the time matches 'ThisItem.Value'
+                                                            Text('Start Date', "mm/dd/yyyy") = Text(varSelectedDate, "mm/dd/yyyy") &&
+                                                            TimeValue('Start Date') = TimeValue(ThisItem.Value),Location             ),
+                                                    // If the type is neither "Slot" nor "Outlook", return " - "
+                                                    " - " 
+                                                )
+                                            
+                                        },
+                                        
+                                        // After constructing the location text, check if there's a localized version available
+                                        If(
+                                            // Check if there's no localized text for the constructed location text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,  // If no localized text is found, use the default text
+                                            // If a localized text is found, return that text instead
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Tooltip: =Self.Text
+                                VerticalAlign: =VerticalAlign.Top
+                                Width: =Parent.Width
+                                X: =1
+                                ZIndex: =3
+
+                        btnAddSlot_Calendar As button:
+                            BorderColor: |
+                                =// This expression is used to determine the background color of a time slot based on its type ("Outlook" or "Slot").
+                                // It checks if the time slot is available, booked, or needs attention, and assigns a color accordingly.
+                                
+                                If(
+                                    // First, filter 'colCurrentSchedules' to find a record that matches the selected date 'varSelectedDate' and the time of the current item.
+                                    First(
+                                        Filter(
+                                            colCurrentSchedules,
+                                            Text('Start Date', "mm/dd/yyyy") = Text(varSelectedDate, "mm/dd/yyyy") && 
+                                            TimeValue('Start Date') = TimeValue(ThisItem.Value)
+                                        )
+                                    ).Type = "Outlook",
+                                    // If the type of the time slot is "Outlook" (indicating a booked slot), set the background color to the 'info' color from 'varThemeColors'.
+                                    ColorValue(varThemeColors.info),
+                                    
+                                    // If the type of the time slot is not "Outlook", check if it is "Slot".
+                                    If(
+                                        First(
+                                            Filter(
+                                                colCurrentSchedules,
+                                                Text('Start Date', "mm/dd/yyyy") = Text(varSelectedDate, "mm/dd/yyyy") && 
+                                                TimeValue('Start Date') = TimeValue(ThisItem.Value)
+                                            )
+                                        ).Type = "Slot",
+                                        // If the type is "Slot" (indicating an available slot), set the background color to the 'primaryGray' color from 'varThemeColors'.
+                                        ColorValue(varThemeColors.primaryGray),
+                                        
+                                        // If the type is neither "Outlook" nor "Slot", set the background color to the 'info' color from 'varThemeColors'.
+                                        // This could be used as a default or fallback color.
+                                        ColorValue(varThemeColors.info)
+                                    )
+                                )
+                            BorderThickness: =1
+                            Color: |
+                                =If(
+                                    // First, check if there is an event of type "Outlook" at this time slot.
+                                    First(
+                                        Filter(
+                                            colCurrentSchedules,
+                                            Text('Start Date', "mm/dd/yyyy") = Text(varSelectedDate, "mm/dd/yyyy") && 
+                                            TimeValue('Start Date') = TimeValue(ThisItem.Value)
+                                        )
+                                    ).Type = "Outlook",
+                                    
+                                    // If yes, set the background color to the 'info' color from 'varThemeColors'.
+                                    ColorValue(varThemeColors.info),
+                                    
+                                    // If not, check if there is an event of type "Slot" at this time slot.
+                                    If(
+                                        First(
+                                            Filter(
+                                                colCurrentSchedules,
+                                                Text('Start Date', "mm/dd/yyyy") = Text(varSelectedDate, "mm/dd/yyyy") && 
+                                                TimeValue('Start Date') = TimeValue(ThisItem.Value)
+                                            )
+                                        ).Type = "Slot",
+                                        
+                                        // If yes, set the background color to the 'primaryGray' color from 'varThemeColors'.
+                                        ColorValue(varThemeColors.primaryGray),
+                                        
+                                        // If the time slot is neither "Outlook" nor "Slot", set the background color to the 'info' color from 'varThemeColors'.
+                                        ColorValue(varThemeColors.info)
+                                    )
+                                )
+                            DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                            DisabledColor: =ColorValue(varThemeColors.disabledText)
+                            DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                            DisplayMode: |
+                                =// This code block is for setting the display mode of an item based on the current date and time
+                                If(
+                                    // First condition: Check if the selected date is today or in the past
+                                    DateValue(varSelectedDate) < DateValue(Now()) ||
+                                
+                                    // Second condition: Check if the time of the current item is in the past
+                                    (DateValue(varSelectedDate) = DateValue(Now()) &&
+                                    TimeValue(ThisItem.Value) <= TimeValue(Now())),
+                                
+                                    // If both conditions are true, disable the display mode
+                                    DisplayMode.Disabled,
+                                
+                                    // If any of the conditions are false, set the display mode to edit
+                                    DisplayMode.Edit
+                                )
+                            Fill: =ColorValue(varThemeColors.backgroundFill)
+                            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                            FocusedBorderThickness: =Value(varThemeColors.focusBorderThickness)
+                            Font: =varThemeFont.B1.face
+                            FontWeight: =varThemeFont.B2.weight
+                            Height: =Parent.Height/3
+                            HoverBorderColor: =ColorValue(varThemeColors.primary)
+                            HoverColor: =ColorValue(varThemeColors.altText)
+                            HoverFill: =ColorValue(varThemeColors.tertiary)
+                            Italic: =
+                            OnSelect: |
+                                =// Set 'varSelectedStartTime' to the text representation of the time value of the current item's value
+                                Set(
+                                    varSelectedStartTime,
+                                    Text(TimeValue(ThisItem.Value))
+                                );
+                                
+                                // Calculate the end time based on the selected interval and unit, then set 'varSelectedEndTime' to its text representation
+                                Set(
+                                    varSelectedEndTime,
+                                    Text(
+                                        DateAdd(
+                                            TimeValue(ThisItem.Value),  // Start from the time value of the current item's value
+                                            cmbInterval_Calendar.Selected.TimeValue, // Add the time value selected in 'cmbInterval_Calendar'
+                                            cmbInterval_Calendar.Selected.Unit // Using the time unit selected in 'cmbInterval_Calendar'
+                                        )
+                                    )
+                                );
+                                
+                                // Check if the text of the current control equals "Remove"
+                                If(
+                                    Self.Text = "Remove",
+                                    // Navigate to the 'Error Screen'
+                                        IfError(
+                                        Remove('Appointment Slots', LookUp(
+                                                    'Appointment Slots',
+                                                    // Filter to find entries in 'colCurrentSchedules' Slot Name = selected Slot
+                                                     'Appointment Slot Name' = lblEventNamegalSchedule_Calendar.Text &&
+                                                    'Meeting Provider'.'Primary Email' =  varUserEmailAddress
+                                                )
+                                        );
+                                        Remove(colCurrentSchedules, LookUp(
+                                                    colCurrentSchedules,
+                                                    // Filter to find entries in 'colCurrentSchedules' Slot Name = selected Slot
+                                                     Title = lblEventNamegalSchedule_Calendar.Text
+                                                )
+                                        )
+                                        ,
+                                        Notify("There was an error removing slot", NotificationType.Error);
+                                        ,
+                                       Notify("Successfully removed slot.", NotificationType.Success);
+                                )
+                                      ,
+                                    // Navigate to the 'Add Slot Screen'
+                                    Navigate('Add Slot Screen', Transition.None, {locRequestorName: cmbDelegate_Calendar.Selected.'Full Name'})
+                                );
+                                
+                                // Refresh the 'Appointment Slots' data source to ensure it has the most up-to-date information
+                                Refresh('Appointment Slots')
+                            PressedBorderColor: =ColorValue(varThemeColors.primary)
+                            PressedColor: =ColorValue(varThemeColors.altText)
+                            PressedFill: =ColorValue(varThemeColors.primary)
+                            RadiusBottomLeft: =6
+                            RadiusBottomRight: =6
+                            RadiusTopLeft: =6
+                            RadiusTopRight: =6
+                            Size: =varThemeFont.B2.size
+                            Text: |-
+                                =// The following expression checks if a specific time slot is available, booked, or if it needs to be removed, and returns the corresponding action text ("Remove", "Booked", or "Add Slot").
+                                
+                                // Use the 'If' function to evaluate a condition and return different results based on the evaluation.
+                                If(shpgalScheduleIndicator_Calendar.Fill = ColorValue(varThemeColors.primaryGray),
+                                    
+                                    "Remove", // If the type is "Slot", return "Remove" indicating that this slot can be removed.
+                                    
+                                    If(
+                                        // Check if the type of the found slot is "Outlook".
+                                        LookUp(
+                                                        colCurrentSchedules,
+                                                        // Filter to find entries in 'colCurrentSchedules' where the 'Start Date' matches 'varSelectedDate' and the time matches 'ThisItem.Value'
+                                                        Text('Start Date', "mm/dd/yyyy") = Text(varSelectedDate, "mm/dd/yyyy") &&
+                                                        TimeValue('Start Date') = TimeValue(ThisItem.Value) && Email = varUserEmailAddress,Type) = Text('Status Reason (Appointment Slots)'.Booked),
+                                        
+                                        "Booked", // If the type is "Outlook", return "Booked" indicating that this slot is booked.
+                                        
+                                        "Add" // If the type is neither "Slot" nor "Outlook", return "Add Slot" indicating that a new slot can be added.
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Visible: |
+                                =If(
+                                    // Attempt to find a specific appointment in 'colCurrentSchedules'.
+                                    // 1. First, filter 'colCurrentSchedules' to include only appointments on 'varSelectedDate' and at the time of 'ThisItem.Value'.
+                                    // 2. Then, search the resulting appointments for any with an "Email" field matching 'varUserEmailAddress'.
+                                    // 3. Use 'First' to get the first result of this search and filter operation (if any results exist).
+                                    LookUp(
+                                                        colCurrentSchedules,
+                                                        // Filter to find entries in 'colCurrentSchedules' where the 'Start Date' matches 'varSelectedDate' and the time matches 'ThisItem.Value'
+                                                        Text('Start Date', "mm/dd/yyyy") = Text(varSelectedDate, "mm/dd/yyyy") &&
+                                                        TimeValue('Start Date') = TimeValue(ThisItem.Value) && Email = varUserEmailAddress,Type) =  "Booked", // Check if the 'Type' of the found appointment (if any) is "Outlook".
+                                
+                                    false, // If it is an "Outlook" type appointment, return false.
+                                
+                                    true // If no appointment is found or it is not an "Outlook" type, return true.
+                                )
+                            Width: =100
+                            Y: =
+                            ZIndex: =5
+
+    compLeftNav_Calendar As LeftNavigation:
+        Height: =App.Height-Self.Y
+        Width: =compLeftNav_Calendar.MenuWidth
+        Y: =compHeader_Calendar.Height
+        ZIndex: =2
+
+    compHeader_Calendar As compHeader:
+        Height: =compHeader_Calendar.HeaderHeight
+        Width: =App.Width
+        ZIndex: =3
+
