@@ -1,0 +1,627 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_aptbk_dataverseconnection"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      },
+      "shared_office365_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_aptbk_outlookconnection"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "Daily_trigger_flow": {
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "startTime": "2023-08-06T16:00:00Z"
+          },
+          "metadata": {
+            "operationMetadataId": "776667ca-04d9-4588-8f91-32fb06598578"
+          },
+          "type": "Recurrence"
+        }
+      },
+      "actions": {
+        "Start_Date": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "89a6472a-312e-4052-8ca2-1b94cf40fef8"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "StartTime",
+                "type": "string"
+              }
+            ]
+          },
+          "description": "Start Date variable"
+        },
+        "Time_to_Remind": {
+          "runAfter": {
+            "Start_Date": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "79d7d5d8-1712-4672-911e-33754d529b1a"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "TimetoRemind",
+                "type": "string",
+                "value": "@{formatDateTime(utcNow(),'MM-dd-yyyy')}"
+              }
+            ]
+          },
+          "description": "Time to Remind variable"
+        },
+        "Location_Details": {
+          "runAfter": {
+            "Time_to_Remind": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "7ce21bf1-7797-44df-a60b-c00768fc1a6a"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Location Details",
+                "type": "string"
+              }
+            ]
+          },
+          "description": "Set Location Details"
+        },
+        "Try": {
+          "actions": {
+            "Get_All_Appointment_Slot": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "d8ea356b-be9c-4af4-8a63-228f56b810f3"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_aptbk_appointmentslots",
+                  "$filter": "statuscode eq 865420001 and mpa_aptbk_startdate ge @{addDays(utcNow(),2)}  and mpa_aptbk_startdate lt @{addDays(utcNow(),3)}"
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": "Get all apointment slot 2 days before Appointment"
+            },
+            "Filter_Appointment_Slot_with_Booking": {
+              "runAfter": {
+                "Get_All_Appointment_Slot": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "f0320cc8-a611-439e-a5ba-5d79aecfaccc"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@outputs('Get_All_Appointment_Slot')?['body/value']",
+                "where": "@equals(item()?['statuscode'], 865420001)"
+              },
+              "description": "Filter List with appointment booking"
+            },
+            "For_each_Slot_with_Booking": {
+              "foreach": "@body('Filter_Appointment_Slot_with_Booking')",
+              "actions": {
+                "Get_Appointment_Booking": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "d2435e92-3887-4fbd-931c-009eb73eeda6"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "GetItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_aptbk_appointmentbookings",
+                      "recordId": "@items('For_each_Slot_with_Booking')?['_mpa_aptbk_appointmentbooking_value']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Get_User_Details": {
+                  "runAfter": {
+                    "Get_Appointment_Slot_Info": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "eda4a2c3-7e8f-4bac-8f5e-cf968db8a93a"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "GetItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "contacts",
+                      "recordId": "@outputs('Get_Appointment_Booking')?['body/_mpa_aptbk_requestor_value']",
+                      "$select": "fullname, emailaddress1, firstname"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  },
+                  "description": "Requestor"
+                },
+                "Switch": {
+                  "runAfter": {
+                    "Get_Appointment_Type_Info": [
+                      "Succeeded"
+                    ]
+                  },
+                  "cases": {
+                    "Online": {
+                      "case": "Online",
+                      "actions": {
+                        "Set_Link": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "f024433c-f511-482e-8d3f-c272422678d8"
+                          },
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "Location Details",
+                            "value": "@{items('For_each_Slot_with_Booking')?['mpa_aptbk_meetinglink']}"
+                          }
+                        }
+                      }
+                    },
+                    "Phone": {
+                      "case": "Phone",
+                      "actions": {
+                        "Set_Phone_Number": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "97f95f83-64ba-447f-aa9c-b26c8d02a5fd"
+                          },
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "Location Details",
+                            "value": "@{items('For_each_Slot_with_Booking')?['mpa_aptbk_phonenumber']}"
+                          }
+                        }
+                      }
+                    },
+                    "In_Person": {
+                      "case": "In Person",
+                      "actions": {
+                        "Condition": {
+                          "actions": {
+                            "Get_Location_Details": {
+                              "runAfter": {},
+                              "metadata": {
+                                "operationMetadataId": "7b1df4b3-9223-4d64-afe0-61352d6f428e"
+                              },
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "host": {
+                                  "connectionName": "shared_commondataserviceforapps",
+                                  "operationId": "GetItem",
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                                },
+                                "parameters": {
+                                  "entityName": "mpa_aptbk_locations",
+                                  "recordId": "@items('For_each_Slot_with_Booking')?['_mpa_aptbk_locationdetails_value']"
+                                },
+                                "authentication": "@parameters('$authentication')"
+                              }
+                            },
+                            "Checking_if_Location_Details_is_Null": {
+                              "actions": {
+                                "Appointment_Room_Number": {
+                                  "runAfter": {},
+                                  "metadata": {
+                                    "operationMetadataId": "a21a78c5-f605-449e-bb0e-bcb6176f2108"
+                                  },
+                                  "type": "OpenApiConnection",
+                                  "inputs": {
+                                    "host": {
+                                      "connectionName": "shared_commondataserviceforapps",
+                                      "operationId": "GetItem",
+                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                                    },
+                                    "parameters": {
+                                      "entityName": "mpa_aptbk_appointmentroomnumbers",
+                                      "recordId": "@items('For_each_Slot_with_Booking')?['_mpa_aptbk_roomnumber_value']"
+                                    },
+                                    "authentication": "@parameters('$authentication')"
+                                  }
+                                },
+                                "Set_Location_Details": {
+                                  "runAfter": {
+                                    "Appointment_Room_Number": [
+                                      "Succeeded"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "723eff40-9acd-4e65-8448-53c863edf29d"
+                                  },
+                                  "type": "SetVariable",
+                                  "inputs": {
+                                    "name": "Location Details",
+                                    "value": "@{Concat(outputs('Get_Location_Details')?['body/mpa_mpa_aptbk_locationname'] , ' - ' ,outputs('Appointment_Room_Number')?['body/mpa_aptbk_roomnumber'])}"
+                                  }
+                                }
+                              },
+                              "runAfter": {
+                                "Get_Location_Details": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "expression": {
+                                "not": {
+                                  "equals": [
+                                    "@items('For_each_Slot_with_Booking')?['_mpa_aptbk_roomnumber_value']",
+                                    "@null"
+                                  ]
+                                }
+                              },
+                              "metadata": {
+                                "operationMetadataId": "a765a3bd-eddd-432a-bab7-dba5991463eb"
+                              },
+                              "type": "If"
+                            }
+                          },
+                          "runAfter": {},
+                          "expression": {
+                            "not": {
+                              "equals": [
+                                "@items('For_each_Slot_with_Booking')?['_mpa_aptbk_locationdetails_value']",
+                                "@null"
+                              ]
+                            }
+                          },
+                          "metadata": {
+                            "operationMetadataId": "01461b88-fb69-4552-b52e-d0b182285201"
+                          },
+                          "type": "If"
+                        }
+                      }
+                    }
+                  },
+                  "default": {
+                    "actions": {}
+                  },
+                  "expression": "@items('For_each_Slot_with_Booking')?['mpa_aptbk_location@OData.Community.Display.V1.FormattedValue']",
+                  "metadata": {
+                    "operationMetadataId": "92932fb1-a60c-4839-bacd-9346b26daca5"
+                  },
+                  "type": "Switch",
+                  "description": "Setting of Variable Details Location"
+                },
+                "Get_TimeZone": {
+                  "runAfter": {
+                    "Switch": [
+                      "Succeeded",
+                      "Failed",
+                      "Skipped"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "b1f82ddd-f3ab-4897-84fc-918d494fa2c2"
+                  },
+                  "type": "Workflow",
+                  "inputs": {
+                    "host": {
+                      "workflowReferenceName": "b24780b2-b05d-ee11-be6f-00224808dec6"
+                    },
+                    "body": {
+                      "text": "@items('For_each_Slot_with_Booking')?['_mpa_aptbk_contact_value']"
+                    }
+                  },
+                  "description": "Timezone"
+                },
+                "Time_Zone_Name": {
+                  "runAfter": {
+                    "Get_TimeZone": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "4820ac81-126a-4e9d-9a81-27f10f1c6ec3"
+                  },
+                  "type": "Compose",
+                  "inputs": "@body('Get_TimeZone')?['time_zone_name']",
+                  "description": "Time Zone Name"
+                },
+                "Date": {
+                  "runAfter": {
+                    "Time_Zone_Name": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "0e0fa236-5306-4032-a58d-71d92c798c51"
+                  },
+                  "type": "Compose",
+                  "inputs": "@If(equals(formatDateTime(items('For_each_Slot_with_Booking')?['mpa_aptbk_startdate'], 'MMMM dd') , formatDateTime(items('For_each_Slot_with_Booking')?['mpa_aptbk_enddate'], 'MMMM dd')) , convertFromUtc(items('For_each_Slot_with_Booking')?['mpa_aptbk_startdate'],outputs('Time_Zone_Name') ,'MMMM dd') , Concat(convertFromUtc(items('For_each_Slot_with_Booking')?['mpa_aptbk_startdate'],outputs('Time_Zone_Name') ,'MMMM dd'),' - ', convertFromUtc(items('For_each_Slot_with_Booking')?['mpa_aptbk_enddate'], outputs('Time_Zone_Name'),'MMMM dd')))",
+                  "description": "Process Date"
+                },
+                "Time": {
+                  "runAfter": {
+                    "Date": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "74d2601d-aca3-4bc4-b83b-33187785637d"
+                  },
+                  "type": "Compose",
+                  "inputs": "@Concat(convertFromUtc( items('For_each_Slot_with_Booking')?['mpa_aptbk_startdate'] , outputs('Time_Zone_Name'),'hh:mm tt'),' - ',convertFromUtc( items('For_each_Slot_with_Booking')?['mpa_aptbk_enddate'] ,outputs('Time_Zone_Name') ,'hh:mm tt'))",
+                  "description": "Process Date"
+                },
+                "Get_Contact_Info": {
+                  "runAfter": {
+                    "Get_User_Details": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "0dc00ad8-b503-4b10-bee6-28272618151e"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "GetItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "systemusers",
+                      "recordId": "@items('For_each_Slot_with_Booking')?['_mpa_aptbk_contact_value']",
+                      "$select": "internalemailaddress, firstname, fullname"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  },
+                  "description": "Contact Info"
+                },
+                "Send_an_Email_Reminder": {
+                  "runAfter": {
+                    "Time": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "b7b34a26-5c7e-4e7b-8c3e-93ceef94040e"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365_1",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@outputs('Get_User_Details')?['body/emailaddress1']",
+                      "emailMessage/Subject": "Appointment Notification Reminder",
+                      "emailMessage/Body": "<style>\n#customers {\n  font-family: Arial, Helvetica, sans-serif;\n  border-collapse: collapse;\n  width: 100%;\n}\n\n#customers td, #customers th {\n  border: 1px solid #ddd;\n  padding: 8px;\n}\n\n#customers tr:nth-child(even){background-color: #f2f2f2;}\n\n#customers tr:hover {background-color: #ddd;}\n\n#customers th {\n  padding-top: 12px;\n  padding-bottom: 12px;\n  text-align: left;\n  background-color: Gray;\n  color: white;\n}\n</style>\n\n<p>Hello @{outputs('Get_User_Details')?['body/firstname']},<br>\n<br>\nThis is a reminder you have an upcoming appointment. Below are the details for the appointment:\n<br>\n<table id=\"customers\">\n  <tr>\n  <th>Appointment Contact</th>\n<th>Appointment Type</th>\n    <th>Location</th>\n    <th>Location Details</th>\n<th>Date</th>\n    <th>Time</th>\n<th>Duration</th>\n  </tr>\n  <tr>\n<td>@{outputs('Get_Contact_Info')?['body/fullname']}</td>\n<td>@{outputs('Get_Appointment_Type_Info')?['body/mpa_mpa_aptbk_appointmenttypename']}</td>\n<td> @{outputs('Get_Appointment_Slot_Info')?['body/mpa_aptbk_location@OData.Community.Display.V1.FormattedValue']}</td>\n  <td> @{variables('Location Details')}</td>\n  <td>@{outputs('Date')}</td>\n  <td>@{outputs('Time')}</td>\n<td>@{concat(items('For_each_Slot_with_Booking')?['mpa_aptbk_duration'], ' Minutes')}</td>\n  </tr>\n</table>",
+                      "emailMessage/Importance": "Normal"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  },
+                  "description": "Email Reminder "
+                },
+                "Get_Appointment_Type_Info": {
+                  "runAfter": {
+                    "Get_Contact_Info": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "1dd5ef22-ff8f-42cf-935f-efe823c5bba0"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "GetItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_aptbk_appointmenttypes",
+                      "recordId": "@items('For_each_Slot_with_Booking')?['_mpa_aptbk_appointmenttype_value']",
+                      "$select": "mpa_mpa_aptbk_appointmenttypename"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  },
+                  "description": "Get Appointment Type"
+                },
+                "Get_Appointment_Slot_Info": {
+                  "runAfter": {
+                    "Get_Appointment_Booking": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "4fcc82d6-a21d-4844-8303-1fbcaa251356"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "GetItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_aptbk_appointmentslots",
+                      "recordId": "@outputs('Get_Appointment_Booking')?['body/_mpa_aptbk_appointmentslot_value']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  },
+                  "description": "Appointment SlotDetails"
+                }
+              },
+              "runAfter": {
+                "Filter_Appointment_Slot_with_Booking": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "84726d74-b347-4b2e-bf69-ad9ef85b650b"
+              },
+              "type": "Foreach",
+              "description": "For each Appointment Slot",
+              "runtimeConfiguration": {
+                "concurrency": {
+                  "repetitions": 1
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Location_Details": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "4d4fefaf-6f51-4c1e-8237-201ff1938549"
+          },
+          "type": "Scope",
+          "description": "To handle an unexpected error."
+        },
+        "Catch": {
+          "actions": {
+            "Filter_Data": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "a5f498e6-fe56-427b-9845-1312aa952e36"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@result('Try')",
+                "where": "@or(equals(item()?['Status'], 'Failed'), equals(item()?['Status'], 'TimedOut'))"
+              },
+              "description": "Filter data by failed and timeout."
+            },
+            "Create_entry_in_IT_Error": {
+              "runAfter": {
+                "ErrorReturn": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "d7b067c6-fe34-4a13-8c87-d22bc89f1a0a"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "CreateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_iterrors",
+                  "item/mpa_name": "@outputs('ErrorReturn')?['body'][0]['FlowName']",
+                  "item/mpa_action": "@outputs('ErrorReturn')?['body'][0]['Step']",
+                  "item/mpa_errormessage": "@outputs('ErrorReturn')?['body'][0]['InnerErrorMessage']",
+                  "item/mpa_sourcetype": 865420001,
+                  "item/mpa_workflowinstanceurl": "@outputs('ErrorReturn')?['body'][0]['URL']"
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": "Add new record in IT error table."
+            },
+            "ErrorReturn": {
+              "runAfter": {
+                "Filter_Data": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "08fe3aa3-bb2e-4039-bf63-e78ad0216a2f"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Filter_Data')",
+                "select": {
+                  "Step": "@item()?['name']",
+                  "Status": "@item()?['Status']",
+                  "InnerErrorMessage": "@{item()?['error']?['message']} \n@{item()?['outputs']?['body']?['error']?['message']}",
+                  "Input": "@triggerOutputs()?['body/mpa_aptbk_appointmentbookingname']",
+                  "FlowName": "@workflow()?['tags']['flowDisplayName']",
+                  "URL": "@concat('https://flow.microsoft.com/manage/environments/', workflow()?['tags']['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']['name'])"
+                }
+              },
+              "description": "To hold a specific value."
+            },
+            "Terminate": {
+              "runAfter": {
+                "Create_entry_in_IT_Error": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "ddf9f509-d2b5-411d-a2be-61808598c00a"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed"
+              },
+              "description": "Terminate and set status to failed."
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "4a696b4f-65f1-4257-a4c5-9dc2b45116d4"
+          },
+          "type": "Scope",
+          "description": "To catch the specific error and add to IT error table."
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

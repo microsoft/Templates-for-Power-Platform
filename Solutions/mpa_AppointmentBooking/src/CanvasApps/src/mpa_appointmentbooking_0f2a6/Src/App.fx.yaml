@@ -1,0 +1,344 @@
+App As appinfo:
+    BackEnabled: =false
+    ConfirmExit: =varConfirmExit
+    ConfirmExitMessage: |-
+        =// Define a variable named "Text" with the value "{value}"
+        With(
+            {Text: "You may have unsaved data. Are you sure you want to exit without saving?"},
+            // Check if a localized text exists for "Text" in the user's preferred language
+            If(
+                // If the localized text is blank, return the default text
+                IsBlank(
+                    LookUp(
+                        colUserLocalizedStrings,
+                        'English Value' = Text
+                    ).'Localized Value'
+                ),
+                Text,
+                // If a localized text is found, return that instead of the default text
+                LookUp(
+                    colUserLocalizedStrings,
+                    'English Value' = Text
+                ).'Localized Value'
+            )
+        )
+    OnError: |-
+        =//Notify(FirstError.Message)
+        
+        //Patch a new record in dataverse for unhandled or unexpected errors and trace
+        If(
+            !IsBlank(FirstError.Message),
+            Patch(
+                'IT Errors',
+                Defaults('IT Errors'),
+                {
+                    Action: FirstError.Source,
+                    'Additional Information': App.ActiveScreen.Name,
+                    'Error Message': FirstError.Message,
+                    Name: "Appointment Booking",
+                    'Source Type': 'Source Type (IT Errors)'.'Power App'
+                }
+            );
+        
+        //Show the error also in app monitor
+        Trace(FirstError.Message);
+        
+        //Rethrow the error so user can see it
+        Error(FirstError);
+        
+        )
+    OnStart: |+
+        =//set desktop fonts
+        Set(
+            varDesktopFonts,
+            {
+                H1: {
+                    face: Font.'Segoe UI',
+                    size: 24,
+                    weight: FontWeight.Normal,
+                    weightBold: FontWeight.Bold,
+                    italic: false
+                },
+                H2: {
+                    face: Font.'Segoe UI',
+                    size: 18,
+                    weight: FontWeight.Normal,
+                    weightBold: FontWeight.Bold,
+                    italic: false
+                },
+                H3: {
+                    face: Font.'Segoe UI',
+                    size: 15,
+                    weight: FontWeight.Semibold,
+                    weightNormal: FontWeight.Normal,
+                    italic: false
+                },
+                B1: {
+                    face: Font.'Segoe UI',
+                    size: 12,
+                    weight: FontWeight.Normal,
+                    weightBold: FontWeight.Bold,
+                    weightSemiBold: FontWeight.Semibold,
+                    italic: false
+                },
+                B2: {
+                    face: Font.'Segoe UI',
+                    size: 10,
+                    weight: FontWeight.Normal,
+                    weightBold: FontWeight.Semibold,
+                    italic: false
+                },
+                B3: {
+                    face: Font.'Segoe UI',
+                    size: 8,
+                    weight: FontWeight.Normal,
+                    weightBold: FontWeight.Semibold,
+                    italic: false
+                },
+                CTA: {
+                    face: Font.'Segoe UI',
+                    size: 12,
+                    weight: FontWeight.Semibold,
+                    italic: false
+                }
+            }
+        );
+        Set(
+            varThemeFont,
+            varDesktopFonts
+        );
+        // set theme colors
+        Set(
+            varLightTheme,
+            {
+                name: "light",
+                background: "#FAF9F8",
+                backgroundFill: "#FFFFFF",
+                backgroundFillDisabled: "#F3F2F1",
+                text: "#201F1E",
+                altText: "#FFFFFF",
+                disabledText: "#A19F9D",
+                primary: "#0078D4",
+                secondary: "#EFF6FC",
+                tertiary: "#005A9E",
+                primaryGray: "#8A8886",
+                secondaryGray: "#EDEBE9",
+                tertiaryGray: "#605E5C",
+                confirmation: "#107C10",
+                warning: "#FFB900",
+                error: "#D13438",
+                info: "#006FC8",
+                iconimg: LogoLight,
+                focusBorder: "#000000",
+                focusBorderThickness: 2
+            }
+        );
+        Set(
+            varDarkTheme,
+            {
+                name: "dark",
+                background: "#201F1E",
+                backgroundFill: "#000000",
+                backgroundFillDisabled: "#323130",
+                text: "#FAF9F8",
+                altText: "#000000",
+                disabledText: "#A19F90",
+                primary: "#0078D4",
+                secondary: "#004578",
+                tertiary: "#47ADFF",
+                primaryGray: "#605E5C",
+                secondaryGray: "#323130",
+                tertiaryGray: "#E1DFDD",
+                confirmation: "#00CC6A",
+                warning: "#FDE300",
+                error: "#FF4343",
+                info: "#3B83F7",
+                iconimg: LogoLight,
+                focusBorder: "#FFFFFF",
+                focusBorderThickness: 2
+            }
+        );
+        Set(
+            varContrastTheme,
+            {
+                name: "contrast",
+                background: "#201F1E",
+                backgroundFill: "#000000",
+                backgroundFillDisabled: "#6B6B6B",
+                text: "#FFFFFF",
+                altText: "#000000",
+                disabledText: "#FFFFFF",
+                primary: "#1AEBFF",
+                secondary: "#000000",
+                tertiary: "#FFFF00",
+                primaryGray: "#FFFFFF",
+                secondaryGray: "#6B6B6B",
+                tertiaryGray: "#FFFFFF",
+                confirmation: "#3FF23F",
+                warning: "#FFFF00",
+                error: "#FF4343",
+                info: "#FF00E5",
+                iconimg: LogoLight,
+                focusBorder: "#FFFFFF",
+                focusBorderThickness: 2
+            }
+        );
+        Set(
+            varThemeColors,
+            varLightTheme
+        );
+        // Group menu items
+        ClearCollect(
+            colGroupMenu,
+            {Label: "Appointment"}
+        );
+        // Menu items
+        ClearCollect(
+            colMenu,
+            {
+                Label: "Book New",
+                Screen: 'New Booking Screen',
+                Icon: iconAdd,
+                IconWhite: iconAddWhite
+            },
+            {
+                Label: "Manage Booking",
+                Screen: 'Manage Booking Screen',
+                Icon: iconManage,
+                IconWhite: iconManageWhite
+            },
+            {
+                Label: "Appointment Slots",
+                Screen: 'Calendar Screen',
+                Icon: iconCalendar,
+                IconWhite: iconCalendarWhite
+            },
+            {
+                Label: "Settings",
+                Screen: 'Settings Screen',
+                Icon: iconSettings,
+                IconWhite: iconSettingsWhite
+            }
+        );
+        
+        //Setting of Variables if Admin or Not
+        Set(
+            varIsAdmin,
+            If(
+                "Appointment Booking - Administrator" in (LookUp(
+                    Users,
+                    'Primary Email' = User().Email
+                ).'Security Roles (systemuserroles_association)').Name,
+                true,
+                false
+            )
+        );
+        //Lookup and set localized text, remove region 
+        Set(
+            varISOUserLanguageCode,//Get user's language and map to existing choice values that are supported by the 'HR Localizations' entity which can be customized to support more languages
+            Switch(
+                Left(
+                    Language(),
+                    2
+                ),
+                "en",
+                'ISO Language Code'.en
+            )
+        );
+        ClearCollect(
+            colUserLocalizedStrings,//Collection used to display localized value according to user's language value
+            Filter(
+                'IT Localizations',
+                Language = varISOUserLanguageCode,
+                'IT Localizations (Views)'.'Active IT Localizations'
+            )
+        );
+        // Initialize the varConfirmExit variable to false.
+        Set(
+            varConfirmExit,
+            false
+        );
+        // Set the varCalendar variable to the first day of the current month.
+        Set(
+            varCalendar,
+            DateValue(Month(Today()) & "/" & 1 & "/" & Year(Today()))
+        );
+        // Set the varCalendarFirstDay variable to the first day of the week of the current month.
+        Set(
+            varCalendarFirstDay,
+            DateAdd(
+                varCalendar,
+                -Weekday(varCalendar),
+                TimeUnit.Days
+            )
+        );
+        // Retrieve and store the current user's email address in varUserEmailAddress.
+        Set(
+            varUserEmailAddress,
+            User().Email
+        );
+        
+        Set(
+            varExpandMenu,
+            true
+        );
+        
+        // Define time options and store them in colTimeOptions.
+        ClearCollect(
+            colTimeOptions,
+            [
+                {
+                    Name: "1 Hour",
+                    Value: 1,
+                    Unit: TimeUnit.Hours,
+                    TimeValue: 1,
+                    InMinutes: 60
+                },
+                {
+                    Name: "30 Minutes",
+                    Value: 0.50,
+                    Unit: TimeUnit.Minutes,
+                    TimeValue: 30,
+                    InMinutes: 30
+                }
+            ]
+        );
+        
+        // Generate a collection of time slots based on the selected shift start time, end time, and interval, storing the results in colMyTimeCollection.
+        ClearCollect(
+            colMyTimeCollection,
+            ForAll(
+                Sequence(
+                    ((TimeValue(cmbShiftEnd_Calendar.Selected.Value) - TimeValue(cmbShiftStart_Calendar.Selected.Value)) / 60000) / Int(cmbInterval_Calendar.Selected.InMinutes),
+                    Substitute(
+                        cmbShiftStart_Calendar.Selected.Value,
+                        ":00",
+                        ""
+                    ),
+                    cmbInterval_Calendar.Selected.Value
+                ),
+                Text(
+                    RoundDown(
+                        Value,
+                        0
+                    ),
+                    "00"
+                ) & ":" & Text(
+                    Mod(
+                        Value * 60,
+                        60
+                    ),
+                    "00"
+                )
+            )
+        );
+        
+    Theme: =PowerAppsTheme
+
+    Host As hostControl.DefaultHostControlVariant:
+        OnCancel: =false
+        OnEdit: =false
+        OnNew: =false
+        OnSave: =false
+        OnView: =false
+
