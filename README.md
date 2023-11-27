@@ -1,6 +1,6 @@
 # Templates for Power Platform 
 
-Solutions designed to expedite the implementation of the Power Platform within large-scale enterprises.
+Solutions designed to expedite the implementation of Power Platform within large-scale enterprises.
 
 ## Currently Offered Solutions
 
@@ -9,35 +9,53 @@ The SAP Procurement template allows you to extend your core procure-to-pay busin
 
 ### Employee Kudos
 
-The Employee Kudos template contains the building blocks necessary to to deploy a Power Apps mobile app that allows individual teammates to celebrate coworkers for their contributions. The mobile app has an easy-to-use interface with data stored in Microsoft Dataverse.
+The Employee Kudos template contains the building blocks necessary to to deploy Microsoft Power Apps for mobile devices that allows individual teammates to celebrate coworkers for their contributions. The mobile app has an easy-to-use interface with data stored in Microsoft Dataverse.
 
 ### Employee Awards and Recognition
 
-The Awards and Recognition template contains the building blocks necessary to deploy a Power Apps mobile app that streamlines and automates the process of acknowledging outstanding efforts in an organization. By facilitating an engaging, inclusive, and efficient awards system, the app aims to encourage a positive work culture that recognizes and appreciates exceptional contributions.
+The Awards and Recognition template contains the building blocks necessary to deploy Microsoft Power Apps for mobile devices that streamlines and automates the process of acknowledging outstanding efforts in an organization. By facilitating an engaging, inclusive, and efficient awards system, the app aims to encourage a positive work culture that recognizes and appreciates exceptional contributions.
 
 ### Onboarding Buddy
 
-The Onboarding Buddy template contains the building blocks necessary to deploy a Power Apps mobile app that helps your organization set up and automate a new or transfer employee's mentoring experience. Existing employees sign up to be onboarding buddies and are paired with folks that are onboarding to help them onboard and ramp up successfully. By implementing Onboarding Buddy and customizing it for their unique needs, organizations can create a more engaging, supportive, and efficient onboarding process—optimally leading to benefits such as: reduced time-to-be-productive, increased employee engagement, strengthened community and culture, and reduced turnover. 
+The Onboarding Buddy template contains the building blocks necessary to deploy Microsoft Power Apps for mobile devices that helps your organization set up and automate a new or transfer employee's mentoring experience. Existing employees sign up to be onboarding buddies and are paired with folks that are onboarding to help them onboard and ramp up successfully. By implementing Onboarding Buddy and customizing it for their unique needs, organizations can create a more engaging, supportive, and efficient onboarding process—optimally leading to benefits such as: reduced time-to-be-productive, increased employee engagement, strengthened community and culture, and reduced turnover. 
+
+### Hardware Request and Management
+
+The Hardware Request and Management template contains the building blocks necessary to deploy Microsoft Power Apps that empowers organizations to request and manage IT hardware assets. The template is designed to digitize and automate processes that help you stay on top of your IT hardware investments so you reduce costs, improve productivity, and minimize electronic waste. 
+
+
+### Appointment Booking
+
+The Appointment Booking template contains the building blocks necessary to deploy Microsoft Power Apps that can be used by any organization that wants to improve experiences and operational efficiencies related to booking appointments. The template is designed to streamline the coordination, communication, and time management involved in creating, booking, and managing appointments. 
+
 
 ## Access on AppSource
 
-#### [Employee Kudos Template on AppSource](https://aka.ms/AccessEmployeeKudosTemplate)
+#### [Appointment Booking template](https://aka.ms/AccessAppointmentBookingTemplate)
 
-#### [Employee Awards and Recognition](https://aka.ms/AccessAwardsAndRecognitionTemplate)
+#### [Hardware Request and Management template](https://aka.ms/AccessHardwareRequestandManagementTemplate)
 
-#### [Onboarding Buddy](https://aka.ms/AccessOnboardingBuddyTemplate)
+#### [Employee Kudos template](https://aka.ms/AccessEmployeeKudosTemplate)
 
-#### [SAP Procurement Template on AppSource](https://aka.ms/AccessSAPProcurementTemplate)
+#### [Awards and Recognition template](https://aka.ms/AccessAwardsAndRecognitionTemplate)
 
-## Documentation
+#### [Onboarding Buddy template](https://aka.ms/AccessOnboardingBuddyTemplate)
 
-#### [Employee Kudos Template](https://aka.ms/LearnEmployeeKudosTemplate)
+#### [SAP Procurement template](https://aka.ms/AccessSAPProcurementTemplate)
 
-#### [Employee Awards and Recognition](https://aka.ms/LearnAwardsAndRecognitionTemplate)
+## Microsoft Learn Documentation
 
-#### [Onboarding Buddy](https://aka.ms/LearnOnboardingBuddyTemplate)
+#### [Appointment Booking](https://aka.ms/LearnAppointmentBookingTemplate)
 
-#### [SAP Procurement Template](https://aka.ms/LearnSAPProcurementTemplate)
+#### [Hardware Request and Management template](https://aka.ms/LearnHardwareRequestAndManagementTemplate)
+
+#### [Employee Kudos template](https://aka.ms/LearnEmployeeKudosTemplate)
+
+#### [Employee Awards and Recognition template](https://aka.ms/LearnAwardsAndRecognitionTemplate)
+
+#### [Onboarding Buddy template](https://aka.ms/LearnOnboardingBuddyTemplate)
+
+#### [SAP Procurement template](https://aka.ms/LearnSAPProcurementTemplate)
 
 #### [General Documenatation](https://aka.ms/LearnTemplatesForPowerPlatform)
 
