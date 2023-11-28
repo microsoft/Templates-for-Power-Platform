@@ -9,7 +9,7 @@ The SAP Procurement template allows you to extend your core procure-to-pay busin
 
 ### Employee Kudos
 
-The Employee Kudos template contains the building blocks necessary to to deploy Microsoft Power Apps for mobile devices that allows individual teammates to celebrate coworkers for their contributions. The mobile app has an easy-to-use interface with data stored in Microsoft Dataverse.
+The Employee Kudos template contains the building blocks necessary to deploy Microsoft Power Apps for mobile devices that allows individual teammates to celebrate coworkers for their contributions. The mobile app has an easy-to-use interface with data stored in Microsoft Dataverse.
 
 ### Employee Awards and Recognition
 
