@@ -1,0 +1,54 @@
+name: Add new template and commit PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      solution_name:
+        description: "The solution name with prefix. (Examples: mpa_ITBase, mpa_Kudos, etc.)"
+        required: true
+        default: 'mpa_'
+      user_name: 
+        description: "User name for the commit"
+        required: true
+        default: 'tshanep'
+permissions:
+  contents: write
+
+jobs:
+  check-folder-and-run-actions:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      # Checkout the main branch
+      - name: Checkout main branch
+        uses: actions/checkout@v2
+        with:
+          ref: 'main'
+      
+      # Check if the folder exists
+      - name: Check for specific folder
+        id: check_folder
+        run: |
+          $folderPath = "solutions/your-specific-folder"
+          if (Test-Path $folderPath) {
+            Write-Host "Folder exists."
+            echo "FOLDER_EXISTS=true" | Out-File -FilePath $env:GITHUB_ENV -Append
+          } else {
+            Write-Host "Folder does not exist."
+            echo "FOLDER_EXISTS=false" | Out-File -FilePath $env:GITHUB_ENV -Append
+          }
+
+      # Action A: If the folder exists
+      - name: Action A
+        if: env.FOLDER_EXISTS == 'true'
+        run: |
+          Write-Host "Running Action A because the folder exists."
+
+      # Action B: If the folder does not exist
+      - name: Action B
+        if: env.FOLDER_EXISTS == 'false'
+        run: |
+          Write-Host "Running Action B because the folder does not exist."
