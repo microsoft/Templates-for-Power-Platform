@@ -22,6 +22,33 @@ jobs:
         shell: pwsh
 
     steps:
+      # Get Current DateTime
+      - id: date
+        name: Get current datetime
+        run: |
+          $datetime = $(Get-Date -Format "yyyy-MM-ddTHH:mm:ss")
+          echo "datetime=$datetime" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      # Install Node.js (required to install Power Platform CLI)
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      # Install Power Platform CLI
+      - name: Install Power Platform CLI
+        run: npm install -g @microsoft/powerplatform-cli
+
+      # Setup Auth with the Correct Environment
+      - name: Auth with Source Environment
+        run: |
+          pac auth clear
+          pac auth create --url ${{ github.event.inputs.source_powerplatform_environment }} --username ${{ secrets.POWERPLATFORM_USERNAME }} --password ${{ secrets.POWERPLATFORM_PASSWORD }}
+        env:
+          POWERPLATFORM_URL: ${{ github.event.inputs.source_powerplatform_environment }}
+          POWERPLATFORM_USERNAME: ${{ secrets.POWERPLATFORM_USERNAME }}
+          POWERPLATFORM_PASSWORD: ${{ secrets.POWERPLATFORM_PASSWORD }}      
+
       # Checkout the main branch
       - name: Checkout main branch
         uses: actions/checkout@v2
