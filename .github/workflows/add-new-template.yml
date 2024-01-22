@@ -34,7 +34,7 @@ permissions:
   contents: write
 
 jobs:
-  check-folder-and-run-actions:
+  build-and-create-pr-for-new-template:
     runs-on: windows-latest
     defaults:
       run:
@@ -54,7 +54,7 @@ jobs:
         run: dotnet tool install --global Microsoft.PowerApps.CLI.Tool
 
       # Enable long path support in Git
-      - name: Enable long paths support
+      - name: Enable long paths support in Git
         run: git config --system core.longpaths true
 
       # Validate solution_type input
@@ -82,13 +82,13 @@ jobs:
         shell: pwsh
 
       # Enable long path support across all steps
-      - name: Enable long path support
+      - name: Enable long path support in windows
         run: |
           Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1
         shell: pwsh
 
       # Setup Auth with the Correct Environment
-      - name: Auth with Source Environment
+      - name: Authenticate with Source PowerApps Environment
         run: |
           pac auth clear
           pac auth create --url ${{ github.event.inputs.dev_env_url }} --username ${{ secrets.AUTOMATION_USERNAME }} --password ${{ secrets.AUTOMATION_PASSWORD }} --name DevEnv --cloud Public
@@ -100,7 +100,7 @@ jobs:
           ref: 'main'
 
       # Check if the folder exists
-      - name: Check for specific folder
+      - name: Check to see if solution already exists
         id: check_folder
         run: |
           $folderPath = "solutions/${{ github.event.inputs.solution_name }}"
@@ -114,12 +114,12 @@ jobs:
           }
 
       # Navigate to the Solutions folder and initialize the solution
-      - name: Initialize Power Platform Solution
+      - name: Initialize New Power Platform Template
         run: |
           pac solution init --publisher-name PowerAccelerator --publisher-prefix mpa --outputDirectory .\Solutions\${{ github.event.inputs.solution_name }}
 
       # Add SolutionPackageType of BOTH to <PropertyGroup> in cdsproj
-      - name: Add SolutionPackageType node to XML
+      - name: Add SolutionPackageType node to VS Project file
         run: |
           # Specify the path to the XML file
           $xmlPath = "Solutions/${{ github.event.inputs.solution_name }}/${{ github.event.inputs.solution_name }}.cdsproj"
@@ -182,7 +182,7 @@ jobs:
           namespace: http://schemas.microsoft.com/developer/msbuild/2003
 
       # Sync and Build Solution
-      - name: Sync and Build App Solution
+      - name: Sync and Build New Template
         run: |
           cd .\Solutions\${{ github.event.inputs.solution_name }}\
           pac solution sync --processCanvasApps
@@ -190,7 +190,7 @@ jobs:
         shell: pwsh
 
       # If solution_type is APP, then sync and build the base solution also
-      - name: Sync and Build Base Solution
+      - name: Sync and Build Base Template Solution (if any)
         if: ${{ github.event.inputs.solution_type == 'APP' }}
         run: |
           cd .\Solutions\${{ github.event.inputs.solution_name }}\
