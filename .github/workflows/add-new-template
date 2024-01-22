@@ -114,7 +114,8 @@ jobs:
         env:
           # Define the XML namespace used in your XML file
           namespace: http://schemas.microsoft.com/developer/msbuild/2003
-
+      
+      # Add SolutionsToBuild node to main solutions.proj
       - name: Add SolutionsToBuild node to main solutions.proj
         run: |
           # Define the path to the XML file
@@ -142,9 +143,19 @@ jobs:
           # Define the XML namespace used in your XML file
           namespace: http://schemas.microsoft.com/developer/msbuild/2003
 
-      # Sync & Build Solution
+      # Sync and Build Solution
       - name: Sync Solution
-      run: |
-        cd .\Solutions\${{ github.event.inputs.solution_name }}\
-        pac solution sync --processCanvasApps
-        dotnet build /p:configuration=Release ${{ github.event.inputs.solution_name }}.cdsproj
+        run: |
+          cd .\Solutions\${{ github.event.inputs.solution_name }}\
+          pac solution sync --processCanvasApps
+          dotnet build /p:configuration=Release ${{ github.event.inputs.solution_name }}.cdsproj
+        shell: pwsh
+
+      # If solution_type is APP, then sync and build the base solution also
+      - name: Run step for solution_type APP
+        if: ${{ github.event.inputs.solution_type == 'APP' }}
+        run: |
+          cd .\Solutions\${{ github.event.inputs.solution_name }}\
+          pac solution sync --processCanvasApps
+          dotnet build /p:configuration=Release ${{ github.event.inputs.solution_name }}.cdsproj
+        shell: pwsh
