@@ -1,0 +1,212 @@
+# Workflow that adds a new Template for Power Platform (Power House) into the GIT Repo & raises a PR (shanep)
+name: Add new template and commit PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      solution_name:
+        description: "The solution name with prefix. Not the display name, but the exact unique name of the solution. (Examples: mpa_ITBase, mpa_Kudos, etc.)"
+        required: true
+        default: 'mpa_'
+      user_name: 
+        description: "User name for the commit"
+        required: true
+        default: 'tshanep'
+      dev_env_url: 
+        description: "The Instance URL of the Dev Environment for this solution. You can get this from Session details. Example: https://aicdev4.crm.dynamics.com/"
+        required: true
+      solution_type:
+        description: "Enter 'BASE' or 'APP'."
+        required: true
+      dependent_on_solution_name:
+        description: "If solution_type is APP, enter the exact unique name of the base solution this depends on. (Example: mpa_ITBase). Leave empty if it is a BASE solution."
+        required: false
+permissions:
+  contents: write
+
+jobs:
+  check-folder-and-run-actions:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      # Generate full and branch date strings
+      - id: date
+        name: Generate date strings
+        run: |
+          $fullDateTime = Get-Date -Format "yyyy-MM-ddTHH:mm:ss"
+          echo "full_datetime=$fullDateTime" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
+          
+          $branchDateTime = Get-Date -Format "yyyyMMdd-HHmmss"
+          echo "branch_datetime=$branchDateTime" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      # Install Node.js (required to install Power Platform CLI)
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      # Install Power Platform CLI
+      - name: Install Power Platform CLI
+        run: npm install -g @microsoft/powerplatform-cli
+
+      # Validate solution_type input
+      - name: Validate solution_type input
+        run: |
+          $validTypes = @("BASE", "APP")
+          $inputType = "${{ github.event.inputs.solution_type }}"
+
+          if (-not $validTypes.Contains($inputType)) {
+            Write-Error "Invalid solution_type input. Must be either 'BASE' or 'APP'."
+            exit 1
+          }
+        shell: pwsh
+
+      # Validate dependent_on_solution_name input when solution_type is APP
+      - name: Validate dependent_on_solution_name input
+        run: |
+          $solutionType = "${{ github.event.inputs.solution_type }}"
+          $dependentOnSolutionName = "${{ github.event.inputs.dependent_on_solution_name }}"
+
+          if ($solutionType -eq "APP" -and [string]::IsNullOrEmpty($dependentOnSolutionName)) {
+            Write-Error "dependent_on_solution_name must have a value when solution_type is 'APP'. You need to provide the BASE solution uniquename that it is dependent on."
+            exit 1
+          }
+        shell: pwsh
+
+      # Enable long path support across all steps
+      - name: Enable long path support
+        run: |
+          Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1
+        shell: pwsh
+
+      # Setup Auth with the Correct Environment
+      - name: Auth with Source Environment
+        run: |
+          pac auth clear
+          pac auth create --url ${{ github.event.inputs.dev_env_url }} --username ${{ secrets.AUTOMATION_USERNAME }} --password ${{ secrets.AUTOMATION_PASSWORD }} --name DevEnv --cloud Public
+
+      # Checkout the main branch
+      - name: Checkout main branch
+        uses: actions/checkout@v3
+        with:
+          ref: 'main'
+      
+      # Check if the folder exists
+      - name: Check for specific folder
+        id: check_folder
+        run: |
+          $folderPath = "solutions/${{ github.event.inputs.solution_name }}"
+          if (Test-Path $folderPath) {
+            Write-Host "The solution seems to already exist in the Git Repo - this workflow is only for new solutions being added to Git the first time."
+            echo "FOLDER_EXISTS=true" | Out-File -FilePath $env:GITHUB_ENV -Append
+            exit 1
+          } else {
+            Write-Host "Solution folder does not exist - will proceed to initialize the solution."
+            echo "FOLDER_EXISTS=false" | Out-File -FilePath $env:GITHUB_ENV -Append
+          }
+
+      # Navigate to the Solutions folder and initialize the solution
+      - name: Initialize Power Platform Solution
+      env:
+        PUBLISHER_NAME: PowerAccelerator
+        PUBLISHER_PREFIX: mpa
+        SOLUTION_DIRECTORY: ${{ github.event.inputs.solution_name }}
+      run: |
+        cd Solutions
+        pac solution init --publisher-name $env:PUBLISHER_NAME --publisher-prefix $env:PUBLISHER_PREFIX --outputDirectory .\$env:SOLUTION_DIRECTORY
+
+      # Add SolutionPackageType of BOTH to <PropertyGroup> in cdsproj
+      - name: Add SolutionPackageType node to XML
+        run: |
+          # Specify the path to the XML file
+          $xmlPath = "Solutions/${{ github.event.inputs.solution_name }}/${{ github.event.inputs.solution_name }}.cdsproj"
+
+          # Load the XML file
+          $xml = New-Object System.Xml.XmlDocument
+          $xml.Load($xmlPath)
+
+          # Define and add the namespace manager
+          $namespaceManager = New-Object System.Xml.XmlNamespaceManager($xml.NameTable)
+          $namespaceManager.AddNamespace("msb", "http://schemas.microsoft.com/developer/msbuild/2003")
+
+          # Create the new node
+          $newNode = $xml.CreateElement("SolutionPackageType", $namespaceManager.LookupNamespace("msb"))
+          $newNode.InnerText = "Both"
+
+          # Find the target PropertyGroup node
+          $propertyGroup = $xml.SelectSingleNode("//msb:PropertyGroup", $namespaceManager)
+
+          # Add the new node to the PropertyGroup
+          $propertyGroup.AppendChild($newNode)
+
+          # Save the updated XML back to the file
+          $xml.Save($xmlPath)
+        shell: pwsh
+        env:
+          # Define the XML namespace used in your XML file
+          namespace: http://schemas.microsoft.com/developer/msbuild/2003
+      
+      # Add SolutionsToBuild node to main solutions.proj
+      - name: Add SolutionsToBuild node to main solutions.proj
+        run: |
+          # Define the path to the XML file
+          $xmlPath = "Solutions/solutions.proj"
+
+          # Load the XML file
+          $xml = New-Object System.Xml.XmlDocument
+          $xml.PreserveWhitespace = $true
+          $xml.Load($xmlPath)
+
+          # Define and add the namespace manager
+          $namespaceManager = New-Object System.Xml.XmlNamespaceManager($xml.NameTable)
+          $namespaceManager.AddNamespace("msb", "http://schemas.microsoft.com/developer/msbuild/2003")
+
+          # Create the new node
+          $newNode = $xml.CreateElement("msb:SolutionsToBuild", $xml.DocumentElement.NamespaceURI)
+          $newNode.SetAttribute("Include", "${{ github.event.inputs.solution_name }}/${{ github.event.inputs.solution_name }}.cdsproj")
+
+          # Find the target ItemGroup node
+          $itemGroup = $xml.SelectSingleNode("//msb:ItemGroup", $namespaceManager)
+
+          # Add the new node to the ItemGroup
+          $itemGroup.AppendChild($newNode)
+
+          # Save the updated XML back to the file
+          $xml.Save($xmlPath)
+        shell: pwsh
+        env:
+          # Define the XML namespace used in your XML file
+          namespace: http://schemas.microsoft.com/developer/msbuild/2003
+
+      # Sync and Build Solution
+      - name: Sync and Build App Solution
+        run: |
+          cd .\Solutions\${{ github.event.inputs.solution_name }}\
+          pac solution sync --processCanvasApps
+          dotnet build /p:configuration=Release ${{ github.event.inputs.solution_name }}.cdsproj
+        shell: pwsh
+
+      # If solution_type is APP, then sync and build the base solution also
+      - name: Sync and Build Base Solution
+        if: ${{ github.event.inputs.solution_type == 'APP' }}
+        run: |
+          cd .\Solutions\${{ github.event.inputs.solution_name }}\
+          pac solution sync --processCanvasApps
+          dotnet build /p:configuration=Release ${{ github.event.inputs.solution_name }}.cdsproj
+        shell: pwsh
+
+      # Checkout to a local user branch, commit, and Pull Request
+      - name: Checkout to a new branch, commit, and Pull Request
+        run: |
+          $branchName = "auto_pipeline/${{ github.event.inputs.solution_name }}-${{ steps.date.outputs.branch_datetime }}"
+          git checkout -b $branchName
+          echo "BRANCH_NAME=$branchName" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          Write-Host "Working on branch $branchName"
+          git add .
+          git commit -m "Added new solution: ${{ github.event.inputs.solution_name }}"
+          git push origin $branchName
+          gh pr create --title "Add new solution ${{ github.event.inputs.solution_name }}" --body "Added new solution: ${{ github.event.inputs.solution_name }}" --base main --head $branchName
+        shell: pwsh
