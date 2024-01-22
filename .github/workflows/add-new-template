@@ -52,6 +52,30 @@ jobs:
       - name: Install Power Platform CLI
         run: npm install -g @microsoft/powerplatform-cli
 
+      # Validate solution_type input
+      - name: Validate solution_type input
+        run: |
+          $validTypes = @("BASE", "APP")
+          $inputType = "${{ github.event.inputs.solution_type }}"
+
+          if (-not $validTypes.Contains($inputType)) {
+            Write-Error "Invalid solution_type input. Must be either 'BASE' or 'APP'."
+            exit 1
+          }
+        shell: pwsh
+
+      # Validate dependent_on_solution_name input when solution_type is APP
+      - name: Validate dependent_on_solution_name input
+        run: |
+          $solutionType = "${{ github.event.inputs.solution_type }}"
+          $dependentOnSolutionName = "${{ github.event.inputs.dependent_on_solution_name }}"
+
+          if ($solutionType -eq "APP" -and -z $dependentOnSolutionName) {
+            Write-Error "dependent_on_solution_name must have a value when solution_type is 'APP'. You need to provide the BASE solution uniquename that it is dependent on."
+            exit 1
+          }
+        shell: pwsh
+
       # Setup Auth with the Correct Environment
       - name: Auth with Source Environment
         run: |
