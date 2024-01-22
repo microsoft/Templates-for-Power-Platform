@@ -70,7 +70,7 @@ jobs:
           $solutionType = "${{ github.event.inputs.solution_type }}"
           $dependentOnSolutionName = "${{ github.event.inputs.dependent_on_solution_name }}"
 
-          if ($solutionType -eq "APP" -and -z $dependentOnSolutionName) {
+          if ($solutionType -eq "APP" -and [string]::IsNullOrEmpty($dependentOnSolutionName)) {
             Write-Error "dependent_on_solution_name must have a value when solution_type is 'APP'. You need to provide the BASE solution uniquename that it is dependent on."
             exit 1
           }
@@ -122,12 +122,16 @@ jobs:
           $xml = New-Object System.Xml.XmlDocument
           $xml.Load($xmlPath)
 
+          # Define and add the namespace manager
+          $namespaceManager = New-Object System.Xml.XmlNamespaceManager($xml.NameTable)
+          $namespaceManager.AddNamespace("msb", "http://schemas.microsoft.com/developer/msbuild/2003")
+
           # Create the new node
-          $newNode = $xml.CreateElement("SolutionPackageType", $xml.DocumentElement.NamespaceURI)
+          $newNode = $xml.CreateElement("SolutionPackageType", $namespaceManager.LookupNamespace("msb"))
           $newNode.InnerText = "Both"
 
           # Find the target PropertyGroup node
-          $propertyGroup = $xml.SelectSingleNode("//ns:PropertyGroup", $namespaceManager)
+          $propertyGroup = $xml.SelectSingleNode("//msb:PropertyGroup", $namespaceManager)
 
           # Add the new node to the PropertyGroup
           $propertyGroup.AppendChild($newNode)
@@ -150,12 +154,16 @@ jobs:
           $xml.PreserveWhitespace = $true
           $xml.Load($xmlPath)
 
+          # Define and add the namespace manager
+          $namespaceManager = New-Object System.Xml.XmlNamespaceManager($xml.NameTable)
+          $namespaceManager.AddNamespace("msb", "http://schemas.microsoft.com/developer/msbuild/2003")
+
           # Create the new node
-          $newNode = $xml.CreateElement("SolutionsToBuild", $xml.DocumentElement.NamespaceURI)
+          $newNode = $xml.CreateElement("msb:SolutionsToBuild", $xml.DocumentElement.NamespaceURI)
           $newNode.SetAttribute("Include", "${{ github.event.inputs.solution_name }}/${{ github.event.inputs.solution_name }}.cdsproj")
 
           # Find the target ItemGroup node
-          $itemGroup = $xml.SelectSingleNode("//ns:ItemGroup", $namespaceManager)
+          $itemGroup = $xml.SelectSingleNode("//msb:ItemGroup", $namespaceManager)
 
           # Add the new node to the ItemGroup
           $itemGroup.AppendChild($newNode)
@@ -168,7 +176,7 @@ jobs:
           namespace: http://schemas.microsoft.com/developer/msbuild/2003
 
       # Sync and Build Solution
-      - name: Sync Solution
+      - name: Sync and Build App Solution
         run: |
           cd .\Solutions\${{ github.event.inputs.solution_name }}\
           pac solution sync --processCanvasApps
@@ -176,7 +184,7 @@ jobs:
         shell: pwsh
 
       # If solution_type is APP, then sync and build the base solution also
-      - name: Run step for solution_type APP
+      - name: Sync and Build Base Solution
         if: ${{ github.event.inputs.solution_type == 'APP' }}
         run: |
           cd .\Solutions\${{ github.event.inputs.solution_name }}\
