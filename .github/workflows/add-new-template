@@ -61,21 +61,26 @@ jobs:
         run: |
           $folderPath = "solutions/${{ github.event.inputs.solution_name }}"
           if (Test-Path $folderPath) {
-            Write-Host "Folder exists."
+            Write-Host "The solution seems to already exist in the Git Repo - this workflow is only for new solutions being added to Git the first time."
             echo "FOLDER_EXISTS=true" | Out-File -FilePath $env:GITHUB_ENV -Append
+            exit 0 # Stops the workflow gracefully
           } else {
-            Write-Host "Folder does not exist."
+            Write-Host "Solution folder does not exist - will proceed to initialize the solution."
             echo "FOLDER_EXISTS=false" | Out-File -FilePath $env:GITHUB_ENV -Append
           }
 
-      # Action A: If the folder exists
-      - name: Action A
-        if: env.FOLDER_EXISTS == 'true'
-        run: |
-          Write-Host "The solution seems to already exist in the Git Repo - this workflow is only for new solutions being added to Git the first time."
+      # Navigate to the Solutions folder and initialize the solution
+      - name: Initialize Power Platform Solution
+      env:
+        PUBLISHER_NAME: PowerAccelerator
+        PUBLISHER_PREFIX: mpa
+        SOLUTION_DIRECTORY: ${{ github.event.inputs.solution_name }}
+      run: |
+        cd Solutions
+        pac solution init --publisher-name $env:PUBLISHER_NAME --publisher-prefix $env:PUBLISHER_PREFIX --outputDirectory .\$env:SOLUTION_DIRECTORY
 
-      # Action B: If the folder does not exist
-      - name: Action B
-        if: env.FOLDER_EXISTS == 'false'
-        run: |
-          Write-Host "Running Action B because the folder does not exist."
+      # Add Solution Package Type Npde to .cdsproj
+      - name: Add Solution Package Type Npde to .cdsproj
+        uses: actions/checkout@v2
+        with:
+          ref: 'main'
