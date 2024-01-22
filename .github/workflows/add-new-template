@@ -112,3 +112,29 @@ jobs:
           # Define the XML namespace used in your XML file
           namespace: http://schemas.microsoft.com/developer/msbuild/2003
 
+      - name: Add SolutionsToBuild node to main solutions.proj
+        run: |
+          # Define the path to the XML file
+          $xmlPath = "Solutions/solutions.proj"
+
+          # Load the XML file
+          $xml = New-Object System.Xml.XmlDocument
+          $xml.PreserveWhitespace = $true
+          $xml.Load($xmlPath)
+
+          # Create the new node
+          $newNode = $xml.CreateElement("SolutionsToBuild", $xml.DocumentElement.NamespaceURI)
+          $newNode.SetAttribute("Include", "${{ github.event.inputs.solution_name }}/${{ github.event.inputs.solution_name }}.cdsproj")
+
+          # Find the target ItemGroup node
+          $itemGroup = $xml.SelectSingleNode("//ns:ItemGroup", $namespaceManager)
+
+          # Add the new node to the ItemGroup
+          $itemGroup.AppendChild($newNode)
+
+          # Save the updated XML back to the file
+          $xml.Save($xmlPath)
+        shell: pwsh
+        env:
+          # Define the XML namespace used in your XML file
+          namespace: http://schemas.microsoft.com/developer/msbuild/2003
