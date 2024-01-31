@@ -1,0 +1,45 @@
+name: Post Message to Microsoft Teams
+
+on: 
+  workflow_dispatch:
+    inputs:
+      message:
+        description: 'Message to send'
+        required: true
+
+jobs:
+  notify:
+    runs-on: windows-latest
+    steps:
+      - name: Post Adaptive Card to Microsoft Teams
+        run: |
+          $body = @{
+            type = "message"
+            attachments = @(
+              @{
+                contentType = "application/vnd.microsoft.card.adaptive"
+                contentUrl = $null
+                content = @{
+                  '$schema' = "http://adaptivecards.io/schemas/adaptive-card.json"
+                  type = "AdaptiveCard"
+                  version = "1.2"
+                  body = @(
+                    @{
+                      type = "TextBlock"
+                      text = "${{ github.event.inputs.message }}"
+                    }
+                  )
+                  actions = @(
+                    @{
+                      type = "Action.OpenUrl"
+                      title = "Create Pull Request"
+                      url = "https://github.com/microsoft/Templates-for-Power-Platform"
+                    }
+                  )
+                }
+              }
+            )
+          } | ConvertTo-Json -Depth 10
+
+          curl -H "Content-Type: application/json" -d "$body" ${{ secrets.TEAMS_WEBHOOK_URL }}
+        shell: pwsh
