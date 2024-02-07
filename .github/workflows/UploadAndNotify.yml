@@ -24,20 +24,15 @@ jobs:
         run: |
           az storage blob upload --account-name poweraccelerators --container-name accelerators --name simplefile.txt --file simplefile.txt --overwrite --account-key ${{ secrets.AZURE_STORAGE_KEY }}
 
-      - name: Generate SAS Token
+      - name: Generate SAS Token and Post Adaptive Card
         id: sas_token
         run: |
           $expiry = (Get-Date).AddDays(365).ToString("yyyy-MM-ddTHH:mm:ssZ")
-          $sasToken = az storage blob generate-sas --account-name poweraccelerators --container-name accelerators --name simplefile.txt --permissions r --expiry $expiry --account-key ${{ secrets.AZURE_STORAGE_KEY }} --output json
-          echo "SAS JSON: $sasToken"
-          echo "SAS_TOKEN=$sasToken" | Out-File -FilePath $env:GITHUB_ENV -Append
-          echo "::set-output name=sas_token::$sasToken"
-        shell: pwsh
+          $sas = az storage blob generate-sas --account-name poweraccelerators --container-name accelerators --name simplefile.txt --permissions r --expiry $expiry --account-key ${{ secrets.AZURE_STORAGE_KEY }} --output json
+          echo "SAS JSON: $sas"
+          echo "SAS_TOKEN=$sas" >> $GITHUB_ENV
+          echo "SAS_URL=https://poweraccelerators.blob.core.windows.net/accelerators/simplefile.txt?$sas" >> $GITHUB_ENV
 
-      - name: Post Adaptive Card to Microsoft Teams
-        run: |
-          $sasToken = "${{ steps.sas_token.outputs.sas_token }}"
-          echo "Sas Token: $sasToken"
           $body = @{
             type = "message"
             attachments = @(
@@ -51,14 +46,14 @@ jobs:
                   body = @(
                     @{
                       type = "TextBlock"
-                      text = "$sasToken"
+                      text = "$sas"
                     }
                   )
                   actions = @(
                     @{
                       type = "Action.OpenUrl"
                       title = "Download Azure Blob File"
-                      url = "$sasToken"
+                      url = "$sas"
                     }
                   )
                 }
