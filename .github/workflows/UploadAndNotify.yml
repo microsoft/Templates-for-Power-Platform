@@ -25,19 +25,19 @@ jobs:
           az storage blob upload --account-name poweraccelerators --container-name accelerators --name simplefile.txt --file simplefile.txt --overwrite --account-key ${{ secrets.AZURE_STORAGE_KEY }}
 
       - name: Generate SAS Token
+        id: sas_token
         run: |
           $expiry = (Get-Date).AddDays(365).ToString("yyyy-MM-ddTHH:mm:ssZ")
           $sasToken = az storage blob generate-sas --account-name poweraccelerators --container-name accelerators --name simplefile.txt --permissions r --expiry $expiry --account-key ${{ secrets.AZURE_STORAGE_KEY }} --output json
           echo "SAS JSON: $sasToken"
-          echo "SAS_TOKEN=$sasToken" >> $GITHUB_ENV
-          $sasURL = "https://poweraccelerators.blob.core.windows.net/accelerators/simplefile.txt?$sasToken" >> $GITHUB_ENV
-          echo "SAS URL: $sasURL"
+          echo "SAS_TOKEN=$sasToken" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "::set-output name=sas_token::$sasToken"
         shell: pwsh
 
       - name: Post Adaptive Card to Microsoft Teams
         run: |
-          $sasTok = $env:SAS_TOKEN
-          echo "Sas Token: $sasTok"
+          $sasToken = "${{ steps.sas_token.outputs.sas_token }}"
+          echo "Sas Token: $sasToken"
           $body = @{
             type = "message"
             attachments = @(
@@ -51,14 +51,14 @@ jobs:
                   body = @(
                     @{
                       type = "TextBlock"
-                      text = "$sasTok"
+                      text = "$sasToken"
                     }
                   )
                   actions = @(
                     @{
                       type = "Action.OpenUrl"
                       title = "Download Azure Blob File"
-                      url = "${{ env.SAS_URL }}"
+                      url = "$sasToken"
                     }
                   )
                 }
