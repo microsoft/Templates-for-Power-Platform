@@ -36,7 +36,8 @@ jobs:
           $blobUrl = az storage blob url --account-name poweraccelerators --container-name accelerators --name simplefile.txt --account-key ${{ secrets.AZURE_STORAGE_KEY }} --output tsv
           echo "Blob URL: $blobUrl"
           echo "BLOB_URL=$blobUrl" >> $GITHUB_ENV
-          $combinedUrl = $blobUrl + "?" + $sas
+          $encodedSas = [System.Net.WebUtility]::UrlEncode($sas)
+          $combinedUrl = $blobUrl + "?" + $encodedSas
           echo "combinedURL: $combinedUrl"
           
           $body = @{
@@ -66,6 +67,9 @@ jobs:
               }
             )
           } | ConvertTo-Json -Depth 10
+
+            $body | ConvertTo-Json -Depth 10 | Out-File -FilePath "adaptivecard.json"
+            Get-Content "adaptivecard.json"
 
           curl -H "Content-Type: application/json" -d "$body" ${{ secrets.TEAMS_WEBHOOK_URL }}
         shell: pwsh
