@@ -27,14 +27,17 @@ jobs:
       - name: Generate SAS Token
         run: |
           $expiry = (Get-Date).AddDays(365).ToString("yyyy-MM-ddTHH:mm:ssZ")
-          $sas = az storage blob generate-sas --account-name poweraccelerators --container-name accelerators --name simplefile.txt --permissions r --expiry $expiry --account-key ${{ secrets.AZURE_STORAGE_KEY }} --output json
-          echo "SAS JSON: $sas"
-          echo "SAS_TOKEN=$sas" >> $GITHUB_ENV
-          echo "SAS_URL=https://poweraccelerators.blob.core.windows.net/accelerators/simplefile.txt?$sas" >> $GITHUB_ENV
+          $sasToken = az storage blob generate-sas --account-name poweraccelerators --container-name accelerators --name simplefile.txt --permissions r --expiry $expiry --account-key ${{ secrets.AZURE_STORAGE_KEY }} --output json
+          echo "SAS JSON: $sasToken"
+          echo "SAS_TOKEN=$sasToken" >> $GITHUB_ENV
+          $sasURL = "https://poweraccelerators.blob.core.windows.net/accelerators/simplefile.txt?$sasToken" >> $GITHUB_ENV
+          echo "SAS URL: $sasURL"
         shell: pwsh
 
       - name: Post Adaptive Card to Microsoft Teams
         run: |
+          $sasTok = $env:SAS_TOKEN
+          echo "Sas Token: $sasTok"
           $body = @{
             type = "message"
             attachments = @(
@@ -48,7 +51,7 @@ jobs:
                   body = @(
                     @{
                       type = "TextBlock"
-                      text = "${{ env.SAS_URL }}"
+                      text = "$sasTok"
                     }
                   )
                   actions = @(
