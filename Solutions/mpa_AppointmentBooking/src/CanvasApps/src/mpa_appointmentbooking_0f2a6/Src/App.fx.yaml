@@ -23,8 +23,7 @@ App As appinfo:
             )
         )
     OnError: |-
-        =//Notify(FirstError.Message)
-        
+        =
         //Patch a new record in dataverse for unhandled or unexpected errors and trace
         If(
             !IsBlank(FirstError.Message),
@@ -39,13 +38,13 @@ App As appinfo:
                     'Source Type': 'Source Type (IT Errors)'.'Power App'
                 }
             );
-        
+            
         //Show the error also in app monitor
         Trace(FirstError.Message);
-        
+            
         //Rethrow the error so user can see it
         Error(FirstError);
-        
+            
         )
     OnStart: |+
         =//set desktop fonts
@@ -179,7 +178,7 @@ App As appinfo:
                 error: "#FF4343",
                 info: "#FF00E5",
                 iconimg: LogoLight,
-                focusBorder: "#FFFFFF",
+                focusBorder: "#FF00E5",
                 focusBorderThickness: 2
             }
         );
@@ -222,17 +221,12 @@ App As appinfo:
         );
         
         //Setting of Variables if Admin or Not
-        Set(
-            varIsAdmin,
-            If(
-                "Appointment Booking - Administrator" in (LookUp(
-                    Users,
-                    'Primary Email' = User().Email
-                ).'Security Roles (systemuserroles_association)').Name,
-                true,
-                false
-            )
-        );
+        Set(varIsAdmin, If(
+                            User().Email in
+                            Filter(Users, 'Users (Views)'.'Appointment Booking Administrators').'Primary Email',
+                            true, false));
+        
+        
         //Lookup and set localized text, remove region 
         Set(
             varISOUserLanguageCode,//Get user's language and map to existing choice values that are supported by the 'HR Localizations' entity which can be customized to support more languages
@@ -332,6 +326,24 @@ App As appinfo:
                 )
             )
         );
+        
+        //Get Currently logged in User's Timezone 
+        Set(
+            varTimezoneIndicator,
+            Left( 
+                LookUp(
+                    'Time Zone Definitions',
+                    timezonecode = LookUp(
+                        'User Settings',
+                        systemuserid = LookUp(
+                            Users,
+                            'Primary Email' = User().Email
+                        ).User
+                    ).TimeZoneCode
+                ).'User Interface Name',
+                12
+            )
+        )
         
     Theme: =PowerAppsTheme
 
