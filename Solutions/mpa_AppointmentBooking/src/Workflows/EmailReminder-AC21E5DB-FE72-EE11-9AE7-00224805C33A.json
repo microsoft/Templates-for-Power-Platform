@@ -1,19 +1,19 @@
 {
   "properties": {
     "connectionReferences": {
-      "shared_commondataserviceforapps": {
+      "shared_commondataserviceforapps_1": {
         "runtimeSource": "embedded",
         "connection": {
-          "connectionReferenceLogicalName": "mpa_aptbk_dataverseconnection"
+          "connectionReferenceLogicalName": "mpa_powerappsinnovationcenterdataverse"
         },
         "api": {
           "name": "shared_commondataserviceforapps"
         }
       },
-      "shared_office365_1": {
+      "shared_office365": {
         "runtimeSource": "embedded",
         "connection": {
-          "connectionReferenceLogicalName": "mpa_aptbk_outlookconnection"
+          "connectionReferenceLogicalName": "mpa_powerappsinnovationcenteroutlook"
         },
         "api": {
           "name": "shared_office365"
@@ -47,7 +47,7 @@
         }
       },
       "actions": {
-        "Start_Date": {
+        "Initialize_StartTime": {
           "runAfter": {},
           "metadata": {
             "operationMetadataId": "89a6472a-312e-4052-8ca2-1b94cf40fef8"
@@ -63,9 +63,9 @@
           },
           "description": "Start Date variable"
         },
-        "Time_to_Remind": {
+        "Initialize_TimetoRemind": {
           "runAfter": {
-            "Start_Date": [
+            "Initialize_StartTime": [
               "Succeeded"
             ]
           },
@@ -84,9 +84,9 @@
           },
           "description": "Time to Remind variable"
         },
-        "Location_Details": {
+        "Initialize_Location_Details": {
           "runAfter": {
-            "Time_to_Remind": [
+            "Initialize_TimetoRemind": [
               "Succeeded"
             ]
           },
@@ -114,7 +114,7 @@
               "type": "OpenApiConnection",
               "inputs": {
                 "host": {
-                  "connectionName": "shared_commondataserviceforapps",
+                  "connectionName": "shared_commondataserviceforapps_1",
                   "operationId": "ListRecords",
                   "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                 },
@@ -153,7 +153,7 @@
                   "type": "OpenApiConnection",
                   "inputs": {
                     "host": {
-                      "connectionName": "shared_commondataserviceforapps",
+                      "connectionName": "shared_commondataserviceforapps_1",
                       "operationId": "GetItem",
                       "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                     },
@@ -176,7 +176,7 @@
                   "type": "OpenApiConnection",
                   "inputs": {
                     "host": {
-                      "connectionName": "shared_commondataserviceforapps",
+                      "connectionName": "shared_commondataserviceforapps_1",
                       "operationId": "GetItem",
                       "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                     },
@@ -189,7 +189,7 @@
                   },
                   "description": "Requestor"
                 },
-                "Switch": {
+                "Switch_Location_Details": {
                   "runAfter": {
                     "Get_Appointment_Type_Info": [
                       "Succeeded"
@@ -231,7 +231,7 @@
                     "In_Person": {
                       "case": "In Person",
                       "actions": {
-                        "Condition": {
+                        "If_Location_Details_is_not_NULL": {
                           "actions": {
                             "Get_Location_Details": {
                               "runAfter": {},
@@ -241,7 +241,7 @@
                               "type": "OpenApiConnection",
                               "inputs": {
                                 "host": {
-                                  "connectionName": "shared_commondataserviceforapps",
+                                  "connectionName": "shared_commondataserviceforapps_1",
                                   "operationId": "GetItem",
                                   "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                                 },
@@ -252,7 +252,7 @@
                                 "authentication": "@parameters('$authentication')"
                               }
                             },
-                            "Checking_if_Location_Details_is_Null": {
+                            "If_Location_Details_Room_Number_is_not_NULL": {
                               "actions": {
                                 "Appointment_Room_Number": {
                                   "runAfter": {},
@@ -262,7 +262,7 @@
                                   "type": "OpenApiConnection",
                                   "inputs": {
                                     "host": {
-                                      "connectionName": "shared_commondataserviceforapps",
+                                      "connectionName": "shared_commondataserviceforapps_1",
                                       "operationId": "GetItem",
                                       "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                                     },
@@ -335,52 +335,19 @@
                   "type": "Switch",
                   "description": "Setting of Variable Details Location"
                 },
-                "Get_TimeZone": {
+                "Date": {
                   "runAfter": {
-                    "Switch": [
+                    "Switch_Location_Details": [
                       "Succeeded",
                       "Failed",
                       "Skipped"
                     ]
                   },
                   "metadata": {
-                    "operationMetadataId": "b1f82ddd-f3ab-4897-84fc-918d494fa2c2"
-                  },
-                  "type": "Workflow",
-                  "inputs": {
-                    "host": {
-                      "workflowReferenceName": "b24780b2-b05d-ee11-be6f-00224808dec6"
-                    },
-                    "body": {
-                      "text": "@items('For_each_Slot_with_Booking')?['_mpa_aptbk_contact_value']"
-                    }
-                  },
-                  "description": "Timezone"
-                },
-                "Time_Zone_Name": {
-                  "runAfter": {
-                    "Get_TimeZone": [
-                      "Succeeded"
-                    ]
-                  },
-                  "metadata": {
-                    "operationMetadataId": "4820ac81-126a-4e9d-9a81-27f10f1c6ec3"
-                  },
-                  "type": "Compose",
-                  "inputs": "@body('Get_TimeZone')?['time_zone_name']",
-                  "description": "Time Zone Name"
-                },
-                "Date": {
-                  "runAfter": {
-                    "Time_Zone_Name": [
-                      "Succeeded"
-                    ]
-                  },
-                  "metadata": {
                     "operationMetadataId": "0e0fa236-5306-4032-a58d-71d92c798c51"
                   },
                   "type": "Compose",
-                  "inputs": "@If(equals(formatDateTime(items('For_each_Slot_with_Booking')?['mpa_aptbk_startdate'], 'MMMM dd') , formatDateTime(items('For_each_Slot_with_Booking')?['mpa_aptbk_enddate'], 'MMMM dd')) , convertFromUtc(items('For_each_Slot_with_Booking')?['mpa_aptbk_startdate'],outputs('Time_Zone_Name') ,'MMMM dd') , Concat(convertFromUtc(items('For_each_Slot_with_Booking')?['mpa_aptbk_startdate'],outputs('Time_Zone_Name') ,'MMMM dd'),' - ', convertFromUtc(items('For_each_Slot_with_Booking')?['mpa_aptbk_enddate'], outputs('Time_Zone_Name'),'MMMM dd')))",
+                  "inputs": "@If(equals(formatDateTime(items('For_each_Slot_with_Booking')?['mpa_aptbk_startdate'], 'MMMM dd') , formatDateTime(items('For_each_Slot_with_Booking')?['mpa_aptbk_enddate'], 'MMMM dd')) , formatDateTime(items('For_each_Slot_with_Booking')?['mpa_aptbk_startdate'],'MMMM dd') , Concat(formatDateTime(items('For_each_Slot_with_Booking')?['mpa_aptbk_startdate'],'MMMM dd'),' - ', formatDateTime(items('For_each_Slot_with_Booking')?['mpa_aptbk_enddate'],'MMMM dd')))",
                   "description": "Process Date"
                 },
                 "Time": {
@@ -393,7 +360,7 @@
                     "operationMetadataId": "74d2601d-aca3-4bc4-b83b-33187785637d"
                   },
                   "type": "Compose",
-                  "inputs": "@Concat(convertFromUtc( items('For_each_Slot_with_Booking')?['mpa_aptbk_startdate'] , outputs('Time_Zone_Name'),'hh:mm tt'),' - ',convertFromUtc( items('For_each_Slot_with_Booking')?['mpa_aptbk_enddate'] ,outputs('Time_Zone_Name') ,'hh:mm tt'))",
+                  "inputs": "@Concat(formatDateTime( items('For_each_Slot_with_Booking')?['mpa_aptbk_startdate'] ,'hh:mm tt'),' - ',formatDateTime( items('For_each_Slot_with_Booking')?['mpa_aptbk_enddate'],'hh:mm tt'))",
                   "description": "Process Date"
                 },
                 "Get_Contact_Info": {
@@ -408,7 +375,7 @@
                   "type": "OpenApiConnection",
                   "inputs": {
                     "host": {
-                      "connectionName": "shared_commondataserviceforapps",
+                      "connectionName": "shared_commondataserviceforapps_1",
                       "operationId": "GetItem",
                       "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                     },
@@ -433,14 +400,14 @@
                   "type": "OpenApiConnection",
                   "inputs": {
                     "host": {
-                      "connectionName": "shared_office365_1",
+                      "connectionName": "shared_office365",
                       "operationId": "SendEmailV2",
                       "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
                     },
                     "parameters": {
                       "emailMessage/To": "@outputs('Get_User_Details')?['body/emailaddress1']",
                       "emailMessage/Subject": "Appointment Notification Reminder",
-                      "emailMessage/Body": "<style>\n#customers {\n  font-family: Arial, Helvetica, sans-serif;\n  border-collapse: collapse;\n  width: 100%;\n}\n\n#customers td, #customers th {\n  border: 1px solid #ddd;\n  padding: 8px;\n}\n\n#customers tr:nth-child(even){background-color: #f2f2f2;}\n\n#customers tr:hover {background-color: #ddd;}\n\n#customers th {\n  padding-top: 12px;\n  padding-bottom: 12px;\n  text-align: left;\n  background-color: Gray;\n  color: white;\n}\n</style>\n\n<p>Hello @{outputs('Get_User_Details')?['body/firstname']},<br>\n<br>\nThis is a reminder you have an upcoming appointment. Below are the details for the appointment:\n<br>\n<table id=\"customers\">\n  <tr>\n  <th>Appointment Contact</th>\n<th>Appointment Type</th>\n    <th>Location</th>\n    <th>Location Details</th>\n<th>Date</th>\n    <th>Time</th>\n<th>Duration</th>\n  </tr>\n  <tr>\n<td>@{outputs('Get_Contact_Info')?['body/fullname']}</td>\n<td>@{outputs('Get_Appointment_Type_Info')?['body/mpa_mpa_aptbk_appointmenttypename']}</td>\n<td> @{outputs('Get_Appointment_Slot_Info')?['body/mpa_aptbk_location@OData.Community.Display.V1.FormattedValue']}</td>\n  <td> @{variables('Location Details')}</td>\n  <td>@{outputs('Date')}</td>\n  <td>@{outputs('Time')}</td>\n<td>@{concat(items('For_each_Slot_with_Booking')?['mpa_aptbk_duration'], ' Minutes')}</td>\n  </tr>\n</table>",
+                      "emailMessage/Body": "<style>\n#customers {\n  font-family: Arial, Helvetica, sans-serif;\n  border-collapse: collapse;\n  width: 100%;\n}\n\n#customers td, #customers th {\n  border: 1px solid #ddd;\n  padding: 8px;\n}\n\n#customers tr:nth-child(even){background-color: #f2f2f2;}\n\n#customers tr:hover {background-color: #ddd;}\n\n#customers th {\n  padding-top: 12px;\n  padding-bottom: 12px;\n  text-align: left;\n  background-color: Gray;\n  color: white;\n}\n</style>\n\n<p>Hello @{outputs('Get_User_Details')?['body/firstname']},<br>\n<br>\nThis is a reminder you have an upcoming appointment. Below are the details for the appointment:\n<br>\n<table id=\"customers\">\n  <tr>\n  <th>Appointment Contact</th>\n<th>Appointment Type</th>\n    <th>Location</th>\n    <th>Location Details</th>\n<th>Date</th>\n    <th>Time</th>\n<th>Duration</th>\n  </tr>\n  <tr>\n<td>@{outputs('Get_Contact_Info')?['body/fullname']}</td>\n<td>@{outputs('Get_Appointment_Type_Info')?['body/mpa_mpa_aptbk_appointmenttypename']}</td>\n<td> @{outputs('Get_Appointment_Slot_Info')?['body/mpa_aptbk_location@OData.Community.Display.V1.FormattedValue']}</td>\n  <td> @{variables('Location Details')}</td>\n  <td>@{outputs('Date')}</td>\n  <td>@{outputs('Time')}  - UTC</td>\n<td>@{concat(items('For_each_Slot_with_Booking')?['mpa_aptbk_duration'], ' Minutes')}</td>\n  </tr>\n</table>",
                       "emailMessage/Importance": "Normal"
                     },
                     "authentication": "@parameters('$authentication')"
@@ -459,7 +426,7 @@
                   "type": "OpenApiConnection",
                   "inputs": {
                     "host": {
-                      "connectionName": "shared_commondataserviceforapps",
+                      "connectionName": "shared_commondataserviceforapps_1",
                       "operationId": "GetItem",
                       "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                     },
@@ -484,7 +451,7 @@
                   "type": "OpenApiConnection",
                   "inputs": {
                     "host": {
-                      "connectionName": "shared_commondataserviceforapps",
+                      "connectionName": "shared_commondataserviceforapps_1",
                       "operationId": "GetItem",
                       "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                     },
@@ -515,7 +482,7 @@
             }
           },
           "runAfter": {
-            "Location_Details": [
+            "Initialize_Location_Details": [
               "Succeeded"
             ]
           },
@@ -551,7 +518,7 @@
               "type": "OpenApiConnection",
               "inputs": {
                 "host": {
-                  "connectionName": "shared_commondataserviceforapps",
+                  "connectionName": "shared_commondataserviceforapps_1",
                   "operationId": "CreateRecord",
                   "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                 },
