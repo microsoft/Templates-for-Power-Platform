@@ -1,0 +1,685 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_powerappsinnovationcenterdataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      },
+      "shared_approvals_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_powerappsinnovationcenterapprovals"
+        },
+        "api": {
+          "name": "shared_approvals"
+        }
+      },
+      "shared_office365_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_powerappsinnovationcenteroutlook"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_Approval_Status_row_is_added_or_modified": {
+          "metadata": {
+            "operationMetadataId": "b3f59f31-53b3-43f7-992e-4c3872c4c08a"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "SubscribeWebhookTrigger",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 4,
+              "subscriptionRequest/entityname": "mpa_reimbursementrequest",
+              "subscriptionRequest/scope": 4,
+              "subscriptionRequest/filteringattributes": "mpa_requestnumber,mpa_approvalstatus",
+              "subscriptionRequest/runas": 3
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "When a new request refund is created or the approval status is modified"
+        }
+      },
+      "actions": {
+        "Try": {
+          "actions": {
+            "Get_a_row_by_ID_-_Get_Employee_Details": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "843d4628-fdcd-4793-9b33-35ab68e97d13"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "systemusers",
+                  "recordId": "@triggerOutputs()?['body/_createdby_value']",
+                  "$select": "mobilephone, fullname, internalemailaddress"
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": " Get the details of the User from Users table"
+            },
+            "Switch": {
+              "runAfter": {
+                "Join": [
+                  "Succeeded"
+                ]
+              },
+              "cases": {
+                "If_Approval_status_is_equal_to_Under_Review": {
+                  "case": 865420000,
+                  "actions": {
+                    "Get_response_from_approver": {
+                      "foreach": "@outputs('Start_and_wait_for_an_approval')?['body/responses']",
+                      "actions": {
+                        "Run_Child_flow_to_update_approval_column_of_the_record": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "22506ca3-9592-48ef-88ad-fe8117289529"
+                          },
+                          "type": "Workflow",
+                          "inputs": {
+                            "host": {
+                              "workflowReferenceName": "bd0292ae-e7d5-ee11-9079-00224805c33a"
+                            },
+                            "body": {
+                              "text": "@triggerOutputs()?['body/mpa_reimbursementrequestid']",
+                              "text_2": "@outputs('Start_and_wait_for_an_approval')?['body/outcome']",
+                              "text_1": "@if(equals(items('Get_response_from_approver')?['comments'],null),'',items('Get_response_from_approver')?['comments'])"
+                            }
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "Start_and_wait_for_an_approval": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "11cc4fc9-aee3-4d49-ae3e-783a680dfdb0"
+                      },
+                      "type": "Foreach",
+                      "runtimeConfiguration": {
+                        "concurrency": {
+                          "repetitions": 50
+                        }
+                      }
+                    },
+                    "Start_and_wait_for_an_approval": {
+                      "runAfter": {
+                        "Send_an_email_-_Email_sent_to_Employee": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "1b6ffde1-18e9-4049-8ebc-665d4cd5abf3"
+                      },
+                      "type": "OpenApiConnectionWebhook",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_approvals_1",
+                          "operationId": "StartAndWaitForAnApproval",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+                        },
+                        "parameters": {
+                          "approvalType": "CustomResponse",
+                          "WebhookApprovalCreationInput/responseOptions": [
+                            "Approve",
+                            "Deny"
+                          ],
+                          "WebhookApprovalCreationInput/title": "Reimbursement Request - @{triggerOutputs()?['body/mpa_requestnumber']} for review",
+                          "WebhookApprovalCreationInput/assignedTo": "@body('Join')",
+                          "WebhookApprovalCreationInput/details": "Hi,\n\nPlease be advised that a new reimbursement request has been submitted for your review.\n",
+                          "WebhookApprovalCreationInput/itemLink": "@outputs('Entity_URL')",
+                          "WebhookApprovalCreationInput/itemLinkDescription": "Record details",
+                          "WebhookApprovalCreationInput/requestor": "@{outputs('Get_a_row_by_ID_-_Get_Employee_Details')?['body/internalemailaddress']};",
+                          "WebhookApprovalCreationInput/enableNotifications": true,
+                          "WebhookApprovalCreationInput/enableReassignment": true
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Send_an_email_-_Email_sent_to_Employee": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "3a441761-aba1-454d-a970-8ed299da2d60"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365_1",
+                          "operationId": "SendEmailV2",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                        },
+                        "parameters": {
+                          "emailMessage/To": "@outputs('Get_a_row_by_ID_-_Get_Employee_Details')?['body/internalemailaddress']",
+                          "emailMessage/Subject": "New Reimbursement Request - @{triggerOutputs()?['body/mpa_requestnumber']}",
+                          "emailMessage/Body": "<p>Dear @{outputs('Get_a_row_by_ID_-_Get_Employee_Details')?['body/fullname']},<br>\n<br>\nPlease be advised that we have received your reimbursement request.<br>\n<br>\nHere are the details:<br>\n\n<table width=\"100%\">\n    <tr>\n        <td width=15% align=left> Request Date :</td><td width=65% padding-left=\"10px\">@{triggerOutputs()?['body/createdon']}</td>\n    </tr>\n\n    <tr> \n        <td width=15% align=left> Request Number :</td><td width=65% padding-left=\"10px\">@{triggerOutputs()?['body/mpa_requestnumber']}</td>\n    </tr>  \n\n    <tr>\n        <td width=15% align=left> Program :</td><td width=65% padding-left=\"10px\">@{outputs('Get_a_row_by_ID_-_Get_Refund_Program')?['body/mpa_programname']}</td> \n    </tr>\n\n    <tr>\n        <td width=15% align=left> Category :</td><td width=65% padding-left=\"10px\">@{outputs('Get_a_row_by_ID_-_Get_Category')?['body/mpa_categoryname']}</td> \n    </tr>\n\n    <tr>\n        <td width=15% align=left> Amount :</td><td width=65% padding-left=\"10px\"> @{outputs('Get_Currency_Information')?['body/currencysymbol']} @{triggerOutputs()?['body/mpa_amount']}</td> \n    </tr>\n\n</table>\n\n<br>\nRequest Status: <strong>Under Review</strong><br>\n<br>\nThank you for submitting your request. This shall be reviewed in accordance with our reimbursement policy.<br>\n<br>\nIf any additional clarification or additional documents are required, we will contact you as soon as possible to request the necessary information.<br>\n<br>\nYours sincerely,<br>\nAdmin</p>",
+                          "emailMessage/Importance": "Normal"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      },
+                      "description": "Recipient of this email will be the owner of the record"
+                    }
+                  }
+                },
+                "If_Approval_status_is_equal_to_Approved": {
+                  "case": 865420001,
+                  "actions": {
+                    "Send_an_email_to_requestor_-_Approved_Refund_Request_Notification": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "32b7a6aa-6aef-418f-b502-9df4b70d7c3a"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365_1",
+                          "operationId": "SendEmailV2",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                        },
+                        "parameters": {
+                          "emailMessage/To": "@outputs('Get_a_row_by_ID_-_Get_Employee_Details')?['body/internalemailaddress']",
+                          "emailMessage/Subject": "Reimbursement Request Approved - @{triggerOutputs()?['body/mpa_requestnumber']}",
+                          "emailMessage/Body": "<p>Dear @{outputs('Get_a_row_by_ID_-_Get_Employee_Details')?['body/fullname']},<br>\n<br>\nYour reimbursement request has been approved.<br>\n<br>\nHere are the details:<br>\n\n<table width=\"100%\">\n    <tr>\n        <td width=15% align=left> Request number :</td><td width=65% padding-left=\"10px\">@{triggerOutputs()?['body/mpa_requestnumber']}</td>\n    </tr>\n\n    <tr>\n        <td width=15% align=left> Program :</td><td width=65% padding-left=\"10px\">@{outputs('Get_a_row_by_ID_-_Get_Refund_Program')?['body/mpa_programname']}</td> \n    </tr>\n\n    <tr>\n        <td width=15% align=left> Category :</td><td width=65% padding-left=\"10px\">@{outputs('Get_a_row_by_ID_-_Get_Category')?['body/mpa_categoryname']}</td> \n    </tr>\n\n    <tr>\n        <td width=15% align=left> Request date: :</td><td width=65% padding-left=\"10px\">@{formatDateTime(triggerOutputs()?['body/createdon'], 'dd-MM-yyyy')}</td> \n    </tr>\n\n    <tr>\n        <td width=15% align=left> Applicant's name :</td><td width=65% padding-left=\"10px\"> @{outputs('Get_a_row_by_ID_-_Get_Employee_Details')?['body/fullname']}</td> \n    </tr>\n</table>\n<br>\nThe approved amount will be reimbursed in accordance with the instructions in our regulations.<br>\n<br>\nPlease wait for the deadline established for processing the reimbursement. If there are any changes or unforeseen events, we will contact you to keep you updated.<br>\n<br>\nWe thank you for your understanding and collaboration during the analysis process.<br>\n<br>\nYours sincerely,<br>\nAdmin</p>",
+                          "emailMessage/Importance": "Normal"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      },
+                      "description": "Recipient of this email will be the owner of the record"
+                    },
+                    "Send_an_email_(V2)": {
+                      "runAfter": {
+                        "Send_an_email_to_requestor_-_Approved_Refund_Request_Notification": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "2b5c30e4-e65d-4ec4-b01b-f47ff9ccef0d"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365_1",
+                          "operationId": "SendEmailV2",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                        },
+                        "parameters": {
+                          "emailMessage/To": "@body('Join')",
+                          "emailMessage/Subject": "Reimbursement Request Approved - @{triggerOutputs()?['body/mpa_requestnumber']}",
+                          "emailMessage/Body": "<p>Dear Approvers,<br>\n<br>\nThe reimbursement request which you are one of the team approver has been approved.<br>\n<br>\nHere are the details:<br>\n\n<table width=\"100%\">\n    <tr>\n        <td width=15% align=left> Request number :</td><td width=65% padding-left=\"10px\">@{triggerOutputs()?['body/mpa_requestnumber']}</td>\n    </tr>\n\n    <tr>\n        <td width=15% align=left> Program :</td><td width=65% padding-left=\"10px\">@{outputs('Get_a_row_by_ID_-_Get_Refund_Program')?['body/mpa_programname']}</td> \n    </tr>\n\n    <tr>\n        <td width=15% align=left> Category :</td><td width=65% padding-left=\"10px\">@{outputs('Get_a_row_by_ID_-_Get_Category')?['body/mpa_categoryname']}</td> \n    </tr>\n\n    <tr>\n        <td width=15% align=left> Request date: :</td><td width=65% padding-left=\"10px\">@{formatDateTime(triggerOutputs()?['body/createdon'], 'dd-MM-yyyy')}</td> \n    </tr>\n\n    <tr>\n        <td width=15% align=left> Applicant's name :</td><td width=65% padding-left=\"10px\"> @{outputs('Get_a_row_by_ID_-_Get_Employee_Details')?['body/fullname']}</td> \n    </tr>\n</table>\n<br>\nYours sincerely,<br>\nAdmin</p>",
+                          "emailMessage/Importance": "Normal"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    }
+                  }
+                },
+                "If_Approval_status_is_equal_to_Denied": {
+                  "case": 865420002,
+                  "actions": {
+                    "Send_an_email_-_Denied_Refund_Request_Notification": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "52abf9b5-35ee-42ed-8851-2f221acbc7e9"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365_1",
+                          "operationId": "SendEmailV2",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                        },
+                        "parameters": {
+                          "emailMessage/To": "@outputs('Get_a_row_by_ID_-_Get_Employee_Details')?['body/internalemailaddress']",
+                          "emailMessage/Subject": "Reimbursement Request Denied - @{triggerOutputs()?['body/mpa_requestnumber']}",
+                          "emailMessage/Body": "<p>Dear @{outputs('Get_a_row_by_ID_-_Get_Employee_Details')?['body/fullname']},<br>\n<br>\nYour reimbursement request has been denied. <br>\n<br>\nHere are the details:<br>\n\n<table width=\"100%\">\n    <tr>\n        <td width=15% align=left> Request number :</td><td width=65% padding-left=\"10px\">@{triggerOutputs()?['body/mpa_requestnumber']}</td>\n    </tr>\n\n    <tr>\n        <td width=15% align=left> Program:</td><td width=65% padding-left=\"10px\">@{outputs('Get_a_row_by_ID_-_Get_Refund_Program')?['body/mpa_programname']}</td> \n    </tr>\n\n    <tr>\n        <td width=15% align=left> Category :</td><td width=65% padding-left=\"10px\">@{outputs('Get_a_row_by_ID_-_Get_Category')?['body/mpa_categoryname']}</td> \n    </tr>\n\n    <tr>\n        <td width=15% align=left> Request date: :</td><td width=65% padding-left=\"10px\">@{formatDateTime(triggerOutputs()?['body/createdon'], 'dd-MM-yyyy')}</td> \n    </tr>\n\n    <tr>\n        <td width=15% align=left> Applicant's name :</td><td width=65% padding-left=\"10px\">@{outputs('Get_a_row_by_ID_-_Get_Employee_Details')?['body/fullname']}</td> \n    </tr>\n</table>\nbr>\nAfter a thorough analysis of the documents and information provided, we found that your request does not comply with our established reimbursement policy. We have identified the following reasons:<br>\n<br>\n<br>\n<br>\nWe suggest you review the reimbursement guidelines and criteria available in our regulations or contact our team for further clarification on the policy in question.<br>\n<br>\nWe thank you for your understanding and collaboration during the analysis process.<br>\n<br>\nYours sincerely,<br>\nAdmin</p>",
+                          "emailMessage/Importance": "Normal"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      },
+                      "description": "Recipient of this email will be the owner of the record"
+                    },
+                    "Send_an_email_(V2)_2": {
+                      "runAfter": {
+                        "Send_an_email_-_Denied_Refund_Request_Notification": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "147f87c6-4672-423e-ace2-dc07608db6e8"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365_1",
+                          "operationId": "SendEmailV2",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                        },
+                        "parameters": {
+                          "emailMessage/To": "@body('Join')",
+                          "emailMessage/Subject": "Reimbursement Request Denied - @{triggerOutputs()?['body/mpa_requestnumber']}",
+                          "emailMessage/Body": "<p>Dear @{outputs('Get_a_row_by_ID_-_Get_Employee_Details')?['body/fullname']},<br>\n<br>\nThe reimbursement request which you are one of the team approver has been approved.<br>\n<br>\nHere are the details:<br>\n\n<table width=\"100%\">\n    <tr>\n        <td width=15% align=left> Request number :</td><td width=65% padding-left=\"10px\">@{triggerOutputs()?['body/mpa_requestnumber']}</td>\n    </tr>\n\n    <tr>\n        <td width=15% align=left> Program:</td><td width=65% padding-left=\"10px\">@{outputs('Get_a_row_by_ID_-_Get_Refund_Program')?['body/mpa_programname']}</td> \n    </tr>\n\n    <tr>\n        <td width=15% align=left> Category :</td><td width=65% padding-left=\"10px\">@{outputs('Get_a_row_by_ID_-_Get_Category')?['body/mpa_categoryname']}</td> \n    </tr>\n\n    <tr>\n        <td width=15% align=left> Request date: :</td><td width=65% padding-left=\"10px\">@{formatDateTime(triggerOutputs()?['body/createdon'], 'dd-MM-yyyy')}</td> \n    </tr>\n\n    <tr>\n        <td width=15% align=left> Applicant's name :</td><td width=65% padding-left=\"10px\">@{outputs('Get_a_row_by_ID_-_Get_Employee_Details')?['body/fullname']}</td> \n    </tr>\n</table>\n<br>\nYours sincerely,<br>\nAdmin</p>",
+                          "emailMessage/Importance": "Normal"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    }
+                  }
+                }
+              },
+              "default": {
+                "actions": {}
+              },
+              "expression": "@triggerOutputs()?['body/mpa_approvalstatus']",
+              "metadata": {
+                "operationMetadataId": "5e97f231-5528-42a6-b91f-ceb322b50dbb"
+              },
+              "type": "Switch"
+            },
+            "Get_a_row_by_ID_-_Get_Refund_Program": {
+              "runAfter": {
+                "Get_a_row_by_ID_-_Get_Employee_Details": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "85153bf7-686e-4999-b6c7-052af6956360"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_reimbursementprograms",
+                  "recordId": "@triggerOutputs()?['body/_mpa_program_value']"
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": "Get refund program name"
+            },
+            "Get_a_row_by_ID_-_Get_Category": {
+              "runAfter": {
+                "Get_a_row_by_ID_-_Get_Refund_Program": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "ba6f24a7-5236-4a4a-a6d6-89d982677366"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_reimbursementcategories",
+                  "recordId": "@triggerOutputs()?['body/_mpa_category_value']"
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": "Get category name"
+            },
+            "Get_Currency_Information": {
+              "runAfter": {
+                "Get_a_row_by_ID_-_Get_Category": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "03383ce2-79ba-4032-a1e0-d90107e10812"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "transactioncurrencies",
+                  "recordId": "@triggerOutputs()?['body/_transactioncurrencyid_value']"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Get_Environment_ID": {
+              "runAfter": {
+                "Get_Currency_Information": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "5ebbecb7-cb71-4069-93e7-fad5d3a049c7"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "appmodules",
+                  "$select": "appmoduleid",
+                  "$filter": "uniquename eq 'mpa_refundrequest'"
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": "To get environment id."
+            },
+            "Get_Approver_Team": {
+              "runAfter": {
+                "Get_Environment_ID": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "05ba34c8-8e90-4df7-8437-589701f137d8"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "teams",
+                  "$filter": "teamid eq '@{outputs('Get_a_row_by_ID_-_Get_Refund_Program')?['body/_mpa_approvers_value']}'"
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": "To get the specific team based on approver of Refund program"
+            },
+            "App_ID": {
+              "runAfter": {
+                "Get_Approver_Team": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "455c33f2-bc63-45df-8948-0985b9fc0d0c"
+              },
+              "type": "Compose",
+              "inputs": "@first(body('Get_Environment_ID')?['value'])?['appmoduleid']",
+              "description": "To hold the APP ID."
+            },
+            "Environment_URL": {
+              "runAfter": {
+                "App_ID": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "c58c93d0-aac1-4a07-befc-d9c88f5041d1"
+              },
+              "type": "Compose",
+              "inputs": "@uriHost(outputs('Get_a_row_by_ID_-_Get_Refund_Program')?['body/@odata.id'])"
+            },
+            "Entity_URL": {
+              "runAfter": {
+                "Environment_URL": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "870e04f8-7061-4081-a547-8fc942a94669"
+              },
+              "type": "Compose",
+              "inputs": "https://@{outputs('Environment_URL')}/main.aspx?appid=@{outputs('App_ID')}&pagetype=entityrecord&etn=mpa_reimbursementrequest&id=@{triggerOutputs()?['body/mpa_reimbursementrequestid']}",
+              "description": "Compose URL."
+            },
+            "Condition": {
+              "actions": {
+                "Loop_thru_all_users_inside_team": {
+                  "foreach": "@outputs('Get_Approver_Team')?['body/value']",
+                  "actions": {
+                    "Fetch_list_of_users": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "888af2d1-ed02-4d84-be70-6e6fed7a748e"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps",
+                          "operationId": "ListRecords",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "systemusers",
+                          "fetchXml": "<fetch mapping=\"logical\" output-format=\"xml-platform\" version=\"1.0\" distinct=\"true\" > \n<entity name=\"systemuser\" > \n<attribute name=\"fullname\" /> \n<attribute name=\"systemuserid\" /> \n<attribute name=\"internalemailaddress\" /> \n<link-entity name=\"teammembership\" visible=\"false\" to=\"systemuserid\" from=\"systemuserid\" intersect=\"true\" > \n<link-entity name=\"team\" to=\"teamid\" from=\"teamid\" alias=\"ac\" > \n<filter type=\"and\" > \n<condition value=\"@{items('Loop_thru_all_users_inside_team')?['teamid']}\" attribute=\"teamid\" operator=\"eq\" /> \n</filter> \n</link-entity> \n</link-entity> \n</entity> \n</fetch>"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      },
+                      "description": "Get list of users"
+                    },
+                    "Loop_on_each_record_to_get_specific_field": {
+                      "foreach": "@outputs('Fetch_list_of_users')?['body/value']",
+                      "actions": {
+                        "Append_to_array_variable": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "9ed20465-3e57-47d9-a8c2-61928993f1ac"
+                          },
+                          "type": "AppendToArrayVariable",
+                          "inputs": {
+                            "name": "varApproverEmail",
+                            "value": "@items('Loop_on_each_record_to_get_specific_field')?['internalemailaddress']"
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "Fetch_list_of_users": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "81712dfe-c881-4e6d-8e7b-a82dd9b3261a"
+                      },
+                      "type": "Foreach",
+                      "description": "Loop in all user having a security role of administrator"
+                    }
+                  },
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "c8fb92f0-a204-4ac3-97aa-2aaf49bf336d"
+                  },
+                  "type": "Foreach",
+                  "description": "Loop in all users."
+                }
+              },
+              "runAfter": {
+                "Entity_URL": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "equals": [
+                  "@length(outputs('Get_Approver_Team')?['body/value'])",
+                  1
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "e15b25c1-509e-4d52-8626-38e170fa5d22"
+              },
+              "type": "If"
+            },
+            "Join": {
+              "runAfter": {
+                "Condition": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "4d0c327a-fe83-4d73-94ae-8cb2d407a425"
+              },
+              "type": "Join",
+              "inputs": {
+                "from": "@variables('varApproverEmail')",
+                "joinWith": ";"
+              }
+            }
+          },
+          "runAfter": {
+            "Approver_Email": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "bd732502-088a-428d-8994-e27a9b53b01d"
+          },
+          "type": "Scope",
+          "description": "To handle an unexpected error."
+        },
+        "Catch": {
+          "actions": {
+            "Filter_Data": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "e847fa91-0860-4940-9709-1735f796748b"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@result('Try')",
+                "where": "@or(equals(item()?['Status'], 'Failed'), equals(item()?['Status'], 'TimedOut'))"
+              },
+              "description": "Filter data by failed and timeout."
+            },
+            "Create_entry_in_Employee_Experience_Error": {
+              "runAfter": {
+                "Error_Return": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "d7b067c6-fe34-4a13-8c87-d22bc89f1a0a"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "CreateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_employeeexperienceerrors",
+                  "item/mpa_name": "@outputs('Error_Return')?['body'][0]['FlowName']",
+                  "item/mpa_action": "@outputs('Error_Return')?['body'][0]['Step']",
+                  "item/mpa_errormessage": "@outputs('Error_Return')?['body'][0]['InnerErrorMessage']",
+                  "item/mpa_sourcetype": 865420001,
+                  "item/mpa_workflowinstanceurl": "@outputs('Error_Return')?['body'][0]['URL']"
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": "Add new record in Employee Experience error table."
+            },
+            "Terminate": {
+              "runAfter": {
+                "Create_entry_in_Employee_Experience_Error": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "ddf9f509-d2b5-411d-a2be-61808598c00a"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed"
+              },
+              "description": "Terminate and set status to failed."
+            },
+            "Error_Return": {
+              "runAfter": {
+                "Filter_Data": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "08fe3aa3-bb2e-4039-bf63-e78ad0216a2f"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Filter_Data')",
+                "select": {
+                  "Step": "@item()?['name']",
+                  "Status": "@item()?['Status']",
+                  "InnerErrorMessage": "@{item()?['error']?['message']} \n@{item()?['outputs']?['body']?['error']?['message']}",
+                  "Input": "@triggerOutputs()?['body/mpa_refreq_refundrequestid']",
+                  "FlowName": "@workflow()?['tags']['flowDisplayName']",
+                  "URL": "@concat('https://flow.microsoft.com/manage/environments/', workflow()?['tags']['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']['name'])"
+                }
+              },
+              "description": "To hold a specific value."
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "d98cd7ff-0181-4990-b101-e626925bc95a"
+          },
+          "type": "Scope",
+          "description": "To catch the specific error and add to IT error table."
+        },
+        "Approver_Email": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "f970fc67-aff4-436a-b817-6739c8a7e24f"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "varApproverEmail",
+                "type": "array"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

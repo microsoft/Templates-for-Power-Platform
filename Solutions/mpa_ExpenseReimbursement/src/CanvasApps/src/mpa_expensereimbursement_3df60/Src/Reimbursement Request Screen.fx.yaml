@@ -1,0 +1,2641 @@
+"'Reimbursement Request Screen' As screen":
+    Fill: =Color.White 
+    OnVisible: |-
+        =//Get currency symbol for the currency selected (or existing) currency
+        Set(
+            varCurrencies,
+            Coalesce(
+                varCurrencies,
+                LookUp(Currencies, 'Currency Code' = varCurrencySelected.'Currency Code', 'Currency Symbol'),
+                cmbRefundRequest_Currency.Selected.'Currency Symbol'
+            )
+        );
+        
+        //Get list of Active Categories
+        ClearCollect(
+            colActiveCategories,
+            ShowColumns(
+                Filter(
+                    'Reimbursement Categories',
+                    'Reimbursement Categories (Views)'.'Active Categories'
+                ),
+                "mpa_program"
+            )
+        );
+        
+        
+        //Check if form is being opened to create new or view a reimbursement request
+        If(
+            !IsBlank(varSelectedRefundID),
+            Clear(colReceiptDetailList);
+            ForAll(
+                Filter(
+                    'Reimbursement Attachments',
+                    'Reimbursement Request'.'Reimbursement Request Id'= varSelectedRefundID
+                ) As _reimbursementAttachmentItem,
+        
+                //Collect Expense Details
+                Collect(
+                    colReceiptDetailList,
+                    {
+                        ID: CountRows(colReceiptDetailList) + 1,
+                        ExpenseDate: _reimbursementAttachmentItem.'Expense Date',
+                        Amount: Text(
+                            _reimbursementAttachmentItem.Amount,
+                            "[$-en-US]#,###.00"
+                        ),
+                        Description: _reimbursementAttachmentItem.Description,
+                        FileName: _reimbursementAttachmentItem.'File Name',
+                        MerchantName: _reimbursementAttachmentItem.'Merchant Name'        
+                        ,
+                        TableDisplayName: _reimbursementAttachmentItem.Attachment.FileName,
+                        Attachment : _reimbursementAttachmentItem.Attachment.Value            
+                    }
+                );
+            )
+        );
+        
+        //Other screen layout-related constants
+        UpdateContext(
+            {
+                _DatacardLayoutProperties:
+                {
+                    Height: 80,
+                    PaddingLeft: 15,
+                    PaddingRight: 15,
+                    PaddingTop: 10,
+                    PaddingBottom: 10
+                },
+                _MinimumGalleryWidth: 1024
+            }
+        );
+
+    compHeader_RefundRequest As compHeader:
+        HeaderWidth: =App.Width
+        Height: =compHeader_RefundRequest.HeaderHeight
+        Width: =compHeader_RefundRequest.HeaderWidth
+        ZIndex: =2
+
+    conRefundRequest_DataEntry As groupContainer.verticalAutoLayoutContainer:
+        Fill: =ColorValue(varThemeColors.background)
+        Height: =Parent.Height - compHeader_RefundRequest.Height
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutGap: =40
+        LayoutMode: =LayoutMode.Auto
+        PaddingBottom: =40
+        PaddingLeft: =40
+        PaddingRight: =40
+        PaddingTop: =40
+        Width: =Parent.Width
+        Y: =compHeader_RefundRequest.Height
+        ZIndex: =3
+
+        contRefundRequest_Header As groupContainer.horizontalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            DropShadow: =DropShadow.None
+            FillPortions: =0
+            Height: =lblRefundRequest_NewRequest.Height + Self.PaddingTop + Self.PaddingBottom
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            ZIndex: =1
+
+            lblRefundRequest_NewRequest As label:
+                AutoHeight: =true
+                Color: =ColorValue(varThemeColors.text)
+                Font: =varThemeFont.B1.face
+                FontWeight: =varThemeFont.H3.weight
+                Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                PaddingBottom: =0
+                PaddingLeft: =0
+                PaddingRight: =0
+                PaddingTop: =0
+                Size: =varThemeFont.H1.size
+                Text: |-
+                    =With(
+                        {Text: If(frmRefundRequest_Details.Mode = FormMode.Edit, "New", "View") & " request" },
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Width: =Parent.Width - Parent.PaddingLeft - Parent.LayoutGap - conRefundRequest_ApprovalStatus.Width - Parent.PaddingRight
+                X: =40
+                Y: =40
+                ZIndex: =1
+
+            conRefundRequest_ApprovalStatus As groupContainer.manualLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                Fill: |-
+                    =// Determine the color based on the 'Approval Status' of the current item.
+                    // If 'Approved', use the 'confirmation' color from the 'varThemeColors' variable.
+                    // If 'Denied', use the 'error' color from the 'varThemeColors' variable.
+                    // If 'Under review', use the 'warning' color from the 'varThemeColors' variable.
+                    // If neither of the above choices, use the 'secondaryGray' color as a default.
+                    Switch(
+                        varSelectedRecordToView.'Approval Status',
+                        'Request Status'.Denied,
+                        ColorValue(varThemeColors.error),
+                        'Request Status'.Approved,
+                        ColorValue(varThemeColors.confirmation),
+                        'Request Status'.'Under review',
+                        ColorValue(varThemeColors.warning),
+                        ColorValue(varThemeColors.secondaryGray)
+                    )
+                FillPortions: =0
+                Height: =icoRefundRequest_ApprovalStatus.Height + Self.PaddingTop + Self.PaddingBottom
+                LayoutMinHeight: =35
+                LayoutMinWidth: =250
+                PaddingBottom: =5
+                PaddingLeft: =5
+                PaddingRight: =5
+                PaddingTop: =5
+                RadiusBottomLeft: =50
+                RadiusBottomRight: =50
+                RadiusTopLeft: =50
+                RadiusTopRight: =50
+                Visible: =!IsBlank(varSelectedRecordToView.'Approval Status')
+                Width: =icoRefundRequest_ApprovalStatus.Width + lblRefundRequest_ApprovalStatus.Width + Self.PaddingLeft + Self.PaddingRight
+                ZIndex: =3
+
+                lblRefundRequest_ApprovalStatus As label:
+                    Align: =Align.Center
+                    BorderColor: =RGBA(0, 0, 0, 0)
+                    BorderStyle: =BorderStyle.None
+                    BorderThickness: =2
+                    Color: =icoRefundRequest_ApprovalStatus.Color
+                    DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                    FocusedBorderColor: =ColorValue(varThemeColors.primaryGray)
+                    FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                    Font: =varThemeFont.B1.face
+                    FontWeight: =varThemeFont.B1.weight
+                    Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                    Italic: =varThemeFont.B2.italic
+                    OnSelect: =
+                    PaddingLeft: =0
+                    PaddingRight: =0
+                    Role: =TextRole.Heading2
+                    Size: =varThemeFont.B2.size
+                    Text: |-
+                        =If(
+                            IsBlank(varSelectedRecordToView.'Approval Status'),
+                            With(
+                                {Text: "Draft" },
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            ),
+                            varSelectedRecordToView.'Approval Status'
+                        )
+                    Tooltip: =Self.Text
+                    Width: =(Self.Size * 0.8) * Len(Self.Text)
+                    Wrap: =false
+                    X: =icoRefundRequest_ApprovalStatus.X + icoRefundRequest_ApprovalStatus.Width
+                    Y: =Parent.PaddingTop
+                    ZIndex: =1
+
+                "icoRefundRequest_ApprovalStatus As icon.'3DPrinting'":
+                    AccessibleLabel: =
+                    BorderColor: =ColorValue(varThemeColors.primary)
+                    Color: |-
+                        =If(
+                            IsBlank(varSelectedRecordToView.'Approval Status') Or
+                            varSelectedRecordToView.'Approval Status' = 'Request Status'.'Under review',
+                            Color.Black,
+                            Color.White
+                        )
+                         // If neither 'Approved' nor 'Denied', use the 'warning' color as a default.
+                    DisabledBorderColor: =ColorValue(varThemeColors.disabledText)
+                    DisabledColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                    DisabledFill: =RGBA(0,0,0,0)
+                    Fill: =RGBA(0,0,0,0)
+                    FocusedBorderColor: =ColorValue(varThemeColors.primaryGray)
+                    FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                    Height: =lblRefundRequest_ApprovalStatus.Height
+                    HoverBorderColor: =ColorValue(varThemeColors.primary)
+                    HoverColor: =Self.Color
+                    HoverFill: =RGBA(0,0,0,0)
+                    Icon: |-
+                        =Switch(
+                            varSelectedRecordToView.'Approval Status',
+                            'Request Status'.Approved,
+                            Icon.CheckBadge,
+                            'Request Status'.'Under review',
+                            Icon.Clock,
+                            'Request Status'.Denied,
+                            Icon.CancelBadge,
+                            Icon.Document
+                        )
+                    OnSelect: =
+                    PaddingBottom: =5
+                    PaddingLeft: =5
+                    PaddingRight: =5
+                    PaddingTop: =5
+                    PressedBorderColor: =ColorValue(varThemeColors.primary)
+                    PressedColor: =ColorValue(varThemeColors.primary)
+                    PressedFill: =RGBA(0,0,0,0)
+                    Width: =Self.Height
+                    X: =Parent.PaddingLeft
+                    Y: =Parent.PaddingTop
+                    ZIndex: =2
+
+        contRefundRequest_Details As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            Fill: =ColorValue(varThemeColors.backgroundFill)
+            FillPortions: =0
+            Height: =Parent.Height - Self.Y - Parent.PaddingBottom
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutGap: =20
+            LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            ZIndex: =2
+
+            contRefundRequest_InputDetails As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                DropShadow: =DropShadow.None
+                FillPortions: =0
+                Height: =Parent.Height - Parent.PaddingTop - Parent.PaddingBottom - Parent.LayoutGap - If(contRefundRequest_Buttons.Visible, contRefundRequest_Buttons.Height, 0)
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutGap: =10
+                LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                LayoutOverflowY: =LayoutOverflow.Scroll
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                ZIndex: =1
+
+                contRefundRequest_DetailsWithoutTotal As groupContainer.verticalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    DropShadow: =DropShadow.None
+                    FillPortions: =0
+                    Height: |-
+                        =frmRefundRequest_Details.Height +
+                        shpRefundrequest_LineDetails.Height +
+                        contRefundRequest_ReceiptDetails.Height +
+                        contRefundRequest_ReceiptDetailsGallery.Height +
+                        (Self.LayoutGap * 3) +
+                        Self.PaddingTop + Self.PaddingBottom
+                    LayoutDirection: =LayoutDirection.Vertical
+                    LayoutGap: =Parent.LayoutGap
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    ZIndex: =1
+
+                    frmRefundRequest_Details As form:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        DataSource: ='Reimbursement Requests'
+                        DefaultMode: =_FormMode
+                        FillPortions: =0
+                        FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                        Height: |-
+                            =If(
+                                ScreenSize.Small = App.ActiveScreen.Size || ScreenSize.Medium = App.ActiveScreen.Size, (_DatacardLayoutProperties.Height * 7),
+                                ScreenSize.Large = App.ActiveScreen.Size, (_DatacardLayoutProperties.Height * 3), (_DatacardLayoutProperties.Height * 2)
+                            )
+                        Item: =varSelectedRecordToView
+                        LayoutMinHeight: =250
+                        LayoutMinWidth: =400
+                        NumberOfColumns: =4
+                        SnapToColumns: =false
+                        Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                        ZIndex: =1
+
+                        dtcRefundRequest_RequestNumber As typedDataCard.textualViewCard:
+                            BorderStyle: =BorderStyle.Solid
+                            DataField: ="mpa_requestnumber"
+                            Default: =ThisItem.'Request Number'
+                            DisplayMode: =DisplayMode.Disabled
+                            DisplayName: =DataSourceInfo([@'Reimbursement Requests'],DataSourceInfo.DisplayName,"mpa_requestnumber")
+                            Fill: =RGBA(0, 0, 0, 0)
+                            Height: =_DatacardLayoutProperties.Height
+                            Required: =false
+                            Width: |-
+                                =Parent.Width / Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.Small,
+                                    1,
+                                    ScreenSize.Medium,
+                                    1,
+                                    ScreenSize.Large,
+                                    3,
+                                    5
+                                )
+                            X: =0
+                            Y: =0
+                            ZIndex: =1
+
+                            txtRefundRequest_RequestNumber As text:
+                                AccessibleLabel: |-
+                                    =// Define a variable named "Text" with the value "{value}"
+                                    With(
+                                        {Text: "Request name"},
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                BorderColor: |-
+                                    =If(
+                                        IsBlank(Parent.Error),
+                                        ColorValue(varThemeColors.primaryGray),
+                                        ColorValue(varThemeColors.error)
+                                    )
+                                BorderThickness: =0
+                                Color: =ColorValue(varThemeColors.text)
+                                Default: =Coalesce(Parent.Default, "----")
+                                DelayOutput: =true
+                                DisabledBorderColor: =Self.BorderColor
+                                DisabledColor: =Self.Color
+                                DisabledFill: =Self.Fill
+                                DisplayMode: =Parent.DisplayMode
+                                Fill: =ColorValue(varThemeColors.backgroundFill)
+                                Font: =varThemeFont.B1.face
+                                FontWeight: =varThemeFont.B1.weight
+                                Height: =Self.Size * 2.5
+                                HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                                HoverColor: =ColorValue(varThemeColors.text)
+                                HoverFill: =ColorValue(varThemeColors.backgroundFill)
+                                MaxLength: =50
+                                PaddingBottom: =0
+                                PaddingLeft: =0
+                                PaddingRight: =0
+                                PaddingTop: =0
+                                PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                                PressedColor: =ColorValue(varThemeColors.text)
+                                PressedFill: =ColorValue(varThemeColors.backgroundFill)
+                                RadiusBottomLeft: =0
+                                RadiusBottomRight: =0
+                                RadiusTopLeft: =0
+                                RadiusTopRight: =0
+                                Size: =varThemeFont.B1.size
+                                Tooltip: =Parent.DisplayName
+                                Width: =cmbRefundRequest_RefundPrograms.Width
+                                X: =_DatacardLayoutProperties.PaddingLeft
+                                Y: =lblRefundRequest_RequestNumber.Y + lblRefundRequest_RequestNumber.Height + 5
+                                ZIndex: =1
+
+                            lblRefundRequest_RequestNumberAsterisk As label:
+                                Align: =Align.Center
+                                Color: =ColorValue(varThemeColors.error)
+                                Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                                PaddingLeft: =0
+                                PaddingRight: =0
+                                Text: ="*"
+                                Visible: =And(Parent.Required, Parent.DisplayMode=DisplayMode.Edit)
+                                Width: =15
+                                Wrap: =false
+                                X: =lblRefundRequest_RequestNumber.X + lblRefundRequest_RequestNumber.Width
+                                Y: =lblRefundRequest_RequestNumber.Y
+                                ZIndex: =2
+
+                            lblRefundRequest_RequestNumber As label:
+                                Color: =ColorValue(varThemeColors.text)
+                                DisabledColor: =Self.Color
+                                Font: =varThemeFont.B2.face
+                                FontWeight: =varThemeFont.B2.weightBold
+                                Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                                PaddingLeft: =0
+                                Size: =varThemeFont.B2.size
+                                Text: =Parent.DisplayName
+                                Width: =Min(Self.Size * Len(Self.Text), Parent.Width - lblRefundRequest_RequestNumberAsterisk.Width)
+                                Wrap: =false
+                                X: =_DatacardLayoutProperties.PaddingLeft
+                                Y: =_DatacardLayoutProperties.PaddingTop
+                                ZIndex: =3
+
+                        dtcRefundRequest_CreatedOn As typedDataCard.textualViewCard:
+                            BorderStyle: =BorderStyle.Solid
+                            DataField: ="createdon"
+                            Default: =Text(ThisItem.'Created On', "mm/dd/yyyy")
+                            DisplayMode: =DisplayMode.Disabled
+                            DisplayName: =DataSourceInfo([@'Reimbursement Requests'],DataSourceInfo.DisplayName,"createdon")
+                            Fill: =RGBA(0, 0, 0, 0)
+                            Height: =_DatacardLayoutProperties.Height
+                            Required: =false
+                            Width: |-
+                                =Parent.Width / Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.Small,
+                                    1,
+                                    ScreenSize.Medium,
+                                    1,
+                                    ScreenSize.Large,
+                                    3,
+                                    5
+                                )
+                            X: =1
+                            Y: =0
+                            ZIndex: =1
+
+                            txtRefundRequest_CreatedOn As text:
+                                AccessibleLabel: |-
+                                    =// Define a variable named "Text" with the value "{value}"
+                                    With(
+                                        {Text: "Request name"},
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                BorderColor: |-
+                                    =If(
+                                        IsBlank(Parent.Error),
+                                        ColorValue(varThemeColors.primaryGray),
+                                        ColorValue(varThemeColors.error)
+                                    )
+                                BorderThickness: =0
+                                Color: =ColorValue(varThemeColors.text)
+                                Default: =Coalesce(Parent.Default, "----")
+                                DelayOutput: =true
+                                DisabledBorderColor: =Self.BorderColor
+                                DisabledColor: =Self.Color
+                                DisabledFill: =Self.Fill
+                                DisplayMode: =Parent.DisplayMode
+                                Fill: =ColorValue(varThemeColors.backgroundFill)
+                                Font: =varThemeFont.B1.face
+                                FontWeight: =varThemeFont.B1.weight
+                                Height: =Self.Size * 2.5
+                                HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                                HoverColor: =ColorValue(varThemeColors.text)
+                                HoverFill: =ColorValue(varThemeColors.backgroundFill)
+                                MaxLength: =50
+                                PaddingBottom: =0
+                                PaddingLeft: =0
+                                PaddingRight: =0
+                                PaddingTop: =0
+                                PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                                PressedColor: =ColorValue(varThemeColors.text)
+                                PressedFill: =ColorValue(varThemeColors.backgroundFill)
+                                RadiusBottomLeft: =0
+                                RadiusBottomRight: =0
+                                RadiusTopLeft: =0
+                                RadiusTopRight: =0
+                                Size: =varThemeFont.B1.size
+                                Tooltip: =Parent.DisplayName
+                                Width: =cmbRefundRequest_RefundPrograms.Width
+                                X: =_DatacardLayoutProperties.PaddingLeft
+                                Y: =lblRefundRequest_CreatedOn.Y + lblRefundRequest_CreatedOn.Height + 5
+                                ZIndex: =1
+
+                            lblRefundRequest_CreatedOnAsterisk As label:
+                                Align: =Align.Center
+                                Color: =ColorValue(varThemeColors.error)
+                                Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                                PaddingLeft: =0
+                                PaddingRight: =0
+                                Text: ="*"
+                                Visible: =And(Parent.Required, Parent.DisplayMode=DisplayMode.Edit)
+                                Width: =15
+                                Wrap: =false
+                                X: =lblRefundRequest_CreatedOn.X + lblRefundRequest_CreatedOn.Width
+                                Y: =_DatacardLayoutProperties.PaddingTop
+                                ZIndex: =2
+
+                            lblRefundRequest_CreatedOn As label:
+                                Color: =ColorValue(varThemeColors.text)
+                                DisabledColor: =Self.Color
+                                Font: =varThemeFont.B2.face
+                                FontWeight: =varThemeFont.B2.weightBold
+                                Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                                PaddingLeft: =0
+                                Size: =varThemeFont.B2.size
+                                Text: =Parent.DisplayName
+                                Width: =Min(Self.Size * Len(Self.Text), Parent.Width - lblRefundRequest_CreatedOnAsterisk.Width)
+                                Wrap: =false
+                                X: =_DatacardLayoutProperties.PaddingLeft
+                                Y: =_DatacardLayoutProperties.PaddingTop
+                                ZIndex: =3
+
+                        dtcRefundReques_RequestName As typedDataCard.textualEditCard:
+                            BorderStyle: =BorderStyle.Solid
+                            DataField: ="mpa_requestname"
+                            Default: =ThisItem.'Request Name'
+                            DisplayMode: =Parent.DisplayMode
+                            DisplayName: =DataSourceInfo([@'Reimbursement Requests'],DataSourceInfo.DisplayName,"mpa_requestname")
+                            Fill: =RGBA(0, 0, 0, 0)
+                            Height: =_DatacardLayoutProperties.Height
+                            MaxLength: =DataSourceInfo([@'Reimbursement Requests'], DataSourceInfo.MaxLength, "mpa_requestname")
+                            Required: =true
+                            Update: =txtRefundRequest_RequestName.Text
+                            Width: |-
+                                =Parent.Width / Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.Small,
+                                    1,
+                                    ScreenSize.Medium,
+                                    1,
+                                    ScreenSize.Large,
+                                    3,
+                                    5
+                                )
+                            X: =0
+                            Y: =1
+                            ZIndex: =1
+
+                            txtRefundRequest_RequestName As text:
+                                AccessibleLabel: |-
+                                    =// Define a variable named "Text" with the value "{value}"
+                                    With(
+                                        {Text: "Request name"},
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                BorderColor: |-
+                                    =If(
+                                        IsBlank(Parent.Error),
+                                        ColorValue(varThemeColors.primaryGray),
+                                        ColorValue(varThemeColors.error)
+                                    )
+                                Color: =ColorValue(varThemeColors.text)
+                                Default: =Parent.Default
+                                DelayOutput: =true
+                                DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+                                DisabledColor: =If(IsBlank(Parent.Error), ColorValue(varThemeColors.primaryGray), ColorValue(varThemeColors.error))
+                                DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                                DisplayMode: =Parent.DisplayMode
+                                Fill: =ColorValue(varThemeColors.backgroundFill)
+                                FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                                Font: =varThemeFont.B1.face
+                                FontWeight: =varThemeFont.B1.weight
+                                Height: =Self.Size * 2.5
+                                HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                                HoverColor: =ColorValue(varThemeColors.text)
+                                HoverFill: =ColorValue(varThemeColors.backgroundFill)
+                                MaxLength: =50
+                                PaddingLeft: =5
+                                PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                                PressedColor: =ColorValue(varThemeColors.text)
+                                PressedFill: =ColorValue(varThemeColors.backgroundFill)
+                                RadiusBottomLeft: =0
+                                RadiusBottomRight: =0
+                                RadiusTopLeft: =0
+                                RadiusTopRight: =0
+                                Size: =varThemeFont.B1.size
+                                TabIndex: =If(Self.DisplayMode = DisplayMode.View, -1, 0)
+                                Tooltip: =Parent.DisplayName
+                                Width: =cmbRefundRequest_RefundPrograms.Width
+                                X: =_DatacardLayoutProperties.PaddingLeft
+                                Y: =lblRefundRequest_RequestName.Y + lblRefundRequest_RequestName.Height + 5
+                                ZIndex: =1
+
+                            lblRefundRequest_RequestNameAsterisk As label:
+                                Align: =Align.Center
+                                Color: =ColorValue(varThemeColors.error)
+                                Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                                PaddingLeft: =0
+                                PaddingRight: =0
+                                Text: ="*"
+                                Visible: =And(Parent.Required, Parent.DisplayMode=DisplayMode.Edit)
+                                Width: =15
+                                Wrap: =false
+                                X: =lblRefundRequest_RequestName.X + lblRefundRequest_RequestName.Width
+                                Y: =lblRefundRequest_RequestName.Y
+                                ZIndex: =2
+
+                            lblRefundRequest_RequestName As label:
+                                Color: =ColorValue(varThemeColors.text)
+                                Font: =varThemeFont.B2.face
+                                FontWeight: =varThemeFont.B2.weightBold
+                                Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                                PaddingLeft: =0
+                                Size: =varThemeFont.B2.size
+                                Text: =Parent.DisplayName
+                                Width: =Min((Self.Size * 0.85) * Len(Self.Text), Parent.Width - lblRefundRequest_RequestNameAsterisk.Width)
+                                Wrap: =false
+                                X: =_DatacardLayoutProperties.PaddingLeft
+                                Y: =10
+                                ZIndex: =3
+
+                        dtcRefundRequest_Category As typedDataCard.comboBoxEditCard:
+                            BorderStyle: =BorderStyle.Solid
+                            DataField: ="mpa_category"
+                            Default: =ThisItem.Category
+                            DisplayMode: =Parent.DisplayMode
+                            DisplayName: =DataSourceInfo([@'Reimbursement Requests'],DataSourceInfo.DisplayName,"mpa_category")
+                            Fill: =RGBA(0, 0, 0, 0)
+                            Height: =_DatacardLayoutProperties.Height
+                            Required: =If(Parent.Mode = FormMode.View, false, true)
+                            Update: =cmbRefundRequest_Category.Selected
+                            Width: |-
+                                =Parent.Width / Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.Small,
+                                    1,
+                                    ScreenSize.Medium,
+                                    1,
+                                    ScreenSize.Large,
+                                    3,
+                                    5
+                                )
+                            X: =2
+                            Y: =1
+                            ZIndex: =1
+
+                            lblRefundRequest_Category As label:
+                                Color: =ColorValue(varThemeColors.text)
+                                FocusedBorderColor: =ColorValue(varThemeColors.primaryGray)
+                                FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                                Font: =varThemeFont.B2.face
+                                FontWeight: =varThemeFont.B2.weightBold
+                                Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                                Italic: =varThemeFont.B2.italic
+                                PaddingLeft: =0
+                                Size: =varThemeFont.B2.size
+                                Text: |-
+                                    =With(
+                                        {Text: "Category" },
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Tooltip: =Self.Text
+                                Width: =Min((Self.Size * 0.85) * Len(Self.Text), Parent.Width - lblRefundRequest_CategoryAsterisk.Width)
+                                X: =_DatacardLayoutProperties.PaddingLeft
+                                Y: =10
+                                ZIndex: =1
+
+                            cmbRefundRequest_Category As combobox:
+                                AccessibleLabel: |-
+                                    =With(
+                                        {Text: "Select category required" },
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                BorderColor: =If(IsBlank(Parent.Error), ColorValue(varThemeColors.primaryGray), Color.Red)
+                                ChevronBackground: =ColorValue(varThemeColors.backgroundFill)
+                                ChevronDisabledBackground: =ColorValue(varThemeColors.backgroundFillDisabled)
+                                ChevronDisabledFill: =ColorValue(varThemeColors.text)
+                                ChevronFill: =ColorValue(varThemeColors.text)
+                                ChevronHoverBackground: =ColorFade(ColorValue(varThemeColors.secondaryGray), -20%)
+                                ChevronHoverFill: =ColorValue(varThemeColors.text)
+                                Color: =ColorValue(varThemeColors.text)
+                                DefaultSelectedItems: =Parent.Default
+                                DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+                                DisabledColor: =ColorValue(varThemeColors.disabledText)
+                                DisplayFields: =["mpa_categoryname"]
+                                DisplayMode: |-
+                                    =//Only enable category field if program selected
+                                    If(
+                                        IsBlank(cmbRefundRequest_RefundPrograms.Selected) And Parent.DisplayMode = DisplayMode.Edit,
+                                        DisplayMode.Disabled,
+                                        Parent.DisplayMode
+                                    )
+                                Fill: =ColorValue(varThemeColors.backgroundFill)
+                                FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                                FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                                Font: =varThemeFont.B1.face
+                                FontWeight: =varThemeFont.B1.weight
+                                Height: =Self.Size * 2.5
+                                HoverBorderColor: =ColorFade(ColorValue(varThemeColors.tertiaryGray), 15%)
+                                HoverColor: =ColorValue(varThemeColors.text)
+                                HoverFill: =ColorValue(varThemeColors.secondaryGray)
+                                InputTextPlaceholder: |-
+                                    =With(
+                                        {Text: "Select category" },
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Italic: =varThemeFont.B1.italic
+                                Items: |-
+                                    =Filter(
+                                        Sort(
+                                            Filter(
+                                                'Reimbursement Categories',
+                                                'Reimbursement Categories (Views)'.'Active Categories'
+                                            ),
+                                            'Category Name'
+                                        ),
+                                        Program.'Reimbursement Program Id'= cmbRefundRequest_RefundPrograms.Selected.'Reimbursement Program Id'
+                                    )
+                                NoSelectionText: |-
+                                    =With(
+                                        {Text: "Select category" },
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                OnChange: =Reset(cmbRefundRequest_Subcategory)
+                                PaddingLeft: =If(Self.DisplayMode = DisplayMode.Edit, 5, 0)
+                                PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                                PressedColor: =ColorValue(varThemeColors.text)
+                                PressedFill: =ColorValue(varThemeColors.backgroundFill)
+                                SearchFields: =["mpa_categoryname"]
+                                SearchItems: |-
+                                    =Search(Filter(
+                                        Sort(
+                                            Filter(
+                                                'Reimbursement Categories',
+                                                'Reimbursement Categories (Views)'.'Active Categories'
+                                            ),
+                                            'Category Name'
+                                        ),
+                                        Program.'Reimbursement Program Id'= cmbRefundRequest_RefundPrograms.Selected.'Reimbursement Program Id'
+                                    ),cmbRefundRequest_Category.SearchText,"mpa_categoryname")
+                                SelectionColor: =ColorValue(varThemeColors.text)
+                                SelectionFill: =ColorValue(varThemeColors.secondaryGray)
+                                SelectionTagColor: =ColorValue(varThemeColors.altText)
+                                SelectionTagFill: =ColorValue(varThemeColors.primary)
+                                SelectMultiple: =false
+                                Size: =varThemeFont.B1.size
+                                Tooltip: =Parent.DisplayName
+                                Width: =cmbRefundRequest_RefundPrograms.Width
+                                X: =_DatacardLayoutProperties.PaddingLeft
+                                Y: =cmbRefundRequest_RefundPrograms.Y
+                                ZIndex: =2
+
+                            lblRefundRequest_CategoryAsterisk As label:
+                                Align: =Align.Center
+                                Color: =ColorValue(varThemeColors.error)
+                                Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                                PaddingLeft: =0
+                                PaddingRight: =0
+                                Text: ="*"
+                                Tooltip: =Self.Text
+                                Visible: =Parent.Required
+                                Width: =15
+                                Wrap: =false
+                                X: =lblRefundRequest_Category.Width + lblRefundRequest_Category.X
+                                Y: =10
+                                ZIndex: =4
+
+                        dtcRefundRequest_SubCategory As typedDataCard.comboBoxEditCard:
+                            BorderStyle: =BorderStyle.Solid
+                            DataField: ="mpa_subcategory"
+                            Default: =ThisItem.Subcategory
+                            DisplayMode: =Parent.DisplayMode
+                            DisplayName: =DataSourceInfo([@'Reimbursement Requests'],DataSourceInfo.DisplayName,"mpa_subcategory")
+                            Fill: =RGBA(0, 0, 0, 0)
+                            Height: =_DatacardLayoutProperties.Height
+                            Required: =If(Parent.Mode = FormMode.View, false, true)
+                            Update: =cmbRefundRequest_Subcategory.Selected
+                            Width: |-
+                                =Parent.Width / Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.Small,
+                                    1,
+                                    ScreenSize.Medium,
+                                    1,
+                                    ScreenSize.Large,
+                                    3,
+                                    5
+                                )
+                            X: =3
+                            Y: =1
+                            ZIndex: =1
+
+                            lblRefundRequest_Subcategory As label:
+                                Color: =ColorValue(varThemeColors.text)
+                                FocusedBorderColor: =ColorValue(varThemeColors.primaryGray)
+                                FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                                Font: =varThemeFont.B2.face
+                                FontWeight: =varThemeFont.B2.weightBold
+                                Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                                Italic: =varThemeFont.B2.italic
+                                PaddingLeft: =0
+                                Size: =varThemeFont.B2.size
+                                Text: |-
+                                    =With(
+                                        {Text: "Subcategory" },
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Width: =Min((Self.Size * 0.85) * Len(Self.Text), Parent.Width - lblRefundRequest_SubcategoryAsterisk.Width)
+                                Wrap: =false
+                                X: =_DatacardLayoutProperties.PaddingLeft
+                                Y: =10
+                                ZIndex: =1
+
+                            cmbRefundRequest_Subcategory As combobox:
+                                AccessibleLabel: |-
+                                    =With(
+                                        {Text: "Select subcategory required" },
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                BorderColor: =If(IsBlank(Parent.Error), ColorValue(varThemeColors.primaryGray), Color.Red)
+                                ChevronBackground: =ColorValue(varThemeColors.backgroundFill)
+                                ChevronDisabledBackground: =ColorValue(varThemeColors.backgroundFillDisabled)
+                                ChevronDisabledFill: =ColorValue(varThemeColors.text)
+                                ChevronFill: =ColorValue(varThemeColors.text)
+                                ChevronHoverBackground: =ColorFade(ColorValue(varThemeColors.secondaryGray), -20%)
+                                ChevronHoverFill: =ColorValue(varThemeColors.text)
+                                Color: =ColorValue(varThemeColors.text)
+                                DefaultSelectedItems: =Parent.Default
+                                DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+                                DisabledColor: =ColorValue(varThemeColors.disabledText)
+                                DisplayFields: =["mpa_name"]
+                                DisplayMode: |-
+                                    =//Only enable category field if program selected
+                                    If(
+                                        IsBlank(cmbRefundRequest_Category.Selected) And Parent.DisplayMode = DisplayMode.Edit,
+                                        DisplayMode.Disabled,
+                                        Parent.DisplayMode
+                                    )
+                                Fill: =ColorValue(varThemeColors.backgroundFill)
+                                FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                                FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                                Font: =varThemeFont.B1.face
+                                FontWeight: =varThemeFont.B1.weight
+                                Height: =Self.Size * 2.5
+                                HoverBorderColor: =ColorFade(ColorValue(varThemeColors.tertiaryGray), 15%)
+                                HoverColor: =ColorValue(varThemeColors.text)
+                                HoverFill: =ColorValue(varThemeColors.secondaryGray)
+                                InputTextPlaceholder: |-
+                                    =With(
+                                        {Text: "Select subcategory" },
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Italic: =varThemeFont.B1.italic
+                                Items: |-
+                                    =Filter(
+                                        Sort(
+                                            Filter(
+                                                'Reimbursement Subcategories',
+                                                'Reimbursement Subcategories (Views)'.'Active Subcategories'
+                                            ),
+                                            'Subcategory Name'
+                                        ),
+                                        Category.'Reimbursement Category Id'= cmbRefundRequest_Category.Selected.'Reimbursement Category Id'
+                                    )
+                                PaddingLeft: =If(Self.DisplayMode = DisplayMode.Edit, 5, 0)
+                                SearchFields: =["mpa_name"]
+                                SearchItems: |-
+                                    =Search(Filter(
+                                        Sort(
+                                            Filter(
+                                                'Reimbursement Subcategories',
+                                                'Reimbursement Subcategories (Views)'.'Active Subcategories'
+                                            ),
+                                            'Subcategory Name'
+                                        ),
+                                        Category.'Reimbursement Category Id'= cmbRefundRequest_Category.Selected.'Reimbursement Category Id'
+                                    ),cmbRefundRequest_Subcategory.SearchText,"mpa_name")
+                                SelectionColor: =ColorValue(varThemeColors.text)
+                                SelectionFill: =ColorValue(varThemeColors.secondaryGray)
+                                SelectionTagColor: =ColorValue(varThemeColors.altText)
+                                SelectionTagFill: =ColorValue(varThemeColors.primary)
+                                SelectMultiple: =false
+                                Size: =varThemeFont.B1.size
+                                Tooltip: =Parent.DisplayName
+                                Width: =cmbRefundRequest_RefundPrograms.Width
+                                X: =_DatacardLayoutProperties.PaddingLeft
+                                Y: =cmbRefundRequest_RefundPrograms.Y
+                                ZIndex: =2
+
+                            lblRefundRequest_SubcategoryAsterisk As label:
+                                Align: =Align.Center
+                                Color: =ColorValue(varThemeColors.error)
+                                Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                                PaddingLeft: =0
+                                PaddingRight: =0
+                                Text: ="*"
+                                Tooltip: =Self.Text
+                                Visible: =Parent.Required
+                                Width: =15
+                                Wrap: =false
+                                X: =lblRefundRequest_Subcategory.Width + lblRefundRequest_Subcategory.X
+                                Y: =10
+                                ZIndex: =3
+
+                        dtcRefundReques_Currency As typedDataCard.comboBoxEditCard:
+                            BorderStyle: =BorderStyle.Solid
+                            DataField: ="transactioncurrencyid"
+                            Default: |+
+                                =If(Parent.Mode = FormMode.View, LookUp(Currencies, 'Currency Code' = varCurrencySelected.'Currency Code' ) , First(Currencies))
+                                
+                            DisplayMode: =Parent.DisplayMode
+                            DisplayName: =DataSourceInfo([@'Reimbursement Requests'],DataSourceInfo.DisplayName,"transactioncurrencyid")
+                            Fill: =RGBA(0, 0, 0, 0)
+                            Height: =_DatacardLayoutProperties.Height
+                            Required: =If(Parent.Mode = FormMode.View, false, true)
+                            Update: =cmbRefundRequest_Currency.Selected
+                            Width: |-
+                                =Parent.Width / Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.Small,
+                                    1,
+                                    ScreenSize.Medium,
+                                    1,
+                                    ScreenSize.Large,
+                                    3,
+                                    5
+                                )
+                            WidthFit: =false
+                            X: =4
+                            Y: =1
+                            ZIndex: =1
+
+                            cmbRefundRequest_Currency As combobox:
+                                AccessibleLabel: |-
+                                    =With(
+                                        {Text: "Currency" },
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                BorderColor: =If(IsBlank(Parent.Error), ColorValue(varThemeColors.primaryGray), Color.Red)
+                                ChevronBackground: =ColorValue(varThemeColors.backgroundFill)
+                                ChevronDisabledBackground: =ColorValue(varThemeColors.backgroundFillDisabled)
+                                ChevronDisabledFill: =ColorValue(varThemeColors.text)
+                                ChevronFill: =ColorValue(varThemeColors.text)
+                                ChevronHoverBackground: =ColorFade(ColorValue(varThemeColors.secondaryGray), -20%)
+                                ChevronHoverFill: =ColorValue(varThemeColors.text)
+                                Color: =ColorValue(varThemeColors.text)
+                                DefaultSelectedItems: |
+                                    =Parent.Default
+                                DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+                                DisabledColor: =ColorValue(varThemeColors.disabledText)
+                                DisplayFields: =["isocurrencycode"]
+                                DisplayMode: =Parent.DisplayMode
+                                Fill: =ColorValue(varThemeColors.backgroundFill)
+                                FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                                FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                                Font: =varThemeFont.B1.face
+                                FontWeight: =varThemeFont.B1.weight
+                                Height: =Self.Size * 2.5
+                                HoverBorderColor: =ColorFade(ColorValue(varThemeColors.tertiaryGray), 15%)
+                                HoverColor: =ColorValue(varThemeColors.text)
+                                HoverFill: =ColorValue(varThemeColors.secondaryGray)
+                                InputTextPlaceholder: |-
+                                    =With(
+                                        {Text: "Select Currency" },
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Italic: =varThemeFont.B1.italic
+                                Items: |
+                                    =
+                                    Sort(
+                                        Currencies
+                                        ,
+                                        'Currency Name'
+                                    )
+                                OnChange: |-
+                                    =If(
+                                        IsBlank(Self.Selected.'Currency Code'),
+                                        Reset(Self);
+                                    );
+                                    Set(
+                                        varCurrencies,
+                                        Self.Selected.'Currency Symbol'
+                                    );
+                                PaddingLeft: =If(Self.DisplayMode = DisplayMode.Edit, 5, 0)
+                                SearchFields: =["currencyname"]
+                                SearchItems: |-
+                                    =Search(
+                                    Sort(
+                                        Currencies
+                                        ,
+                                        'Currency Name'
+                                    )
+                                    ,cmbRefundRequest_Currency.SearchText,"currencyname")
+                                SelectionColor: =ColorValue(varThemeColors.text)
+                                SelectionFill: =ColorValue(varThemeColors.secondaryGray)
+                                SelectionTagColor: =ColorValue(varThemeColors.altText)
+                                SelectionTagFill: =ColorValue(varThemeColors.primary)
+                                SelectMultiple: =false
+                                Size: =varThemeFont.B1.size
+                                Tooltip: =Parent.DisplayName
+                                Width: =cmbRefundRequest_RefundPrograms.Width
+                                X: =_DatacardLayoutProperties.PaddingLeft
+                                Y: =cmbRefundRequest_RefundPrograms.Y
+                                ZIndex: =1
+
+                            lblRefundRequest_Currency As label:
+                                Color: =ColorValue(varThemeColors.text)
+                                FocusedBorderColor: =ColorValue(varThemeColors.primaryGray)
+                                FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                                Font: =varThemeFont.B2.face
+                                FontWeight: =varThemeFont.B2.weightBold
+                                Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                                Italic: =varThemeFont.B2.italic
+                                PaddingLeft: =0
+                                Size: =varThemeFont.B2.size
+                                Text: |-
+                                    =With(
+                                        {Text: "Currency" },
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Width: =Min((Self.Size * 0.85) * Len(Self.Text), Parent.Width - lblRefundReques_Currency.Width)
+                                Wrap: =false
+                                X: =_DatacardLayoutProperties.PaddingLeft
+                                Y: =10
+                                ZIndex: =2
+
+                            lblRefundReques_Currency As label:
+                                Align: =Align.Center
+                                Color: =ColorValue(varThemeColors.error)
+                                Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                                PaddingLeft: =0
+                                PaddingRight: =0
+                                Text: ="*"
+                                Tooltip: =Self.Text
+                                Visible: =Parent.Required
+                                Width: =15
+                                Wrap: =false
+                                X: =lblRefundRequest_Currency.X + lblRefundRequest_Currency.Width
+                                Y: =10
+                                ZIndex: =3
+
+                        dtcRefundRequest_RefundPrograms As typedDataCard.comboBoxEditCard:
+                            BorderStyle: =BorderStyle.Solid
+                            DataField: |
+                                ="mpa_program"
+                            Default: =ThisItem.Program
+                            DisplayMode: =Parent.DisplayMode
+                            DisplayName: =DataSourceInfo([@'Reimbursement Requests'],DataSourceInfo.DisplayName,"mpa_program")
+                            Fill: =RGBA(0, 0, 0, 0)
+                            Height: =_DatacardLayoutProperties.Height
+                            Required: =If(Parent.Mode = FormMode.View, false, true)
+                            Update: =cmbRefundRequest_RefundPrograms.Selected
+                            Width: |-
+                                =Parent.Width / Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.Small,
+                                    1,
+                                    ScreenSize.Medium,
+                                    1,
+                                    ScreenSize.Large,
+                                    3,
+                                    5
+                                )
+                            WidthFit: =false
+                            X: =0
+                            Y: =1
+                            ZIndex: =2
+
+                            cmbRefundRequest_RefundPrograms As combobox:
+                                AccessibleLabel: |-
+                                    =With(
+                                        {Text: "Select program required" },
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                BorderColor: =If(IsBlank(Parent.Error), ColorValue(varThemeColors.primaryGray), Color.Red)
+                                ChevronBackground: =ColorValue(varThemeColors.backgroundFill)
+                                ChevronDisabledBackground: =ColorValue(varThemeColors.backgroundFillDisabled)
+                                ChevronDisabledFill: =ColorValue(varThemeColors.text)
+                                ChevronFill: =ColorValue(varThemeColors.text)
+                                ChevronHoverBackground: =ColorFade(ColorValue(varThemeColors.secondaryGray), -20%)
+                                ChevronHoverFill: =ColorValue(varThemeColors.text)
+                                Color: =ColorValue(varThemeColors.text)
+                                DefaultSelectedItems: =Parent.Default
+                                DisabledColor: =ColorValue(varThemeColors.disabledText)
+                                DisplayFields: =["mpa_programname"]
+                                DisplayMode: =Parent.DisplayMode
+                                Fill: =ColorValue(varThemeColors.backgroundFill)
+                                FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                                FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                                Font: =varThemeFont.B1.face
+                                FontWeight: =varThemeFont.B1.weight
+                                Height: =Self.Size * 2.5
+                                HoverColor: =ColorValue(varThemeColors.text)
+                                HoverFill: =ColorValue(varThemeColors.secondaryGray)
+                                InputTextPlaceholder: |-
+                                    =With(
+                                        {Text: "Select program" },
+                                         // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Italic: =varThemeFont.B1.italic
+                                Items: |-
+                                    =
+                                    Sort(
+                                        Filter(
+                                            'Reimbursement Programs',
+                                            'Reimbursement Programs (Views)'.'Active Programs'
+                                        ),
+                                        'Program Name'
+                                    )
+                                NoSelectionText: |-
+                                    =With(
+                                        {Text: "Select program" },
+                                         // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                OnChange: |-
+                                    =Reset(cmbRefundRequest_Category);
+                                    Reset(cmbRefundRequest_Subcategory)
+                                PaddingLeft: =If(Self.DisplayMode = DisplayMode.Edit, 5, 0)
+                                PressedColor: =ColorValue(varThemeColors.text)
+                                SearchFields: =["mpa_programname"]
+                                SearchItems: |-
+                                    =Search(
+                                    Sort(
+                                        Filter(
+                                            'Reimbursement Programs',
+                                            'Reimbursement Programs (Views)'.'Active Programs'
+                                        ),
+                                        'Program Name'
+                                    ),cmbRefundRequest_RefundPrograms.SearchText,"mpa_programname")
+                                SelectionColor: =ColorValue(varThemeColors.text)
+                                SelectionFill: =ColorValue(varThemeColors.secondaryGray)
+                                SelectionTagColor: =ColorValue(varThemeColors.altText)
+                                SelectionTagFill: =ColorValue(varThemeColors.primary)
+                                SelectMultiple: =false
+                                Size: =varThemeFont.B1.size
+                                Tooltip: =Parent.DisplayName
+                                Width: =Parent.Width - 35
+                                X: =_DatacardLayoutProperties.PaddingLeft
+                                Y: =lblRefundRequest_RefundPrograms.Y + lblRefundRequest_RefundPrograms.Height + 5
+                                ZIndex: =2
+
+                            lblRefundRequest_RefundProgramsAsterisk As label:
+                                Align: =Align.Center
+                                Color: =ColorValue(varThemeColors.error)
+                                Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                                PaddingLeft: =0
+                                PaddingRight: =0
+                                Text: ="*"
+                                Tooltip: =Self.Text
+                                Visible: =Parent.Required
+                                Width: =15
+                                Wrap: =false
+                                X: =lblRefundRequest_RefundPrograms.X + lblRefundRequest_RefundPrograms.Width
+                                Y: =10
+                                ZIndex: =3
+
+                            lblRefundRequest_RefundPrograms As label:
+                                Color: =ColorValue(varThemeColors.text)
+                                FocusedBorderColor: =ColorValue(varThemeColors.primaryGray)
+                                FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                                Font: =varThemeFont.B2.face
+                                FontWeight: =varThemeFont.B2.weightBold
+                                Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                                Italic: =varThemeFont.B2.italic
+                                PaddingLeft: =0
+                                Size: =varThemeFont.B2.size
+                                Text: |-
+                                    =With(
+                                        {Text: "Program" },
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Tooltip: =Self.Text
+                                Width: =Min((Self.Size * 0.85) * Len(Self.Text), Parent.Width - lblRefundRequest_RefundProgramsAsterisk.Width)
+                                Wrap: =false
+                                X: =_DatacardLayoutProperties.PaddingLeft
+                                Y: =10
+                                ZIndex: =4
+
+                    shpRefundrequest_LineDetails As rectangle:
+                        AlignInContainer: =AlignInContainer.Center
+                        BorderStyle: =BorderStyle.None
+                        Fill: =ColorValue(varThemeColors.disabledText)
+                        Height: =1
+                        Width: =(Parent.Width - Parent.PaddingLeft - Parent.PaddingRight) - _DatacardLayoutProperties.PaddingLeft - _DatacardLayoutProperties.PaddingRight
+                        ZIndex: =2
+
+                    contRefundRequest_ReceiptDetails As groupContainer.horizontalAutoLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        DropShadow: =DropShadow.None
+                        FillPortions: =0
+                        Height: |-
+                            =conInnerRefundRequest_ReceiptDetails.Height + Self.PaddingTop + Self.PaddingBottom +
+                            
+                            If(contRefundRequest_AddReceipt.Visible And Self.LayoutDirection = LayoutDirection.Vertical, contRefundRequest_AddReceipt.Height, 0)
+                        LayoutDirection: =If(App.ActiveScreen.Size <3, LayoutDirection.Vertical, LayoutDirection.Horizontal)
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =10
+                        LayoutMode: =LayoutMode.Auto
+                        PaddingBottom: =If(App.ActiveScreen.Size <3, 20,0)
+                        PaddingLeft: =_DatacardLayoutProperties.PaddingLeft
+                        PaddingRight: =_DatacardLayoutProperties.PaddingRight
+                        Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                        ZIndex: =3
+
+                        conInnerRefundRequest_ReceiptDetails As groupContainer.verticalAutoLayoutContainer:
+                            AlignInContainer: =AlignInContainer.SetByContainer
+                            DropShadow: =DropShadow.None
+                            FillPortions: =0
+                            Height: =lblRefundRequest_ReceiptDetails.Height + Self.PaddingTop + Self.PaddingBottom
+                            LayoutDirection: =LayoutDirection.Vertical
+                            LayoutMinHeight: =lblRefundRequest_ReceiptDetails.Height
+                            LayoutMinWidth: =250
+                            LayoutMode: =LayoutMode.Auto
+                            PaddingBottom: =10
+                            PaddingTop: =10
+                            Width: |-
+                                =If(
+                                    Parent.LayoutDirection = LayoutDirection.Horizontal,
+                                    (Parent.Width * 0.7) - Parent.PaddingLeft,
+                                    Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                )
+                            ZIndex: =1
+
+                            lblRefundRequest_ReceiptDetails As label:
+                                Color: =ColorValue(varThemeColors.text)
+                                Font: =varThemeFont.H3.face
+                                FontWeight: =varThemeFont.H3.weight
+                                Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                                LayoutMinWidth: =100
+                                PaddingBottom: =0
+                                PaddingLeft: =0
+                                PaddingRight: =0
+                                PaddingTop: =0
+                                Size: =varThemeFont.H3.size
+                                Text: |-
+                                    =With(
+                                        {Text: "Expense details" },
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Tooltip: =Self.Text
+                                Width: =Parent.Width
+                                Wrap: =false
+                                X: =40
+                                Y: =40
+                                ZIndex: =1
+
+                        contRefundRequest_AddReceipt As groupContainer.verticalAutoLayoutContainer:
+                            AlignInContainer: =AlignInContainer.SetByContainer
+                            DropShadow: =DropShadow.None
+                            FillPortions: =0
+                            Height: =conInnerRefundRequest_ReceiptDetails.Height
+                            LayoutAlignItems: =LayoutAlignItems.End
+                            LayoutDirection: =LayoutDirection.Vertical
+                            LayoutMinHeight: =btnRefundRequest_AddReceipt.Height
+                            LayoutMinWidth: =250
+                            LayoutMode: =LayoutMode.Auto
+                            PaddingBottom: =10
+                            PaddingLeft: =btnRefundRequest_AddReceipt.FocusedBorderThickness
+                            PaddingRight: =btnRefundRequest_AddReceipt.FocusedBorderThickness
+                            PaddingTop: =10
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Visible: =_FormMode = FormMode.Edit
+                            Width: |-
+                                =If(
+                                    Parent.LayoutDirection = LayoutDirection.Horizontal,
+                                    (Parent.Width * 0.3) - Parent.PaddingRight,
+                                    Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                )
+                            ZIndex: =2
+
+                            btnRefundRequest_AddReceipt As button:
+                                BorderColor: =ColorValue(varThemeColors.primary)
+                                BorderThickness: =1
+                                Color: =ColorValue(varThemeColors.primary)
+                                DisplayMode: |-
+                                    =If(
+                                        frmRefundRequest_Details.Mode = FormMode.View,
+                                        DisplayMode.Disabled,
+                                        DisplayMode.Edit
+                                    )
+                                Fill: =ColorValue(varThemeColors.backgroundFill)
+                                FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                                FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                                Font: =varThemeFont.CTA.face
+                                FontWeight: =varThemeFont.CTA.weight
+                                Height: =32
+                                OnSelect: |
+                                    =//Clean up of data entry.
+                                    ResetForm(frmReceiptDetails_Details);
+                                    Set(
+                                        varRcptProcessorExpenseDate,
+                                        ""
+                                    );
+                                    Set(
+                                        varRcptProcessorAmount,
+                                        ""
+                                    );
+                                    Set(
+                                        varRcptProcessorAttachment,
+                                        ""
+                                    );
+                                    Set(
+                                        varRcptProcessorMerchantName,
+                                        ""
+                                    );
+                                    Set(
+                                        varHolderAmount,
+                                        ""
+                                    );
+                                    Set(
+                                        varHolderExpenseDate,
+                                        Blank()
+                                    );
+                                    Set(
+                                        varAddItemImage,
+                                        ""
+                                    );
+                                    If(
+                                        CountRows(colReceiptDetailList) = 0,
+                                        Set(
+                                            varHolderMerchantName,
+                                            ""
+                                        )
+                                    );
+                                    Set(varAttachmentType, ""); //Clearing of Variable 
+                                    //Set date value checker to false
+                                    Navigate('Attach Receipt Options Screen');
+                                    
+                                    /*Navigate('Receipt Details Screen', Transition.None, 
+                                        {
+                                            _ExpenseDateBlank: false,
+                                            _Currency: cmbRefundRequest_Currency.Selected
+                                        }
+                                    );*/
+                                RadiusBottomLeft: =6
+                                RadiusBottomRight: =6
+                                RadiusTopLeft: =6
+                                RadiusTopRight: =6
+                                Size: =varThemeFont.CTA.size
+                                Text: |-
+                                    =With(
+                                        {Text: "Add expense" },
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                Tooltip: =Self.Text
+                                Width: =If(App.ActiveScreen.Size <3, Parent.Width - Parent.PaddingLeft - Parent.PaddingRight, Parent.Width * .62)
+                                X: =5
+                                Y: =7
+                                ZIndex: =1
+
+                    contRefundRequest_ReceiptDetailsGallery As groupContainer.verticalAutoLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderStyle: =BorderStyle.None
+                        DropShadow: =DropShadow.None
+                        FillPortions: =0
+                        Height: |-
+                            =contRefundRequest_GalleryBody.Height + 
+                            contRefundRequest_GalleryHeader.Height +
+                            Self.PaddingTop + Self.PaddingBottom
+                        LayoutDirection: =LayoutDirection.Vertical
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        LayoutOverflowX: =LayoutOverflow.Scroll
+                        Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                        ZIndex: =4
+
+                        contRefundRequest_GalleryHeader As groupContainer.verticalAutoLayoutContainer:
+                            AlignInContainer: =AlignInContainer.SetByContainer
+                            DropShadow: =DropShadow.None
+                            FillPortions: =0
+                            Height: |-
+                                =contRefundRequest_GalleryColumn.Height +
+                                shpRefundrequest_LineGalleryColumn.Height +
+                                Self.PaddingTop + Self.PaddingBottom
+                            LayoutDirection: =LayoutDirection.Vertical
+                            LayoutMinHeight: =100
+                            LayoutMinWidth: =250
+                            LayoutMode: =LayoutMode.Auto
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Width: |-
+                                =If(
+                                    App.ActiveScreen.Size < ScreenSize.Large,
+                                    _MinimumGalleryWidth,
+                                    Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                )
+                            ZIndex: =1
+
+                            contRefundRequest_GalleryColumn As groupContainer.horizontalAutoLayoutContainer:
+                                AlignInContainer: =AlignInContainer.SetByContainer
+                                BorderStyle: =BorderStyle.None
+                                DropShadow: =DropShadow.None
+                                FillPortions: =0
+                                Height: =40
+                                LayoutGap: =10
+                                LayoutMinHeight: =100
+                                LayoutMinWidth: =250
+                                LayoutMode: =LayoutMode.Auto
+                                Width: |-
+                                    =If(
+                                        App.ActiveScreen.Size < ScreenSize.Large,
+                                        _MinimumGalleryWidth,
+                                        Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                    )
+                                ZIndex: =1
+
+                                lblRefundRequest_ExpenseDate As label:
+                                    Color: =ColorValue(varThemeColors.text)
+                                    FillPortions: =1
+                                    Font: =varThemeFont.B2.face
+                                    FontWeight: =varThemeFont.B2.weightBold
+                                    Height: =Parent.Height
+                                    PaddingLeft: =35
+                                    PaddingRight: =20
+                                    Size: =varThemeFont.B2.size
+                                    Text: |-
+                                        =With(
+                                            {Text: "Expense date" },
+                                            // Check if a localized text exists for "Text" in the user's preferred language
+                                            If(
+                                                // If the localized text is blank, return the default text
+                                                IsBlank(
+                                                    LookUp(
+                                                        colUserLocalizedStrings,
+                                                        'English Value' = Text
+                                                    ).'Localized Value'
+                                                ),
+                                                Text,
+                                                // If a localized text is found, return that instead of the default text
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            )
+                                        )
+                                    Tooltip: =Self.Text
+                                    ZIndex: =1
+
+                                lblRefundRequest_MerchantName As label:
+                                    Color: =ColorValue(varThemeColors.text)
+                                    FillPortions: =1
+                                    Font: =varThemeFont.B2.face
+                                    FontWeight: =varThemeFont.B2.weightBold
+                                    Height: =Parent.Height
+                                    Size: =varThemeFont.B2.size
+                                    Text: |-
+                                        =With(
+                                            {Text: "Merchant name" },
+                                            // Check if a localized text exists for "Text" in the user's preferred language
+                                            If(
+                                                // If the localized text is blank, return the default text
+                                                IsBlank(
+                                                    LookUp(
+                                                        colUserLocalizedStrings,
+                                                        'English Value' = Text
+                                                    ).'Localized Value'
+                                                ),
+                                                Text,
+                                                // If a localized text is found, return that instead of the default text
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            )
+                                        )
+                                    Tooltip: =Self.Text
+                                    ZIndex: =2
+
+                                lblRefundRequest_Description As label:
+                                    Color: =ColorValue(varThemeColors.text)
+                                    FillPortions: =1
+                                    Font: =varThemeFont.B2.face
+                                    FontWeight: =varThemeFont.B2.weightBold
+                                    Height: =Parent.Height
+                                    Size: =varThemeFont.B2.size
+                                    Text: |-
+                                        =With(
+                                            {Text: "Description" },
+                                            // Check if a localized text exists for "Text" in the user's preferred language
+                                            If(
+                                                // If the localized text is blank, return the default text
+                                                IsBlank(
+                                                    LookUp(
+                                                        colUserLocalizedStrings,
+                                                        'English Value' = Text
+                                                    ).'Localized Value'
+                                                ),
+                                                Text,
+                                                // If a localized text is found, return that instead of the default text
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            )
+                                        )
+                                    Tooltip: =Self.Text
+                                    ZIndex: =3
+
+                                lblRefundRequest_Attachments As label:
+                                    Color: =ColorValue(varThemeColors.text)
+                                    FillPortions: =1
+                                    Font: =varThemeFont.B2.face
+                                    FontWeight: =varThemeFont.B2.weightBold
+                                    Height: =Parent.Height
+                                    Size: =varThemeFont.B2.size
+                                    Text: |-
+                                        =With(
+                                            {Text: "Attachment" },
+                                             // Check if a localized text exists for "Text" in the user's preferred language
+                                            If(
+                                                // If the localized text is blank, return the default text
+                                                IsBlank(
+                                                    LookUp(
+                                                        colUserLocalizedStrings,
+                                                        'English Value' = Text
+                                                    ).'Localized Value'
+                                                ),
+                                                Text,
+                                                // If a localized text is found, return that instead of the default text
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            )
+                                        )
+                                    Tooltip: =Self.Text
+                                    ZIndex: =4
+
+                                lblRefundRequest_Amount As label:
+                                    Color: =ColorValue(varThemeColors.text)
+                                    FillPortions: =1
+                                    Font: =varThemeFont.B2.face
+                                    FontWeight: =varThemeFont.B2.weightBold
+                                    Height: =Parent.Height
+                                    LayoutMinWidth: =100
+                                    Size: =varThemeFont.B2.size
+                                    Text: |-
+                                        =With(
+                                            {Text: "Amount" },
+                                            // Check if a localized text exists for "Text" in the user's preferred language
+                                            If(
+                                                // If the localized text is blank, return the default text
+                                                IsBlank(
+                                                    LookUp(
+                                                        colUserLocalizedStrings,
+                                                        'English Value' = Text
+                                                    ).'Localized Value'
+                                                ),
+                                                Text,
+                                                // If a localized text is found, return that instead of the default text
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            )
+                                        )
+                                    Tooltip: =Self.Text
+                                    ZIndex: =5
+
+                                lblRefundRequest_Delete As label:
+                                    Color: =ColorValue(varThemeColors.text)
+                                    Font: =varThemeFont.B2.face
+                                    FontWeight: =varThemeFont.B2.weightBold
+                                    Size: =varThemeFont.B2.size
+                                    Text: |-
+                                        =With(
+                                            {Text: "Action" },
+                                            // Check if a localized text exists for "Text" in the user's preferred language
+                                            If(
+                                                // If the localized text is blank, return the default text
+                                                IsBlank(
+                                                    LookUp(
+                                                        colUserLocalizedStrings,
+                                                        'English Value' = Text
+                                                    ).'Localized Value'
+                                                ),
+                                                Text,
+                                                // If a localized text is found, return that instead of the default text
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            )
+                                        )
+                                    Tooltip: =Self.Text
+                                    Width: =Parent.Width * 0.08
+                                    ZIndex: =6
+
+                            shpRefundrequest_LineGalleryColumn As rectangle:
+                                AlignInContainer: =AlignInContainer.Center
+                                BorderStyle: =BorderStyle.None
+                                Fill: =ColorValue(varThemeColors.primary)
+                                Height: =2
+                                Width: =(Parent.Width - Parent.PaddingLeft - Parent.PaddingRight) - _DatacardLayoutProperties.PaddingLeft - _DatacardLayoutProperties.PaddingRight
+                                ZIndex: =2
+
+                        contRefundRequest_GalleryBody As groupContainer.verticalAutoLayoutContainer:
+                            AlignInContainer: =AlignInContainer.SetByContainer
+                            BorderStyle: =BorderStyle.None
+                            DropShadow: =DropShadow.None
+                            FillPortions: =0
+                            Height: =galRefundRequest_ReceiptDetails.Height + Self.PaddingTop + Self.PaddingBottom
+                            LayoutDirection: =LayoutDirection.Vertical
+                            LayoutMinHeight: =240
+                            LayoutMinWidth: =250
+                            LayoutMode: =LayoutMode.Auto
+                            PaddingBottom: =galRefundRequest_ReceiptDetails.FocusedBorderThickness
+                            PaddingLeft: =galRefundRequest_ReceiptDetails.FocusedBorderThickness
+                            PaddingRight: =galRefundRequest_ReceiptDetails.FocusedBorderThickness
+                            PaddingTop: =galRefundRequest_ReceiptDetails.FocusedBorderThickness
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Width: |-
+                                =If(
+                                    App.ActiveScreen.Size < ScreenSize.Large,
+                                    _MinimumGalleryWidth,
+                                    Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                )
+                            ZIndex: =4
+
+                            galRefundRequest_ReceiptDetails As gallery.variableTemplateHeightGallery:
+                                AccessibleLabel: |-
+                                    =// Define a variable named "Text" with the value "{value}"
+                                    With(
+                                        {Text: "Receipt Details Gallery"},
+                                        // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                            // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                            // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    )
+                                AlignInContainer: =AlignInContainer.SetByContainer
+                                DelayItemLoading: =true
+                                FillPortions: =0
+                                FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                                FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                                Height: |-
+                                    =Max(
+                                        Self.TemplateHeight * 2.5,
+                                        Self.TemplateHeight * Self.AllItemsCount
+                                    )
+                                Items: =colReceiptDetailList
+                                Layout: =Layout.Vertical
+                                LayoutMinHeight: =240
+                                LayoutMinWidth: =320
+                                LoadingSpinner: =LoadingSpinner.Data
+                                ShowScrollbar: =false
+                                TabIndex: =0
+                                TemplatePadding: =0
+                                TemplateSize: =55
+                                Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                ZIndex: =1
+
+                                shpRefundrequest_ReceiptDetailsLine As rectangle:
+                                    BorderStyle: =BorderStyle.None
+                                    DisplayMode: =DisplayMode.View
+                                    Fill: =ColorValue(varThemeColors.secondaryGray)
+                                    Height: =1
+                                    Width: |-
+                                        =(
+                                            If(
+                                            App.ActiveScreen.Size < ScreenSize.Large,
+                                            _MinimumGalleryWidth,
+                                            Parent.Width
+                                            )
+                                         ) - _DatacardLayoutProperties.PaddingLeft - _DatacardLayoutProperties.PaddingRight
+                                    X: =(Parent.Width / 2) - (Self.Width / 2)
+                                    Y: =contRefundRequest_GalleryResult.Y + contRefundRequest_GalleryResult.Height
+                                    ZIndex: =1
+
+                                contRefundRequest_GalleryResult As groupContainer.horizontalAutoLayoutContainer:
+                                    BorderStyle: =BorderStyle.None
+                                    ContentLanguage: =ThisItem.Attachment
+                                    DropShadow: =DropShadow.None
+                                    Height: =Parent.TemplateHeight - shpRefundrequest_ReceiptDetailsLine.Height
+                                    LayoutAlignItems: =LayoutAlignItems.Center
+                                    LayoutMode: =LayoutMode.Auto
+                                    Width: =Parent.Width
+                                    ZIndex: =2
+
+                                    contRefundRequest_GalleryResultBody As groupContainer.horizontalAutoLayoutContainer:
+                                        BorderStyle: =BorderStyle.None
+                                        DropShadow: =DropShadow.None
+                                        FillPortions: =0
+                                        Height: =Parent.Height
+                                        LayoutAlignItems: =LayoutAlignItems.Center
+                                        LayoutGap: =10
+                                        LayoutMinHeight: =0
+                                        LayoutMode: =LayoutMode.Auto
+                                        PaddingBottom: =5
+                                        Width: =Parent.Width
+                                        ZIndex: =1
+
+                                        lblRefundRequest_ResultExpenseDate As label:
+                                            Color: =ColorValue(varThemeColors.text)
+                                            Font: =varThemeFont.B1.face
+                                            FontWeight: =varThemeFont.B1.weight
+                                            PaddingLeft: =35
+                                            Size: =varThemeFont.B1.size
+                                            Text: =Text(ThisItem.ExpenseDate, "mm/dd/yyyy")
+                                            Tooltip: =Self.Text
+                                            Width: =lblRefundRequest_ExpenseDate.Width
+                                            ZIndex: =1
+
+                                        lblRefundRequest_ResultMerchantName As label:
+                                            Color: =ColorValue(varThemeColors.text)
+                                            Font: =varThemeFont.B1.face
+                                            FontWeight: =varThemeFont.B1.weight
+                                            Size: =varThemeFont.B1.size
+                                            Text: |-
+                                                =With(
+                                                    {Text: Text(ThisItem.MerchantName) },
+                                                      // Check if a localized text exists for "Text" in the user's preferred language
+                                                    If(
+                                                        // If the localized text is blank, return the default text
+                                                        IsBlank(
+                                                            LookUp(
+                                                                colUserLocalizedStrings,
+                                                                'English Value' = Text
+                                                            ).'Localized Value'
+                                                        ),
+                                                        Text,
+                                                        // If a localized text is found, return that instead of the default text
+                                                        LookUp(
+                                                            colUserLocalizedStrings,
+                                                            'English Value' = Text
+                                                        ).'Localized Value'
+                                                    )
+                                                )
+                                            Tooltip: =Self.Text
+                                            Width: =lblRefundRequest_MerchantName.Width
+                                            ZIndex: =2
+
+                                        lblRefundRequest_ResultDescription As label:
+                                            Color: =ColorValue(varThemeColors.text)
+                                            Font: =varThemeFont.B1.face
+                                            FontWeight: =varThemeFont.B1.weight
+                                            Size: =varThemeFont.B1.size
+                                            Text: |-
+                                                =If(
+                                                    Find(Char(10), ThisItem.Description) > 0,
+                                                    Left(
+                                                        ThisItem.Description,
+                                                        Find(Char(10), ThisItem.Description)
+                                                    ),
+                                                    ThisItem.Description
+                                                )
+                                            Tooltip: =ThisItem.Description
+                                            Width: =lblRefundRequest_Description.Width - 10
+                                            Wrap: =false
+                                            ZIndex: =3
+
+                                        RefundRequest_Attachment As attachments:
+                                            AccessibleLabel: |-
+                                                =With(
+                                                    {Text: "Upload Receipt" },
+                                                     // Check if a localized text exists for "Text" in the user's preferred language
+                                                    If(
+                                                        // If the localized text is blank, return the default text
+                                                        IsBlank(
+                                                            LookUp(
+                                                                colUserLocalizedStrings,
+                                                                'English Value' = Text
+                                                            ).'Localized Value'
+                                                        ),
+                                                        Text,
+                                                        // If a localized text is found, return that instead of the default text
+                                                        LookUp(
+                                                            colUserLocalizedStrings,
+                                                            'English Value' = Text
+                                                        ).'Localized Value'
+                                                    )
+                                                )
+                                            AddAttachmentText: |-
+                                                =With(
+                                                    {Text: "Drag a file here or click to attach" },
+                                                     // Check if a localized text exists for "Text" in the user's preferred language
+                                                    If(
+                                                        // If the localized text is blank, return the default text
+                                                        IsBlank(
+                                                            LookUp(
+                                                                colUserLocalizedStrings,
+                                                                'English Value' = Text
+                                                            ).'Localized Value'
+                                                        ),
+                                                        Text,
+                                                        // If a localized text is found, return that instead of the default text
+                                                        LookUp(
+                                                            colUserLocalizedStrings,
+                                                            'English Value' = Text
+                                                        ).'Localized Value'
+                                                    )
+                                                )
+                                            AlignInContainer: =AlignInContainer.End
+                                            BorderColor: =
+                                            BorderStyle: =BorderStyle.None
+                                            BorderThickness: =0
+                                            Color: =ColorValue(varThemeColors.primary)
+                                            DisplayMode: =DisplayMode.View
+                                            DropTargetBackgroundColor: =Color.Transparent
+                                            DropTargetBorderStyle: =BorderStyle.None
+                                            DropTargetBorderThickness: =0
+                                            Font: =varThemeFont.B1.face
+                                            FontWeight: =varThemeFont.B2.weight
+                                            Height: =46
+                                            HoverBorderColor: =ColorFade(Self.BorderColor, 0%)
+                                            HoverFill: =RGBA(125, 125, 125, 0.1)
+                                            IsInDataCard: =true
+                                            ItemFill: =ColorValue(varThemeColors.primary)
+                                            Items: =ThisItem
+                                            MaxAttachments: =1
+                                            MaxAttachmentsText: =""
+                                            NoAttachmentsText: =""
+                                            PaddingTop: =3
+                                            PressedBorderColor: =Color.Transparent
+                                            Size: =varThemeFont.B1.size
+                                            Tooltip: =
+                                            Width: =lblRefundRequest_Attachments.Width
+                                            X: =18
+                                            Y: =150
+                                            ZIndex: =4
+
+                                        lblRefundRequest_ResultAmount As label:
+                                            Color: =ColorValue(varThemeColors.text)
+                                            Font: =varThemeFont.B1.face
+                                            FontWeight: =varThemeFont.B1.weight
+                                            Size: =varThemeFont.B1.size
+                                            Text: =varCurrencies & " " & ThisItem.Amount
+                                            Tooltip: =Self.Text
+                                            Width: =lblRefundRequest_Amount.Width
+                                            ZIndex: =5
+
+                                        contRefundRequest_ResultDeleteContainer As groupContainer.verticalAutoLayoutContainer:
+                                            AlignInContainer: =AlignInContainer.SetByContainer
+                                            DropShadow: =DropShadow.None
+                                            FillPortions: =0
+                                            Height: =50
+                                            LayoutDirection: =LayoutDirection.Vertical
+                                            LayoutMinHeight: =contRefundRequest_ResultDelete.Height
+                                            LayoutMinWidth: =250
+                                            LayoutMode: =LayoutMode.Auto
+                                            PaddingLeft: =5
+                                            PaddingTop: =5
+                                            Width: =lblRefundRequest_Delete.Width
+                                            ZIndex: =6
+
+                                            contRefundRequest_ResultDelete As groupContainer.manualLayoutContainer:
+                                                AlignInContainer: =AlignInContainer.SetByContainer
+                                                BorderColor: =If(icoRefundRequest_ResultDelete.DisplayMode = DisplayMode.Edit, icoRefundRequest_ResultDelete.Color, icoRefundRequest_ResultDelete.DisabledColor)
+                                                BorderThickness: =1
+                                                Fill: =ColorValue(varThemeColors.backgroundFill)
+                                                FillPortions: =0
+                                                Height: =40
+                                                LayoutMinHeight: =100
+                                                LayoutMinWidth: =250
+                                                RadiusBottomLeft: =6
+                                                RadiusBottomRight: =6
+                                                RadiusTopLeft: =6
+                                                RadiusTopRight: =6
+                                                Width: =50
+                                                ZIndex: =1
+
+                                                icoRefundRequest_ResultDelete As icon.Camera:
+                                                    AccessibleLabel: |-
+                                                        =// Define a variable named "Text" with the value "{value}"
+                                                        With(
+                                                            {Text: "Delete receipt"},
+                                                            // Check if a localized text exists for "Text" in the user's preferred language
+                                                            If(
+                                                                // If the localized text is blank, return the default text
+                                                                IsBlank(
+                                                                    LookUp(
+                                                                        colUserLocalizedStrings,
+                                                                        'English Value' = Text
+                                                                    ).'Localized Value'
+                                                                ),
+                                                                Text,
+                                                                // If a localized text is found, return that instead of the default text
+                                                                LookUp(
+                                                                    colUserLocalizedStrings,
+                                                                    'English Value' = Text
+                                                                ).'Localized Value'
+                                                            )
+                                                        )
+                                                    BorderColor: =ColorValue(varThemeColors.primary)
+                                                    BorderStyle: =BorderStyle.None
+                                                    BorderThickness: =1
+                                                    Color: =ColorValue(varThemeColors.primary)
+                                                    DisplayMode: =btnRefundRequest_AddReceipt.DisplayMode
+                                                    FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                                                    FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                                                    Height: =Parent.Height
+                                                    Icon: =Icon.Trash
+                                                    OnSelect: |
+                                                        =Remove(colReceiptDetailList,LookUp(colReceiptDetailList,ID=galRefundRequest_ReceiptDetails.Selected.ID))
+                                                    PaddingBottom: =7
+                                                    PaddingTop: =7
+                                                    TabIndex: =0
+                                                    Tooltip: =Self.AccessibleLabel
+                                                    Width: =Parent.Width
+                                                    ZIndex: =1
+
+                contRefundRequest_TotalRefundMain As groupContainer.verticalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    BorderStyle: =BorderStyle.None
+                    DropShadow: =DropShadow.None
+                    FillPortions: =0
+                    Height: |+
+                        =Self.PaddingTop + Self.PaddingBottom + ( Self.LayoutGap * 2 ) +
+                        
+                        contRefundRequest_TotalRefundBody.Height + shpRefundrequest_LineTotalRefundBottom.Height
+                        
+                    LayoutDirection: =LayoutDirection.Vertical
+                    LayoutGap: =20
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingTop: =20
+                    Width: =Parent.Width - (lblRefundRequest_RefundPrograms.X * 2)
+                    ZIndex: =6
+
+                    contRefundRequest_TotalRefundBody As groupContainer.horizontalAutoLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderStyle: =BorderStyle.None
+                        DropShadow: =DropShadow.None
+                        FillPortions: =0
+                        Height: =lblRefundRequest_TotalRefundColumn.Height
+                        LayoutJustifyContent: =LayoutJustifyContent.End
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        Width: =Parent.Width
+                        ZIndex: =2
+
+                        lblRefundRequest_TotalRefundColumn As label:
+                            Align: =Align.Right
+                            Color: =ColorValue(varThemeColors.text)
+                            Font: =varThemeFont.H2.face
+                            FontWeight: =varThemeFont.H2.weight
+                            Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                            LayoutMinWidth: =(Parent.Width * 0.8) - Parent.PaddingLeft - Parent.LayoutGap
+                            PaddingBottom: =0
+                            PaddingLeft: =0
+                            PaddingRight: =0
+                            PaddingTop: =0
+                            Size: =varThemeFont.H2.size
+                            Text: |-
+                                =With(
+                                    {Text: "Total refund" },
+                                     // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =(Parent.Width - Parent.PaddingLeft - Parent.PaddingRight - Parent.LayoutGap) - lblRefundRequest_TotalRefundValue.Width
+                            Wrap: =false
+                            ZIndex: =1
+
+                        lblRefundRequest_TotalRefundValue As label:
+                            Align: =Align.Right
+                            Color: =ColorValue(varThemeColors.text)
+                            Font: =varThemeFont.H2.face
+                            FontWeight: =varThemeFont.H2.weightBold
+                            Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                            LayoutMinWidth: =Parent.Width * 0.1 - Parent.PaddingRight
+                            PaddingBottom: =0
+                            PaddingTop: =0
+                            Size: =varThemeFont.H2.size
+                            Text: |-
+                                =Text(
+                                    If(
+                                        CountRows(colReceiptDetailList) = 0,
+                                        0.00,
+                                        Coalesce(
+                                            Sum(
+                                                colReceiptDetailList,
+                                                Amount
+                                            ),
+                                            0
+                                        )
+                                    ),
+                                    varCurrencies & " #,##0.00"
+                                )
+                            Tooltip: =Self.Text
+                            Width: =(Self.Size * 0.8) * Len(Self.Text)
+                            Wrap: =false
+                            ZIndex: =2
+
+                    shpRefundrequest_LineTotalRefundBottom As rectangle:
+                        AlignInContainer: =AlignInContainer.Center
+                        BorderStyle: =BorderStyle.None
+                        Fill: =ColorValue(varThemeColors.secondaryGray)
+                        Height: =1
+                        Width: =Parent.Width
+                        ZIndex: =3
+
+            contRefundRequest_Buttons As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                DropShadow: =DropShadow.None
+                FillPortions: =0
+                Height: |-
+                    =Self.PaddingTop + btnRefundRequest_CancelButton.Height + Self.PaddingBottom +
+                    If(
+                        App.ActiveScreen.Size < 3,
+                        Self.LayoutGap + btnRefundRequest_SubmitButton.Height,
+                        0
+                    )
+                LayoutAlignItems: =LayoutAlignItems.Center
+                LayoutDirection: =If(App.ActiveScreen.Size <3, LayoutDirection.Vertical, LayoutDirection.Horizontal)
+                LayoutGap: =If(App.ActiveScreen.Size <3, 10, 20)
+                LayoutMinHeight: =100
+                LayoutMinWidth: =20
+                LayoutMode: =LayoutMode.Auto
+                PaddingBottom: =20
+                PaddingLeft: =_DatacardLayoutProperties.PaddingLeft
+                PaddingRight: =_DatacardLayoutProperties.PaddingRight
+                PaddingTop: =btnRefundRequest_CancelButton.FocusedBorderThickness
+                Visible: =_FormMode = FormMode.Edit
+                Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                ZIndex: =7
+
+                btnRefundRequest_CancelButton As button:
+                    BorderColor: =ColorValue(varThemeColors.primary)
+                    BorderThickness: =1
+                    Color: =ColorValue(varThemeColors.primary)
+                    DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                    DisabledColor: =ColorValue(varThemeColors.disabledText)
+                    DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                    DisplayMode: =If(frmRefundRequest_Details.Mode = FormMode.View, DisplayMode.Disabled, DisplayMode.Edit)
+                    Fill: =ColorValue(varThemeColors.backgroundFill)
+                    FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                    FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                    Font: =varThemeFont.CTA.face
+                    FontWeight: =varThemeFont.CTA.weight
+                    Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                    HoverBorderColor: =ColorValue(varThemeColors.primary)
+                    HoverColor: =ColorValue(varThemeColors.altText)
+                    HoverFill: =ColorValue(varThemeColors.tertiary)
+                    Italic: =varThemeFont.CTA.italic
+                    OnSelect: |-
+                        =//Set data for discard information.
+                        Set(varDiscardButtonMessage,"Are you sure you want to discard?");
+                        
+                        //Navigate('Discard Confirmation Screen');
+                        Navigate('Discard Confirmation Screen', Transition.None, {_DiscardExpenseAction: false})
+                    PressedBorderColor: =Self.BorderColor
+                    PressedColor: =ColorValue(varThemeColors.altText)
+                    PressedFill: =ColorValue(varThemeColors.secondaryGray)
+                    RadiusBottomLeft: =6
+                    RadiusBottomRight: =6
+                    RadiusTopLeft: =6
+                    RadiusTopRight: =6
+                    Size: =varThemeFont.CTA.size
+                    Text: |-
+                        =With(
+                            {Text: "Cancel" },
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Tooltip: =Self.Text
+                    Width: |-
+                        =If(
+                            App.ActiveScreen.Size < 3,
+                            Parent.Width - Parent.PaddingLeft - Parent.PaddingRight,
+                            100
+                        )
+                    ZIndex: =3
+
+                btnRefundRequest_SubmitButton As button:
+                    BorderColor: =ColorValue(varThemeColors.primary)
+                    BorderThickness: =1
+                    Color: =ColorValue(varThemeColors.altText)
+                    DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                    DisabledColor: =ColorValue(varThemeColors.disabledText)
+                    DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                    DisplayMode: =If(frmRefundRequest_Details.Mode = FormMode.View, DisplayMode.Disabled, DisplayMode.Edit)
+                    Fill: =ColorValue(varThemeColors.primary)
+                    FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                    FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                    Font: =varThemeFont.CTA.face
+                    FontWeight: =varThemeFont.CTA.weight
+                    Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                    HoverBorderColor: =ColorValue(varThemeColors.primary)
+                    HoverColor: =ColorValue(varThemeColors.altText)
+                    HoverFill: =ColorValue(varThemeColors.tertiary)
+                    Italic: =varThemeFont.CTA.italic
+                    OnSelect: |-
+                        =//Patch the information to Refund Request table
+                        If(
+                            IsEmpty(colReceiptDetailList),
+                            Notify(// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Please add at least one expense"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                ),
+                                NotificationType.Error
+                            ),
+                            SubmitForm(frmRefundRequest_Details);
+                            If(
+                                frmRefundRequest_Details.Valid,
+                                Patch(
+                                    'Reimbursement Requests',
+                                    LookUp(
+                                        'Reimbursement Requests',
+                                        'Reimbursement Request Id' = frmRefundRequest_Details.LastSubmit.'Reimbursement Request Id'
+                                    ),
+                                    {
+                                        Amount: Value(
+                                            Text(
+                                                Value(
+                                                    Sum(
+                                                        colReceiptDetailList,
+                                                        Amount
+                                                    )
+                                                ),
+                                                "$ #,###.00"
+                                            )
+                                        ),
+                                        'Merchant Name': Concat(
+                                            colReceiptDetailList,
+                                            MerchantName,
+                                            ","
+                                        )
+                                    }
+                                );
+                                
+                        //Verify if the Refund Request submission is a success 
+                        If(
+                                    IsBlankOrError(frmRefundRequest_Details) Or !IsEmpty(Errors('Reimbursement Requests')),
+                            //Patch failed
+                        //Show error message
+                                    Notify(
+                                        Concat(
+                                            Errors('Reimbursement Requests'),
+                                            Column & ": " & Message
+                                        ),
+                                        NotificationType.Error
+                                    ),
+                                    //Patch success
+                                    //Patch note
+                                    Set(
+                                        varRefundRequestAttachment,
+                                        ForAll(
+                                            colReceiptDetailList,
+                                            Patch(
+                                                'Reimbursement Attachments',
+                                                Defaults('Reimbursement Attachments'),
+                                                {
+                                                    'Reimbursement Request': frmRefundRequest_Details.LastSubmit,
+                                                    'Expense Date': ThisRecord.ExpenseDate,
+                                                    'Merchant Name': ThisRecord.MerchantName,
+                                                    Amount: Value(
+                                                        Text(
+                                                            Value(ThisRecord.Amount),
+                                                            "$ #,###.00"
+                                                        )
+                                                    ),
+                                                    Description: ThisRecord.Description,
+                                                    'File Name': ThisRecord.FileName,
+                                                    Attachment: {
+                                                        FileName: ThisRecord.FileName,
+                                                        Value: ThisRecord.Attachment
+                                                    },
+                                                    Currency: cmbRefundRequest_Currency.Selected
+                                                }
+                                            )
+                                        )
+                                    );
+                                    //Display success message
+                                    Notify(// Define a variable named "Text" with the value "{value}"
+                                        With(
+                                            {Text: "Reimbursement request submitted."},
+                                            // Check if a localized text exists for "Text" in the user's preferred language
+                                            If(
+                                                // If the localized text is blank, return the default text
+                                                IsBlank(
+                                                    LookUp(
+                                                        colUserLocalizedStrings,
+                                                        'English Value' = Text
+                                                    ).'Localized Value'
+                                                ),
+                                                Text,
+                                                // If a localized text is found, return that instead of the default text
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            )
+                                        ),
+                                        NotificationType.Success
+                                    );
+                                    If(
+                                        IsBlankOrError(varRefundRequestAttachment) Or !IsEmpty(Errors('Reimbursement Attachments')),
+                                //Patch failed
+                        //Show error message
+                                        Notify(
+                                            Concat(
+                                                Errors('Reimbursement Attachments'),
+                                                Column & ": " & Message
+                                            ),
+                                            NotificationType.Error
+                                        ),
+                                //reset all the fields from refund request screen
+                                        ResetForm(frmRefundRequest_Details);
+                                        Set(
+                                            varDiscardButtonMessage,
+                                            "Return to my request"
+                                        );
+                                        Clear(colReceiptDetailList);
+                                        Set(
+                                            varRcptProcessorMerchantName,
+                                            Blank()
+                                        );
+                            //Route the user to success screen
+                        Navigate('Landing Screen');
+                                    );
+                                );
+                                ,
+                                Notify(// Define a variable named "Text" with the value "{value}"
+                                    With(
+                                        {Text: "Please provide information on the highlighted field(s)"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    ),
+                                    NotificationType.Error
+                                );
+                            )
+                        )
+                    PressedBorderColor: =ColorValue(varThemeColors.primary)
+                    PressedColor: =ColorValue(varThemeColors.altText)
+                    PressedFill: =ColorValue(varThemeColors.primary)
+                    RadiusBottomLeft: =6
+                    RadiusBottomRight: =6
+                    RadiusTopLeft: =6
+                    RadiusTopRight: =6
+                    Size: =varThemeFont.CTA.size
+                    Text: |-
+                        =With(
+                            {Text: "Submit" },
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Tooltip: =Self.Text
+                    Width: =btnRefundRequest_CancelButton.Width
+                    ZIndex: =4
+
