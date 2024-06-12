@@ -4,42 +4,7 @@ Solutions designed to expedite the implementation of the Power Platform within l
 
 ## Currently Offered Solutions
 
-### SAP Procurement
-The SAP Procurement template allows you to extend your core procure-to-pay business processes enabled within SAP. The template contains the building blocks necessary to streamline all the SAP screens and attributes related to a core procure-to-pay process into one simple screen in Power Apps. Behind the scenes, Power Automate flows, the SAP ERP connector, and Microsoft Dataverse support process automation. All solution components are fully extensible so you can configure and customize to meet your business requirements, connect to additional line-of-business systems and workflows, and rapidly deploy.
-
-### Employee Kudos
-
-The Employee Kudos template contains the building blocks necessary to to deploy a Power Apps mobile app that allows individual teammates to celebrate coworkers for their contributions. The mobile app has an easy-to-use interface with data stored in Microsoft Dataverse.
-
-### Employee Awards and Recognition
-
-The Awards and Recognition template contains the building blocks necessary to deploy a Power Apps mobile app that streamlines and automates the process of acknowledging outstanding efforts in an organization. By facilitating an engaging, inclusive, and efficient awards system, the app aims to encourage a positive work culture that recognizes and appreciates exceptional contributions.
-
-### Onboarding Buddy
-
-The Onboarding Buddy template contains the building blocks necessary to deploy a Power Apps mobile app that helps your organization set up and automate a new or transfer employee's mentoring experience. Existing employees sign up to be onboarding buddies and are paired with folks that are onboarding to help them onboard and ramp up successfully. By implementing Onboarding Buddy and customizing it for their unique needs, organizations can create a more engaging, supportive, and efficient onboarding process—optimally leading to benefits such as: reduced time-to-be-productive, increased employee engagement, strengthened community and culture, and reduced turnover. 
-
-## Access on AppSource
-
-#### [Employee Kudos Template on AppSource](https://aka.ms/AccessEmployeeKudosTemplate)
-
-#### [Employee Awards and Recognition](https://aka.ms/AccessAwardsAndRecognitionTemplate)
-
-#### [Onboarding Buddy](https://aka.ms/AccessOnboardingBuddyTemplate)
-
-#### [SAP Procurement Template on AppSource](https://aka.ms/AccessSAPProcurementTemplate)
-
-## Documentation
-
-#### [Employee Kudos Template](https://aka.ms/LearnEmployeeKudosTemplate)
-
-#### [Employee Awards and Recognition](https://aka.ms/LearnAwardsAndRecognitionTemplate)
-
-#### [Onboarding Buddy](https://aka.ms/LearnOnboardingBuddyTemplate)
-
-#### [SAP Procurement Template](https://aka.ms/LearnSAPProcurementTemplate)
-
-#### [General Documenatation](https://aka.ms/LearnTemplatesForPowerPlatform)
+[See Microsoft Learn Documentation](https://learn.microsoft.com/en-us/power-platform/enterprise-templates/overview)
 
 # Advanced:
 
