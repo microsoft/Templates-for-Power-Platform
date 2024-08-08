@@ -1,0 +1,231 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_wellnessdataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      },
+      "shared_teams": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_wellnessteams"
+        },
+        "api": {
+          "name": "shared_teams"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "recurrence": {
+            "frequency": "Hour",
+            "interval": 1,
+            "startTime": "2024-05-06T14:00:00Z"
+          },
+          "metadata": {
+            "operationMetadataId": "5ef425e5-adee-45ec-96ef-fe77d50163f7"
+          },
+          "type": "Recurrence"
+        }
+      },
+      "actions": {
+        "Get_Opt_Ins": {
+          "runAfter": {
+            "Compose_Pulse_Check_Strings": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "a167102a-8ba5-4be4-823d-a6350222530b"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "mpa_wellness_optins",
+              "$select": "mpa_optin,mpa_daysofweek,mpa_timeofdayutc",
+              "$filter": "mpa_optin eq true and Microsoft.Dynamics.CRM.ContainValues(PropertyName='mpa_daysofweek',PropertyValues=['@{outputs('Compose_Day_of_Week_Option_Set_Value')}']) ",
+              "$expand": "owninguser($select=domainname)"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Compose_Day_of_Week_Option_Set_Value": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "e9f0b386-3d1a-47f6-b56f-1c6970ac11dd"
+          },
+          "type": "Compose",
+          "inputs": "@string(add(dayOfWeek(utcNow()), 865420000))"
+        },
+        "Compose_Pulse_Check_Strings": {
+          "runAfter": {
+            "Compose_Day_of_Week_Option_Set_Value": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "651806fb-6144-433c-b63a-c4f90c1f6269"
+          },
+          "type": "Compose",
+          "inputs": [
+            "Hello! Need a productivity boost? I can suggest ways to avoid eye strain during your workday.",
+            "Hi! Ready to start your day? Remember, if you're feeling overwhelmed, ask me about quick mindfulness exercises.",
+            "Good day! Struggling with sleep? Ask me how you can get better sleep.",
+            "Hello! Need a moment to relax? Ask me what are some breathing exercises to manage stress.",
+            "Hey, it's check-in time! Struggling with sleep? Ask me for tips on how to get better sleep.",
+            "Hey, how's your day treating you? I can recommend ways to keep you energized.",
+            "Hi! Feeling stressed? Ask me to provide some relaxation techniques.",
+            "Hi! Taking a break? If you're feeling low, ask me to recommend techniques to improve your mood.",
+            "Hello! Need some clarity? Ask me to help you start journaling to gain perspective."
+          ]
+        },
+        "Apply_to_each": {
+          "foreach": "@outputs('Get_Opt_Ins')?['body/value']",
+          "actions": {
+            "Time_of_Day_Condition": {
+              "actions": {
+                "Compose_Pulse_Check_Message": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "3d9100fe-4082-43ee-a300-16b2b213a2b7"
+                  },
+                  "type": "Compose",
+                  "inputs": "@outputs('Compose_Pulse_Check_Strings')?[rand(0, length(outputs('Compose_Pulse_Check_Strings')))]"
+                },
+                "Post_message_in_a_chat_or_channel": {
+                  "runAfter": {
+                    "Compose_Pulse_Check_Message": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "c99c020c-ac23-4550-a0e9-429d96d95e3a"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_teams",
+                      "operationId": "PostMessageToConversation",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams"
+                    },
+                    "parameters": {
+                      "poster": "Power Virtual Agents",
+                      "location": "powerva",
+                      "body/bot": "mpa_wellnessCopilot",
+                      "body/recipient": "@{items('Apply_to_each')?['owninguser/domainname']};",
+                      "body/messageBody": "<p>@{outputs('Compose_Pulse_Check_Message')}</p>",
+                      "body/attribution": true,
+                      "body/activeChat": "Send",
+                      "body/installedError": "Fail"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Error_Condition": {
+                  "actions": {
+                    "Prevent_Future_Errors_-_Delete_Opt-In": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "7579b137-1116-4ad3-bc59-6eb549e2fbe4"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps",
+                          "operationId": "DeleteRecord",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "mpa_wellness_optins",
+                          "recordId": "@items('Apply_to_each')?['mpa_wellness_optinid']"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Post_message_in_a_chat_or_channel": [
+                      "Failed"
+                    ]
+                  },
+                  "expression": {
+                    "contains": [
+                      "@body('Post_message_in_a_chat_or_channel')?['error']",
+                      "Bot hasn't been installed for user"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "8534b2b1-0d94-4629-be7a-404f526974f4"
+                  },
+                  "type": "If"
+                }
+              },
+              "runAfter": {
+                "Compose_UTC_Now_Hour": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "equals": [
+                  "@outputs('Compose_UTC_Now_Hour')",
+                  "@items('Apply_to_each')?['mpa_timeofdayutc']"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "076ca670-71b0-4b64-bfcb-f449e4a18036"
+              },
+              "type": "If"
+            },
+            "Compose_UTC_Now_Hour": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "10c92e1a-acbf-4116-9df1-ac0607bbd8e1"
+              },
+              "type": "Compose",
+              "inputs": "@formatDateTime(utcNow(), 'h:00 tt')"
+            }
+          },
+          "runAfter": {
+            "Get_Opt_Ins": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "51b5039b-48f8-48ec-9320-7f5f55f8ad7c"
+          },
+          "type": "Foreach",
+          "runtimeConfiguration": {
+            "concurrency": {
+              "repetitions": 20
+            }
+          }
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}
