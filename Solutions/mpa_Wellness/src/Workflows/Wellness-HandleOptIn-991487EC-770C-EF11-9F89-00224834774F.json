@@ -1,0 +1,526 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "impersonation": {
+          "source": "invoker"
+        },
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_wellnessdataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "7b515eca-d794-4ab8-8fdb-0f0108717bdc"
+          },
+          "type": "Request",
+          "kind": "Skills",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "Email",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "boolean": {
+                  "title": "OptIn",
+                  "type": "boolean",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please select yes or no",
+                  "x-ms-content-hint": "BOOLEAN"
+                },
+                "boolean_1": {
+                  "title": "ConversationStart",
+                  "type": "boolean",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please select yes or no",
+                  "x-ms-content-hint": "BOOLEAN"
+                },
+                "text_1": {
+                  "title": "DaysOfWeek",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "text_2": {
+                  "title": "TimeOfDay",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "text_3": {
+                  "title": "TimeZone",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text",
+                "boolean",
+                "boolean_1",
+                "text_3"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Scope": {
+          "actions": {
+            "Get_Opt_In": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "968c1d11-327c-4c80-93ee-68e3a9cf6cb2"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_wellness_optins",
+                  "$filter": "owninguser/domainname eq '@{triggerBody()['text']}'",
+                  "$expand": "owninguser($select=domainname,systemuserid)",
+                  "$top": 1
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Compose_Array_of_Days": {
+              "runAfter": {
+                "Get_Opt_In": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "c37a5223-96d0-42c2-bd5e-f5ae867658a6"
+              },
+              "type": "Compose",
+              "inputs": "@if(greater(length(coalesce(triggerBody()?['text_1'], '')), 0), split(triggerBody()?['text_1'], ','), json('[]'))"
+            },
+            "Select_Days_of_Week": {
+              "runAfter": {
+                "Compose_Array_of_Days": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "3f3a0d17-1161-41ec-bdb2-8ada34bc8c30"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@outputs('Compose_Array_of_Days')",
+                "select": "@if(equals(string(item()), 'Sun'), '865420000', if(equals(string(item()), 'Mon'), '865420001', if(equals(string(item()), 'Tue'), '865420002', if(equals(string(item()), 'Wed'), '865420003', if(equals(string(item()), 'Thu'), '865420004', if(equals(string(item()), 'Fri'), '865420005', if(equals(string(item()), 'Sat'), '865420006', null)))))))"
+              }
+            },
+            "Existing_Condition": {
+              "actions": {
+                "Conversation_Start_Condition": {
+                  "actions": {
+                    "Compose_Days_Length_Check": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "867edba2-5490-47e9-86a2-7f051b0c306a"
+                      },
+                      "type": "Compose",
+                      "inputs": "@greater(length(body('Select_Days_of_Week')), 0)"
+                    },
+                    "Update_a_row": {
+                      "runAfter": {
+                        "Compose_Option_List": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "98a81d19-68da-4b3e-908e-b030761c5786"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps",
+                          "operationId": "UpdateRecord",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "mpa_wellness_optins",
+                          "recordId": "@first(outputs('Get_Opt_In')?['body/value'])?['mpa_wellness_optinid']",
+                          "item/mpa_daysofweek": "@outputs('Compose_Option_List')",
+                          "item/mpa_optin": "@triggerBody()['boolean']",
+                          "item/mpa_timeofday": "@coalesce(triggerBody()?['text_2'], '')",
+                          "item/mpa_timeofdayutc": "@variables('UtcTime')"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Compose_Option_List": {
+                      "runAfter": {
+                        "Compose_Days_Length_Check": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "c83b98e7-3040-4b39-a1dc-039e32a3f39a"
+                      },
+                      "type": "Compose",
+                      "inputs": "@if(outputs('Compose_Days_Length_Check'), join(body('Select_Days_of_Week'), ','), null)"
+                    }
+                  },
+                  "runAfter": {},
+                  "expression": {
+                    "equals": [
+                      "@triggerBody()['boolean_1']",
+                      "@false"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "e37d95bc-6304-4cf8-9b0d-792184bdde2e"
+                  },
+                  "type": "If"
+                }
+              },
+              "runAfter": {
+                "Time_of_Day_Condition": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Get_User": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "cadab902-7c53-49a1-b591-28cfbdbb9104"
+                    },
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_commondataserviceforapps",
+                        "operationId": "ListRecords",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                      },
+                      "parameters": {
+                        "entityName": "systemusers",
+                        "$select": "systemuserid",
+                        "$filter": "domainname eq '@{triggerBody()['text']}'",
+                        "$top": 1
+                      },
+                      "authentication": "@parameters('$authentication')"
+                    }
+                  },
+                  "User_Exists_Condition": {
+                    "actions": {
+                      "Add_a_new_row": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "2a6c9655-789a-4f98-9043-ac5d08ed5033"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_commondataserviceforapps",
+                            "operationId": "CreateRecord",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                          },
+                          "parameters": {
+                            "entityName": "mpa_wellness_optins",
+                            "item/mpa_name": "@null",
+                            "item/mpa_daysofweek": "@join(body('Select_Days_of_Week'), ',')",
+                            "item/mpa_optin": "@triggerBody()['boolean']",
+                            "item/ownerid@odata.bind": "/systemusers(@{first(outputs('Get_User')?['body/value'])?['systemuserid']})",
+                            "item/mpa_timeofday": "@coalesce(triggerBody()?['text_2'], '')\r\n",
+                            "item/mpa_timeofdayutc": "@variables('UtcTime')"
+                          },
+                          "authentication": "@parameters('$authentication')"
+                        }
+                      }
+                    },
+                    "runAfter": {
+                      "Get_User": [
+                        "Succeeded"
+                      ]
+                    },
+                    "else": {
+                      "actions": {
+                        "Respond_to_Copilot_-_Error_-_No_Dataverse_User": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "0414d1f9-42da-400f-a87a-8a8492935a92"
+                          },
+                          "type": "Response",
+                          "kind": "Skills",
+                          "inputs": {
+                            "statusCode": 200,
+                            "body": {
+                              "success": "@{false}",
+                              "message": "Your user does not exist in Dataverse. As a result, I could not set up your opt-in preferences and you will not receive pulse check notifications."
+                            },
+                            "schema": {
+                              "type": "object",
+                              "properties": {
+                                "success": {
+                                  "title": "Success",
+                                  "x-ms-dynamically-added": true,
+                                  "type": "boolean"
+                                },
+                                "message": {
+                                  "title": "Message",
+                                  "x-ms-dynamically-added": true,
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "expression": {
+                      "greater": [
+                        "@length(outputs('Get_User')?['body/value'])",
+                        0
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "2f878c94-c83b-4eb3-9ca8-e1a5869d3ab8"
+                    },
+                    "type": "If"
+                  }
+                }
+              },
+              "expression": {
+                "greater": [
+                  "@length(outputs('Get_Opt_In')?['body/value'])",
+                  0
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "1d831b79-27f7-4554-af78-f4df25277efa"
+              },
+              "type": "If"
+            },
+            "Time_of_Day_Condition": {
+              "actions": {
+                "Convert_time_zone": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "622a7a74-4239-4365-8c0c-e731c491c80b"
+                  },
+                  "type": "Expression",
+                  "kind": "ConvertTimeZone",
+                  "inputs": {
+                    "baseTime": "@triggerBody()?['text_2']",
+                    "formatString": "@{'h:00 tt'}",
+                    "sourceTimeZone": "@triggerBody()['text_3']",
+                    "destinationTimeZone": "UTC"
+                  }
+                },
+                "Set_UtcTime": {
+                  "runAfter": {
+                    "Convert_time_zone": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "a4c5dd8d-7eb1-41ad-b07e-f73adcc53759"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "UtcTime",
+                    "value": "@body('Convert_time_zone')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Select_Days_of_Week": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "not": {
+                  "equals": [
+                    "@triggerBody()?['text_2']",
+                    ""
+                  ]
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "b9753f44-e4d4-430c-abb6-2b9d5be306aa"
+              },
+              "type": "If"
+            }
+          },
+          "runAfter": {
+            "Initialize_UtcTime": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "d30a8c66-db8e-4155-91ba-ed73153b82e7"
+          },
+          "type": "Scope"
+        },
+        "Respond_to_Copilot_-_Error": {
+          "runAfter": {
+            "Scope": [
+              "Failed"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c96c42d0-ae1c-40e0-8b9c-fe72fa194508"
+          },
+          "type": "Response",
+          "kind": "Skills",
+          "inputs": {
+            "statusCode": 200,
+            "body": {
+              "success": "@{false}",
+              "message": "An unexpected error has occured setting your opt-in settings."
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "title": "Success",
+                  "x-ms-dynamically-added": true,
+                  "type": "boolean"
+                },
+                "message": {
+                  "title": "Message",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "Initialize_UtcTime": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "f3e55e19-60c3-4f0d-81b0-86d1b988c0eb"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "UtcTime",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Condition": {
+          "actions": {
+            "Respond_to_Copilot_-_Opt_In_-_Success": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "3dad07e1-1034-4a20-a7c3-b6911c2a826f"
+              },
+              "type": "Response",
+              "kind": "Skills",
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "success": "@{true}",
+                  "message": "Fantastic! You've chosen to opt in for your wellness reminders."
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "title": "Success",
+                      "x-ms-dynamically-added": true,
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "title": "Message",
+                      "x-ms-dynamically-added": true,
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Scope": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Respond_to_Copilot_-_Opt_Out_-_Success": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "3dad07e1-1034-4a20-a7c3-b6911c2a826f"
+                },
+                "type": "Response",
+                "kind": "Skills",
+                "inputs": {
+                  "statusCode": 200,
+                  "body": {
+                    "success": "@{true}",
+                    "message": "Thank you for letting me know. I've stopped the scheduled Pulse Check. Remember, you can 'Opt In' again any time by just asking."
+                  },
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "title": "Success",
+                        "x-ms-dynamically-added": true,
+                        "type": "boolean"
+                      },
+                      "message": {
+                        "title": "Message",
+                        "x-ms-dynamically-added": true,
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "equals": [
+              "@triggerBody()['boolean']",
+              "@true"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "d599ea3d-b9a5-450a-9f3f-27906b0c0bc7"
+          },
+          "type": "If"
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}
