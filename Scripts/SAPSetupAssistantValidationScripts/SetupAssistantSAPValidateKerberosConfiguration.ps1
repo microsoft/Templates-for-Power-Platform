@@ -1,3 +1,20 @@
+<#
+.SYNOPSIS
+    Validates Kerberos Configuration.
+.DESCRIPTION
+    This script validates Kerberos configuration.
+.PARAMETER sapCclDllPath
+    The path to the SAP Common Crypto Library Dll.
+.PARAMETER sapCclIniPath
+    The path to the sapcrypto.ini file
+.PARAMETER sapServicePrincipalName
+    The SAP Service Principal Name
+.PARAMETER servicePrincipal
+    The Service Principal
+.PARAMETER opdgServicePrincipal
+    The OPDG Service Principal
+#>
+
 param (
     [string]$sapCclDllPath,
     [string]$sapCclIniPath,
@@ -38,7 +55,7 @@ else {
 #CheckSapCryptoIniFile
 $path = $sapCclIniPath
 
-if ($path -eq $null) {
+if (-not $path) {
     Write-Host -NoNewLine "{'step': 'CheckSapCryptoIniFile', 'status': 'Warning', 'message': 'Skipping SapCryptoIniFile check because no file path was provided.'},"
     return
 }
@@ -72,11 +89,10 @@ Write-Host -NoNewLine "{'step': 'CheckSapCryptoIniFile', 'status': 'Error', 'mes
 #CheckServicePrincipalName
 $sapServicePrincipalName = $sapServicePrincipalName
 
-if ($sapServicePrincipalName -eq $null) {
+if (-not $sapServicePrincipalName) {
     Write-Host -NoNewLine "{'step': 'CheckServicePrincipalName', 'status': 'Warning', 'message': 'Skipping ServicePrincipalName check because no service principal name was provided.'},"
     return
 }
-
 try {
     $servicePrincipal = Get-ADUser -Filter { ServicePrincipalNames -like $sapServicePrincipalName } -Properties ServicePrincipalNames -ErrorAction Stop
 }

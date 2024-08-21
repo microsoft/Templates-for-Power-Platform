@@ -1,4 +1,14 @@
-# Check for On-premises data gateway install
+<#
+.SYNOPSIS
+    Checks for On-permises data gateway installation.
+.DESCRIPTION
+    This script attempts to
+    1. Check if the On-permises data gateway is installed and validates the
+    if the version is greater than the minumum version requirement
+    2. CheckSapConnector
+    3. CheckVisualCPlusPlus
+#>
+
 $minimumVersion = "3000.150.11" # November 2022
 $serviceName = "PBIEgwService"
 $service = Get-Service $serviceName -ErrorAction SilentlyContinue
@@ -56,8 +66,8 @@ $name = "Microsoft Visual C++ 2010  x64 Redistributable - 10.0.40219"
 $obj = $installedSoftware | Where-Object { $_.GetValue("DisplayName") -eq $name }
 
 if ($obj) {
-    Write-Host -NoNewLine "{'step': 'CheckVisualCPlusPlus', 'status': 'Success', 'message': '$name is installed.'},"
+    Write-Host -NoNewLine "{'step': 'CheckVisualCPlusPlus', 'status': 'Success', 'message': '$name is installed.'}"
 }
 else {
-    Write-Host -NoNewLine "{'step': 'CheckVisualCPlusPlus', 'status': 'Error', 'message': '$name is not installed.'},"
+    Write-Host -NoNewLine "{'step': 'CheckVisualCPlusPlus', 'status': 'Error', 'message': '$name is not installed.'}"
 }
