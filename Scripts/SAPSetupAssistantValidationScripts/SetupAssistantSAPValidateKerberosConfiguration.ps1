@@ -80,7 +80,7 @@ else {
 #checkSystemEnvVariable -variableName "CCL_PROFILE"
 
 if ($env:CCL_PROFILE) {
-    Write-Host -NoNewLine "{'step': 'CheckSapCryptoIniFile', 'status': 'Success', 'message': 'System Environment variable 'CCL_PROFILE' exists'},"
+    Write-Host -NoNewLine "{'step': 'CheckSapCryptoIniFile', 'status': 'Success', 'message': 'System Environment variable CCL_PROFILE exists'},"
 }
 else {
 Write-Host -NoNewLine "{'step': 'CheckSapCryptoIniFile', 'status': 'Error', 'message': 'Need to create a CCL_PROFILE system environment variable and set its value to the path to sapcrypto.ini.'},"

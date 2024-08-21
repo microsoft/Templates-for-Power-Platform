@@ -22,7 +22,7 @@ $job = Start-Job -ScriptBlock {
     Test-NetConnection -ComputerName $hostName -Port $port
 } -ArgumentList $hostName, $port
 
-if (Wait-Job -Job $job -Timeout 5) {
+if (Wait-Job -Job $job -Timeout 10) {
     $result = Receive-Job -Job $job
 
     if ($result.TcpTestSucceeded) {

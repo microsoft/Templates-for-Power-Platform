@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
-    Checks for On-permises data gateway installation.
+    Checks for on-permises data gateway installation.
 .DESCRIPTION
     This script attempts to
-    1. Check if the On-permises data gateway is installed and validates the
-    if the version is greater than the minumum version requirement
+    1. Check if the on-permises data gateway is installed and validates the
+    if the version is greater than the minimum version requirement
     2. CheckSapConnector
     3. CheckVisualCPlusPlus
 #>
@@ -37,7 +37,7 @@ else {
     $location = "C:\Program Files\SAP\SAP_DotNetConnector3_Net40_x64"
     $ncoAssemblies += Get-ChildItem -Path $location -Filter sapnco.dll -Recurse | Select-Object -ExpandProperty VersionInfo
     $counter = 0
-
+    Write-Host "value is $ncoAssemblies"
     foreach ($assembly in $ncoAssemblies) {
         $fileName = $assembly.FileName
 
