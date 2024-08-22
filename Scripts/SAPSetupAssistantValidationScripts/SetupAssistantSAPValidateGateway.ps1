@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-    Checks for on-permises data gateway installation.
+    Checks for on-premises data gateway installation.
 .DESCRIPTION
     This script attempts to
-    1. Check if the on-permises data gateway is installed and validates the
+    1. Check if the on-premises data gateway is installed and validates the
     if the version is greater than the minimum version requirement
     2. CheckSapConnector
     3. CheckVisualCPlusPlus
