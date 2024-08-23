@@ -1,0 +1,137 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRedirect
+  id: main
+  actions:
+    - kind: ConditionGroup
+      id: conditionGroup_mfIyC3
+      conditions:
+        - id: conditionItem_N7jGdG
+          condition: =IsEmpty(Global.Ratings)
+          actions:
+            - kind: BeginDialog
+              id: mmxLdu
+              dialog: mpa_awardsAndRecognition.topic.ReviewandSubmit
+
+      elseActions:
+        - kind: ConditionGroup
+          id: conditionGroup_KgEGvU
+          conditions:
+            - id: conditionItem_4uKoVC
+              condition: =If(CountRows(Global.Ratings)> Global.RatingsCount, true)
+              actions:
+                - kind: SetVariable
+                  id: setVariable_Qgr1e3
+                  variable: Topic.CurrentRatings
+                  value: =Index(Global.Ratings,Global.RatingsCount + 1)
+
+          elseActions:
+            - kind: BeginDialog
+              id: q6A3kX
+              dialog: mpa_awardsAndRecognition.topic.ReviewandSubmit
+
+        - kind: SetVariable
+          id: setVariable_TqRNoG
+          variable: Global.RatingsCount
+          value: =Global.RatingsCount + 1
+
+    - kind: AdaptiveCardPrompt
+      id: 2x61mM
+      card: |-
+        ={
+            type: "AdaptiveCard",
+            version: "1.5",
+            body: [
+                {
+                    type: "Container",
+                    items: [
+                    {
+                        type: "TextBlock",
+                        text: Topic.CurrentRatings.mpa_name,
+                        weight: "bolder",
+                        size: "medium"
+                    },
+                    {
+                        type: "TextBlock",
+                        text: Topic.CurrentRatings.mpa_description,
+                        weight: "default",
+                        size: "default",
+                        wrap: true
+                    },
+        			{
+                        type: "Input.ChoiceSet",
+                        label: "Rating",
+                        errorMessage: "Rating is required",
+                        isRequired: true,
+                        id: "selectedAward",
+                        style: "expanded",
+                        isMultiSelect: false,
+                        choices: Global.StarRatings
+                    }
+               	]
+              }
+            ],
+            actions: [
+                {
+                    type: "Action.Submit",
+                    title: "Submit",
+                    id: "SubmitId"
+                },
+                {
+                    type: "Action.Submit",
+                    title: "Cancel",
+                    id: "CancelId"
+                }
+            ],
+            '$schema': "http://adaptivecards.io/schemas/adaptive-card.json"
+        }
+      output:
+        binding:
+          actionSubmitId: Topic.actionSubmitId
+          selectedAward: Topic.selectedAward
+
+      outputType:
+        properties:
+          actionSubmitId: String
+          selectedAward: String
+
+    - kind: SetVariable
+      id: DZQqlL
+      variable: Global.ActionId
+      value: =Topic.actionSubmitId
+
+    - kind: BeginDialog
+      id: 9nHCzg
+      dialog: mpa_awardsAndRecognition.topic.ConfirmorCancel
+
+    - kind: ConditionGroup
+      id: conditionGroup_igRnEg
+      conditions:
+        - id: conditionItem_YVxdTN
+          condition: =Global.ActionId = "Submit"
+
+      elseActions:
+        - kind: GotoAction
+          id: oF4b5e
+          actionId: 2x61mM
+
+        - kind: EndDialog
+          id: poZ1LB
+
+    - kind: InvokeFlowAction
+      id: invokeFlowAction_T7zr2y
+      input:
+        binding:
+          text: =Topic.CurrentRatings.mpa_awardassessmentratingsid
+          text_1: =Global.UserRatings
+          text_2: =Topic.selectedAward
+
+      output:
+        binding:
+          updateddata: Global.UserRatings
+
+      flowId: 7b29f3f4-f11d-ef11-9f89-00224834774f
+
+    - kind: BeginDialog
+      id: cNrsfL
+      dialog: mpa_awardsAndRecognition.topic.SelectStarRatingCopy
