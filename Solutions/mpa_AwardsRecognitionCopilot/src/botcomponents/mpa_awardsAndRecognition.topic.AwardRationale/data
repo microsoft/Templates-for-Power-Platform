@@ -1,0 +1,250 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRedirect
+  id: main
+  actions:
+    - kind: SendActivity
+      id: sendActivity_rId3T4
+      activity: Please provide a description of why the nominee deserves {Global.AwardTitle}
+
+    - kind: AdaptiveCardPrompt
+      id: mU7wzy
+      card: |-
+        ={
+          type: "AdaptiveCard",
+          body: [
+            {
+              type: "Container",
+              items: [
+                {
+                  id: "rationale",
+                  type: "Input.Text",
+                  isMultiline: true,
+                  height: "stretch",
+                  label: "Case for nomination",
+                  errorMessage: "Case for nomination is required.",
+                  isRequired: true,
+                  value: Global.rationale
+                }
+              ]
+            }
+          ],
+          actions: [
+            {
+              type: "Action.Submit",
+              title: "Submit",
+              id: "SubmitId"
+            },
+            {
+              type: "Action.Submit",
+              title: "Cancel",
+              id: "CancelId",
+              associatedInputs: "none"
+            }
+          ],
+          version: "1.5"
+        }
+      output:
+        binding:
+          actionSubmitId: Topic.actionSubmitId
+          rationale: Global.rationale
+
+      outputType:
+        properties:
+          actionSubmitId: String
+          rationale: String
+
+    - kind: SetVariable
+      id: jUqx3h
+      variable: Global.AwardRationale
+      value: =Global.rationale
+
+    - kind: ConditionGroup
+      id: conditionGroup_UYKomo
+      conditions:
+        - id: conditionItem_j8e0vd
+          condition: =Topic.actionSubmitId = "Cancel"
+          actions:
+            - kind: SetVariable
+              id: setVariable_tUKYZ0
+              variable: Global.ActionId
+              value: "=\"Cancel\""
+
+            - kind: BeginDialog
+              id: WweRuQ
+              dialog: mpa_awardsAndRecognition.topic.ConfirmorCancel
+
+            - kind: GotoAction
+              id: f6MsOb
+              actionId: sendActivity_rId3T4
+
+            - kind: EndDialog
+              id: okpdcw
+
+      elseActions:
+        - kind: BeginDialog
+          id: rluZeO
+          input:
+            binding:
+              award: =Global.AwardTitle
+              awardee: =Global.AwardeesNames
+              awardtype: =Global.UserType
+              contribution: =Global.AwardRationale
+
+          dialog: mpa_awardsAndRecognition.component.msdynaib_AwardWriterV3-msdynaib_AwardWriterV3_Odx
+          output:
+            binding:
+              finishReason: Topic.finishReason
+              text: Topic.text
+
+        - kind: SetVariable
+          id: SUysuM
+          variable: Global.AwardRationale
+          value: =Topic.text
+
+    - kind: SendActivity
+      id: sendActivity_UEkSoA
+      activity: |-
+        **Case for nomination**
+        
+        {Global.AwardRationale}
+
+    - kind: Question
+      id: question_AEUpnR
+      interruptionPolicy:
+        allowInterruption: true
+
+      variable: init:Topic.EditNomination
+      prompt: Do you like the way this sounds? If not we can try to generate a new case for nomination message.
+      entity:
+        kind: EmbeddedEntity
+        definition:
+          kind: ClosedListEntity
+          items:
+            - id: I like it
+              displayName: I like it
+
+            - id: Edit rationale
+              displayName: Edit rationale
+
+            - id: Customize
+              displayName: Customize
+
+            - id: Cancel
+              displayName: Cancel
+
+    - kind: ConditionGroup
+      id: conditionGroup_RksMys
+      conditions:
+        - id: conditionItem_0srKKX
+          condition: =Topic.EditNomination = 'mpa_awardsAndRecognition.topic.AwardRationale.main.question_AEUpnR'.'I like it'
+
+        - id: conditionItem_9L4813
+          condition: =Topic.EditNomination = 'mpa_awardsAndRecognition.topic.AwardRationale.main.question_AEUpnR'.'Edit rationale'
+          actions:
+            - kind: GotoAction
+              id: kH9KkI
+              actionId: sendActivity_rId3T4
+
+        - id: conditionItem_XH23qL
+          condition: =Topic.EditNomination = 'mpa_awardsAndRecognition.topic.AwardRationale.main.question_AEUpnR'.Customize
+          actions:
+            - kind: SendActivity
+              id: sendActivity_7lEGKH
+              activity: Please edit your case nomination in the card below.
+
+            - kind: AdaptiveCardPrompt
+              id: BI1v94
+              card: |-
+                ={
+                  type: "AdaptiveCard",
+                  body: [
+                    {
+                      type: "Container",
+                      items: [
+                        {
+                          id: "editedRationale",
+                          type: "Input.Text",
+                          isMultiline: true,
+                          height: "stretch",
+                          label: "Case for nomination",
+                          value: Global.AwardRationale
+                        }
+                      ]
+                    }
+                  ],
+                  actions: [
+                    {
+                      type: "Action.Submit",
+                      title: "Submit",
+                      id: "SubmitId"
+                    },
+                    {
+                      type: "Action.Submit",
+                      title: "Cancel",
+                      id: "CancelId"
+                    }
+                  ],
+                  version: "1.5"
+                }
+              output:
+                binding:
+                  actionSubmitId: Topic.actionSubmitId
+                  editedRationale: Topic.editedRationale
+
+              outputType:
+                properties:
+                  actionSubmitId: String
+                  editedRationale: String
+
+            - kind: SetVariable
+              id: setVariable_42mM1R
+              variable: Global.ActionId
+              value: =Topic.actionSubmitId
+
+            - kind: BeginDialog
+              id: emi3Kk
+              dialog: mpa_awardsAndRecognition.topic.ConfirmorCancel
+
+            - kind: ConditionGroup
+              id: conditionGroup_aqzeUX
+              conditions:
+                - id: conditionItem_WZSpZr
+                  condition: =Global.ActionId = "Submit"
+
+              elseActions:
+                - kind: GotoAction
+                  id: UkOLvJ
+                  actionId: sendActivity_7lEGKH
+
+                - kind: EndDialog
+                  id: d3aiLj
+
+            - kind: SetVariable
+              id: setVariable_sknMXq
+              variable: Global.AwardRationale
+              value: =Topic.editedRationale
+
+        - id: conditionItem_pUHDdB
+          condition: =Topic.EditNomination = 'mpa_awardsAndRecognition.topic.AwardRationale.main.question_AEUpnR'.Cancel
+          actions:
+            - kind: SetVariable
+              id: pIbx9A
+              variable: Global.ActionId
+              value: "=\"Cancel\""
+
+            - kind: BeginDialog
+              id: AyxyXM
+              dialog: mpa_awardsAndRecognition.topic.ConfirmorCancel
+
+            - kind: GotoAction
+              id: gj1ZH0
+              actionId: sendActivity_UEkSoA
+
+      elseActions:
+        - kind: BeginDialog
+          id: ylr4i1
+          dialog: mpa_awardsAndRecognition.topic.OtherConditionsRedirect
+
+    - kind: EndDialog
+      id: 0yJfuZ

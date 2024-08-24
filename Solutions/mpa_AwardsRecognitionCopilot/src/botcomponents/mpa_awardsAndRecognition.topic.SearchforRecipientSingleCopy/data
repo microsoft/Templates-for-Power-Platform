@@ -1,0 +1,225 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRedirect
+  id: main
+  actions:
+    - kind: Question
+      id: 66MTUu
+      interruptionPolicy:
+        allowInterruption: true
+
+      alwaysPrompt: false
+      variable: Topic.SearchTerm
+      prompt: Please enter the name or email of the person you would like to nominate and I will help you search for them.
+      entity: StringPrebuiltEntity
+
+    - kind: InvokeConnectorAction
+      id: invokeConnectorAction_LVoQ4k
+      input:
+        binding:
+          $filter: "=\"isdisabled eq false and accessmode ne 3 and accessmode ne 5 and applicationid eq null and contains(fullname, '\" & Topic.SearchTerm &  \"')\""
+          $select: "=\"fullname,domainname\""
+          $top: 15
+          entityName: systemusers
+          organization: current
+
+      output:
+        binding:
+          value: Topic.results
+
+      connectionReference: mpa_awardsAndRecognition.cr.0A-LiI5Z
+      connectionProperties:
+        mode: Invoker
+
+      operationId: ListRecordsWithOrganization
+      dynamicOutputSchema:
+        kind: Record
+        properties:
+          @odata.nextLink:
+            displayName: Next link
+            description: The url to fetch next page data.
+            visibility: Advanced
+            order: 1
+            type: String
+
+          value:
+            order: 0
+            type:
+              kind: Table
+              properties:
+                dynamicProperties:
+                  order: 0
+                  type: Any
+
+    - kind: ParseValue
+      id: hcYUuo
+      variable: Topic.ParsedUsers
+      valueType:
+        kind: Table
+        properties:
+          @odata.etag: String
+          domainname: String
+          fullname: String
+          ownerid: String
+          systemuserid: String
+
+      value: "=\"[]\""
+
+    - kind: SetVariable
+      id: setVariable_K009Nw
+      variable: Topic.ParsedUsers
+      value: =Topic.results
+
+    - kind: SetVariable
+      id: oW5LIh
+      variable: Topic.PersonCount
+      value: =CountRows(Topic.ParsedUsers)
+
+    - kind: ConditionGroup
+      id: conditionGroup_aQMZCX
+      conditions:
+        - id: conditionItem_ticwWx
+          condition: =Topic.PersonCount >= 1
+          actions:
+            - kind: AdaptiveCardPrompt
+              id: B4pwKq
+              card: |-
+                ={
+                  type: "AdaptiveCard",
+                  '$schema': "http://adaptivecards.io/schemas/adaptive-card.json",
+                  version: "1.5",
+                  body: [
+                    {
+                      type: "TextBlock",
+                      text: "Please select a person from the list below:",
+                      wrap: true
+                    },
+                    {
+                      type: "Input.ChoiceSet",
+                      id: "email",
+                      choices: ForAll(Topic.ParsedUsers, 
+                        {
+                          title: ThisRecord.fullname,
+                          value: ThisRecord.domainname
+                        }),
+                      placeholder: "Placeholder text",
+                      style: "expanded"
+                    },
+                    {
+                      type: "ActionSet",
+                      actions: [
+                        {
+                          type: "Action.Submit",
+                          title: "Select",
+                          data: {
+                            action: 1
+                          }
+                        },
+                        {
+                          type: "Action.Submit",
+                          title: "Reset",
+                          data: {
+                            action: 2
+                          }
+                        },
+                        {
+                          type: "Action.Submit",
+                          title: "Cancel",
+                          data: {
+                            action: 3
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              output:
+                binding:
+                  action: Global.SearchAction
+                  actionSubmitId: Topic.actionSubmitId
+                  email: Topic.email
+
+              outputType:
+                properties:
+                  action: Number
+                  actionSubmitId: String
+                  email: String
+
+            - kind: SetVariable
+              id: EzjHJs
+              variable: Global.RecipientInfo
+              value: |-
+                ={
+                    personId: LookUp(Topic.ParsedUsers, domainname = Topic.email).systemuserid,
+                    personName: LookUp(Topic.ParsedUsers, domainname = Topic.email).fullname
+                }
+
+            - kind: ConditionGroup
+              id: conditionGroup_fF3gr9
+              conditions:
+                - id: conditionItem_w4Qdtt
+                  condition: =Global.SearchAction = 1
+                  actions:
+                    - kind: BeginDialog
+                      id: u1opwb
+                      input:
+                        binding:
+                          action: =Global.SearchAction
+                          RecipientInfo: =Global.RecipientInfo
+
+                      dialog: mpa_awardsAndRecognition.topic.HandleRecipientSelection
+
+                - id: conditionItem_C4NQb3
+                  condition: =Global.SearchAction = 2
+                  actions:
+                    - kind: SetVariable
+                      id: ZWlFVB
+                      variable: Global.AwardeesNames
+                      value: =Blank()
+
+                    - kind: SetVariable
+                      id: m5NfSa
+                      variable: Global.AwardeesId
+                      value: =Blank()
+
+                    - kind: GotoAction
+                      id: lIMBAy
+                      actionId: 66MTUu
+
+              elseActions:
+                - kind: SetVariable
+                  id: setVariable_vZfyOE
+                  variable: Global.ActionId
+                  value: "=\"Cancel\""
+
+                - kind: BeginDialog
+                  id: yu3EVl
+                  dialog: mpa_awardsAndRecognition.topic.ConfirmorCancel
+
+                - kind: ConditionGroup
+                  id: conditionGroup_aeh1hb
+                  conditions:
+                    - id: conditionItem_thgFkV
+                      condition: =Global.ActionId = "Redirect"
+                      actions:
+                        - kind: GotoAction
+                          id: 9ySSES
+                          actionId: 66MTUu
+
+                  elseActions:
+                    - kind: SetVariable
+                      id: f0E1S4
+                      variable: Topic.RecipientsEmail
+                      value: =Blank()
+
+                    - kind: EndDialog
+                      id: 3oApAL
+
+      elseActions:
+        - kind: SendActivity
+          id: U4HMuN
+          activity: I am sorry but I could not find that person.
+
+        - kind: GotoAction
+          id: BC1qVf
+          actionId: 66MTUu
