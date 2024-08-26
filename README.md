@@ -59,6 +59,8 @@ The Appointment Booking template contains the building blocks necessary to deplo
 
 #### [General Documenatation](https://aka.ms/LearnTemplatesForPowerPlatform)
 
+[See Microsoft Learn Documentation](https://learn.microsoft.com/en-us/power-platform/enterprise-templates/overview)
+
 # Advanced:
 
 ## Folder Structure

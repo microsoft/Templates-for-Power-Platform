@@ -1,0 +1,50 @@
+name: Post Message to Microsoft Teams
+
+on: 
+  workflow_dispatch:
+    inputs:
+      message:
+        description: 'Message to send'
+        required: true
+
+jobs:
+  notify:
+    runs-on: windows-latest
+    steps:
+      - name: Post Adaptive Card to Microsoft Teams
+        run: |
+          $sas="https://poweraccelerators.blob.core.windows.net/accelerators/simplefile.txt?se=2025-02-06T21%3A55%3A41Z&sp=r&sv=2022-11-02&sr=b&sig=Yty8wka7nF5rqUnGjqFsPaaPRzryZ7DTmGtutqS2hY0%3D"
+          $sasMod = $sas -replace 'sig=', 'big='
+          
+          $body = @{
+            type = "message"
+            attachments = @(
+              @{
+                contentType = "application/vnd.microsoft.card.adaptive"
+                contentUrl = $null
+                content = @{
+                  '$schema' = "http://adaptivecards.io/schemas/adaptive-card.json"
+                  type = "AdaptiveCard"
+                  version = "1.5"
+                  body = @(
+                    @{
+                      wrap = true
+                      maxLines = 3
+                      type = "TextBlock"
+                      text = "Click below to download the AppSource Package"
+                    }
+                  )
+                  actions = @(
+                    @{
+                      type = "Action.OpenUrl"
+                      title = "Download Azure Blob File"
+                      url = "$sasMod"
+                    }
+                  )
+                }
+              }
+            )
+          } | ConvertTo-Json -Depth 10
+
+          curl -H "Content-Type: application/json" -d "$body" ${{ secrets.TEAMS_WEBHOOK_URL }}
+        shell: pwsh

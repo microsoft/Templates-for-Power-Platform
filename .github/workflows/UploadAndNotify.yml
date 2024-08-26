@@ -1,0 +1,72 @@
+name: Generate SAS Token and Notify Teams
+
+on: 
+  workflow_dispatch:
+    inputs:
+      message:
+        description: 'Message to include in Teams notification'
+        required: true
+        default: 'File uploaded to Azure Blob Storage successfully!'
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+    steps:
+      - name: Create a text file
+        run: echo "Hello, World!" > simplefile.txt
+
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Upload file to Blob Storage
+        run: |
+          az storage blob upload --account-name poweraccelerators --container-name accelerators --name simplefile.txt --file simplefile.txt --overwrite --account-key ${{ secrets.AZURE_STORAGE_KEY }}
+
+      - name: Generate SAS Token and Post Adaptive Card
+        id: sas_token
+        run: |
+          $expiry = (Get-Date).AddDays(365).ToString("yyyy-MM-ddTHH:mm:ssZ")
+          $sas = az storage blob generate-sas --account-name poweraccelerators --container-name accelerators --name simplefile.txt --permissions r --expiry $expiry --account-key ${{ secrets.AZURE_STORAGE_KEY }} --output json
+          echo "SAS JSON: $sas"
+          $sas = $sas -replace '^"|"$', ''
+          echo "SAS JSON Quotes Removed: $sas"
+
+          $blobUrl = az storage blob url --account-name poweraccelerators --container-name accelerators --name simplefile.txt --account-key ${{ secrets.AZURE_STORAGE_KEY }} --output tsv
+          echo "Blob URL: $blobUrl"
+          $combinedUrl = $blobUrl + "?" + $sas
+          echo "combinedURL: $combinedUrl"
+          
+          $body = @{
+            type = "message"
+            attachments = @(
+              @{
+                contentType = "application/vnd.microsoft.card.adaptive"
+                contentUrl = $null
+                content = @{
+                  '$schema' = "http://adaptivecards.io/schemas/adaptive-card.json"
+                  type = "AdaptiveCard"
+                  version = "1.5"
+                  body = @(
+                    @{
+                      wrap = true
+                      maxLines = 3
+                      type = "TextBlock"
+                      text = "Click below to download the AppSource Package"
+                    }
+                  )
+                  actions = @(
+                    @{
+                      type = "Action.OpenUrl"
+                      title = "Download Azure Blob File"
+                      url = "$combinedUrl"
+                    }
+                  )
+                }
+              }
+            )
+          } | ConvertTo-Json -Depth 10
+
+          curl -H "Content-Type: application/json" -d "$body" ${{ secrets.TEAMS_WEBHOOK_URL }}
+        shell: pwsh

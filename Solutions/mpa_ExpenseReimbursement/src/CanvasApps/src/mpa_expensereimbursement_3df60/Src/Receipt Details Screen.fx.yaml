@@ -1,0 +1,1416 @@
+"'Receipt Details Screen' As screen":
+    OnHidden: =
+    OnVisible: |-
+        =
+        
+        If(
+            !IsBlank(varHolderMerchantName) && !IsBlank(txtReceiptDetails_MerchantName.Text),
+            If(
+                !IsBlank(txtReceiptDetails_MerchantName.Text) && txtReceiptDetails_MerchantName.Text <> varHolderMerchantName,
+            //when condition is false
+                Notify(
+                    With(
+                        {Text: "The attached receipt is from a different merchant."},
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    ),
+                    NotificationType.Warning
+                )
+            );
+            
+        );
+        
+        // Check filetype from ScanReceipt
+        If(varAttachmentType = "Scan Receipt",
+            Set(inputData,varRcptProcessorAttachment);
+            Set(fileType,Index(Match(inputData,"data:application/([a-zA-Z]+);",1).SubMatches,1).Value)
+        );
+
+    conReceiptDetails_DataEntry As groupContainer.verticalAutoLayoutContainer:
+        Fill: =ColorValue(varThemeColors.background)
+        Height: =Parent.Height - Self.Y
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutGap: =20
+        LayoutMode: =LayoutMode.Auto
+        PaddingBottom: =If(Parent.Size < ScreenSize.Large, 20, 40)
+        PaddingLeft: =If(Parent.Size < ScreenSize.Large, 20, 40)
+        PaddingRight: =If(Parent.Size < ScreenSize.Large, 20, 40)
+        PaddingTop: =20
+        Width: =Parent.Width
+        Y: =compHeader_ReceiptDetails.Height
+        ZIndex: =1
+
+        contReceiptDetails_Header As groupContainer.horizontalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            DropShadow: =DropShadow.None
+            FillPortions: =0
+            Height: =lblReceiptDetails_AddReceipt.Height + Self.PaddingTop + Self.PaddingBottom
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            PaddingLeft: =
+            PaddingRight: =
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            ZIndex: =1
+
+            lblReceiptDetails_AddReceipt As label:
+                AutoHeight: =true
+                Color: =ColorValue(varThemeColors.text)
+                Font: =varThemeFont.B1.face
+                FontWeight: =varThemeFont.H3.weight
+                Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                PaddingBottom: =0
+                PaddingLeft: =0
+                PaddingRight: =0
+                PaddingTop: =0
+                Size: =varThemeFont.H1.size
+                Text: |-
+                    =With(
+                        {Text: "Add expense" },
+                         // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Tooltip: =Self.Text
+                Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                X: =40
+                Y: =40
+                ZIndex: =1
+
+        contReceiptDetails_Details As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            Fill: =ColorValue(varThemeColors.backgroundFill)
+            FillPortions: =0
+            Height: =Parent.Height - Parent.LayoutGap - Parent.PaddingTop - Parent.PaddingBottom - contReceiptDetails_Header.Height
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            LayoutOverflowY: =LayoutOverflow.Scroll
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            ZIndex: =2
+
+            conMainReceiptDetalis_Details As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                DropShadow: =DropShadow.None
+                Height: =//Parent.Height - Parent.LayoutGap - Parent.PaddingBottom - contReceiptDetails_Buttons.Height
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                LayoutOverflowY: =LayoutOverflow.Scroll
+                PaddingBottom: =20
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Width: =Parent.Width
+                ZIndex: =1
+
+                compCaptureImageStepper_1 As compHorizontalStepper:
+                    ComponentPaddings: |-
+                        ={
+                            top: 20,
+                            left: 30,
+                            right: 30,
+                            bottom: 0,
+                            layoutGap: 15
+                        }
+                    LayoutMinHeight: =640
+                    LayoutMinWidth: =640
+                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+
+                frmReceiptDetails_Details As form:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    DataSource: =colReceiptDetailList
+                    Height: |-
+                        =dtcReceiptDetails_ExpenseDate.Height + dtcReceiptDetails_MerchantName.Height + dtcReceiptDetails_Currency.Height + dtcReceiptDetails_Description.Height + dtcReceiptDetails_Attachment.Height +
+                        If(
+                            ScreenSize.Small = 'Receipt Details Screen'.Size || ScreenSize.Medium = 'Receipt Details Screen'.Size, 
+                            dtcReceiptDetails_Amount.Height,
+                            0
+                        )
+                    Item: =Defaults(colReceiptDetailList)
+                    LayoutMinHeight: =250
+                    LayoutMinWidth: =400
+                    NumberOfColumns: =4
+                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    ZIndex: =2
+
+                    dtcReceiptDetails_Attachment As typedDataCard.textualEditCard:
+                        BorderStyle: =BorderStyle.Solid
+                        DataField: ="mpa_attachment"
+                        Default: =ThisItem.Attachment
+                        DisplayMode: =Parent.DisplayMode
+                        DisplayName: ="Attachment file name"
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =97
+                        MaxLength: =DataSourceInfo([@'Reimbursement Attachments'], DataSourceInfo.MaxLength, "mpa_filename")
+                        Required: =true
+                        Update: =txtReceiptDetails_Attachment.Text
+                        Width: =Parent.Width
+                        X: =0
+                        Y: =0
+                        ZIndex: =1
+
+                        txtReceiptDetails_Attachment As text:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Attachment"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            BorderColor: =If(IsBlank(Parent.Error), ColorValue(varThemeColors.primaryGray), ColorValue(varThemeColors.error))
+                            Color: =ColorValue(varThemeColors.text)
+                            Default: |-
+                                =/*File name generation:
+                                  1. Scan all file name that starts with Capture Image and count the total
+                                  2. Scan all file name that starts with Scan Receipt and count the total
+                                */
+                                
+                                /*Switch(
+                                    varAttachmentType ,
+                                    "Capture Image",
+                                    "Capture Image " & CountIf(colReceiptDetailList, StartsWith(FileName,"Capture Image")) + 1 & ".jpg",
+                                    "Scan Receipt",
+                                    "Scan Receipt " & CountIf(colReceiptDetailList, StartsWith(FileName,"Scan Receipt")) + 1 & ".jpg",
+                                    "Upload Receipt",
+                                    varUploadAttachment.Name
+                                )*/
+                                
+                                //Updated Mar 12 2024
+                                Switch(
+                                    varAttachmentType ,
+                                    "Capture Image",
+                                    "Capture Image " & CountIf(colReceiptDetailList, StartsWith(FileName,"Capture Image")) + 1 & ".jpg",
+                                    "Scan Receipt",
+                                    "Scan Receipt " & CountIf(colReceiptDetailList, StartsWith(FileName,"Scan Receipt")) + 1 & If(StartsWith(varRcptProcessorAttachment,"data:application/pdf"),".pdf",".jpeg"),
+                                    "Upload Receipt",
+                                    varUploadAttachment.Name
+                                )
+                            DelayOutput: =true
+                            DisabledBorderColor: =Self.BorderColor
+                            DisabledColor: =ColorValue(varThemeColors.disabledText)
+                            DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                            Fill: =ColorValue(varThemeColors.backgroundFill)
+                            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                            Font: =varThemeFont.B1.face
+                            FontWeight: =varThemeFont.B1.weight
+                            HintText: |-
+                                =With(
+                                    {Text: "Capture, scan or attach receipt" },
+                                   // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                            HoverColor: =ColorValue(varThemeColors.text)
+                            HoverFill: =ColorValue(varThemeColors.backgroundFill)
+                            MaxLength: =Parent.MaxLength
+                            PaddingLeft: =5
+                            PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                            PressedColor: =ColorValue(varThemeColors.text)
+                            PressedFill: =ColorValue(varThemeColors.backgroundFill)
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =varThemeFont.B1.size
+                            Tooltip: =Parent.DisplayName
+                            Width: =If(App.ActiveScreen.Size < ScreenSize.Large, Parent.Width - Self.X * 2, Parent.Width / 3)
+                            X: =30
+                            Y: =46
+                            ZIndex: =2
+
+                        lblReceiptDetails_AttachmentAsterisk As label:
+                            Align: =Align.Center
+                            Color: =ColorValue(varThemeColors.error)
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weightBold
+                            Height: =lblReceiptDetails_Attachment.Height
+                            Size: =varThemeFont.B2.size
+                            Text: ="*"
+                            Tooltip: =Self.Text
+                            Visible: =And(Parent.Required, Parent.DisplayMode=DisplayMode.Edit)
+                            Width: =15
+                            Wrap: =false
+                            X: =lblReceiptDetails_Attachment.Width + lblReceiptDetails_Attachment.X
+                            Y: =lblReceiptDetails_Attachment.Y
+                            ZIndex: =3
+
+                        lblReceiptDetails_Attachment As label:
+                            Color: =ColorValue(varThemeColors.text)
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weightBold
+                            Height: =34
+                            Size: =varThemeFont.B2.size
+                            Text: =Parent.DisplayName
+                            Tooltip: =Self.Text
+                            Width: =Min((Self.Size * Len(Self.Text))-35, Parent.Width - lblReceiptDetails_ExpenseDateAsterisk.Width)
+                            Wrap: =false
+                            X: =30
+                            Y: =9
+                            ZIndex: =4
+
+                    dtcReceiptDetails_ExpenseDate As typedDataCard.dateTimeEditCard:
+                        BorderStyle: =BorderStyle.Solid
+                        DataField: ="mpa_expensedate"
+                        Default: =ThisItem.ExpenseDate
+                        DisplayMode: =Parent.DisplayMode
+                        DisplayName: =DataSourceInfo([@'Reimbursement Attachments'],DataSourceInfo.DisplayName,"mpa_expensedate")
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =97
+                        Required: =true
+                        Update: =If(Not IsBlank(dteReceiptDetails_ExpenseDate.SelectedDate), dteReceiptDetails_ExpenseDate.SelectedDate, 0)
+                        Width: =Parent.Width
+                        X: =0
+                        Y: =1
+                        ZIndex: =1
+
+                        lblReceiptDetails_ExpenseDate As label:
+                            Color: =ColorValue(varThemeColors.text)
+                            FocusedBorderColor: =ColorValue(varThemeColors.primaryGray)
+                            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weightBold
+                            Height: =34
+                            Italic: =varThemeFont.B2.italic
+                            Size: =varThemeFont.B2.size
+                            Text: |-
+                                =With(
+                                    {Text: "Expense date" },
+                                   // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Min((Self.Size * Len(Self.Text)) -25, Parent.Width - lblReceiptDetails_ExpenseDateAsterisk.Width)
+                            X: =30
+                            Y: =10
+                            ZIndex: =1
+
+                        dteReceiptDetails_ExpenseDate As datepicker:
+                            AccessibleLabel: |-
+                                =With(
+                                    {Text: "Expense date" },
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            BorderColor: |-
+                                =If(
+                                    !_ExpenseDateBlank,
+                                    ColorValue(varThemeColors.primaryGray),
+                                    ColorValue(varThemeColors.error)
+                                )
+                            Color: =ColorValue(varThemeColors.text)
+                            DefaultDate: =Coalesce(varHolderExpenseDate,varRcptProcessorExpenseDate)
+                            DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+                            DisabledColor: =ColorValue(varThemeColors.disabledText)
+                            DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                            DisplayMode: =Parent.DisplayMode
+                            EndYear: =Year(Today())+100
+                            Fill: =ColorValue(varThemeColors.backgroundFill)
+                            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                            Font: =varThemeFont.B1.face
+                            FontWeight: =varThemeFont.B1.weight
+                            IconBackground: =ColorValue(varThemeColors.backgroundFill)
+                            IconFill: =ColorValue(varThemeColors.text)
+                            InputTextPlaceholder: |-
+                                =//If(IsBlank(Self.SelectedDate), Text(Date(2001,12,31), Self.Format, Self.Language))
+                                
+                                "mm/dd/yyyy"
+                            IsEditable: =true
+                            Italic: =varThemeFont.B1.italic
+                            OnChange: |-
+                                =//Change the _ExpenseDateBlank variable value when this field is empty or not
+                                If(
+                                    IsBlank(Self.SelectedDate),
+                                    UpdateContext({_ExpenseDateBlank: true}),
+                                    If(
+                                        Self.SelectedDate <= Today(),
+                                        UpdateContext({_ExpenseDateBlank: false}),
+                                        Notify(
+                                            With(
+                                                {Text: "No Future dated expense"},
+                                   // Check if a localized text exists for "Text" in the user's preferred language
+                                                If(
+                                        // If the localized text is blank, return the default text
+                                                    IsBlank(
+                                                        LookUp(
+                                                            colUserLocalizedStrings,
+                                                            'English Value' = Text
+                                                        ).'Localized Value'
+                                                    ),
+                                                    Text,
+                                        // If a localized text is found, return that instead of the default text
+                                                    LookUp(
+                                                        colUserLocalizedStrings,
+                                                        'English Value' = Text
+                                                    ).'Localized Value'
+                                                )
+                                            ),
+                                            NotificationType.Error,
+                                            2000
+                                        );
+                                        UpdateContext({_ExpenseDateBlank: true});
+                                        Reset(Self)
+                                    )
+                                )
+                            PaddingBottom: =0
+                            PaddingLeft: =If(Self.DisplayMode = DisplayMode.Edit, 5, 0)
+                            Size: =varThemeFont.B1.size
+                            StartYear: =1899
+                            Tooltip: =Parent.DisplayName
+                            Width: =If('Receipt Details Screen'.Size < 3, Parent.Width - Self.X * 2, Parent.Width / 3)
+                            X: =30
+                            Y: =lblReceiptDetails_ExpenseDate.Y + lblReceiptDetails_ExpenseDate.Height + 5
+                            ZIndex: =2
+
+                        lblReceiptDetails_ExpenseDateAsterisk As label:
+                            Align: =Align.Center
+                            Color: =ColorValue(varThemeColors.error)
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weightBold
+                            Height: =lblReceiptDetails_ExpenseDate.Height
+                            PaddingLeft: =0
+                            PaddingRight: =0
+                            Size: =varThemeFont.B2.size
+                            Text: ="*"
+                            Tooltip: =Self.Text
+                            Width: =15
+                            Wrap: =false
+                            X: =lblReceiptDetails_ExpenseDate.Width + lblReceiptDetails_ExpenseDate.X
+                            Y: =10
+                            ZIndex: =3
+
+                    dtcReceiptDetails_MerchantName As typedDataCard.textualEditCard:
+                        BorderStyle: =BorderStyle.Solid
+                        DataField: ="mpa_merchantname"
+                        Default: =ThisItem.MerchantName
+                        DisplayMode: =Parent.DisplayMode
+                        DisplayName: =DataSourceInfo([@'Reimbursement Attachments'],DataSourceInfo.DisplayName,"mpa_merchantname")
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =97
+                        MaxLength: =DataSourceInfo([@'Reimbursement Attachments'], DataSourceInfo.MaxLength, "mpa_merchantname")
+                        Required: =true
+                        Update: =txtReceiptDetails_MerchantName.Text
+                        Width: =Parent.Width
+                        X: =0
+                        Y: =2
+                        ZIndex: =1
+
+                        txtReceiptDetails_MerchantName As text:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Merchant name"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            BorderColor: |-
+                                =If(
+                                    IsBlank(Parent.Error),
+                                    ColorValue(varThemeColors.primaryGray),
+                                    ColorValue(varThemeColors.error)
+                                )
+                            Clear: =true
+                            Color: =ColorValue(varThemeColors.text)
+                            Default: |-
+                                =If(
+                                    IsBlank(varHolderMerchantName),
+                                    If(
+                                        !IsBlank(varRcptProcessorMerchantName),
+                                        varRcptProcessorMerchantName,
+                                        ""
+                                    ),
+                                    varHolderMerchantName
+                                )
+                            DelayOutput: =true
+                            DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+                            DisabledColor: =If(IsBlank(Parent.Error), ColorValue(varThemeColors.primaryGray), ColorValue(varThemeColors.error))
+                            DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                            Fill: =ColorValue(varThemeColors.backgroundFill)
+                            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                            Font: =varThemeFont.B1.face
+                            FontWeight: =varThemeFont.B1.weight
+                            HintText: |-
+                                =With(
+                                    {Text: "Enter merchant name required" },
+                                   // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                            HoverColor: =ColorValue(varThemeColors.text)
+                            HoverFill: =ColorValue(varThemeColors.backgroundFill)
+                            MaxLength: =Parent.MaxLength
+                            OnChange: |-
+                                =If(
+                                    !IsBlank(varHolderMerchantName) && !IsBlank(txtReceiptDetails_MerchantName.Text),
+                                    If(
+                                        !IsBlank(txtReceiptDetails_MerchantName.Text) && txtReceiptDetails_MerchantName.Text <> varHolderMerchantName,
+                                    //when condition is false
+                                        Notify(
+                                            With(
+                                                {Text: "The attached receipt is from a different merchant."},
+                                                // Check if a localized text exists for "Text" in the user's preferred language
+                                                If(
+                                        // If the localized text is blank, return the default text
+                                                    IsBlank(
+                                                        LookUp(
+                                                            colUserLocalizedStrings,
+                                                            'English Value' = Text
+                                                        ).'Localized Value'
+                                                    ),
+                                                    Text,
+                                        // If a localized text is found, return that instead of the default text
+                                                    LookUp(
+                                                        colUserLocalizedStrings,
+                                                        'English Value' = Text
+                                                    ).'Localized Value'
+                                                )
+                                            ),
+                                            NotificationType.Warning
+                                        )
+                                    );
+                                    
+                                )
+                            PaddingLeft: =5
+                            PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                            PressedColor: =ColorValue(varThemeColors.text)
+                            PressedFill: =ColorValue(varThemeColors.backgroundFill)
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =varThemeFont.B1.size
+                            Tooltip: =Parent.DisplayName
+                            Width: =If('Receipt Details Screen'.Size < 3, Parent.Width - Self.X * 2, Parent.Width / 3)
+                            X: =30
+                            Y: =lblReceiptDetails_MerchantName.Y + lblReceiptDetails_MerchantName.Height + 5
+                            ZIndex: =1
+
+                        lblReceiptDetails_MerchantNameAsterisk As label:
+                            Align: =Align.Center
+                            Color: =ColorValue(varThemeColors.error)
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weightBold
+                            Height: =lblReceiptDetails_MerchantName.Height
+                            Size: =varThemeFont.B2.size
+                            Text: ="*"
+                            Tooltip: =Self.Text
+                            Width: =15
+                            Wrap: =false
+                            X: =lblReceiptDetails_MerchantName.Width + lblReceiptDetails_MerchantName.X
+                            Y: =lblReceiptDetails_MerchantName.Y
+                            ZIndex: =2
+
+                        lblReceiptDetails_MerchantName As label:
+                            AutoHeight: =true
+                            Color: =ColorValue(varThemeColors.text)
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weightBold
+                            Height: =34
+                            Size: =varThemeFont.B2.size
+                            Text: |-
+                                =With(
+                                    {Text: "Merchant name" },
+                                   // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Min((Self.Size * Len(Self.Text)) + 10, Parent.Width - lblReceiptDetails_MerchantNameAsterisk.Width)
+                            Wrap: =false
+                            X: =30
+                            Y: =10
+                            ZIndex: =3
+
+                    dtcReceiptDetails_Currency As typedDataCard.blankCard:
+                        BorderStyle: =BorderStyle.Solid
+                        DataField: ="transactioncurrencyid"
+                        DisplayMode: =DisplayMode.Edit
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =97
+                        Width: =If('Receipt Details Screen'.Size < 3, Parent.Width, (Parent.Width / 3) * .40)
+                        X: =0
+                        Y: =3
+                        ZIndex: =1
+
+                        lblReceiptDetails_Currency As label:
+                            AutoHeight: =true
+                            Color: =ColorValue(varThemeColors.text)
+                            FocusedBorderColor: =ColorValue(varThemeColors.primaryGray)
+                            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weightBold
+                            Height: =29
+                            Italic: =varThemeFont.B2.italic
+                            Size: =varThemeFont.B2.size
+                            Text: |-
+                                =With(
+                                    {Text: "Currency" },
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width - Self.X
+                            X: =30
+                            Y: =10
+                            ZIndex: =1
+
+                        txtReceiptDetails_Currency As text:
+                            AccessibleLabel: |-
+                                =With(
+                                    {Text: "Currency" },
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            BorderColor: |-
+                                =If(
+                                    IsBlank(Parent.Error),
+                                    ColorValue(varThemeColors.primaryGray),
+                                    ColorValue(varThemeColors.error)
+                                )
+                            Color: =ColorValue(varThemeColors.text)
+                            Default: =
+                            DelayOutput: =true
+                            DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+                            DisabledColor: =ColorValue(varThemeColors.disabledText)
+                            DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                            DisplayMode: |-
+                                =//Parent.DisplayMode
+                                DisplayMode.Disabled
+                            Fill: =ColorValue(varThemeColors.backgroundFill)
+                            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                            Font: =varThemeFont.B1.face
+                            FontWeight: =varThemeFont.B1.weight
+                            Format: =TextFormat.Number
+                            HintText: |-
+                                =//Check the first created currency then display it to text box
+                                _Currency.'Currency Code' & " (" & LookUp(
+                                    Currencies,
+                                    'Currency Code' = _Currency.'Currency Code',
+                                    'Currency Symbol'
+                                ) & ")"
+                            HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                            HoverColor: =ColorValue(varThemeColors.text)
+                            HoverFill: =ColorValue(varThemeColors.backgroundFill)
+                            Italic: =varThemeFont.B1.italic
+                            PaddingLeft: =5
+                            PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                            PressedColor: =ColorValue(varThemeColors.text)
+                            PressedFill: =ColorValue(varThemeColors.backgroundFill)
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =varThemeFont.B1.size
+                            Tooltip: =Parent.DisplayName
+                            Width: =If(App.ActiveScreen.Size < 3, Parent.Width - Self.X * 2, Parent.Width - Self.X) - Self.FocusedBorderThickness
+                            X: =30
+                            Y: =lblReceiptDetails_Amount.Y + lblReceiptDetails_Amount.Height + 5
+                            ZIndex: =2
+
+                    dtcReceiptDetails_Amount As typedDataCard.currencyEditCard:
+                        BorderStyle: =BorderStyle.Solid
+                        DataField: ="mpa_amount"
+                        Default: =ThisItem.Amount
+                        DisplayMode: =Parent.DisplayMode
+                        DisplayName: =DataSourceInfo([@'Reimbursement Attachments'],DataSourceInfo.DisplayName,"mpa_amount")
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =97
+                        Required: =true
+                        Update: =Value(txtReceiptDetails_Amount.Text)
+                        Width: =If('Receipt Details Screen'.Size < 3, Parent.Width, (Parent.Width / 3) * .60 + 30)
+                        X: =1
+                        Y: =3
+                        ZIndex: =1
+
+                        txtReceiptDetails_Amount As text:
+                            AccessibleLabel: |-
+                                =With(
+                                    {Text: "Enter amount required" },
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            BorderColor: |-
+                                =If(
+                                    IsBlank(Parent.Error),
+                                    ColorValue(varThemeColors.primaryGray),
+                                    ColorValue(varThemeColors.error)
+                                )
+                            Color: =ColorValue(varThemeColors.text)
+                            Default: |-
+                                =If(
+                                    IsBlank(varHolderAmount),
+                                     If(
+                                        !IsBlank(varRcptProcessorAmount),
+                                        varRcptProcessorAmount,
+                                        ""
+                                    ),
+                                    varHolderAmount
+                                )
+                            DelayOutput: =true
+                            DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+                            DisabledColor: =ColorValue(varThemeColors.disabledText)
+                            DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                            DisplayMode: =Parent.DisplayMode
+                            Fill: =ColorValue(varThemeColors.backgroundFill)
+                            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                            Font: =varThemeFont.B1.face
+                            FontWeight: =varThemeFont.B1.weight
+                            Format: =TextFormat.Number
+                            HintText: |-
+                                =With(
+                                    {Text: "Enter amount" },
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                            HoverColor: =ColorValue(varThemeColors.text)
+                            HoverFill: =ColorValue(varThemeColors.backgroundFill)
+                            Italic: =varThemeFont.B1.italic
+                            OnChange: |-
+                                =If(
+                                    Or(
+                                        Value(Self.Text) < 0,
+                                        Value(Self.Text) > First('App Settings').'Expense Limit'
+                                    ),
+                                    Notify(
+                                        With(
+                                            {Text: "Please enter an amount between"},
+                                   // Check if a localized text exists for "Text" in the user's preferred language
+                                            If(
+                                        // If the localized text is blank, return the default text
+                                                IsBlank(
+                                                    LookUp(
+                                                        colUserLocalizedStrings,
+                                                        'English Value' = Text
+                                                    ).'Localized Value'
+                                                ),
+                                                Text,
+                                        // If a localized text is found, return that instead of the default text
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            )
+                                        ) & $" 1 to {Text(First('App Settings').'Expense Limit', "0,0##")}",
+                                        NotificationType.Error
+                                    );
+                                    Reset(Self)
+                                )
+                            PaddingLeft: =5
+                            PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                            PressedColor: =ColorValue(varThemeColors.text)
+                            PressedFill: =ColorValue(varThemeColors.backgroundFill)
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =varThemeFont.B1.size
+                            Tooltip: =Parent.DisplayName
+                            Width: =If('Receipt Details Screen'.Size < 3, Parent.Width - Self.X * 2, Parent.Width - Self.X)  - Self.FocusedBorderThickness
+                            X: =29
+                            Y: =lblReceiptDetails_Amount.Y + lblReceiptDetails_Amount.Height + 5
+                            ZIndex: =1
+
+                        lblReceiptDetails_AmountAsterisk As label:
+                            Align: =Align.Center
+                            Color: =ColorValue(varThemeColors.error)
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weightBold
+                            Height: =lblReceiptDetails_Amount.Height
+                            PaddingLeft: =0
+                            PaddingRight: =0
+                            Size: =varThemeFont.B2.size
+                            Text: ="*"
+                            Tooltip: =Self.Text
+                            Width: =15
+                            Wrap: =false
+                            X: =lblReceiptDetails_Amount.Width + lblReceiptDetails_Amount.X
+                            Y: =lblReceiptDetails_Amount.Y
+                            ZIndex: =2
+
+                        lblReceiptDetails_Amount As label:
+                            AutoHeight: =true
+                            Color: =ColorValue(varThemeColors.text)
+                            FocusedBorderColor: =ColorValue(varThemeColors.primaryGray)
+                            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weightBold
+                            Height: =29
+                            Italic: =varThemeFont.B2.italic
+                            Size: =varThemeFont.B2.size
+                            Text: |-
+                                =With(
+                                    {Text: "Amount" },
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Min(Self.Size * Len(Self.Text) +20, Parent.Width - lblReceiptDetails_AmountAsterisk.Width)
+                            X: =30
+                            Y: =10
+                            ZIndex: =3
+
+                    dtcReceiptDetails_Description As typedDataCard.textualMultiLineEditCard:
+                        BorderStyle: =BorderStyle.Solid
+                        DataField: ="mpa_description"
+                        Default: =ThisItem.Description
+                        DisplayMode: =Parent.DisplayMode
+                        DisplayName: =DataSourceInfo([@'Reimbursement Attachments'],DataSourceInfo.DisplayName,"mpa_description")
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =lblReceiptDetails_DescriptionAsterisk.Height + lblReceiptDetails_Description.Height + txtReceiptDetails_Description.Height
+                        Required: =true
+                        Update: =txtReceiptDetails_Description.Text
+                        Width: =Parent.Width
+                        X: =0
+                        Y: =4
+                        ZIndex: =1
+
+                        txtReceiptDetails_Description As text:
+                            AccessibleLabel: |-
+                                =With(
+                                    {Text: "Enter description required" },
+                                   // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            BorderColor: |-
+                                =If(
+                                    IsBlank(Parent.Error),
+                                    ColorValue(varThemeColors.primaryGray),
+                                    ColorValue(varThemeColors.error)
+                                )
+                            Color: =ColorValue(varThemeColors.text)
+                            Default: =Parent.Default
+                            DelayOutput: =true
+                            DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+                            DisabledColor: =ColorValue(varThemeColors.disabledText)
+                            DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                            DisplayMode: =Parent.DisplayMode
+                            Fill: =ColorValue(varThemeColors.backgroundFill)
+                            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                            Font: =varThemeFont.B1.face
+                            FontWeight: =varThemeFont.B1.weight
+                            Height: =120
+                            HintText: |-
+                                =With(
+                                    {Text: "Enter description" },
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                            HoverColor: =ColorValue(varThemeColors.text)
+                            HoverFill: =ColorValue(varThemeColors.backgroundFill)
+                            Italic: =varThemeFont.B1.italic
+                            Mode: =TextMode.MultiLine
+                            PaddingLeft: =5
+                            PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                            PressedColor: =ColorValue(varThemeColors.text)
+                            PressedFill: =ColorValue(varThemeColors.backgroundFill)
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =varThemeFont.B1.size
+                            Tooltip: =Parent.DisplayName
+                            Width: =If('Receipt Details Screen'.Size < 3, Parent.Width - Self.X * 2, Parent.Width / 1.5)
+                            X: =30
+                            Y: =lblReceiptDetails_Description.Y + lblReceiptDetails_Description.Height + 5
+                            ZIndex: =1
+
+                        lblReceiptDetails_DescriptionAsterisk As label:
+                            Align: =Align.Center
+                            Color: =ColorValue(varThemeColors.error)
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weightBold
+                            Height: =lblReceiptDetails_Description.Height
+                            PaddingLeft: =0
+                            PaddingRight: =0
+                            Size: =varThemeFont.B2.size
+                            Text: ="*"
+                            Tooltip: =Self.Text
+                            Width: =15
+                            Wrap: =false
+                            X: =lblReceiptDetails_Description.Width + lblReceiptDetails_Description.X
+                            Y: =10
+                            ZIndex: =2
+
+                        lblReceiptDetails_Description As label:
+                            Color: =ColorValue(varThemeColors.text)
+                            FocusedBorderColor: =ColorValue(varThemeColors.primaryGray)
+                            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weightBold
+                            Height: =34
+                            Italic: =varThemeFont.B2.italic
+                            Size: =varThemeFont.B2.size
+                            Text: |-
+                                =With(
+                                    {Text: "Description" },
+                                   // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )
+                            Tooltip: =Self.Text
+                            Width: =Min((Self.Size * Len(Self.Text)) - 25, Parent.Width - lblReceiptDetails_DescriptionAsterisk.Width)
+                            X: =30
+                            Y: =10
+                            ZIndex: =3
+
+            contReceiptDetails_Buttons As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                BorderColor: =ColorValue(varThemeColors.secondaryGray)
+                DropShadow: =DropShadow.None
+                FillPortions: =0
+                Height: |
+                    =contReceiptDetails_SubmitBackContainer.Height + Self.PaddingTop + Self.PaddingBottom +
+                    If(
+                        Self.LayoutDirection = LayoutDirection.Vertical,
+                        btnReceiptDetails_Submit.Height + Self.LayoutGap/2,
+                        0
+                    )
+                LayoutDirection: =If('Receipt Details Screen'.Size < 3, LayoutDirection.Vertical, LayoutDirection.Horizontal)
+                LayoutGap: =If(Self.LayoutDirection = LayoutDirection.Horizontal, 20, 10)
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                LayoutOverflowX: =LayoutOverflow.Scroll
+                LayoutOverflowY: =LayoutOverflow.Scroll
+                PaddingBottom: =20
+                PaddingLeft: =30 - contReceiptDetails_SubmitBackContainer.PaddingLeft
+                PaddingRight: =30
+                PaddingTop: =20
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Width: =Parent.Width
+                ZIndex: =2
+
+                contReceiptDetails_SubmitBackContainer As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.Start
+                    BorderColor: =ColorValue(varThemeColors.secondaryGray)
+                    DropShadow: =DropShadow.None
+                    FillPortions: =0
+                    Height: |
+                        =btnReceiptDetails_Cancel.Height + Self.PaddingTop + Self.PaddingBottom +
+                        If(
+                            Self.LayoutDirection = LayoutDirection.Vertical,
+                            btnReceiptDetails_Back.Height + Self.LayoutGap,
+                            0
+                        )
+                    LayoutDirection: =If('Receipt Details Screen'.Size < 3, LayoutDirection.Vertical, LayoutDirection.Horizontal)
+                    LayoutGap: =If(Self.LayoutDirection = LayoutDirection.Horizontal, 20, 10)
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingBottom: =btnReceiptDetails_Submit.FocusedBorderThickness
+                    PaddingLeft: =btnReceiptDetails_Submit.FocusedBorderThickness
+                    PaddingRight: =btnReceiptDetails_Submit.FocusedBorderThickness
+                    PaddingTop: =btnReceiptDetails_Submit.FocusedBorderThickness
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Width: |-
+                        =//Parent.Width - Parent.PaddingLeft - Parent.LayoutGap - btnReceiptDetails_Cancel.Width - Parent.PaddingRight
+                        
+                        Parent.Width - Parent.PaddingLeft - Parent.PaddingRight -
+                        If(
+                            Self.LayoutDirection = LayoutDirection.Horizontal,
+                            Parent.LayoutGap + btnReceiptDetails_Cancel.Width,
+                            0
+                        )
+                    ZIndex: =1
+
+                    btnReceiptDetails_Submit As button:
+                        BorderColor: =ColorValue(varThemeColors.primary)
+                        BorderThickness: =1
+                        Color: =ColorValue(varThemeColors.altText)
+                        DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        DisabledColor: =ColorValue(varThemeColors.disabledText)
+                        DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        Fill: =ColorValue(varThemeColors.primary)
+                        FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                        FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                        Font: =varThemeFont.CTA.face
+                        FontWeight: =varThemeFont.CTA.weight
+                        Height: =32
+                        HoverBorderColor: =ColorValue(varThemeColors.primary)
+                        HoverColor: =ColorValue(varThemeColors.altText)
+                        HoverFill: =ColorValue(varThemeColors.tertiary)
+                        Italic: =varThemeFont.CTA.italic
+                        OnSelect: |-
+                            =If(
+                                frmReceiptDetails_Details.Valid And !IsBlank(dteReceiptDetails_ExpenseDate.SelectedDate),
+                                //Adding new values in Receipt Detail Gallery
+                                Collect(
+                                    colReceiptDetailList,
+                                    {
+                                        ID: CountRows(colReceiptDetailList) + 1,
+                                        ExpenseDate: dteReceiptDetails_ExpenseDate.SelectedDate,
+                                        Amount: Text(
+                                            Value(txtReceiptDetails_Amount.Text),
+                                            "[$-en-US]#,###.00"
+                                        ),
+                                        Description: txtReceiptDetails_Description.Text,
+                                        FileName: txtReceiptDetails_Attachment.Text,
+                                        Attachment: If(
+                                            varAttachmentType = "Capture Image",
+                                            varAddItemImage,
+                                            varAttachmentType = "Scan Receipt",
+                                            varRcptProcessorAttachment,
+                                            varUploadAttachment.Value
+                                        ),
+                                        MerchantName: txtReceiptDetails_MerchantName.Text,
+                                        TableDisplayName: txtReceiptDetails_Attachment.Text
+                                    }
+                                );
+                                //Remove Null Data
+                                RemoveIf(
+                                    colReceiptDetailList,
+                                    IsBlank(ExpenseDate)
+                                );
+                                
+                                //Reset data entry
+                                ResetForm(frmReceiptDetails_Details);
+                                Set(
+                                    varRcptProcessorExpenseDate,
+                                    ""
+                                );
+                                Set(
+                                    varRcptProcessorAmount,
+                                    ""
+                                );
+                                Set(
+                                    varRcptProcessorAttachment,
+                                    ""
+                                );
+                                Set(
+                                    varRcptProcessorMerchantName,
+                                    ""
+                                );
+                                Set(
+                                    varAttachmentType,
+                                    ""
+                                );
+                                //Clear the varAttachmentType
+                                Set(
+                                    varCurrencies,
+                                    cmbRefundRequest_Currency.Selected.'Currency Symbol'
+                                );
+                                //currency
+                                //Navigate back to Refund Request Screen
+                                Navigate('Reimbursement Request Screen');
+                                ,
+                                SubmitForm(frmReceiptDetails_Details);
+                                //Update the variable that check the date if its blank 
+                                If(
+                                    IsBlank(dteReceiptDetails_ExpenseDate.SelectedDate),
+                                    UpdateContext({_ExpenseDateBlank: true}),
+                                    UpdateContext({_ExpenseDateBlank: false})
+                                );
+                                Notify(// Define a variable named "Text" with the value "{value}"
+                                    With(
+                                        {Text: "Please provide information on the highlighted field(s)"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                        If(
+                                    // If the localized text is blank, return the default text
+                                            IsBlank(
+                                                LookUp(
+                                                    colUserLocalizedStrings,
+                                                    'English Value' = Text
+                                                ).'Localized Value'
+                                            ),
+                                            Text,
+                                    // If a localized text is found, return that instead of the default text
+                                            LookUp(
+                                                colUserLocalizedStrings,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        )
+                                    ),
+                                    NotificationType.Error
+                                );
+                            )
+                        PressedBorderColor: =ColorValue(varThemeColors.primary)
+                        PressedColor: =ColorValue(varThemeColors.altText)
+                        PressedFill: =ColorValue(varThemeColors.primary)
+                        RadiusBottomLeft: =6
+                        RadiusBottomRight: =6
+                        RadiusTopLeft: =6
+                        RadiusTopRight: =6
+                        Size: =varThemeFont.CTA.size
+                        Text: |-
+                            =With(
+                                {Text: "Done"   },
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Tooltip: =Self.Text
+                        Width: =If('Receipt Details Screen'.Size < 3, Parent.Width - (Parent.PaddingLeft + Parent.PaddingRight), 120)
+                        ZIndex: =1
+
+                    btnReceiptDetails_Back As button:
+                        BorderColor: =ColorValue(varThemeColors.primary)
+                        BorderThickness: =1
+                        Color: =ColorValue(varThemeColors.primary)
+                        DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        DisabledColor: =ColorValue(varThemeColors.disabledText)
+                        DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                        FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                        FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                        Font: =varThemeFont.CTA.face
+                        FontWeight: =varThemeFont.CTA.weight
+                        Height: =32
+                        HoverBorderColor: =ColorValue(varThemeColors.primary)
+                        HoverColor: =ColorValue(varThemeColors.altText)
+                        HoverFill: =ColorValue(varThemeColors.tertiary)
+                        Italic: =varThemeFont.CTA.italic
+                        OnSelect: =Back();
+                        PressedBorderColor: =Self.BorderColor
+                        PressedColor: =ColorValue(varThemeColors.altText)
+                        PressedFill: =ColorValue(varThemeColors.secondaryGray)
+                        RadiusBottomLeft: =6
+                        RadiusBottomRight: =6
+                        RadiusTopLeft: =6
+                        RadiusTopRight: =6
+                        Size: =varThemeFont.CTA.size
+                        Text: |-
+                            =With(
+                                {Text: "Back" },
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colUserLocalizedStrings,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )
+                        Tooltip: =Self.Text
+                        Width: =If('Receipt Details Screen'.Size < 3, Parent.Width - (Parent.PaddingLeft + Parent.PaddingRight), 120)
+                        ZIndex: =2
+
+                btnReceiptDetails_Cancel As button:
+                    BorderColor: =ColorValue(varThemeColors.primary)
+                    BorderThickness: =1
+                    Color: =ColorValue(varThemeColors.primary)
+                    DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                    DisabledColor: =ColorValue(varThemeColors.disabledText)
+                    DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                    Fill: =ColorValue(varThemeColors.backgroundFill)
+                    FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                    FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                    Font: =varThemeFont.CTA.face
+                    FontWeight: =varThemeFont.CTA.weight
+                    Height: =32
+                    HoverBorderColor: =ColorValue(varThemeColors.primary)
+                    HoverColor: =ColorValue(varThemeColors.altText)
+                    HoverFill: =ColorValue(varThemeColors.tertiary)
+                    Italic: =varThemeFont.CTA.italic
+                    OnSelect: |-
+                        =Navigate('Discard Confirmation Screen', Transition.None, {_DiscardExpenseAction: true})
+                    PressedBorderColor: =Self.BorderColor
+                    PressedColor: =ColorValue(varThemeColors.altText)
+                    PressedFill: =ColorValue(varThemeColors.secondaryGray)
+                    RadiusBottomLeft: =6
+                    RadiusBottomRight: =6
+                    RadiusTopLeft: =6
+                    RadiusTopRight: =6
+                    Size: =varThemeFont.CTA.size
+                    Text: |-
+                        =With(
+                            {Text: "Cancel" },
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colUserLocalizedStrings,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )
+                    Tooltip: =Self.Text
+                    Width: =If('Receipt Details Screen'.Size < 3, Parent.Width - (Parent.PaddingLeft + Parent.PaddingRight), 120)
+                    ZIndex: =2
+
+    compHeader_ReceiptDetails As compHeader:
+        HeaderWidth: =App.Width
+        Height: =compHeader_ReceiptDetails.HeaderHeight
+        Width: =compHeader_ReceiptDetails.HeaderWidth
+        ZIndex: =2
+

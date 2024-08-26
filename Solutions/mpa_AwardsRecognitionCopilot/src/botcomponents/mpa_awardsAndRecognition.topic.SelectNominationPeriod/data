@@ -1,0 +1,186 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRedirect
+  id: main
+  actions:
+    - kind: InvokeConnectorAction
+      id: invokeConnectorAction_ZlBuQX
+      input:
+        binding:
+          $filter: =Concatenate("statecode eq 0 and mpa_startdate le ", Text(Now(), DateTimeFormat.UTC), " and mpa_enddate ge ", Text(Now(), DateTimeFormat.UTC))
+          $select: mpa_nominationperiodid,mpa_name
+          entityName: mpa_nominationperiods
+          organization: current
+
+      output:
+        binding:
+          value: Topic.value
+
+      connectionReference: mpa_awardsAndRecognition.cr.0A-LiI5Z
+      connectionProperties:
+        mode: Invoker
+
+      operationId: ListRecordsWithOrganization
+      dynamicOutputSchema:
+        kind: Record
+        properties:
+          @odata.nextLink:
+            displayName: Next link
+            description: The url to fetch next page data.
+            visibility: Advanced
+            order: 1
+            type: String
+
+          value:
+            order: 0
+            type:
+              kind: Table
+              properties:
+                dynamicProperties:
+                  order: 0
+                  type: Any
+
+    - kind: ParseValue
+      id: jPYeQv
+      variable: Topic.NominationPeriods
+      valueType:
+        kind: Table
+        properties:
+          _createdby_value: String
+          _createdonbehalfby_value: Blank
+          _modifiedby_value: String
+          _modifiedonbehalfby_value: Blank
+          _ownerid_value: String
+          _owningbusinessunit_value: String
+          _owningteam_value: Blank
+          _owninguser_value: String
+          @odata.etag: String
+          createdon: String
+          importsequencenumber: Blank
+          modifiedon: String
+          mpa_description: String
+          mpa_enddate: String
+          mpa_fiscalyear: String
+          mpa_name: String
+          mpa_nominationperiodid: String
+          mpa_startdate: String
+          overriddencreatedon: Blank
+          statecode: Number
+          statuscode: Number
+          timezoneruleversionnumber: Number
+          utcconversiontimezonecode: Blank
+          versionnumber: Number
+
+      value: "=\"[]\""
+
+    - kind: SetVariable
+      id: setVariable_n3K8x2
+      variable: Topic.NominationPeriods
+      value: =Topic.value
+
+    - kind: SendActivity
+      id: 3OUNGr
+      activity: Sure, I can help you with that.
+
+    - kind: AdaptiveCardPrompt
+      id: x6vvVJ
+      card: |-
+        ={
+                type: "AdaptiveCard",
+                version: "1.5",
+                body: [
+                    {
+                        type: "TextBlock",
+                        text: "Nomination period",
+                        weight: "bolder",
+                        size: "medium"
+                    },
+                    {
+                    	type: "TextBlock",
+                    	text: "Please select a nomination period from the card below.",
+                        wrap: true
+                    },
+                    {
+                        type: "Input.ChoiceSet",
+                        isRequired: true,
+                        errorMessage: "Nomination period is required",
+                        label: "Nomination period",
+                        id: "selectedPeriod",
+                        style: "compact",
+                        isMultiSelect: false,
+                        choices: ForAll(
+                            Topic.NominationPeriods,
+                            {
+                                title: mpa_name,
+                                value: mpa_nominationperiodid
+                            }
+                        )
+                    }
+                ],
+                actions: [
+                    {
+                        type: "Action.Submit",
+                        title: "Select",
+                        id: "SelectId"
+                    },
+                    {
+                        type: "Action.Submit",
+                        title: "Cancel",
+                        id: "CancelId",
+                        associatedInputs: "none"
+                    }
+                ],
+                '$schema': "http://adaptivecards.io/schemas/adaptive-card.json"
+            }
+      output:
+        binding:
+          actionSubmitId: Topic.actionSubmitId
+          selectedPeriod: Topic.selectedPeriod
+
+      outputType:
+        properties:
+          actionSubmitId: String
+          selectedPeriod: String
+
+    - kind: SetVariable
+      id: EJNphN
+      variable: Global.ActionId
+      value: =Topic.actionSubmitId
+
+    - kind: BeginDialog
+      id: qOrtjx
+      dialog: mpa_awardsAndRecognition.topic.ConfirmorCancel
+
+    - kind: ConditionGroup
+      id: conditionGroup_hM6qUA
+      conditions:
+        - id: conditionItem_7KJzKJ
+          condition: =Global.ActionId = "Select"
+
+      elseActions:
+        - kind: GotoAction
+          id: k7Zbzg
+          actionId: 3OUNGr
+
+        - kind: EndDialog
+          id: oiiDPm
+
+    - kind: SetVariable
+      id: setVariable_fJ2RHb
+      variable: Global.NominationPeriod
+      value: =Topic.selectedPeriod
+
+    - kind: SetVariable
+      id: setVariable_HWXq4b
+      variable: Global.NominationPeriodTitle
+      value: =LookUp(Topic.NominationPeriods, mpa_nominationperiodid = Global.NominationPeriod).mpa_name
+
+    - kind: EndDialog
+      id: 1hIOCb
+
+inputType:
+  properties:
+    Test:
+      displayName: Var1
+      description: This is a test
+      type: String

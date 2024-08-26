@@ -1,4 +1,20 @@
 "'Settings Screen' As screen":
+    OnHidden: =
+    OnVisible: |-
+        =//Get Currently logged in User's Timezone 
+        Set(
+            varCurrentUserTimeZone,
+            LookUp(
+                'Time Zone Definitions',
+                timezonecode = LookUp(
+                    'User Settings',
+                    systemuserid = LookUp(
+                        Users,
+                        'Primary Email' = User().Email
+                    ).User
+                ).TimeZoneCode
+            ).'Standard Name'
+        )
 
     mainContainer_settings As groupContainer.verticalAutoLayoutContainer:
         Fill: =ColorValue(varThemeColors.background)
@@ -21,7 +37,6 @@
             FillPortions: =0
             Height: =640
             LayoutDirection: =LayoutDirection.Vertical
-            LayoutGap: =40
             LayoutMinHeight: =Parent.Height
             LayoutMinWidth: =250
             LayoutMode: =LayoutMode.Auto
@@ -38,15 +53,7 @@
                 )
             PaddingTop: =20
             Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight 
-            ZIndex: =2
-
-            compThemeSettings_Settings As compThemeSettings:
-                BlockWidth: =Parent.Width / 3 - Parent.LayoutGap
-                Height: =compThemeSettings_Settings.SettingsHeight
-                LayoutMinHeight: =640
-                LayoutMinWidth: =640
-                SettingsWidth: =Parent.Width*.95
-                Width: =compThemeSettings_Settings.SettingsWidth
+            ZIndex: =1
 
             lblSettingsTitle As label:
                 Color: =ColorValue(varThemeColors.text)
@@ -82,8 +89,65 @@
                         )
                     )
                 VerticalAlign: =VerticalAlign.Top
-                Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                Width: |+
+                    =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    
+                Wrap: =false
                 ZIndex: =1
+
+            lblColorMode_Settings As label:
+                AutoHeight: =true
+                Color: =ColorValue(varThemeColors.text)
+                FocusedBorderColor: =ColorValue(varThemeColors.info)
+                Font: =varThemeFont.B2.face
+                FontWeight: =varThemeFont.B2.weightBold
+                Height: =23
+                Italic: =
+                PaddingBottom: =0
+                PaddingLeft: =0
+                PaddingTop: =20
+                Size: =varThemeFont.H3.size
+                Text: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    With(
+                        {Text: "Color mode"},
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Tooltip: =Self.Text
+                VerticalAlign: =VerticalAlign.Top
+                Width: =lblSettingsTitle.Width
+                X: =70
+                Y: =25
+                ZIndex: =4
+
+            compThemeSettings_Settings As compThemeSettings:
+                BlockWidth: =Parent.Width / 3 - Parent.LayoutGap
+                Height: =compThemeSettings_Settings.SettingsHeight
+                LayoutMinHeight: =640
+                LayoutMinWidth: =640
+                SettingsWidth: |
+                    =//Responsive Design Conditions
+                    If('Settings Screen'.Size > ScreenSize.Large,
+                        (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight) * .55,
+                        (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight)
+                    )
+                Width: =compThemeSettings_Settings.SettingsWidth
+                ZIndex: =5
 
     compDetailsLeftNavigation_Settings As LeftNavigation:
         Height: =App.Height-Self.Y

@@ -1,0 +1,156 @@
+{
+  "properties": {
+    "connectionReferences": {},
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "e67b9988-356c-4196-8385-d4e37294c7cb"
+          },
+          "type": "Request",
+          "kind": "Skills",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "AwardRatingId",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "text_2": {
+                  "title": "Value",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "text_1": {
+                  "title": "ExistingData",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text",
+                "text_2",
+                "text_1"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Respond_to_Copilot": {
+          "runAfter": {
+            "Append_to_array_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "ac758d9e-ab1c-4237-a218-ef56a9e94536"
+          },
+          "type": "Response",
+          "kind": "Skills",
+          "inputs": {
+            "statusCode": 200,
+            "body": {
+              "updateddata": "@{string(variables('UpdatedData'))}"
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "updateddata": {
+                  "title": "UpdatedData",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "Parse_JSON": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "3ab989c2-1336-4526-b254-96987c58ac41"
+          },
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@triggerBody()['text_1']",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "AwardRatingId": {
+                    "type": "string"
+                  },
+                  "Value": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "AwardRatingId",
+                  "Value"
+                ]
+              }
+            }
+          }
+        },
+        "Initialize_variable": {
+          "runAfter": {
+            "Parse_JSON": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "d83731b3-087d-4f6f-9d1e-815f751e36e2"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "UpdatedData",
+                "type": "array",
+                "value": "@body('Parse_JSON')"
+              }
+            ]
+          }
+        },
+        "Append_to_array_variable": {
+          "runAfter": {
+            "Initialize_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "257fbf3a-2b67-4aa0-b752-97782e18af6a"
+          },
+          "type": "AppendToArrayVariable",
+          "inputs": {
+            "name": "UpdatedData",
+            "value": {
+              "AwardRatingId": "@{triggerBody()['text']}",
+              "Value": "@{triggerBody()['text_2']}"
+            }
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

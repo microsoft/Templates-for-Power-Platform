@@ -1,0 +1,104 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRedirect
+  id: main
+  actions:
+    - kind: SetVariable
+      id: setVariable_Hjapfc
+      variable: Topic.nominationIds
+      value: =Concat(ForAll(Global.Nominations, Concatenate("mpa_nomination/mpa_nominationid eq '", ThisRecord.mpa_nominationid, "'")), Value, " or ")
+
+    - kind: InvokeConnectorAction
+      id: invokeConnectorAction_44vcZp
+      input:
+        binding:
+          $expand: mpa_SystemUser($select=fullname),mpa_nomination($select=mpa_type),mpa_group($select=mpa_name)
+          $filter: =Topic.nominationIds
+          $select: mpa_SystemUser,mpa_nomination,mpa_group
+          entityName: mpa_nominatedusers
+          organization: current
+
+      output:
+        binding:
+          value: Topic.results
+
+      connectionReference: mpa_awardsAndRecognition.cr.0A-LiI5Z
+      connectionProperties:
+        mode: Invoker
+
+      operationId: ListRecordsWithOrganization
+      dynamicOutputSchema:
+        kind: Record
+        properties:
+          @odata.nextLink:
+            displayName: Next link
+            description: The url to fetch next page data.
+            visibility: Advanced
+            order: 1
+            type: String
+
+          value:
+            order: 0
+            type:
+              kind: Table
+              properties:
+                dynamicProperties:
+                  order: 0
+                  type: Any
+
+    - kind: ParseValue
+      id: qqSALT
+      variable: Topic.Nominations
+      valueType:
+        kind: Table
+        properties:
+          @odata.etag: String
+          mpa_group:
+            type:
+              kind: Record
+              properties:
+                mpa_groupid: String
+                mpa_name: String
+
+          mpa_nominateduserid: String
+          mpa_nomination:
+            type:
+              kind: Record
+              properties:
+                mpa_nominationid: String
+                mpa_type: Number
+
+          mpa_SystemUser:
+            type:
+              kind: Record
+              properties:
+                fullname: String
+                ownerid: String
+                systemuserid: String
+
+      value: "=\"[]\""
+
+    - kind: SetVariable
+      id: setVariable_KIMNe7
+      variable: Topic.Nominations
+      value: =Topic.results
+
+    - kind: SetVariable
+      id: setVariable_lXP0yc
+      variable: Global.GroupMap
+      value: |-
+        =ForAll(Distinct(Filter(Topic.Nominations, ThisRecord.mpa_nomination.mpa_type = 865420002), ThisRecord.mpa_nomination.mpa_nominationid), {
+            id: Value,
+            nominees: First(Filter(Topic.Nominations, mpa_nomination.mpa_nominationid = Value)).mpa_group.mpa_name
+        
+        })
+
+    - kind: SetVariable
+      id: setVariable_JUWKlG
+      variable: Global.NomineeMap
+      value: |-
+        =ForAll(Distinct(Filter(Topic.Nominations, ThisRecord.mpa_nomination.mpa_type <> 865420002), ThisRecord.mpa_nomination.mpa_nominationid), {
+            id: Value,
+            nominees: Concat(ForAll(Filter(Topic.Nominations, mpa_nomination.mpa_nominationid = Value), ThisRecord.mpa_SystemUser.fullname), Value, ", ")
+        
+        })

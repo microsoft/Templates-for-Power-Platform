@@ -1,0 +1,298 @@
+compAddExpenseButtons As CanvasComponent:
+    CapturedImage: =SampleImage
+    ComponentHeight: =shpAddExpense_Separator.Height + contAddExpenseContainer_Main.Height
+    ComponentPaddings: |-
+        ={
+            top: 20,
+            left: 30,
+            right: 30,
+            bottom: 20,
+            layoutGap: 15
+        }
+    Fill: =RGBA(0, 0, 0, 0)
+    Height: =Self.ComponentHeight
+    IsNextEnabled: =true
+    StepperCollection: =colExpenseSteps
+    Width: =1024
+    X: =0
+    Y: =0
+    ZIndex: =1
+
+    contAddExpenseContainer_Main As groupContainer.horizontalAutoLayoutContainer:
+        BorderColor: =ColorValue(varThemeColors.secondaryGray)
+        DropShadow: =DropShadow.None
+        Height: |-
+            =Self.PaddingTop + Self.PaddingBottom + contAddExpenseContainer_NextBackButtons.Height + 
+            
+            If(
+                Self.LayoutDirection = LayoutDirection.Vertical,
+                Self.LayoutGap + btnAddExpense_Cancel.Height,
+                0
+            )
+        LayoutDirection: =If(App.ActiveScreen.Size < 3, LayoutDirection.Vertical, LayoutDirection.Horizontal)
+        LayoutGap: =Parent.ComponentPaddings.layoutGap
+        LayoutMode: =LayoutMode.Auto
+        PaddingBottom: =Parent.ComponentPaddings.bottom
+        PaddingLeft: =Parent.ComponentPaddings.left
+        PaddingRight: =Parent.ComponentPaddings.right
+        PaddingTop: =Parent.ComponentPaddings.top
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =Parent.Width
+        Y: =shpAddExpense_Separator.Height + shpAddExpense_Separator.Y
+        ZIndex: =3
+
+        contAddExpenseContainer_NextBackButtons As groupContainer.horizontalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            BorderColor: =ColorValue(varThemeColors.secondaryGray)
+            DropShadow: =DropShadow.None
+            FillPortions: =0
+            Height: |-
+                =btnAddExpense_Back.Height + Self.PaddingTop + Self.PaddingBottom + 
+                If(
+                    Self.LayoutDirection = LayoutDirection.Vertical,
+                    btnAddExpense_Next.Height + Self.LayoutGap,
+                    0
+                )
+            LayoutDirection: =If(App.ActiveScreen.Size < 3, LayoutDirection.Vertical, LayoutDirection.Horizontal)
+            LayoutGap: =Parent.LayoutGap
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            PaddingBottom: =btnAddExpense_Next.FocusedBorderThickness
+            PaddingLeft: =btnAddExpense_Next.FocusedBorderThickness
+            PaddingRight: =btnAddExpense_Next.FocusedBorderThickness
+            PaddingTop: =btnAddExpense_Next.FocusedBorderThickness
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Width: |-
+                =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight -
+                If(
+                    Self.LayoutDirection = LayoutDirection.Horizontal,
+                    Parent.LayoutGap + btnAddExpense_Cancel.Width,
+                    0
+                )
+            ZIndex: =2
+
+            btnAddExpense_Next As button:
+                BorderColor: =ColorValue(varThemeColors.primary)
+                BorderThickness: =1
+                Color: =ColorValue(varThemeColors.altText)
+                DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                DisabledColor: =ColorValue(varThemeColors.disabledText)
+                DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                DisplayMode: |-
+                    =If(
+                        compAddExpenseButtons.IsNextEnabled,
+                        DisplayMode.Edit,
+                        DisplayMode.Disabled
+                    )
+                Fill: =ColorValue(varThemeColors.primary)
+                FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                Font: =varThemeFont.CTA.face
+                FontWeight: =varThemeFont.CTA.weight
+                Height: =32
+                HoverBorderColor: =ColorValue(varThemeColors.primary)
+                HoverColor: =ColorValue(varThemeColors.altText)
+                HoverFill: =ColorValue(varThemeColors.tertiary)
+                Italic: =varThemeFont.CTA.italic
+                OnSelect: |-
+                    =Switch(
+                        App.ActiveScreen,
+                    
+                        'Add New Image Screen', //CAPTURE
+                        
+                        // Set the variable varAddItemImage to the value of _ImageTaken
+                        Set(
+                            varAddItemImage,
+                            compAddExpenseButtons.CapturedImage
+                        );
+                    
+                        Set(varAttachmentType, "Capture Image"),
+                    
+                        'Scan Receipt Screen', // SCAN
+                        Set(
+                        varRcptProcessorMerchantName,
+                        RcptProcessor.MerchantName
+                        );
+                        Set(
+                            varRcptProcessorExpenseDate,
+                            RcptProcessor.TransactionDate
+                        );
+                        Set(
+                            varRcptProcessorAmount,
+                            RcptProcessor.Total
+                        );
+                        Set(
+                            varRcptProcessorAttachment,
+                            RcptProcessor.OriginalImage
+                        );
+                        //Reset(RcptProcessor); //reset the receipt processing control
+                        Set(varAttachmentType, "Scan Receipt");
+                        ,
+                        
+                        'Upload Screen', //UPLOAD
+                        // Set the variable varUploadAttachment to the value of varUploadreceipt
+                        Set(
+                            varUploadAttachment,
+                            First(attFile_UploadReceipt.Attachments)
+                        );
+                        Set(
+                            varAttachmentType,
+                            "Upload Receipt"
+                        )
+                    );
+                    
+                    Navigate('Receipt Details Screen', Transition.None, 
+                        {
+                            _ExpenseDateBlank: false,
+                            _Currency: cmbRefundRequest_Currency.Selected
+                        }
+                    );
+                PressedBorderColor: =ColorValue(varThemeColors.primary)
+                PressedColor: =ColorValue(varThemeColors.altText)
+                PressedFill: =ColorValue(varThemeColors.primary)
+                RadiusBottomLeft: =6
+                RadiusBottomRight: =6
+                RadiusTopLeft: =6
+                RadiusTopRight: =6
+                Size: =varThemeFont.CTA.size
+                Text: |-
+                    =With(
+                        {Text: "Next"   },
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Tooltip: =Self.Text
+                Width: =If(App.ActiveScreen.Size < 3, Parent.Width - (Parent.PaddingLeft + Parent.PaddingRight), 120)
+                ZIndex: =1
+
+            btnAddExpense_Back As button:
+                BorderColor: =ColorValue(varThemeColors.primary)
+                BorderThickness: =1
+                Color: =ColorValue(varThemeColors.primary)
+                DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                DisabledColor: =ColorValue(varThemeColors.disabledText)
+                DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                Fill: =ColorValue(varThemeColors.backgroundFill)
+                FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                Font: =varThemeFont.CTA.face
+                FontWeight: =varThemeFont.CTA.weight
+                Height: =32
+                HoverBorderColor: =ColorValue(varThemeColors.primary)
+                HoverColor: =ColorValue(varThemeColors.altText)
+                HoverFill: =ColorValue(varThemeColors.tertiary)
+                Italic: =varThemeFont.CTA.italic
+                OnSelect: =Back();
+                PressedBorderColor: =Self.BorderColor
+                PressedColor: =ColorValue(varThemeColors.altText)
+                PressedFill: =ColorValue(varThemeColors.secondaryGray)
+                RadiusBottomLeft: =6
+                RadiusBottomRight: =6
+                RadiusTopLeft: =6
+                RadiusTopRight: =6
+                Size: =varThemeFont.CTA.size
+                Text: |-
+                    =With(
+                        {Text: "Back" },
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colUserLocalizedStrings,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )
+                Tooltip: =Self.Text
+                Width: =If(App.ActiveScreen.Size < 3, Parent.Width - (Parent.PaddingLeft + Parent.PaddingRight), 120)
+                ZIndex: =2
+
+        btnAddExpense_Cancel As button:
+            BorderColor: =ColorValue(varThemeColors.primary)
+            BorderThickness: =1
+            Color: =ColorValue(varThemeColors.primary)
+            DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+            DisabledColor: =ColorValue(varThemeColors.disabledText)
+            DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+            Fill: =ColorValue(varThemeColors.backgroundFill)
+            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+            Font: =varThemeFont.CTA.face
+            FontWeight: =varThemeFont.CTA.weight
+            Height: =32
+            HoverBorderColor: =ColorValue(varThemeColors.primary)
+            HoverColor: =ColorValue(varThemeColors.altText)
+            HoverFill: =ColorValue(varThemeColors.tertiary)
+            Italic: =varThemeFont.CTA.italic
+            OnSelect: |-
+                =Navigate('Discard Confirmation Screen', Transition.None, {_DiscardExpenseAction: true})
+            PressedBorderColor: =Self.BorderColor
+            PressedColor: =ColorValue(varThemeColors.altText)
+            PressedFill: =ColorValue(varThemeColors.secondaryGray)
+            RadiusBottomLeft: =6
+            RadiusBottomRight: =6
+            RadiusTopLeft: =6
+            RadiusTopRight: =6
+            Size: =varThemeFont.CTA.size
+            Text: |-
+                =With(
+                    {Text: "Cancel" },
+                    // Check if a localized text exists for "Text" in the user's preferred language
+                    If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colUserLocalizedStrings,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colUserLocalizedStrings,
+                            'English Value' = Text
+                        ).'Localized Value'
+                    )
+                )
+            Tooltip: =Self.Text
+            Width: =If(App.ActiveScreen.Size < 3, Parent.Width - (Parent.PaddingLeft + Parent.PaddingRight) - contAddExpenseContainer_NextBackButtons.PaddingLeft, 120)
+            X: =30
+            Y: =62
+            ZIndex: =3
+
+    shpAddExpense_Separator As rectangle:
+        BorderStyle: =BorderStyle.None
+        Fill: =ColorValue(varThemeColors.disabledText)
+        Height: =1
+        Width: =Parent.Width
+        ZIndex: =4
+

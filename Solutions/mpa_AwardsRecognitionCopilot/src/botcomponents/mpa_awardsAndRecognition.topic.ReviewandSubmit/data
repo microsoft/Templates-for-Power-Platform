@@ -1,0 +1,277 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRedirect
+  id: main
+  actions:
+    - kind: ParseValue
+      id: LbjYHg
+      variable: Topic.parsedUserRatings
+      valueType:
+        kind: Table
+        properties:
+          AwardRatingId: String
+          Value: String
+
+      value: =Global.UserRatings
+
+    - kind: InvokeConnectorAction
+      id: invokeConnectorAction_H380yo
+      input:
+        binding:
+          $filter: =Concatenate("_mpa_award_value eq '", Global.AwardId, "'")
+          $orderby: mpa_order asc
+          $select: mpa_name,mpa_description
+          entityName: mpa_awardassessmentratingses
+          organization: current
+
+      output:
+        binding:
+          value: Topic.awardRatings
+
+      connectionReference: mpa_awardsAndRecognition.cr.0A-LiI5Z
+      connectionProperties:
+        mode: Invoker
+
+      operationId: ListRecordsWithOrganization
+      dynamicOutputSchema:
+        kind: Record
+        properties:
+          @odata.nextLink:
+            displayName: Next link
+            description: The url to fetch next page data.
+            visibility: Advanced
+            order: 1
+            type: String
+
+          value:
+            order: 0
+            type:
+              kind: Table
+              properties:
+                dynamicProperties:
+                  order: 0
+                  type: Any
+
+    - kind: ParseValue
+      id: vlJv0F
+      variable: Topic.parsedAwardRatings
+      valueType:
+        kind: Table
+        properties:
+          @odata.etag: String
+          mpa_awardassessmentratingsid: String
+          mpa_description: String
+          mpa_name: String
+          mpa_order: Number
+
+      value: "=\"[]\""
+
+    - kind: SetVariable
+      id: setVariable_ZcpdQb
+      variable: Topic.parsedAwardRatings
+      value: =Topic.awardRatings
+
+    - kind: SendActivity
+      id: sendActivity_6oIuyn
+      activity: Please review your options before submitting.
+
+    - kind: AdaptiveCardPrompt
+      id: v1Eluy
+      card: |-
+        ={
+          type: "AdaptiveCard",
+          version: "1.5",
+          body: [
+            {
+              type: "TextBlock",
+              text: "Award Summary",
+              weight: "Bolder",
+              size: "Medium"
+            },
+            {
+              type: "TextBlock",
+              text: "Nomination Period",
+              weight: "Bolder",
+              wrap: true
+            },
+            {
+              type: "TextBlock",
+              text: Global.NominationPeriodTitle,
+              wrap: true
+            },
+            {
+              type: "TextBlock",
+              text: "Award selected",
+              weight: "Bolder",
+              wrap: true
+            },
+            {
+              type: "TextBlock",
+              text: Global.AwardTitle,
+              wrap: true
+            },
+            {
+              type: "TextBlock",
+              text: "Nominee(s)",
+              weight: "Bolder",
+              wrap: true
+            },
+            {
+              type: "TextBlock",
+              text: Global.AwardeesNames, 
+              wrap: true
+            },
+            {
+              type: "TextBlock",
+              text: "Case for Nomination",
+              weight: "Bolder",
+              wrap: true
+            },
+                {
+                    type: "TextBlock",
+                    text: Global.AwardRationale,
+                    wrap: true
+                },
+            {
+              type: "TextBlock",
+              text: If(CountRows(Topic.awardRatings) > 0,"Ratings",""),
+              weight: "Bolder",
+              wrap: true
+            },
+            {
+                type: "Container",
+                items: ForAll(Topic.parsedAwardRatings, {
+        		    type: "Container",
+        		    items: [
+        		        {
+        		            type: "TextBlock",
+        		            text: ThisRecord.mpa_name,
+        		            wrap: true,
+        		            weight: "Bolder",
+        		            size: "Medium"
+        		        },
+        		        {
+        		            type: "TextBlock",
+        		            text: ThisRecord.mpa_description,
+        		            wrap: true
+        		        },
+        		        {
+        		            type: "TextBlock",
+        		            text: LookUp(Global.StarRatings, value = LookUp(Topic.parsedUserRatings, AwardRatingId = mpa_awardassessmentratingsid).Value).title,
+        		            wrap: true
+        		        }
+        		    ]
+        		})
+           },
+           {
+              type: "ActionSet",
+                actions: [
+                    {
+                        type: "Action.Submit",
+                        title: "Submit",
+                        id: "SubmitId"
+                    },
+                    {
+                        type: "Action.Submit",
+                        title: "Edit",
+                        id: "EditId"
+                    },
+                    {
+                      type: "Action.Submit",
+                      title: "Cancel",
+                      id: "CancelId"
+                    }
+                ]
+            }
+          ]
+        }
+      output:
+        binding:
+          actionSubmitId: Topic.actionSubmitId
+
+      outputType:
+        properties:
+          actionSubmitId: String
+
+    - kind: ConditionGroup
+      id: conditionGroup_vkfYzC
+      conditions:
+        - id: conditionItem_GHqau5
+          condition: =Topic.actionSubmitId = "Submit"
+          actions:
+            - kind: InvokeFlowAction
+              id: invokeFlowAction_Jg5X4L
+              input:
+                binding:
+                  text: =Global.AwardId
+                  text_1: =Global.NominationPeriod
+                  text_2: =Global.AwardeesId
+                  text_3: =Global.UserType
+                  text_4: =Global.AwardRationale
+                  text_5: =Global.UserId
+                  text_6: =Global.UserRatings
+                  text_7: =Global.AwardeesNames
+                  text_8: =System.Conversation.LocalTimeZone
+
+              output:
+                binding:
+                  message: Topic.submitMessage
+                  success: Topic.submitSuccess
+
+              flowId: 1b3b6893-a71e-ef11-840a-00224834774f
+
+            - kind: SendActivity
+              id: sendActivity_fdaaDH
+              activity: "{Topic.submitMessage}"
+
+        - id: conditionItem_I6nGiq
+          condition: =Topic.actionSubmitId = "Edit"
+          actions:
+            - kind: BeginDialog
+              id: 3hVg0y
+              dialog: mpa_awardsAndRecognition.topic.EditAward
+
+            - kind: GotoAction
+              id: 7irYYv
+              actionId: sendActivity_6oIuyn
+
+            - kind: EndDialog
+              id: sSMeDB
+
+        - id: conditionItem_DBAd5s
+          condition: =Topic.actionSubmitId = "Cancel"
+          actions:
+            - kind: SetVariable
+              id: setVariable_imZdZ8
+              variable: Global.ActionId
+              value: =Topic.actionSubmitId
+
+            - kind: BeginDialog
+              id: lgz3sS
+              dialog: mpa_awardsAndRecognition.topic.ConfirmorCancel
+
+            - kind: ConditionGroup
+              id: conditionGroup_wHRG6f
+              conditions:
+                - id: conditionItem_Wv9ns1
+                  condition: =Global.ActionId = "Submit"
+
+              elseActions:
+                - kind: GotoAction
+                  id: CFlLOt
+                  actionId: sendActivity_6oIuyn
+
+                - kind: EndDialog
+                  id: qPLkye
+
+      elseActions:
+        - kind: BeginDialog
+          id: Enl6Aj
+          dialog: mpa_awardsAndRecognition.topic.OtherConditionsRedirect
+
+        - kind: EndDialog
+          id: YrZUUk
+
+    - kind: BeginDialog
+      id: orOenS
+      dialog: mpa_awardsAndRecognition.topic.Anythingelse
