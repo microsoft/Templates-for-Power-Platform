@@ -1,0 +1,1445 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_saperp": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_SAPBasisAdministrator"
+        },
+        "api": {
+          "name": "shared_saperp"
+        }
+      },
+      "shared_commondataserviceforapps_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_sharedcommondataserviceforapps_fadb4"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "SAP Application Server (mpa_SAPApplicationServer)": {
+          "defaultValue": "{\"AppServerHost\":\"10.0.0.10\",\"Client\":\"800\",\"SystemNumber\":\"00\",\"LogonType\":\"ApplicationServer\"}",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_SAPApplicationServer",
+            "description": "JSON string that contains system parameters, host, system number, client, etc."
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "db679f95-e710-4173-96a2-c17c7473720e"
+          },
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "batchItemId",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Initialize_variable_-_child2tablevalues": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "a3022868-e4f7-4ab8-89e7-c13086a10b4a"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "child2tablevalues",
+                "type": "array",
+                "value": []
+              }
+            ]
+          }
+        },
+        "Try": {
+          "actions": {
+            "Switch_Procedure": {
+              "runAfter": {
+                "Get_Current_Values": [
+                  "Succeeded"
+                ]
+              },
+              "cases": {
+                "standard": {
+                  "case": "standard",
+                  "actions": {
+                    "standard": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "5fd6efe1-383b-47cf-9186-7cf3294c3b91"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_saperp",
+                          "operationId": "ReadTableVersion3",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                        },
+                        "parameters": {
+                          "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                          "inputParameters/tableName": "@body('Parameters')?['valuesTable']",
+                          "inputParameters/FieldNames": [
+                            "@body('Parameters')?['valueField']",
+                            "@body('Parameters')?['labelField']"
+                          ],
+                          "inputParameters/RowCount": 9999,
+                          "inputParameters/WhereFilters": [
+                            " @{body('Parameters')?['languageField']} = '@{body('Parameters')?['language']}'"
+                          ]
+                        },
+                        "authentication": {
+                          "type": "Raw",
+                          "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                        },
+                        "retryPolicy": {
+                          "type": "fixed",
+                          "count": 3,
+                          "interval": "PT05S"
+                        }
+                      }
+                    },
+                    "Set_variable_-_standard_queried": {
+                      "runAfter": {
+                        "parseStandard": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "24a4837b-78cd-4a92-aa87-feaf30e221fe"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "numberOfValuesQueried",
+                        "value": "@length(body('parseStandard'))"
+                      }
+                    },
+                    "parseStandard": {
+                      "runAfter": {
+                        "standard": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "d27f29a9-66d1-4bda-81f4-dad176ee052d"
+                      },
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@body('standard')['Rows']",
+                        "select": {
+                          "language": "@body('Parameters')?['language']",
+                          "valueCode": "@item()?[body('Parameters')?['valueField']]",
+                          "value": "@item()?[body('Parameters')?['labelField']]",
+                          "parentValueCode": "@null",
+                          "grandparentValueCode": "@null",
+                          "dataverseDomain": "@body('Parameters')?['dataverseDomain']",
+                          "dataverseLanguage": "@body('Parameters')?['dataverseLanguage']",
+                          "dataverseParentDomain": "@null",
+                          "dataverseParentLanguage": "@null"
+                        }
+                      }
+                    },
+                    "Set_variable_-_values_standard": {
+                      "runAfter": {
+                        "Set_variable_-_standard_queried": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "647b10cc-5237-4ffa-814d-6449e7237519"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "values",
+                        "value": "@body('parseStandard')"
+                      }
+                    },
+                    "Set_Parenting_Level": {
+                      "runAfter": {
+                        "Set_variable_-_values_standard": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "3f9dafbb-6a2c-4d16-97ff-d3776dab3879"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "Parenting Level",
+                        "value": 865420000
+                      }
+                    }
+                  }
+                },
+                "child": {
+                  "case": "child",
+                  "actions": {
+                    "child": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "5fd6efe1-383b-47cf-9186-7cf3294c3b91"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_saperp",
+                          "operationId": "ReadTableVersion3",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                        },
+                        "parameters": {
+                          "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                          "inputParameters/tableName": "@body('Parameters')?['valuesTable']",
+                          "inputParameters/FieldNames": [
+                            "@body('Parameters')?['valueField']",
+                            "@body('Parameters')?['labelField']",
+                            "@body('Parameters')?['parentField']"
+                          ],
+                          "inputParameters/RowCount": 9999,
+                          "inputParameters/WhereFilters": [
+                            "@{body('Parameters')?['languageField']} = '@{body('Parameters')?['language']}'"
+                          ]
+                        },
+                        "authentication": {
+                          "type": "Raw",
+                          "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                        }
+                      }
+                    },
+                    "Set_variable_-_child_queried": {
+                      "runAfter": {
+                        "parseChild": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "cdea435f-b4ce-4a67-a44b-480f08b5b9b0"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "numberOfValuesQueried",
+                        "value": "@length(body('parseChild'))"
+                      }
+                    },
+                    "parseChild": {
+                      "runAfter": {
+                        "child": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "d27f29a9-66d1-4bda-81f4-dad176ee052d"
+                      },
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@body('child')['Rows']",
+                        "select": {
+                          "language": "@body('Parameters')?['language']",
+                          "valueCode": "@item()?[body('Parameters')?['valueField']]",
+                          "value": "@item()?[body('Parameters')?['labelField']]",
+                          "parentValueCode": "@item()?[body('Parameters')?['parentField']]",
+                          "grandparentValueCode": "@null",
+                          "dataverseDomain": "@body('Parameters')?['dataverseDomain']",
+                          "dataverseLanguage": "@body('Parameters')?['dataverseLanguage']",
+                          "dataverseParentDomain": "@body('Parameters')?['dataverseParentDomain']",
+                          "dataverseParentLanguage": "@body('Parameters')?['dataverseLanguage']"
+                        }
+                      }
+                    },
+                    "Set_variable_-_values_child": {
+                      "runAfter": {
+                        "Set_variable_-_child_queried": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "b9201090-a250-4f65-9a0d-dbfde1e9e207"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "values",
+                        "value": "@body('parseChild')"
+                      }
+                    },
+                    "Set_Parenting_level_-child": {
+                      "runAfter": {
+                        "Set_variable_-_values_child": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "51e99063-3311-4eec-9cf3-0861bc0d093f"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "Parenting Level",
+                        "value": 865420001
+                      }
+                    }
+                  }
+                },
+                "childNoLanguage": {
+                  "case": "childNoLanguage",
+                  "actions": {
+                    "childNoLanguage": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "5fd6efe1-383b-47cf-9186-7cf3294c3b91"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_saperp",
+                          "operationId": "ReadTableVersion3",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                        },
+                        "parameters": {
+                          "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                          "inputParameters/tableName": "@body('Parameters')?['valuesTable']",
+                          "inputParameters/FieldNames": [
+                            "@body('Parameters')?['valueField']",
+                            "@body('Parameters')?['labelField']",
+                            "@body('Parameters')?['parentField']"
+                          ],
+                          "inputParameters/RowCount": 9999
+                        },
+                        "authentication": {
+                          "type": "Raw",
+                          "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                        },
+                        "retryPolicy": {
+                          "type": "none"
+                        }
+                      }
+                    },
+                    "parseChildNoLanguage": {
+                      "runAfter": {
+                        "childNoLanguage": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "d27f29a9-66d1-4bda-81f4-dad176ee052d"
+                      },
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@body('childNoLanguage')['Rows']",
+                        "select": {
+                          "language": "",
+                          "valueCode": "@item()?[body('Parameters')?['valueField']]",
+                          "value": "@item()?[body('Parameters')?['labelField']]",
+                          "parentValueCode": "@item()?[body('Parameters')?['parentField']]",
+                          "grandparentValueCode": "@null",
+                          "dataverseDomain": "@body('Parameters')?['dataverseDomain']",
+                          "dataverseLanguage": "@body('Parameters')?['dataverseLanguage']",
+                          "dataverseParentDomain": "@body('Parameters')?['dataverseParentDomain']",
+                          "dataverseParentLanguage": "@body('Parameters')?['dataverseLanguage']"
+                        }
+                      }
+                    },
+                    "Set_variable_-_childNoLanguage_queried": {
+                      "runAfter": {
+                        "parseChildNoLanguage": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "78cf195c-7261-45c7-aa14-665e49b59331"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "numberOfValuesQueried",
+                        "value": "@length(body('parseChildNoLanguage'))"
+                      }
+                    },
+                    "Set_variable_-_values_child_no_language": {
+                      "runAfter": {
+                        "Set_variable_-_childNoLanguage_queried": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "bd7ff8ec-0edd-4ff1-b45a-c43f93977669"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "values",
+                        "value": "@body('parseChildNoLanguage')"
+                      }
+                    },
+                    "Set_Parenting_Level_-_child_no_language": {
+                      "runAfter": {
+                        "Set_variable_-_values_child_no_language": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "b5605ca7-1c95-4055-a906-38fc5775ab8d"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "Parenting Level",
+                        "value": 865420001
+                      }
+                    }
+                  }
+                },
+                "standardNoLanguage": {
+                  "case": "standardNoLanguage",
+                  "actions": {
+                    "standardNoLanguage": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "5fd6efe1-383b-47cf-9186-7cf3294c3b91"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_saperp",
+                          "operationId": "ReadTableVersion3",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                        },
+                        "parameters": {
+                          "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                          "inputParameters/tableName": "@body('Parameters')?['valuesTable']",
+                          "inputParameters/FieldNames": [
+                            "@body('Parameters')?['valueField']",
+                            "@body('Parameters')?['labelField']"
+                          ],
+                          "inputParameters/RowCount": 9999
+                        },
+                        "authentication": {
+                          "type": "Raw",
+                          "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                        }
+                      }
+                    },
+                    "parseStandardNoLanguage": {
+                      "runAfter": {
+                        "standardNoLanguage": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "d27f29a9-66d1-4bda-81f4-dad176ee052d"
+                      },
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@body('standardNoLanguage')['Rows']",
+                        "select": {
+                          "language": "",
+                          "valueCode": "@item()?[body('Parameters')?['valueField']]",
+                          "value": "@item()?[body('Parameters')?['labelField']]",
+                          "parentValueCode": "@null",
+                          "grandparentValueCode": "@null",
+                          "dataverseDomain": "@body('Parameters')?['dataverseDomain']",
+                          "dataverseLanguage": "@body('Parameters')?['dataverseLanguage']",
+                          "dataverseParentDomain": "@null",
+                          "dataverseParentLanguage": "@null"
+                        }
+                      }
+                    },
+                    "Set_variable_-_standardNoLanguage": {
+                      "runAfter": {
+                        "parseStandardNoLanguage": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "0c6da4ce-2647-4963-bcc4-6ab8b3e614ec"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "numberOfValuesQueried",
+                        "value": "@length(body('parseStandardNoLanguage'))"
+                      }
+                    },
+                    "Set_variable_-_values_standardNoLanguage": {
+                      "runAfter": {
+                        "Set_variable_-_standardNoLanguage": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "595b270a-9fec-4fca-bc29-a114891e9e08"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "values",
+                        "value": "@body('parseStandardNoLanguage')"
+                      }
+                    },
+                    "Set_Parenting_Level-_Standard_no_language": {
+                      "runAfter": {
+                        "Set_variable_-_values_standardNoLanguage": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "b5a5ad11-cd18-4ff9-90a5-bbffbf6d0776"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "Parenting Level",
+                        "value": 865420000
+                      }
+                    }
+                  }
+                },
+                "fixed": {
+                  "case": "fixed",
+                  "actions": {
+                    "fixed": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "5fd6efe1-383b-47cf-9186-7cf3294c3b91"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_saperp",
+                          "operationId": "ReadTableVersion3",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                        },
+                        "parameters": {
+                          "x-ms-sap-system": "@parameters('SAP Application Server (mpa_SAPApplicationServer)')",
+                          "inputParameters/tableName": "DD07T",
+                          "inputParameters/FieldNames": [
+                            "DOMVALUE_L:Values for Domains: Single Value / Upper Limit",
+                            "DDTEXT:Short Text for Fixed Values"
+                          ],
+                          "inputParameters/RowCount": 9999,
+                          "inputParameters/WhereFilters": [
+                            "DOMNAME = '@{body('Parameters')?['domain']}' AND DDLANGUAGE = '@{body('Parameters')?['language']}'"
+                          ]
+                        },
+                        "authentication": {
+                          "type": "Raw",
+                          "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                        }
+                      }
+                    },
+                    "parseFixed": {
+                      "runAfter": {
+                        "fixed": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "d27f29a9-66d1-4bda-81f4-dad176ee052d"
+                      },
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@body('fixed')['Rows']",
+                        "select": {
+                          "language": "@body('Parameters')?['language']",
+                          "valueCode": "@item()?['DOMVALUE_L']",
+                          "value": "@item()?['DDTEXT']",
+                          "parentValueCode": "@null",
+                          "grandparentValueCode": "@null",
+                          "dataverseDomain": "@body('Parameters')?['dataverseDomain']",
+                          "dataverseLanguage": "@body('Parameters')?['dataverseLanguage']",
+                          "dataverseParentDomain": "@null",
+                          "dataverseParentLanguage": "@null"
+                        }
+                      }
+                    },
+                    "Set_variable_-_fixed": {
+                      "runAfter": {
+                        "parseFixed": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "39f82ec1-4474-4310-8130-3cf0d7bdcf93"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "numberOfValuesQueried",
+                        "value": "@length(body('parseFixed'))"
+                      }
+                    },
+                    "Set_variable_-_values_fixed": {
+                      "runAfter": {
+                        "Set_variable_-_fixed": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "38bb9fc8-1235-4f7e-91ff-50126f5a4b82"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "values",
+                        "value": "@body('parseFixed')"
+                      }
+                    },
+                    "Set_Parenting_Level_-_Fixed": {
+                      "runAfter": {
+                        "Set_variable_-_values_fixed": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "7c9747fc-a390-445e-b0b0-a538076c4a4e"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "Parenting Level",
+                        "value": 865420000
+                      }
+                    }
+                  }
+                }
+              },
+              "default": {
+                "actions": {}
+              },
+              "expression": "@body('Parameters')?['procedure']",
+              "metadata": {
+                "operationMetadataId": "6efcfb4e-0892-411b-80e6-47c16e0e3f44"
+              },
+              "type": "Switch"
+            },
+            "Update_a_row_-_Install_Template_Batch_Process_In_Progress": {
+              "runAfter": {
+                "Parameters": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "af89bc3a-86c7-4ea6-9625-be9bb950e19f"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "UpdateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_installtemplatebatchprocessitems",
+                  "recordId": "@triggerBody()['text']",
+                  "item/mpa_processingstatus": 865420001,
+                  "item/mpa_message": "Currently synching domain from SAP."
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              }
+            },
+            "Get_Current_Values": {
+              "runAfter": {
+                "Update_a_row_-_Install_Template_Batch_Process_In_Progress": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "cd3d58ce-87a9-4617-b412-98c1597b5d13"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "ListRecords",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_saplistofvalues",
+                  "$filter": "mpa_domain eq @{body('Parameters')?['dataversedomain']} and mpa_language eq @{body('Parameters')?['dataverselanguage']}"
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              }
+            },
+            "Get_Batch_Item": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "7289166d-452d-4846-bd43-fcda257368db"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_installtemplatebatchprocessitems",
+                  "recordId": "@triggerBody()['text']"
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              }
+            },
+            "Parameters": {
+              "runAfter": {
+                "Get_Batch_Item": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "58cbb42c-db76-4f50-a6cb-c0a8c7ea3f40"
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@outputs('Get_Batch_Item')?['body/mpa_parametersjson']",
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "dataverseDomain": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "domain": {
+                      "type": "string"
+                    },
+                    "language": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "procedure": {
+                      "type": "string"
+                    },
+                    "valuesTable": {
+                      "type": "string"
+                    },
+                    "valueField": {
+                      "type": "string"
+                    },
+                    "labelField": {
+                      "type": "string"
+                    },
+                    "languageField": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "dataverseLanguage": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "parentField": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "dataverseParentDomain": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "grandparentField": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "secondTable": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "Respond_to_a_PowerApp_or_flow_2": {
+              "runAfter": {
+                "Update_a_row_-_Install_Template_Batch_Process_Complete": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "7cc83369-ae58-4a0a-9842-0a8dab079831"
+              },
+              "type": "Response",
+              "kind": "PowerApp",
+              "inputs": {
+                "statusCode": 200,
+                "body": {},
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            },
+            "Filter_Non_empty_values": {
+              "runAfter": {
+                "Switch_Procedure": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "2eff7d0c-12ed-4d4e-8019-ba45aee89ff0"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@variables('values')",
+                "where": "@equals(empty(item()['value']), false)"
+              }
+            },
+            "No._of_Records": {
+              "runAfter": {
+                "Filter_Non_empty_values": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "0e76fb3f-6913-4c4f-bf2f-b5f34fec6598"
+              },
+              "type": "Compose",
+              "inputs": "@length(body('Filter_Non_empty_values'))"
+            },
+            "Chuck_Array": {
+              "runAfter": {
+                "Set_variable": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "e328a3f5-b1f4-4f03-a8de-ed6a1824843b"
+              },
+              "type": "Compose",
+              "inputs": "@chunk(body('Filter_Non_empty_values'),3000)"
+            },
+            "Apply_to_each": {
+              "foreach": "@outputs('Chuck_Array')",
+              "actions": {
+                "Add_a_new_row_to_Sync_Domains_Table": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "302a1fda-09f5-4732-a8c4-938fe1ae6d60"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "CreateRecord",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "new_saptemplatesyncdomains",
+                      "item/new_name": "@body('Parameters')?['valuesTable']",
+                      "item/new_level": "@variables('Parenting Level')",
+                      "item/new_valuesjson": "@string(items('Apply_to_each'))"
+                    },
+                    "authentication": {
+                      "type": "Raw",
+                      "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Chuck_Array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "e6c2a399-20da-4ec3-9494-06cad3ca5fbc"
+              },
+              "type": "Foreach"
+            },
+            "Set_variable": {
+              "runAfter": {
+                "No._of_Records": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "4e0e43d0-24f5-4476-87e2-85ad4d085aa3"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "numberOfValuesQueried",
+                "value": "@length(body('Filter_Non_empty_values'))"
+              }
+            },
+            "Get_Sync_Dataflow": {
+              "runAfter": {
+                "Apply_to_each": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "5adf752d-a4c9-42fa-a29a-03f1cd20e6dd"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "ListRecords",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "msdyn_dataflows",
+                  "$filter": "msdyn_name eq 'SAP Sync Domains' and componentstate eq 0",
+                  "$orderby": "modifiedon desc"
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              }
+            },
+            "Update_a_row_-_Install_Template_Batch_Process_Complete": {
+              "runAfter": {
+                "Get_Sync_Dataflow": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "ec92d059-c6eb-463e-8708-59ca91cd124a"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "UpdateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_installtemplatebatchprocessitems",
+                  "recordId": "@triggerBody()['text']",
+                  "item/mpa_processingstatus": 865420002,
+                  "item/mpa_message": "@{variables('numberOfValuesQueried')} domain '@{body('Parameters')?['domain']}' values will be synced to Dataverse."
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_Parenting_Level": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3445411a-85e1-4f30-abf1-75f21c2788f2"
+          },
+          "type": "Scope"
+        },
+        "Initialize_variable_-_numberOfValuesAdded": {
+          "runAfter": {
+            "Initialize_variable_-_numberOfValuesQueried": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "efe86412-d481-4719-9c69-3580e8b84c5e"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "numberOfValuesAdded",
+                "type": "integer",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_numberOfValuesQueried": {
+          "runAfter": {
+            "Initialize_variable_-_child2tablevalues": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "33985d1e-7818-4922-a700-cd47f99a7578"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "numberOfValuesQueried",
+                "type": "integer",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_numberOfValuesDeleted": {
+          "runAfter": {
+            "Initialize_variable_-_numberOfValuesUpdated": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "bf7a8e1b-96f2-43b1-9985-05963e5035a6"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "numberOfValuesDeleted",
+                "type": "integer",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_numberOfValuesUpdated": {
+          "runAfter": {
+            "Initialize_variable_-_numberOfValuesAdded": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "212adf33-3518-4f88-8559-894eabf116cb"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "numberOfValuesUpdated",
+                "type": "integer",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Catch": {
+          "actions": {
+            "Filter_array_errors": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "666db227-1913-49ca-bcb8-0a35d02f56e6"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@result('Try')",
+                "where": "@or(equals(item()?['Status'], 'Failed'), equals(item()?['Status'], 'TimedOut'))"
+              }
+            },
+            "Parse_JSON_errors": {
+              "runAfter": {
+                "Filter_array_errors": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6ed4bf6c-8457-455a-9e78-752286342760"
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@body('Filter_array_errors')",
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "error": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "inputs": {
+                        "type": "object",
+                        "properties": {
+                          "host": {
+                            "type": "object",
+                            "properties": {
+                              "apiId": {
+                                "type": "string"
+                              },
+                              "connectionReferenceName": {
+                                "type": "string"
+                              },
+                              "operationId": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "parameters": {
+                            "type": "object",
+                            "properties": {
+                              "environment": {
+                                "type": "string"
+                              },
+                              "api-version": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "outputs": {
+                        "type": "object",
+                        "properties": {
+                          "statusCode": {
+                            "type": "integer"
+                          },
+                          "headers": {
+                            "type": "object",
+                            "properties": {
+                              "Cache-Control": {
+                                "type": "string"
+                              },
+                              "Strict-Transport-Security": {
+                                "type": "string"
+                              },
+                              "x-ms-islandgateway": {
+                                "type": "string"
+                              },
+                              "x-ms-request-id": {
+                                "type": "string"
+                              },
+                              "x-ms-correlation-request-id": {
+                                "type": "string"
+                              },
+                              "x-ms-correlation-id": {
+                                "type": "string"
+                              },
+                              "Server-Timing": {
+                                "type": "string"
+                              },
+                              "X-Content-Type-Options": {
+                                "type": "string"
+                              },
+                              "x-ms-service-request-id": {
+                                "type": "string"
+                              },
+                              "x-ms-activity-vector": {
+                                "type": "string"
+                              },
+                              "Timing-Allow-Origin": {
+                                "type": "string"
+                              },
+                              "x-ms-apihub-cached-response": {
+                                "type": "string"
+                              },
+                              "x-ms-apihub-obo": {
+                                "type": "string"
+                              },
+                              "Date": {
+                                "type": "string"
+                              },
+                              "Content-Length": {
+                                "type": "string"
+                              },
+                              "Content-Type": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "body": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              },
+                              "error": {
+                                "type": "object",
+                                "properties": {
+                                  "code": {
+                                    "type": "string"
+                                  },
+                                  "message": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "startTime": {
+                        "type": "string"
+                      },
+                      "endTime": {
+                        "type": "string"
+                      },
+                      "trackingId": {
+                        "type": "string"
+                      },
+                      "clientTrackingId": {
+                        "type": "string"
+                      },
+                      "clientKeywords": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "Apply_to_each_errors": {
+              "foreach": "@body('Parse_JSON_errors')",
+              "actions": {
+                "Append_to_string_variable": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "3055226a-08c9-4eea-9025-2b4f4fe4a065"
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "message",
+                    "value": "@items('Apply_to_each_errors')?['error']?['message']"
+                  }
+                },
+                "Append_to_string_variable_2": {
+                  "runAfter": {
+                    "Append_to_string_variable": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "64f6fc1b-a99a-44e0-95f3-cee480002d2d"
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "message",
+                    "value": "@items('Apply_to_each_errors')?['outputs']?['body']?['message']"
+                  }
+                },
+                "Append_to_string_variable_3": {
+                  "runAfter": {
+                    "Append_to_string_variable_2": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "254a4d72-82d4-4f1c-af9c-eef0bec429ed"
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "message",
+                    "value": "@items('Apply_to_each_errors')?['outputs']?['body']?['error']?['message']"
+                  }
+                }
+              },
+              "runAfter": {
+                "Parse_JSON_errors": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "cbd51387-ed14-4795-817e-718ac44e680c"
+              },
+              "type": "Foreach"
+            },
+            "Update_a_row_-_Install_Template_Batch_Process_Error": {
+              "runAfter": {
+                "Apply_to_each_errors": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "7efeb16e-cf87-46c3-96ca-3689ff19f737"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "UpdateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_installtemplatebatchprocessitems",
+                  "recordId": "@triggerBody()['text']",
+                  "item/mpa_processingstatus": 865420003,
+                  "item/mpa_message": "@variables('message')"
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              }
+            },
+            "Respond_to_a_PowerApp_or_flow": {
+              "runAfter": {
+                "Update_a_row_-_Install_Template_Batch_Process_Error": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "687a59d9-a953-47b0-8cc8-dbcc52ec665d"
+              },
+              "type": "Response",
+              "kind": "PowerApp",
+              "inputs": {
+                "statusCode": 200,
+                "body": {},
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            },
+            "Terminate": {
+              "runAfter": {
+                "Respond_to_a_PowerApp_or_flow": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "8c7c2852-0ddd-47f3-bb2f-0898db7bd03f"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed"
+              }
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Skipped",
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "5faf7447-5476-4e1d-93e9-2592c2e22078"
+          },
+          "type": "Scope"
+        },
+        "Initialize_variable_-_message": {
+          "runAfter": {
+            "Initialize_variable_-_numberOfValuesDeleted": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6bd3244d-6b18-41e1-9984-4b9c3d8df6a5"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "message",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_values": {
+          "runAfter": {
+            "Initialize_variable_-_message": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "283544f6-8c71-4069-9230-61b6ff9adef7"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "values",
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_parentSAPListofValueID": {
+          "runAfter": {
+            "Initialize_variable_-_values": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "648819b2-75ee-48db-945e-5bbb31b90411"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "parentSAPListofValueID",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_Parenting_Level": {
+          "runAfter": {
+            "Initialize_variable_-_parentSAPListofValueID": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "1ab2179d-472c-4d7a-9fa0-6fa30dab3223"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Parenting Level",
+                "type": "integer"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}
