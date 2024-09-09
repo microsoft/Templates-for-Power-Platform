@@ -18,6 +18,24 @@
         "api": {
           "name": "shared_dataflows"
         }
+      },
+      "shared_office365users_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_sharedoffice365users_f61b7"
+        },
+        "api": {
+          "name": "shared_office365users"
+        }
+      },
+      "shared_office365": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_sharedoffice365_fbe3e"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
       }
     },
     "definition": {
@@ -315,6 +333,129 @@
                   "inputs": {
                     "name": "Status Message",
                     "value": "The batch process has completed."
+                  }
+                },
+                "Get_Created_By_User": {
+                  "runAfter": {
+                    "Set_variable": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "3605041d-c700-4967-970c-088dc9750143"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "GetItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "systemusers",
+                      "recordId": "@triggerOutputs()?['body/_createdby_value']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Get_user_profile_(V2)": {
+                  "runAfter": {
+                    "Get_Created_By_User": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "f7ff8395-33b7-470f-9d5a-7d4d63337b52"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365users_1",
+                      "operationId": "UserProfile_V2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365users"
+                    },
+                    "parameters": {
+                      "id": "@outputs('Get_Created_By_User')?['body/domainname']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Get_Refreshed_Batch_Items": {
+                  "runAfter": {
+                    "Get_user_profile_(V2)": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "c5bcae0d-09d2-4aa7-a9f6-0edac398de65"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "ListRecords",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_installtemplatebatchprocessitems",
+                      "$filter": "_mpa_batchprocess_value eq '@{triggerOutputs()?['body/mpa_installtemplatebatchprocessid']}'",
+                      "$orderby": "mpa_name asc"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Create_HTML_table": {
+                  "runAfter": {
+                    "Get_Refreshed_Batch_Items": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "6f5c0218-ae0b-413e-9b4f-7bb788255c2d"
+                  },
+                  "type": "Table",
+                  "inputs": {
+                    "from": "@outputs('Get_Refreshed_Batch_Items')?['body/value']",
+                    "format": "HTML",
+                    "columns": [
+                      {
+                        "header": "Domain",
+                        "value": "@item()?['mpa_name']"
+                      },
+                      {
+                        "header": "Status",
+                        "value": "@If(equals(item()?['mpa_processingstatus'], 865420000), 'Not Started', If(equals(item()?['mpa_processingstatus'], 865420001), 'In Progress', If(equals(item()?['mpa_processingstatus'], 865420002), 'Completed', 'Error')))"
+                      },
+                      {
+                        "header": "Message",
+                        "value": "@item()?['mpa_message']"
+                      }
+                    ]
+                  }
+                },
+                "Send_an_email_(V2)": {
+                  "runAfter": {
+                    "Create_HTML_table": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "0cf5f93b-c822-4d69-8a59-3aa55f726a50"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@outputs('Get_user_profile_(V2)')?['body/mail']",
+                      "emailMessage/Subject": "SAP domain sync process completed",
+                      "emailMessage/Body": "<p>The following SAP domains have completed syncing to Microsoft Dataverse as part of the SAP Procurement template installation.<br>\n<br>\n@{outputs('Compose_-_CSS_Table_Style')}@{body('Create_HTML_table')}<br>\n<br>\n</p>",
+                      "emailMessage/Importance": "Normal"
+                    },
+                    "authentication": "@parameters('$authentication')"
                   }
                 }
               },
