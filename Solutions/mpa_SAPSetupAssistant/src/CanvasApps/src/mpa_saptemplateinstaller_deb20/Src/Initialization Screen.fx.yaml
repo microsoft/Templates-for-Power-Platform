@@ -1,0 +1,789 @@
+"'Initialization Screen' As screen":
+    OnVisible: |+
+        =UpdateContext(
+            {
+                _loading: true,
+                _checkBatchStatus: false,
+                _timeOut: false,
+                _batchProcess: Blank(),
+                _hasErrors: false
+            }
+        );
+        
+        UpdateContext(
+            {
+                _totalDuration: 0,
+                _checkBatchStatus: true
+            }
+        );
+        
+
+    Container3_3 As groupContainer.verticalAutoLayoutContainer:
+        DropShadow: =DropShadow.None
+        Height: =App.Height
+        LayoutAlignItems: =LayoutAlignItems.Stretch
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutGap: =15
+        LayoutJustifyContent: =LayoutJustifyContent.Center
+        LayoutMode: =LayoutMode.Auto
+        LayoutOverflowY: =LayoutOverflow.Scroll
+        PaddingBottom: =20
+        PaddingLeft: =20
+        PaddingRight: =20
+        PaddingTop: =20
+        Visible: |-
+            =And(
+                _hasErrors = false,
+                _loading = false,
+                _checkBatchStatus = false,
+                _timeOut = true
+            )
+        Width: =App.Width
+        ZIndex: =1
+
+        Container4_3 As groupContainer.manualLayoutContainer:
+            AlignInContainer: =AlignInContainer.Center
+            DropShadow: =DropShadow.None
+            FillPortions: =0
+            Height: =120
+            LayoutMinHeight: =120
+            LayoutMinWidth: =250
+            Width: =120
+            ZIndex: =1
+
+            Circle1_3 As circle:
+                Fill: =RGBA(255, 191, 0, 1)
+                Height: =Parent.Height
+                Width: =120
+                ZIndex: =1
+
+            Icon4_3 As icon.Check:
+                Color: =RGBA(255, 255, 255, 1)
+                Height: =60
+                Icon: =Icon.Warning
+                Width: =60
+                X: =Parent.Width/2-Self.Width/2
+                Y: =Parent.Height/2-Self.Height/2
+                ZIndex: =2
+
+        TextCanvas4_8 As Text:
+            Align: ='TextCanvas.Align'.Center
+            AutoHeight: =false
+            BorderColor: =
+            BorderStyle: =""
+            DisplayMode: =DisplayMode.Edit
+            Fill: =
+            Font: =""
+            FontColor: =
+            FontItalic: =false
+            FontStrikethrough: =false
+            FontUnderline: =false
+            Height: =32
+            LayoutMinHeight: =32
+            LayoutMinWidth: =96
+            Size: =24
+            Text: ="Warning!"
+            Visible: =true
+            Width: =96
+            Wrap: =false
+            X: =0
+            Y: =0
+            ZIndex: =2
+
+        TextCanvas4_9 As Text:
+            Align: ='TextCanvas.Align'.Center
+            AutoHeight: =true
+            BorderColor: =
+            BorderStyle: =""
+            DisplayMode: =DisplayMode.Edit
+            Fill: =
+            Font: =""
+            FontColor: =
+            FontItalic: =false
+            FontStrikethrough: =false
+            FontUnderline: =false
+            Height: =32
+            LayoutMinHeight: =32
+            LayoutMinWidth: =96
+            Size: =14
+            Text: ="Initializing the SAP Template Installer is taking longer than expected. Please try again and if the issue persists log a support issue below."
+            Visible: =true
+            Width: =96
+            X: =0
+            Y: =0
+            ZIndex: =3
+
+        Container4_4 As groupContainer.horizontalAutoLayoutContainer:
+            DropShadow: =DropShadow.None
+            FillPortions: =0
+            Height: =35
+            LayoutGap: =20
+            LayoutJustifyContent: =LayoutJustifyContent.Center
+            LayoutMinHeight: =100
+            LayoutMinWidth: =100
+            LayoutMode: =LayoutMode.Auto
+            ZIndex: =5
+
+            ButtonCanvas4_4 As Button:
+                AccessibleLabel: ="Try again"
+                Align: =""
+                AlignInContainer: =AlignInContainer.Center
+                BasePaletteColor: =
+                BorderColor: =
+                BorderStyle: =""
+                DisplayMode: =DisplayMode.Edit
+                Font: =""
+                FontColor: =
+                FontItalic: =false
+                FontStrikethrough: =false
+                FontUnderline: =false
+                FontWeight: =""
+                Height: =32
+                Icon: =""
+                IconRotation: =0
+                IconStyle: ="Outline"
+                Layout: ="Icon before"
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                OnSelect: |
+                    =UpdateContext(
+                        {
+                            _loading: true,
+                            _checkBatchStatus: false,
+                            _timeOut: false,
+                            _batchProcess: Blank(),
+                            _hasErrors: false
+                        }
+                    );
+                    Remove(
+                        'Install Processes',
+                        LookUp(
+                            'Install Processes',
+                            Template = 'Template (Install Processes)'.SAP
+                        )
+                    );
+                    UpdateContext(
+                        {
+                            _batchProcess: Patch(
+                                'Install Template Async Processes',
+                                Defaults('Install Template Async Processes'),
+                                {
+                                    'Batch Status': 'Batch Status (Install Template Async Processes)'.'Not Started',
+                                    'Batch Type': 'Install Template Batch Type'.'SAP Install Process Setup',
+                                    Name: "SAP Install Process Setup",
+                                    Message: "Initializing SAP Template Installer process for first time use."
+                                }
+                            )
+                        }
+                    );
+                    Patch(
+                        'Install Template Async Process Items',
+                        Defaults('Install Template Async Process Items'),
+                        {
+                            'Batch Type': 'Install Template Batch Type'.'SAP Install Process Setup',
+                            'Install Template Async Process': _batchProcess,
+                            Name: "SAP Install Process Setup",
+                            'Processing Status': 'Processing Status (Install Template Async Process Items)'.'Not Started',
+                            'Has Dependency?': false
+                        }
+                    );
+                    UpdateContext(
+                        {
+                            _batchProcess: Patch(
+                                'Install Template Async Processes',
+                                LookUp(
+                                    'Install Template Async Processes',
+                                    'Install Template Async Process' = _batchProcess.'Install Template Async Process'
+                                ),
+                                {
+                                    'Batch Status': 'Batch Status (Install Template Async Processes)'.'In Progress',
+                                    'Started On': Now()
+                                }
+                            )
+                        }
+                    );
+                    UpdateContext(
+                        {
+                            _totalDuration: 0,
+                            _checkBatchStatus: true
+                        }
+                    );
+                Text: ="Try again"
+                VerticalAlign: =""
+                Visible: =true
+                Width: =125 
+                X: =(Parent.Width-Self.Width)/2
+                Y: =Parent.Height-Self.Height-2
+                ZIndex: =1
+
+            ButtonCanvas4_5 As Button:
+                AccessibleLabel: ="Get started"
+                Align: =""
+                AlignInContainer: =AlignInContainer.Center
+                Appearance: ='ButtonCanvas.Appearance'.Secondary
+                BasePaletteColor: =
+                BorderColor: =
+                BorderStyle: =""
+                DisplayMode: =DisplayMode.Edit
+                Font: =""
+                FontColor: =
+                FontItalic: =false
+                FontStrikethrough: =false
+                FontUnderline: =false
+                FontWeight: =""
+                Height: =32
+                Icon: =""
+                IconRotation: =0
+                IconStyle: ="Outline"
+                Layout: ="Icon before"
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                OnSelect: |-
+                    =Launch("https://aka.ms/PowerPlatformTemplateSupport")
+                Text: ="Log support issue"
+                VerticalAlign: =""
+                Visible: =true
+                Width: =175
+                X: =(Parent.Width-Self.Width)/2
+                Y: =Parent.Height-Self.Height-2
+                ZIndex: =2
+
+    Container3_2 As groupContainer.verticalAutoLayoutContainer:
+        DropShadow: =DropShadow.None
+        Height: =App.Height
+        LayoutAlignItems: =LayoutAlignItems.Stretch
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutGap: =15
+        LayoutJustifyContent: =LayoutJustifyContent.Center
+        LayoutMode: =LayoutMode.Auto
+        LayoutOverflowY: =LayoutOverflow.Scroll
+        PaddingBottom: =20
+        PaddingLeft: =20
+        PaddingRight: =20
+        PaddingTop: =20
+        Visible: |-
+            =And(
+                _hasErrors = true,
+                _loading = false,
+                _checkBatchStatus = false,
+                _timeOut = false
+            )
+        Width: =App.Width
+        ZIndex: =2
+
+        Container4_2 As groupContainer.manualLayoutContainer:
+            AlignInContainer: =AlignInContainer.Center
+            DropShadow: =DropShadow.None
+            FillPortions: =0
+            Height: =120
+            LayoutMinHeight: =120
+            LayoutMinWidth: =250
+            Width: =120
+            ZIndex: =1
+
+            Circle1_2 As circle:
+                Fill: =RGBA(189, 49, 51, 1)
+                Height: =Parent.Height
+                Width: =120
+                ZIndex: =1
+
+            Icon4_2 As icon.Check:
+                Color: =RGBA(255, 255, 255, 1)
+                Height: =60
+                Icon: =Icon.Cancel
+                Width: =60
+                X: =Parent.Width/2-Self.Width/2
+                Y: =Parent.Height/2-Self.Height/2
+                ZIndex: =2
+
+        TextCanvas4_5 As Text:
+            Align: ='TextCanvas.Align'.Center
+            AutoHeight: =false
+            BorderColor: =
+            BorderStyle: =""
+            DisplayMode: =DisplayMode.Edit
+            Fill: =
+            Font: =""
+            FontColor: =
+            FontItalic: =false
+            FontStrikethrough: =false
+            FontUnderline: =false
+            Height: =32
+            LayoutMinHeight: =32
+            LayoutMinWidth: =96
+            Size: =24
+            Text: ="Error!"
+            Visible: =true
+            Width: =96
+            Wrap: =false
+            X: =0
+            Y: =0
+            ZIndex: =2
+
+        TextCanvas4_6 As Text:
+            Align: ='TextCanvas.Align'.Center
+            AutoHeight: =true
+            BorderColor: =
+            BorderStyle: =""
+            DisplayMode: =DisplayMode.Edit
+            Fill: =
+            Font: =""
+            FontColor: =
+            FontItalic: =false
+            FontStrikethrough: =false
+            FontUnderline: =false
+            Height: =32
+            LayoutMinHeight: =32
+            LayoutMinWidth: =96
+            Size: =14
+            Text: ="Unfortunately there was an error when attempting to initialize the install template for the first time. Please try again and reach out to support if the issue persists."
+            Visible: =true
+            Width: =96
+            X: =0
+            Y: =0
+            ZIndex: =3
+
+        TextCanvas4_7 As Text:
+            Align: ='TextCanvas.Align'.Center
+            AutoHeight: =true
+            BorderColor: =
+            BorderStyle: =""
+            DisplayMode: =DisplayMode.Edit
+            Fill: =
+            Font: =""
+            FontColor: =
+            FontItalic: =true
+            FontStrikethrough: =false
+            FontUnderline: =false
+            Height: =32
+            LayoutMinHeight: =32
+            LayoutMinWidth: =96
+            Size: =14
+            Text: |-
+                =Concat(
+                    Filter(
+                        'Install Template Async Process Items',
+                        'Install Template Async Process'.'Install Template Async Process' = _batchProcess.'Install Template Async Process'
+                    ),
+                    Message,
+                    ","
+                )
+            Visible: =true
+            Width: =96
+            X: =0
+            Y: =0
+            ZIndex: =4
+
+        Container4 As groupContainer.horizontalAutoLayoutContainer:
+            DropShadow: =DropShadow.None
+            FillPortions: =0
+            Height: =35
+            LayoutGap: =20
+            LayoutJustifyContent: =LayoutJustifyContent.Center
+            LayoutMinHeight: =100
+            LayoutMinWidth: =100
+            LayoutMode: =LayoutMode.Auto
+            ZIndex: =5
+
+            ButtonCanvas4_2 As Button:
+                AccessibleLabel: ="Try again"
+                Align: =""
+                AlignInContainer: =AlignInContainer.Center
+                BasePaletteColor: =
+                BorderColor: =
+                BorderStyle: =""
+                DisplayMode: =DisplayMode.Edit
+                Font: =""
+                FontColor: =
+                FontItalic: =false
+                FontStrikethrough: =false
+                FontUnderline: =false
+                FontWeight: =""
+                Height: =32
+                Icon: =""
+                IconRotation: =0
+                IconStyle: ="Outline"
+                Layout: ="Icon before"
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                OnSelect: |
+                    =UpdateContext(
+                        {
+                            _loading: true,
+                            _checkBatchStatus: false,
+                            _timeOut: false,
+                            _batchProcess: Blank(),
+                            _hasErrors: false
+                        }
+                    );
+                    Remove(
+                        'Install Processes',
+                        LookUp(
+                            'Install Processes',
+                            Template = 'Template (Install Processes)'.SAP
+                        )
+                    );
+                    UpdateContext(
+                        {
+                            _batchProcess: Patch(
+                                'Install Template Async Processes',
+                                Defaults('Install Template Async Processes'),
+                                {
+                                    'Batch Status': 'Batch Status (Install Template Async Processes)'.'Not Started',
+                                    'Batch Type': 'Install Template Batch Type'.'SAP Install Process Setup',
+                                    Name: "SAP Install Process Setup",
+                                    Message: "Initializing SAP Template Installer process for first time use."
+                                }
+                            )
+                        }
+                    );
+                    Patch(
+                        'Install Template Async Process Items',
+                        Defaults('Install Template Async Process Items'),
+                        {
+                            'Batch Type': 'Install Template Batch Type'.'SAP Install Process Setup',
+                            'Install Template Async Process': _batchProcess,
+                            Name: "SAP Install Process Setup",
+                            'Processing Status': 'Processing Status (Install Template Async Process Items)'.'Not Started',
+                            'Has Dependency?': false
+                        }
+                    );
+                    UpdateContext(
+                        {
+                            _batchProcess: Patch(
+                                'Install Template Async Processes',
+                                LookUp(
+                                    'Install Template Async Processes',
+                                    'Install Template Async Process' = _batchProcess.'Install Template Async Process'
+                                ),
+                                {
+                                    'Batch Status': 'Batch Status (Install Template Async Processes)'.'In Progress',
+                                    'Started On': Now()
+                                }
+                            )
+                        }
+                    );
+                    UpdateContext(
+                        {
+                            _totalDuration: 0,
+                            _checkBatchStatus: true
+                        }
+                    );
+                Text: ="Try again"
+                VerticalAlign: =""
+                Visible: =true
+                Width: =125 
+                X: =(Parent.Width-Self.Width)/2
+                Y: =Parent.Height-Self.Height-2
+                ZIndex: =1
+
+            ButtonCanvas4_3 As Button:
+                AccessibleLabel: ="Get started"
+                Align: =""
+                AlignInContainer: =AlignInContainer.Center
+                Appearance: ='ButtonCanvas.Appearance'.Secondary
+                BasePaletteColor: =
+                BorderColor: =
+                BorderStyle: =""
+                DisplayMode: =DisplayMode.Edit
+                Font: =""
+                FontColor: =
+                FontItalic: =false
+                FontStrikethrough: =false
+                FontUnderline: =false
+                FontWeight: =""
+                Height: =32
+                Icon: =""
+                IconRotation: =0
+                IconStyle: ="Outline"
+                Layout: ="Icon before"
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                OnSelect: |-
+                    =Launch("https://aka.ms/PowerPlatformTemplateSupport")
+                Text: ="Log support issue"
+                VerticalAlign: =""
+                Visible: =true
+                Width: =175
+                X: =(Parent.Width-Self.Width)/2
+                Y: =Parent.Height-Self.Height-2
+                ZIndex: =2
+
+    Container3_1 As groupContainer.verticalAutoLayoutContainer:
+        DropShadow: =DropShadow.None
+        Height: =App.Height
+        LayoutAlignItems: =LayoutAlignItems.Stretch
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutGap: =15
+        LayoutJustifyContent: =LayoutJustifyContent.Center
+        LayoutMode: =LayoutMode.Auto
+        LayoutOverflowY: =LayoutOverflow.Scroll
+        PaddingBottom: =20
+        PaddingLeft: =20
+        PaddingRight: =20
+        PaddingTop: =20
+        Visible: |-
+            =And(
+                _hasErrors = false,
+                _loading = false,
+                _checkBatchStatus = false,
+                _timeOut = false
+            )
+        Width: =App.Width
+        ZIndex: =3
+
+        Container4_1 As groupContainer.manualLayoutContainer:
+            AlignInContainer: =AlignInContainer.Center
+            DropShadow: =DropShadow.None
+            FillPortions: =0
+            Height: =120
+            LayoutMinHeight: =120
+            LayoutMinWidth: =250
+            Width: =120
+            ZIndex: =6
+
+            Circle1_1 As circle:
+                AccessibleLabel: ="Circle"
+                Fill: |-
+                    =ColorValue("#107C10")
+                Height: =Parent.Height
+                Width: =120
+                ZIndex: =1
+
+            Icon4_1 As icon.Check:
+                AccessibleLabel: ="Checkmark"
+                Color: =RGBA(255, 255, 255, 1)
+                Height: =60
+                Icon: =Icon.Check
+                Width: =60
+                X: =Parent.Width/2-Self.Width/2
+                Y: =Parent.Height/2-Self.Height/2
+                ZIndex: =2
+
+        TextCanvas4_3 As Text:
+            Align: ='TextCanvas.Align'.Center
+            BorderColor: =
+            BorderStyle: =""
+            DisplayMode: =DisplayMode.Edit
+            Fill: =
+            Font: =""
+            FontColor: =
+            FontItalic: =false
+            FontStrikethrough: =false
+            FontUnderline: =false
+            Height: =32
+            LayoutMinHeight: =32
+            LayoutMinWidth: =96
+            Size: =24
+            Text: ="Success!"
+            Visible: =true
+            Width: =96
+            X: =0
+            Y: =0
+            ZIndex: =7
+
+        TextCanvas4_4 As Text:
+            Align: ='TextCanvas.Align'.Center
+            AutoHeight: =true
+            BorderColor: =
+            BorderStyle: =""
+            DisplayMode: =DisplayMode.Edit
+            Fill: =
+            Font: =""
+            FontColor: =
+            FontItalic: =false
+            FontStrikethrough: =false
+            FontUnderline: =false
+            Height: =32
+            LayoutMinHeight: =32
+            LayoutMinWidth: =96
+            Size: =14
+            Text: ="You have sucessfully initialized the SAP Setup Assistant for the first time. Select 'Get started' below to configure the deployment team and begin the install process."
+            Visible: =true
+            Width: =96
+            X: =0
+            Y: =0
+            ZIndex: =8
+
+        ButtonCanvas4_1 As Button:
+            AccessibleLabel: ="Get started"
+            Align: =""
+            AlignInContainer: =AlignInContainer.Center
+            BasePaletteColor: =
+            BorderColor: =
+            BorderStyle: =""
+            DisplayMode: =DisplayMode.Edit
+            Font: =""
+            FontColor: =
+            FontItalic: =false
+            FontStrikethrough: =false
+            FontUnderline: =false
+            FontWeight: =""
+            Height: =32
+            Icon: =""
+            IconRotation: =0
+            IconStyle: ="Outline"
+            Layout: ="Icon before"
+            LayoutMinHeight: =32
+            LayoutMinWidth: =96
+            OnSelect: |-
+                =Set(
+                    varFirstAppLaunch,
+                    true
+                );
+                
+                Patch('Install Processes',
+                    Coalesce(
+                        LookUp(
+                            'Install Processes', Template = 'Template (Install Processes)'.SAP && 'Install Status' = 'Install Status (Install Processes)'.Completed
+                        ),
+                    Defaults('Install Processes')
+                    ),
+                    {
+                        'First App Launch':'First App Launch (Install Processes)'.No
+                    }
+                );
+                
+                Navigate('Deployment Team Screen')
+            Text: ="Get started"
+            VerticalAlign: =""
+            Visible: =true
+            Width: =125 
+            X: =(Parent.Width-Self.Width)/2
+            Y: =Parent.Height-Self.Height-2
+            ZIndex: =10
+
+    Container3 As groupContainer.verticalAutoLayoutContainer:
+        DropShadow: =DropShadow.None
+        Height: =App.Height
+        LayoutAlignItems: =LayoutAlignItems.Stretch
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutGap: =15
+        LayoutJustifyContent: =LayoutJustifyContent.Center
+        LayoutMode: =LayoutMode.Auto
+        LayoutOverflowY: =LayoutOverflow.Scroll
+        PaddingBottom: =20
+        PaddingLeft: =20
+        PaddingRight: =20
+        PaddingTop: =20
+        Visible: =_loading = true
+        Width: =App.Width
+        ZIndex: =4
+
+        TextCanvas3 As Text:
+            Align: ='TextCanvas.Align'.Center
+            AutoHeight: =true
+            BorderColor: =
+            BorderStyle: =""
+            DisplayMode: =DisplayMode.Edit
+            Fill: =
+            Font: =""
+            FontColor: =
+            FontItalic: =false
+            FontStrikethrough: =false
+            FontUnderline: =false
+            Height: =45
+            LayoutMinHeight: =32
+            LayoutMinWidth: =96
+            Size: =28
+            Text: ="Initializing the SAP Setup Assistant application for first time use"
+            Visible: =true
+            Weight: ='TextCanvas.Weight'.Semibold
+            Width: =96
+            Wrap: =true
+            X: =0
+            Y: =0
+            ZIndex: =1
+
+        TextCanvas4 As Text:
+            Align: ='TextCanvas.Align'.Center
+            AutoHeight: =true
+            BorderColor: =
+            BorderStyle: =""
+            DisplayMode: =DisplayMode.Edit
+            Fill: =
+            Font: =""
+            FontColor: =
+            FontItalic: =false
+            FontStrikethrough: =false
+            FontUnderline: =false
+            Height: =32
+            LayoutMinHeight: =32
+            LayoutMinWidth: =96
+            Text: ="This can take several minutes. Please do not leave this page."
+            Visible: =true
+            Width: =96
+            X: =0
+            Y: =0
+            ZIndex: =3
+
+        Container17 As groupContainer.manualLayoutContainer:
+            AlignInContainer: =AlignInContainer.Center
+            DropShadow: =DropShadow.None
+            FillPortions: =0
+            Height: =45
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            Width: =App.Width-300
+            ZIndex: =5
+
+            "Progress2 As 'Progress Bar'":
+                AccessibleLabel: ="Initialize SAP Setup Assistane progress bar"
+                BasePaletteColor: =
+                DisplayMode: =DisplayMode.Edit
+                Height: =45
+                Indeterminate: =true
+                Thickness: ='Progress.Thickness'.Large
+                Visible: =true
+                Width: =Parent.Width
+                X: =0
+                Y: =0
+                ZIndex: =1
+
+    Timer1_4 As timer:
+        Duration: =3000
+        OnSelect: =
+        OnTimerEnd: |-
+            =UpdateContext(
+                    {
+                        _checkBatchStatus: false,
+                        _timeOut: false,
+                        _loading: false
+                    }
+                );
+            
+            UpdateContext(
+                {
+                varInstallProcess:
+                LookUp(
+                    'Install Processes',
+                    And(
+                        Template = 'Template (Install Processes)'.SAP,
+                        'Install Status' = 'Install Status (Install Processes)'.Completed
+                    )
+                )
+                }
+            );
+            
+            Patch(
+                'Deployment Teams',
+                Coalesce(
+                    LookUp(
+                        'Deployment Teams',
+                        'Team Member'.User = CurrentUser.User && 'Install Process'.'Install Process' = varInstallProcess.'Install Process'
+                    ),
+                    Defaults('Deployment Teams')
+                ),
+                {
+                    Name: CurrentUser.'Full Name',
+                    'Team Member': CurrentUser,
+                    'Install Process': varInstallProcess
+                }
+            );
+        OnTimerStart: =
+        Start: =_checkBatchStatus
+        Visible: =false
+        X: =20
+        Y: =20
+        ZIndex: =5
+

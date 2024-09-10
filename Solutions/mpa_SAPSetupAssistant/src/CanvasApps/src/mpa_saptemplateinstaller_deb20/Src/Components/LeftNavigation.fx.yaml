@@ -1,0 +1,446 @@
+LeftNavigation As CanvasComponent:
+    Fill: =RGBA(243, 242, 241, 1)
+    Height: =640
+    MenuExpanded: =true
+    MenuWidth: |-
+        =//Expand or collapse the over component width based upon whether or expansion of the menu is selected or not
+        If(
+            varExpandMenu,
+            LeftNavigation.SetMenuWith,
+            icoLeftNavExpandCollapse.X + icoLeftNavExpandCollapse.Width + 1
+        )
+    OnReset: |-
+        =If(
+            App.ActiveScreen.Size <= ScreenSize.Medium,
+            Set(
+                varExpandMenu,
+                false
+            ),
+            Set(
+                varExpandMenu,
+                true
+            )
+        )
+    SetExpandMenu: =true
+    SetMenuWith: =300
+    Width: =LeftNavigation.MenuWidth
+    X: =0
+    Y: =0
+    ZIndex: =1
+
+    Rectangle1_1 As rectangle:
+        BorderColor: =RGBA(214, 221, 224, 1)
+        BorderThickness: =1
+        Fill: =RGBA(0, 0, 0, 0)
+        Height: =LeftNavigation.Height
+        Width: =LeftNavigation.Width
+        ZIndex: =1
+
+    galLeftNavMainMenuItems As gallery.variableTemplateHeightGallery:
+        '#CopilotOverlayLabel': ="Filtered"
+        AccessibleLabel: ="Install Stages"
+        BorderColor: |-
+            =ColorValue("#605E5C")
+        DelayItemLoading: =true
+        DisplayMode: |-
+            =If(
+                varDisableControls,
+                DisplayMode.Disabled,
+                DisplayMode.Edit
+            )
+        FocusedBorderColor: |-
+            =ColorValue("#000000")
+        FocusedBorderThickness: =2
+        Height: =Parent.Height - txtMenuCompletion.Y - txtMenuCompletion.Height - Self.FocusedBorderThickness*2
+        ItemAccessibleLabel: =btnLeftNavMenuStage.Text
+        Items: |-
+            =Sort(
+                colProcessStages,
+                Order
+            )
+        Layout: =Layout.Vertical
+        OnSelect: |-
+            =If(
+                ThisItem.'Process Stage' in colLeftNavCollapsedStage.StageID,
+                RemoveIf(
+                    colLeftNavCollapsedStage,
+                    StageID = ThisItem.'Process Stage'
+                ),
+                Collect(
+                    colLeftNavCollapsedStage,
+                    Table({StageID: ThisItem.'Process Stage'})
+                )
+            )
+        TabIndex: =0
+        TemplatePadding: =0
+        TemplateSize: =36
+        Visible: =varExpandMenu
+        Width: =Parent.Width-Self.X*2
+        X: =Self.FocusedBorderThickness
+        Y: =txtMenuCompletion.Y+txtMenuCompletion.Height+2
+        ZIndex: =2
+
+        lblOrderExplitColumnWorkaround As label:
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Semibold
+            Height: |-
+                =If(
+                    varExpandMenu,
+                    36,
+                    0
+                )
+            OnSelect: =Select(Parent)
+            PaddingLeft: =16
+            Role: =TextRole.Heading3
+            Size: =10.5
+            Text: =ThisItem.Order
+            Visible: =false
+            Width: =Parent.Width
+            ZIndex: =2
+
+        galLeftNavSubMenu As gallery.variableTemplateHeightGallery:
+            '#CopilotOverlayLabel': ="Filtered"
+            AccessibleLabel: ="Module Activities"
+            BorderColor: |-
+                =ColorValue("#605E5C")
+            Default: |-
+                =First(
+                    Filter(
+                        'Stage Activities',
+                        'Default Activity' = 'Default Activity (Stage Activities)'.Yes,
+                        'Process Stage'.'Process Stage' = ThisItem.'Process Stage'
+                    )
+                )
+            DelayItemLoading: =true
+            Fill: =RGBA(0,0,0,0)
+            FocusedBorderColor: |-
+                =ColorValue("#000000")
+            FocusedBorderThickness: =2
+            Height: =CountRows(Self.AllItems) * (Self.TemplateHeight + Self.TemplatePadding)
+            ItemAccessibleLabel: =btnLeftNavMenuItem.Text
+            Items: |-
+                =Sort(
+                    ThisItem.'Stage Activities',
+                    Order
+                )
+            Layout: =Layout.Vertical
+            OnSelect: |-
+                =Navigate(
+                    LookUp(
+                        ScreenMappings,
+                        AppScreen = ThisItem.'Activity Screen'
+                    ).Screen
+                )
+            ShowScrollbar: =false
+            TabIndex: =0
+            TemplateFill: |-
+                =If(
+                    ThisItem.'Stage Activity' = CurrentActivity.'Stage Activity',
+                    ColorValue ("#C8C6C4"),
+                    RGBA(
+                        0,
+                        0,
+                        0,
+                        0
+                    )
+                )
+            TemplatePadding: =0
+            TemplateSize: =40
+            Visible: =icoExpandCollapse.Icon = Icon.ChevronDown
+            Width: =Parent.Width-10
+            X: =1
+            Y: =btnLeftNavMenuStage.Y+btnLeftNavMenuStage.Height
+            ZIndex: =3
+
+            lblOrderExplitColumnWorkaround_2 As label:
+                Font: =Font.'Segoe UI'
+                FontWeight: =FontWeight.Semibold
+                Height: |-
+                    =If(
+                        varExpandMenu,
+                        36,
+                        0
+                    )
+                OnSelect: =Select(Parent)
+                PaddingLeft: =16
+                Role: =TextRole.Heading3
+                Size: =10.5
+                Text: =ThisItem.Order
+                Visible: =false
+                Width: =Parent.Width
+                ZIndex: =1
+
+            shpLeftNavSelected As rectangle:
+                AccessibleLabel: ="Activity selected"
+                Fill: |-
+                    =ColorValue("#0078D4")
+                Height: =28
+                OnSelect: =Select(Parent)
+                Visible: =ThisItem.'Stage Activity' = CurrentActivity.'Stage Activity'
+                Width: =4
+                X: =4
+                Y: =4
+                ZIndex: =2
+
+            imgCompletedIcon As image:
+                Height: =10
+                Image: |-
+                    =If(
+                        ThisItem.'Stage Activity' in colUnlockedStageActivities.mpa_installprocessactivityid,
+                        'Checkmark Icon',
+                        'Locked Icon'
+                    )
+                OnSelect: =Select(Parent)
+                Width: =10
+                X: =Parent.TemplateWidth-Self.Width-5
+                Y: =13
+                ZIndex: =3
+
+            btnLeftNavMenuItem As button:
+                Align: =Align.Left
+                Color: |-
+                    =//Only show the text (menu item) if menu is expanded, otherwise, make it transparent so only the menu icon shows on a collapsed menu
+                    If(
+                        varExpandMenu,
+                        RGBA(
+                            0,
+                            0,
+                            0,
+                            1
+                        ),
+                        RGBA(
+                            0,
+                            0,
+                            0,
+                            0
+                        )
+                    )
+                DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                DisabledFill: =RGBA(0, 0, 0, 0)
+                DisplayMode: |-
+                    =If(
+                        ThisItem.'Stage Activity' in UnlockedStageActivities.'Stage Activity',
+                        DisplayMode.Edit,
+                        DisplayMode.View
+                    )
+                Fill: =RGBA(0, 0, 0, 0)
+                FocusedBorderColor: |-
+                    =ColorValue("#000000")
+                FocusedBorderThickness: =2
+                Font: =Font.'Segoe UI'
+                FontWeight: =FontWeight.Normal
+                Height: =Parent.TemplateHeight-Self.Y*2
+                HoverColor: |-
+                    =ColorValue("#0078D4")
+                HoverFill: =
+                OnSelect: =Select(Parent)
+                PaddingLeft: =32
+                PaddingRight: =30
+                PressedBorderColor: =
+                PressedColor: =
+                PressedFill: =
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Size: =10.5
+                Text: =ThisItem.'Activity Name'
+                Tooltip: =Self.Text
+                Width: =Parent.TemplateWidth-4
+                X: =1
+                Y: =2
+                ZIndex: =5
+
+        icoExpandCollapse As icon.ChevronRight:
+            Color: =RGBA(0, 0, 0, 1)
+            Height: =10
+            Icon: |-
+                =If(
+                    ThisItem.'Process Stage' in colLeftNavCollapsedStage.StageID,
+                    Icon.ChevronRight,
+                    Icon.ChevronDown
+                )
+            OnSelect: =
+            Width: =10
+            X: =9   
+            Y: =13
+            ZIndex: =4
+
+        btnLeftNavMenuStage As button:
+            Align: =Align.Left
+            Color: |-
+                =//Only show the text (menu item) if menu is expanded, otherwise, make it transparent so only the menu icon shows on a collapsed menu
+                If(
+                    varExpandMenu,
+                    RGBA(
+                        0,
+                        0,
+                        0,
+                        1
+                    ),
+                    RGBA(
+                        0,
+                        0,
+                        0,
+                        0
+                    )
+                )
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledFill: =RGBA(0, 0, 0, 0)
+            Fill: =RGBA(0, 0, 0, 0)
+            FocusedBorderColor: |-
+                =ColorValue("#000000")
+            FocusedBorderThickness: =2
+            Font: =Font.'Segoe UI'
+            Height: =Parent.TemplateHeight-Self.Y*2
+            HoverColor: |-
+                =ColorValue("#0078D4")
+            HoverFill: =
+            OnSelect: =Select(Parent)
+            PaddingLeft: =25
+            PressedBorderColor: =
+            PressedColor: =
+            PressedFill: =
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Size: =10.5
+            Text: =ThisItem.'Stage Name'
+            Tooltip: =Self.Text
+            Width: =Parent.TemplateWidth-20
+            X: =2
+            Y: =2
+            ZIndex: =5
+
+    txtMenuCompletion As Text:
+        BorderColor: =
+        BorderStyle: =""
+        DisplayMode: |-
+            =If(
+                varDisableControls,
+                DisplayMode.Disabled,
+                DisplayMode.Edit
+            )
+        Fill: =
+        Font: =""
+        FontColor: =
+        FontItalic: =false
+        FontStrikethrough: =false
+        FontUnderline: =false
+        Height: =32
+        Size: =14
+        Text: |-
+            =CountRows(
+                Filter(
+                    'Stage Activities',
+                    'Activity Status' = 'Activity Status (Stage Activities)'.Completed,
+                    'Process Stage'.'Process Stage' in colProcessStages.'Process Stage'
+                )
+            ) & " of " & CountRows(colStageActivities) & " activities completed"
+        Visible: =varExpandMenu
+        Width: =Parent.Width-Self.X
+        X: =14  
+        Y: =icoLeftNavExpandCollapse.Height
+        ZIndex: =3
+
+    "icoLeftNavExpandCollapse As icon.'3DPrinting'":
+        AccessibleLabel: =Self.Tooltip
+        BorderColor: =RGBA(0,0,0,0)
+        Color: =Color.Black
+        DisabledBorderColor: |-
+            =ColorValue("#A19F9D")
+        DisabledColor: |-
+            =ColorValue("#F3F2F1")
+        DisabledFill: =RGBA(0,0,0,0)
+        DisplayMode: |-
+            =If(
+                varDisableControls,
+                DisplayMode.Disabled,
+                DisplayMode.Edit
+            )
+        Fill: =RGBA(0,0,0,0)
+        FocusedBorderColor: |-
+            =ColorValue("#605E5C")
+        Height: =48
+        HoverBorderColor: =
+        HoverColor: |-
+            =ColorValue("#8A8886")
+        HoverFill: =RGBA(0,0,0,0)
+        Icon: =Icon.Hamburger
+        OnSelect: |-
+            =//Toggle global variable of whether or not the menu is expanded.
+            Set(
+                varExpandMenu,
+                !varExpandMenu
+            );
+            If(
+                And(
+                    App.ActiveScreen.Size <= ScreenSize.Medium,
+                    varExpandHelp,
+                    varExpandMenu
+                ),
+                Set(
+                    varExpandHelp,
+                    false
+                )
+            )
+        PaddingBottom: =10
+        PaddingLeft: =12
+        PaddingRight: =12
+        PaddingTop: =10
+        PressedBorderColor: =
+        PressedColor: |-
+            =ColorValue("#8A8886")
+        PressedFill: =RGBA(0,0,0,0)
+        TabIndex: =0
+        Tooltip: |-
+            =If(
+                varExpandMenu,
+                "Collapse menu",
+                "Expand menu"
+            )
+        Width: =48
+        X: =Self.FocusedBorderThickness
+        ZIndex: =4
+
+    "icoLeftNavDeploymentTeam As icon.'3DPrinting'":
+        AccessibleLabel: =Self.Tooltip
+        BorderColor: =RGBA(0,0,0,0)
+        Color: =Color.Black
+        DisabledBorderColor: |-
+            =ColorValue("#A19F9D")
+        DisabledColor: |-
+            =ColorValue("#F3F2F1")
+        DisabledFill: =RGBA(0,0,0,0)
+        DisplayMode: |-
+            =If(
+                varDisableControls,
+                DisplayMode.Disabled,
+                DisplayMode.Edit
+            )
+        Fill: =RGBA(0,0,0,0)
+        FocusedBorderColor: |-
+            =ColorValue("#605E5C")
+        Height: =48
+        HoverBorderColor: =
+        HoverColor: |-
+            =ColorValue("#8A8886")
+        HoverFill: =RGBA(0,0,0,0)
+        Icon: =Icon.People
+        OnSelect: =Navigate('Deployment Team Screen')
+        PaddingBottom: =10
+        PaddingLeft: =12
+        PaddingRight: =12
+        PaddingTop: =10
+        PressedBorderColor: =
+        PressedColor: |-
+            =ColorValue("#8A8886")
+        PressedFill: =RGBA(0,0,0,0)
+        TabIndex: =0
+        Tooltip: ="Deployment team"
+        Visible: =varExpandMenu
+        Width: =48
+        X: =Parent.Width-Self.FocusedBorderThickness-Self.Width
+        ZIndex: =5
+

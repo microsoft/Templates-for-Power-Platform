@@ -1,0 +1,899 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_powerplatformforadmins": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_sharedpowerplatformforadmins_5f783"
+        },
+        "api": {
+          "name": "shared_powerplatformforadmins"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "510db2ad-7b9f-408d-83b7-f14b4464d41f"
+          },
+          "type": "Request",
+          "kind": "PowerAppV2",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "API Version",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Respond_to_a_PowerApp_or_flow": {
+          "runAfter": {
+            "Catch": [
+              "Succeeded",
+              "Skipped",
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "83e15dc0-c287-49b8-a354-c2fde9ee1dbe"
+          },
+          "type": "Response",
+          "kind": "PowerApp",
+          "inputs": {
+            "statusCode": 200,
+            "body": {
+              "id": "@outputs('Get_Environment_as_Admin')?['body/id']",
+              "name": "@outputs('Get_Environment_as_Admin')?['body/name']",
+              "displayname": "@outputs('Get_Environment_as_Admin')?['body/properties/displayName']",
+              "location": "@outputs('Get_Environment_as_Admin')?['body/location']",
+              "databasetype": "@{body('Parse_JSON')?['properties']?['databaseType']}",
+              "instanceurl": "@{body('Parse_JSON')?['properties']?['linkedEnvironmentMetadata']?['instanceURL']}",
+              "domainname": "@{body('Parse_JSON')?['properties']?['linkedEnvironmentMetadata']?['domainName']}",
+              "baselanguage": "@{body('Parse_JSON')?['properties']?['linkedEnvironmentMetadata']?['baseLanguage']}",
+              "resourceid": "@{body('Parse_JSON')?['properties']?['linkedEnvironmentMetadata']?['resourceId']}",
+              "status": "@variables('Status')",
+              "message": "@variables('Status Message')"
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "title": "id",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                },
+                "name": {
+                  "title": "name",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                },
+                "displayname": {
+                  "title": "displayName",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                },
+                "location": {
+                  "title": "location",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                },
+                "databasetype": {
+                  "title": "dataBaseType",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                },
+                "instanceurl": {
+                  "title": "instanceURL",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                },
+                "domainname": {
+                  "title": "domainName",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                },
+                "baselanguage": {
+                  "title": "baseLanguage",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                },
+                "resourceid": {
+                  "title": "resourceId",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                },
+                "status": {
+                  "title": "Status",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                },
+                "message": {
+                  "title": "Message",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "Try": {
+          "actions": {
+            "Get_Environment_as_Admin": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "b1e07138-fe5d-4203-8845-1a2cecbd411d"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_powerplatformforadmins",
+                  "operationId": "GetSingleEnvironment",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerplatformforadmins"
+                },
+                "parameters": {
+                  "environment": "@workflow().tags.environmentName",
+                  "api-version": "@triggerBody()['text']"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Parse_JSON": {
+              "runAfter": {
+                "Get_Environment_as_Admin": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "060264e7-25a0-4981-bd3e-1e74e8717a36"
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@body('Get_Environment_as_Admin')",
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer"
+                    },
+                    "headers": {
+                      "type": "object",
+                      "properties": {
+                        "Cache-Control": {
+                          "type": "string"
+                        },
+                        "Strict-Transport-Security": {
+                          "type": "string"
+                        },
+                        "x-ms-islandgateway": {
+                          "type": "string"
+                        },
+                        "x-ms-request-id": {
+                          "type": "string"
+                        },
+                        "x-ms-correlation-request-id": {
+                          "type": "string"
+                        },
+                        "x-ms-correlation-id": {
+                          "type": "string"
+                        },
+                        "Server-Timing": {
+                          "type": "string"
+                        },
+                        "X-Content-Type-Options": {
+                          "type": "string"
+                        },
+                        "x-ms-service-request-id": {
+                          "type": "string"
+                        },
+                        "x-ms-activity-vector": {
+                          "type": "string"
+                        },
+                        "Timing-Allow-Origin": {
+                          "type": "string"
+                        },
+                        "x-ms-apihub-cached-response": {
+                          "type": "string"
+                        },
+                        "x-ms-apihub-obo": {
+                          "type": "string"
+                        },
+                        "Date": {
+                          "type": "string"
+                        },
+                        "Content-Length": {
+                          "type": "string"
+                        },
+                        "Content-Type": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "body": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "location": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "properties": {
+                          "type": "object",
+                          "properties": {
+                            "tenantId": {
+                              "type": "string"
+                            },
+                            "azureRegion": {
+                              "type": "string"
+                            },
+                            "displayName": {
+                              "type": "string"
+                            },
+                            "createdTime": {
+                              "type": "string"
+                            },
+                            "createdBy": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "displayName": {
+                                  "type": "string"
+                                },
+                                "email": {
+                                  "type": "string"
+                                },
+                                "type": {
+                                  "type": "string"
+                                },
+                                "tenantId": {
+                                  "type": "string"
+                                },
+                                "userPrincipalName": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "lastModifiedTime": {
+                              "type": "string"
+                            },
+                            "provisioningState": {
+                              "type": "string"
+                            },
+                            "creationType": {
+                              "type": "string"
+                            },
+                            "environmentSku": {
+                              "type": "string"
+                            },
+                            "isDefault": {
+                              "type": "boolean"
+                            },
+                            "clientUris": {
+                              "type": "object",
+                              "properties": {
+                                "admin": {
+                                  "type": "string"
+                                },
+                                "maker": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "runtimeEndpoints": {
+                              "type": "object",
+                              "properties": {
+                                "microsoft.BusinessAppPlatform": {
+                                  "type": "string"
+                                },
+                                "microsoft.CommonDataModel": {
+                                  "type": "string"
+                                },
+                                "microsoft.PowerApps": {
+                                  "type": "string"
+                                },
+                                "microsoft.PowerAppsAdvisor": {
+                                  "type": "string"
+                                },
+                                "microsoft.PowerVirtualAgents": {
+                                  "type": "string"
+                                },
+                                "microsoft.ApiManagement": {
+                                  "type": "string"
+                                },
+                                "microsoft.Flow": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "databaseType": {
+                              "type": "string"
+                            },
+                            "linkedEnvironmentMetadata": {
+                              "type": "object",
+                              "properties": {
+                                "resourceId": {
+                                  "type": "string"
+                                },
+                                "friendlyName": {
+                                  "type": "string"
+                                },
+                                "uniqueName": {
+                                  "type": "string"
+                                },
+                                "domainName": {
+                                  "type": "string"
+                                },
+                                "version": {
+                                  "type": "string"
+                                },
+                                "instanceUrl": {
+                                  "type": "string"
+                                },
+                                "instanceApiUrl": {
+                                  "type": "string"
+                                },
+                                "baseLanguage": {
+                                  "type": "integer"
+                                },
+                                "instanceState": {
+                                  "type": "string"
+                                },
+                                "createdTime": {
+                                  "type": "string"
+                                },
+                                "securityGroupId": {
+                                  "type": "string"
+                                },
+                                "backgroundOperationsState": {
+                                  "type": "string"
+                                },
+                                "scaleGroup": {
+                                  "type": "string"
+                                },
+                                "platformSku": {
+                                  "type": "string"
+                                },
+                                "schemaType": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "trialScenarioType": {
+                              "type": "string"
+                            },
+                            "notificationMetadata": {
+                              "type": "object",
+                              "properties": {
+                                "state": {
+                                  "type": "string"
+                                },
+                                "branding": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "retentionPeriod": {
+                              "type": "string"
+                            },
+                            "states": {
+                              "type": "object",
+                              "properties": {
+                                "management": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "runtime": {
+                                  "type": "object",
+                                  "properties": {
+                                    "runtimeReasonCode": {
+                                      "type": "string"
+                                    },
+                                    "requestedBy": {
+                                      "type": "object",
+                                      "properties": {
+                                        "displayName": {
+                                          "type": "string"
+                                        },
+                                        "type": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "id": {
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "updateCadence": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "retentionDetails": {
+                              "type": "object",
+                              "properties": {
+                                "retentionPeriod": {
+                                  "type": "string"
+                                },
+                                "backupsAvailableFromDateTime": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "protectionStatus": {
+                              "type": "object",
+                              "properties": {
+                                "keyManagedBy": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "cluster": {
+                              "type": "object",
+                              "properties": {
+                                "category": {
+                                  "type": "string"
+                                },
+                                "number": {
+                                  "type": "string"
+                                },
+                                "uriSuffix": {
+                                  "type": "string"
+                                },
+                                "geoShortName": {
+                                  "type": "string"
+                                },
+                                "environment": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "connectedGroups": {
+                              "type": "array"
+                            },
+                            "lifecycleOperationsEnforcement": {
+                              "type": "object",
+                              "properties": {
+                                "allowedOperations": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "type"
+                                    ]
+                                  }
+                                },
+                                "disallowedOperations": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "reason": {
+                                        "type": "object",
+                                        "properties": {
+                                          "message": {
+                                            "type": "string"
+                                          },
+                                          "type": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "reason"
+                                    ]
+                                  }
+                                }
+                              }
+                            },
+                            "governanceConfiguration": {
+                              "type": "object",
+                              "properties": {
+                                "protectionLevel": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "Set_variable_message": {
+              "runAfter": {
+                "Parse_JSON": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "f4ace2d5-590f-4dc4-9701-c0a272a037a4"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "Status Message",
+                "value": "The current environment information was successfully found."
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_variable_-_Message": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "029855d1-d7ea-479c-b211-18ed9751b14d"
+          },
+          "type": "Scope"
+        },
+        "Catch": {
+          "actions": {
+            "Filter_array": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "8451bacc-b6a3-47e2-bc1c-e2cc509a00d0"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@result('Try')",
+                "where": "@or(equals(item()?['Status'], 'Failed'), equals(item()?['Status'], 'TimedOut'))"
+              }
+            },
+            "Parse_JSON_Error": {
+              "runAfter": {
+                "Filter_array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "94719fee-49a1-4d68-8482-b0264add7e26"
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@body('Filter_array')",
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "error": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "inputs": {
+                        "type": "object",
+                        "properties": {
+                          "host": {
+                            "type": "object",
+                            "properties": {
+                              "apiId": {
+                                "type": "string"
+                              },
+                              "connectionReferenceName": {
+                                "type": "string"
+                              },
+                              "operationId": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "parameters": {
+                            "type": "object",
+                            "properties": {
+                              "environment": {
+                                "type": "string"
+                              },
+                              "api-version": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "outputs": {
+                        "type": "object",
+                        "properties": {
+                          "statusCode": {
+                            "type": "integer"
+                          },
+                          "headers": {
+                            "type": "object",
+                            "properties": {
+                              "Cache-Control": {
+                                "type": "string"
+                              },
+                              "Strict-Transport-Security": {
+                                "type": "string"
+                              },
+                              "x-ms-islandgateway": {
+                                "type": "string"
+                              },
+                              "x-ms-request-id": {
+                                "type": "string"
+                              },
+                              "x-ms-correlation-request-id": {
+                                "type": "string"
+                              },
+                              "x-ms-correlation-id": {
+                                "type": "string"
+                              },
+                              "Server-Timing": {
+                                "type": "string"
+                              },
+                              "X-Content-Type-Options": {
+                                "type": "string"
+                              },
+                              "x-ms-service-request-id": {
+                                "type": "string"
+                              },
+                              "x-ms-activity-vector": {
+                                "type": "string"
+                              },
+                              "Timing-Allow-Origin": {
+                                "type": "string"
+                              },
+                              "x-ms-apihub-cached-response": {
+                                "type": "string"
+                              },
+                              "x-ms-apihub-obo": {
+                                "type": "string"
+                              },
+                              "Date": {
+                                "type": "string"
+                              },
+                              "Content-Length": {
+                                "type": "string"
+                              },
+                              "Content-Type": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "body": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              },
+                              "error": {
+                                "type": "object",
+                                "properties": {
+                                  "code": {
+                                    "type": "string"
+                                  },
+                                  "message": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "startTime": {
+                        "type": "string"
+                      },
+                      "endTime": {
+                        "type": "string"
+                      },
+                      "trackingId": {
+                        "type": "string"
+                      },
+                      "clientTrackingId": {
+                        "type": "string"
+                      },
+                      "clientKeywords": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "Set_variable": {
+              "runAfter": {
+                "Parse_JSON_Error": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "aef18170-b2ef-4a90-b243-39a86c54c79b"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "Status",
+                "value": "Error"
+              }
+            },
+            "Apply_to_each_error": {
+              "foreach": "@body('Parse_JSON_Error')",
+              "actions": {
+                "Append_to_string_variable": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "f5ee58f7-1661-4b96-94c2-3acbe38ed8b7"
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "Status Message",
+                    "value": "@{items('Apply_to_each_error')?['error']?['message']} "
+                  }
+                },
+                "Append_to_string_variable_2": {
+                  "runAfter": {
+                    "Append_to_string_variable_3": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "57baecbb-902e-453a-b458-e478bd159651"
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "Status Message",
+                    "value": "@items('Apply_to_each_error')?['outputs']?['body']?['error']?['message']"
+                  }
+                },
+                "Append_to_string_variable_3": {
+                  "runAfter": {
+                    "Append_to_string_variable": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "0e3e8155-b53e-4424-bc74-7374b4624c33"
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "Status Message",
+                    "value": "@items('Apply_to_each_error')?['outputs']?['body']?['message']"
+                  }
+                }
+              },
+              "runAfter": {
+                "Set_variable": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "2accf560-831a-4d59-b2c3-cf0af2a01675"
+              },
+              "type": "Foreach"
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b1cd5d2b-2bed-4963-afee-5d2f33b6be19"
+          },
+          "type": "Scope"
+        },
+        "Initialize_variable_-_Status": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "b8a2ff8c-88cf-4553-a130-be615c4cf6f9"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Status",
+                "type": "string",
+                "value": "Success"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_Message": {
+          "runAfter": {
+            "Initialize_variable_-_Status": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "e7f41205-1984-44f4-918b-878e88ea4261"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Status Message",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

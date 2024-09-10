@@ -1,0 +1,2182 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_sharedcommondataserviceforapps_fadb4"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "f4b0f688-2092-4791-886a-f1ad04ed405f"
+          },
+          "type": "Request",
+          "kind": "PowerAppV2",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "LanguageISOCode",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "number": {
+                  "title": "OptionSetValue",
+                  "type": "number",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter a number",
+                  "x-ms-content-hint": "NUMBER"
+                }
+              },
+              "required": [
+                "text",
+                "number"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Try": {
+          "actions": {
+            "Apply_to_each": {
+              "foreach": "@body('Parse_JSON_Localization_Values')",
+              "actions": {
+                "Translate_text_into_another_language": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "8cdc592a-ea30-474a-a624-d3ee2f1466fe",
+                    "flowSystemMetadata": {
+                      "portalOperationId": "aibuilderpredict_texttranslationpretrained",
+                      "portalOperationGroup": "aibuilder",
+                      "portalOperationApiDisplayNameOverride": "AI Builder",
+                      "portalOperationIconOverride": "https://content.powerapps.com/resource/makerx/static/pauto/images/designeroperations/aiBuilderNew.51dbdb6b.png",
+                      "portalOperationBrandColorOverride": "#0A76C4",
+                      "portalOperationApiTierOverride": "Standard"
+                    }
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "aibuilderpredict_texttranslationpretrained",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "item/requestv2/text": "@items('Apply_to_each')?['EnglishValue']",
+                      "item/requestv2/targetLanguage": "@triggerBody()['text']",
+                      "item/requestv2/sourceLanguage": "en"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Check_Exists": {
+                  "runAfter": {
+                    "Translate_text_into_another_language": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "f760fff0-afd9-4a7a-b777-6ddade287cbe"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "ListRecords",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_saplocalizations",
+                      "$filter": "mpa_name eq '@{items('Apply_to_each')['EnglishValue']}' and mpa_language eq @{triggerBody()['number']}"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Condition": {
+                  "actions": {
+                    "Create_SAP_Localization": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "e479c9fe-4562-48bc-ab46-6696de4fdaaa"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps",
+                          "operationId": "CreateRecord",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "mpa_saplocalizations",
+                          "item/mpa_name": "@items('Apply_to_each')['EnglishValue']",
+                          "item/mpa_language": "@triggerBody()['number']",
+                          "item/mpa_localizedvalue": "@outputs('Translate_text_into_another_language')?['body/responsev2/predictionOutput/text']",
+                          "item/mpa_stringtype": "@items('Apply_to_each')['Type']"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Check_Exists": [
+                      "Succeeded"
+                    ]
+                  },
+                  "else": {
+                    "actions": {
+                      "Update_SAP_Localization": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "227d5b50-ed14-4ca0-af13-14958bcf9fd7"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_commondataserviceforapps",
+                            "operationId": "UpdateRecord",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                          },
+                          "parameters": {
+                            "entityName": "mpa_saplocalizations",
+                            "recordId": "@first(outputs('Check_Exists')?['body/value'])?['mpa_saplocalizationid']",
+                            "item/mpa_localizedvalue": "@outputs('Translate_text_into_another_language')?['body/responsev2/predictionOutput/text']"
+                          },
+                          "authentication": "@parameters('$authentication')"
+                        }
+                      }
+                    }
+                  },
+                  "expression": {
+                    "equals": [
+                      "@length(outputs('Check_Exists')?['body/value'])",
+                      0
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "2850b449-2546-4295-87f2-a13a222f25d8"
+                  },
+                  "type": "If"
+                }
+              },
+              "runAfter": {
+                "Parse_JSON_Localization_Values": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "9cb70fb1-2447-4143-ae6b-ca22dd00309b"
+              },
+              "type": "Foreach",
+              "runtimeConfiguration": {
+                "concurrency": {
+                  "repetitions": 50
+                }
+              }
+            },
+            "Set_variable_message_success": {
+              "runAfter": {
+                "Set_variable_status_success": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "bc39c413-1b85-4422-b8cd-fff792afae6c"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "Message",
+                "value": "Strings were successfully translated."
+              }
+            },
+            "Set_variable_status_success": {
+              "runAfter": {
+                "Apply_to_each": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "aa221a0a-2b2c-4a0f-91d8-0b8bac7f0adc"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "Status",
+                "value": "Success"
+              }
+            },
+            "Parse_JSON_Localization_Values": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "0c97578e-fbb2-4195-836e-8c5f268c1132"
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": [
+                  {
+                    "EnglishValue": "Account",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Account group",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Actual total quantity",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Actual total quantity:",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Add",
+                    "Type": 865420004
+                  },
+                  {
+                    "EnglishValue": "Advanced search",
+                    "Type": 865420006
+                  },
+                  {
+                    "EnglishValue": "All purchase order items have a completed goods receipt",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Amount",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Approve",
+                    "Type": 865420004
+                  },
+                  {
+                    "EnglishValue": "Approved by",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Attachments",
+                    "Type": 865420004
+                  },
+                  {
+                    "EnglishValue": "Baseline date",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Cancel",
+                    "Type": 865420004
+                  },
+                  {
+                    "EnglishValue": "Chart of accounts",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "City",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Clear",
+                    "Type": 865420004
+                  },
+                  {
+                    "EnglishValue": "Clearing date",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Clearing document",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Collapse company codes",
+                    "Type": 865420006
+                  },
+                  {
+                    "EnglishValue": "Collapse emails",
+                    "Type": 865420006
+                  },
+                  {
+                    "EnglishValue": "Collapse menu",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Collapse phones",
+                    "Type": 865420006
+                  },
+                  {
+                    "EnglishValue": "Collapse purchasing organizations",
+                    "Type": 865420006
+                  },
+                  {
+                    "EnglishValue": "Company code",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Company code already exists for vendor",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Company codes",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Convert to purchase order",
+                    "Type": 865420004
+                  },
+                  {
+                    "EnglishValue": "Copy",
+                    "Type": 865420004
+                  },
+                  {
+                    "EnglishValue": "Country",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Create",
+                    "Type": 865420004
+                  },
+                  {
+                    "EnglishValue": "Create goods receipt",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Created by",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Created from",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Created on",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Created to",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Currency",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Customers",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Data to",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Date from",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Default email",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Default phone",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Delete",
+                    "Type": 865420004
+                  },
+                  {
+                    "EnglishValue": "Delivery note",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Description",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Divider",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Document date",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Document status",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Document type",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Done",
+                    "Type": 865420004
+                  },
+                  {
+                    "EnglishValue": "Due date",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Due from",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Due to",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Edit",
+                    "Type": 865420004
+                  },
+                  {
+                    "EnglishValue": "Edit goods receipt item details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Edit purchase order item details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Edit requisition item details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Edit vendor company code details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Edit vendor email details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Edit vendor invoice item details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Edit vendor phone details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Edit vendor purchasing organization details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Email address",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Emails",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Enter account",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Enter city",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Enter delivery note",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Enter description",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Enter description required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Enter email address",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Enter email address required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Enter extension",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Enter invoice number",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Enter material",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Enter order number",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Enter phone number",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Enter phone number required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Enter postal code",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Enter purchase number",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Enter purchase order required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Enter quantity",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Enter quantity received",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Enter quantity received required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Enter quantity required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Enter requisition",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Enter street",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Enter total price",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Enter unit price",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Enter unit price required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Enter vendor name",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Enter vendor name required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Enter vendor number",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Enter vendor number required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Execute general ledger account search",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Execute search",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Execute vendor search",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Expand company codes",
+                    "Type": 865420006
+                  },
+                  {
+                    "EnglishValue": "Expand emails",
+                    "Type": 865420006
+                  },
+                  {
+                    "EnglishValue": "Expand menu",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Expand phones",
+                    "Type": 865420006
+                  },
+                  {
+                    "EnglishValue": "Expand purchasing organizations",
+                    "Type": 865420006
+                  },
+                  {
+                    "EnglishValue": "Expected total quantity",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Extension",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Filter",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Filter company codes",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Filter emails",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Filter general ledger accounts",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Filter goods receipts",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Filter items",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Filter materials",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Filter phones",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Filter purchase orders",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Filter purchasing organizations",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Filter requisitions",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Filter vendor invoices",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Filter vendor payments",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Filter vendors",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Fiscal year",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "General",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "General ledger account",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "General ledger account advanced search",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "General ledger account not found for selected company code",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "General ledger account search",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "general ledger accounts found based upon your search criteria",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Goods receipt",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Goods receipt items",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Goods receipt not found",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Goods receipt search",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Goods receipt successfully created",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Goods Receipts",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "goods receipts found based upon your search criteria",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Group",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Header text",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Header-Text",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Invoice",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Invoice number",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Invoices",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Item",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Items",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Journal Entries",
+                    "Type": 865420005
+                  },
+                  {
+                    "EnglishValue": "Last searched",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Loading",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Location",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Main items",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Material",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Material advanced search",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Material group",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Material needs to be searched and resolved first",
+                    "Type": 865420006
+                  },
+                  {
+                    "EnglishValue": "Material not found",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Material search",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "materials found based upon your search criteria",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Materials recently searched",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Menu groups",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Menu selected",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Movement type",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Name",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "New",
+                    "Type": 865420004
+                  },
+                  {
+                    "EnglishValue": "New goods receipt",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "New goods receipt item details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "New invoice",
+                    "Type": 865420004
+                  },
+                  {
+                    "EnglishValue": "New purchase order",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "New purchase order item details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "New requisition",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "New requisition item details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "New vendor",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "New vendor company code details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "New vendor email details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "New vendor invoice",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "New vendor invoice item details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "New vendor phone details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "New vendor purchasing organization details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "No baseline date",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "No clearing date",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "No general ledger accounts found based upon your search criteria",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "No goods receipt",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "No goods receipts were found based on your search criteria",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "No items",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "No materials found based upon your search criteria",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "No payable",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "No payment",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "No purchase order",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "No purchase order item",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "No purchase orders found based upon your search criteria",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "No purchase orders were found based on your search criteria",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "No recent goods receipts",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "No recent purchase orders",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "No recent requisitions",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "No recent vendor invoices",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "No requisition",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "No requisitions were found based on your search criteria",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "No vendor invoice",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "No vendor invoices s were found based on your search criteria",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "No vendor invoices were found based on your search criteria",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "No vendor payments were found based on your search criteria",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "No vendors found based upon your search criteria",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "One or more items needs to have quantity received greater than zero",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Order number",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Order type",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Organization",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Payment",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Payment method",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Payment number",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Payment status",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Payment terms",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Payment type",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Payments",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Phone number",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Phones",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Plant",
+                    "Type": 865420004
+                  },
+                  {
+                    "EnglishValue": "Postal code",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Posted from",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Posted to",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Posting date",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Purchase order",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Purchase order details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Purchase order has one or more invoices associated already",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Purchase order item",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Purchase order needs to be searched and resolved first",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Purchase order not found",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Purchase order search",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Purchase order successfully created",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Purchase order successfully updated",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Purchase order was successfully approved",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Purchase Orders",
+                    "Type": 865420004
+                  },
+                  {
+                    "EnglishValue": "Purchase orders filters",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "purchase orders found based upon your search criteria",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Purchase orders recently searched",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Purchasing group",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Purchasing organization",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Purchasing organization already exists for vendor",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Purchasing organizations",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Quantity",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Quantity expected",
+                    "Type": 865420004
+                  },
+                  {
+                    "EnglishValue": "Quantity received",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Quotes",
+                    "Type": 865420005
+                  },
+                  {
+                    "EnglishValue": "Received total quantity:",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Recent records",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Recently searched",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "record(s)",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Refresh",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Refresh vendor purchase orders",
+                    "Type": 865420006
+                  },
+                  {
+                    "EnglishValue": "Refresh vendor requisitions",
+                    "Type": 865420006
+                  },
+                  {
+                    "EnglishValue": "Related goods receipts",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Related invoices",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Related purchase orders",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Related requisitions",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Request details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Requested from",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Requested on",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Requested to",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Requisition",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Requisition name",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Requisition not found",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Requisition search",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Requisition successfully created",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Requisition successfully updated",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Requisition was successfully converted to purchase order",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Requisitions",
+                    "Type": 865420005
+                  },
+                  {
+                    "EnglishValue": "Requisitions filters",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "requisitions found based upon your search criteria",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Requisitions recently searched",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Reversal document",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Reversal reason",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Reverse",
+                    "Type": 865420004
+                  },
+                  {
+                    "EnglishValue": "Reverse posting",
+                    "Type": 865420004
+                  },
+                  {
+                    "EnglishValue": "Save",
+                    "Type": 865420004
+                  },
+                  {
+                    "EnglishValue": "Saving",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Search",
+                    "Type": 865420004
+                  },
+                  {
+                    "EnglishValue": "Search all",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Search general ledger account required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Search goods receipt number",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Search material",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Search material number",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Search material number required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Search purchase order number",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Search requisition number",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Search results",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Search vendor",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Search vendor invoice number",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Search vendor number",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Search vendor payment number",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Searching",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Select",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Select account group",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select account group required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Select chart of accounts",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Select company code",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select company code required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Select country",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select country required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Select created from date required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Select created to date required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Select currency",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select currency required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Select date from",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select date to",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select document type",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Select document type required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Select due from date",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select due from date required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Select due to date",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select due to date required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Select from date",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select general ledger account",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select location",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select location required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Select material group",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select payment method",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select payment method required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Select payment terms",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select posted from",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select posted to",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select posting date",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select purchase order item",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select purchase order item required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Select purchasing group",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select purchasing organization",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select purchasing organization required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Select recent goods receipt",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Select recent purchase order",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select recent requisition",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select recent vendor",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select recent vendor invoices",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Select recent vendor payments",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select requested from date required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Select requested to date required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Select reversal code",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select row",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Select state/province",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select storage location",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select storage location required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Select to date",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select type",
+                    "Type": 865420003
+                  },
+                  {
+                    "EnglishValue": "Select unit",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Sorted ascending",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Sorted descending",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "State/Province",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Status",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Storage location",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Street",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Tab selected",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "The following information is required before saving",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "The following information is required before searching",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "The maximum number of search results were found based upon your criteria and some records may be missing. Please try changing your search criteria.",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Total",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Total price",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Total price required",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Type",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Unexpected error occurred",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Unit",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Unit price",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Unselect all company codes",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Unselect all emails",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Unselect all phones",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Unselect all purchasing organizations",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Unselect row",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Vendor",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Vendor advanced search",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Vendor invoice",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Vendor invoice not found",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Vendor invoice reversal",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Vendor invoice search",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Vendor invoice successfully created",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Vendor invoice successfully updated",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Vendor invoice was successfully approved",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Vendor invoice was successfully reversed",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "vendor invoices found based upon your search criteria",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Vendor invoices recently searched",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Vendor name",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Vendor not found",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Vendor payment",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Vendor payment not found",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Vendor payment search",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Vendor Payments",
+                    "Type": 865420005
+                  },
+                  {
+                    "EnglishValue": "Vendor payments recently searched",
+                    "Type": 865420002
+                  },
+                  {
+                    "EnglishValue": "Vendor requisitions",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Vendor search",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "Vendor successfully created",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Vendor successfully updated",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "Vendors",
+                    "Type": 865420005
+                  },
+                  {
+                    "EnglishValue": "vendors found based upon your search criteria",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "View",
+                    "Type": 865420004
+                  },
+                  {
+                    "EnglishValue": "View goods receipt item details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "View purchase order item details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "View requisition item details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "View vendor company code details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "View vendor email details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "View vendor invoice item details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "View vendor payment item details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "View vendor phone details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "View vendor purchasing organization details",
+                    "Type": 865420000
+                  },
+                  {
+                    "EnglishValue": "You are receiving less than the expected quantity",
+                    "Type": 865420001
+                  },
+                  {
+                    "EnglishValue": "You are receiving more than the expected quantity",
+                    "Type": 865420001
+                  }
+                ],
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "EnglishValue": {
+                        "type": "string"
+                      },
+                      "Type": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "EnglishValue",
+                      "Type"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_variable_-_Message": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "68274bf3-08d5-4164-b73d-2d53fe4b5c77"
+          },
+          "type": "Scope"
+        },
+        "Catch": {
+          "actions": {
+            "Filter_array": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "5bd8f8dd-10d1-4039-bf91-71ad6bef6dc8"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@result('Try')",
+                "where": "@or(equals(item()?['Status'], 'Failed'), equals(item()?['Status'], 'TimedOut'))"
+              }
+            },
+            "Set_variable_status_failed": {
+              "runAfter": {
+                "Parse_JSON": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "d240716b-75ba-437e-95dc-70a9a31d9426"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "Status",
+                "value": "Error"
+              }
+            },
+            "Parse_JSON": {
+              "runAfter": {
+                "Filter_array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "b5fff007-8f77-49c9-acfc-db1643120442"
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@body('Filter_array')",
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "error": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "inputs": {
+                        "type": "object",
+                        "properties": {
+                          "host": {
+                            "type": "object",
+                            "properties": {
+                              "apiId": {
+                                "type": "string"
+                              },
+                              "connectionReferenceName": {
+                                "type": "string"
+                              },
+                              "operationId": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "parameters": {
+                            "type": "object",
+                            "properties": {
+                              "environment": {
+                                "type": "string"
+                              },
+                              "api-version": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "outputs": {
+                        "type": "object",
+                        "properties": {
+                          "statusCode": {
+                            "type": "integer"
+                          },
+                          "headers": {
+                            "type": "object",
+                            "properties": {
+                              "Cache-Control": {
+                                "type": "string"
+                              },
+                              "Strict-Transport-Security": {
+                                "type": "string"
+                              },
+                              "x-ms-islandgateway": {
+                                "type": "string"
+                              },
+                              "x-ms-request-id": {
+                                "type": "string"
+                              },
+                              "x-ms-correlation-request-id": {
+                                "type": "string"
+                              },
+                              "x-ms-correlation-id": {
+                                "type": "string"
+                              },
+                              "Server-Timing": {
+                                "type": "string"
+                              },
+                              "X-Content-Type-Options": {
+                                "type": "string"
+                              },
+                              "x-ms-service-request-id": {
+                                "type": "string"
+                              },
+                              "x-ms-activity-vector": {
+                                "type": "string"
+                              },
+                              "Timing-Allow-Origin": {
+                                "type": "string"
+                              },
+                              "x-ms-apihub-cached-response": {
+                                "type": "string"
+                              },
+                              "x-ms-apihub-obo": {
+                                "type": "string"
+                              },
+                              "Date": {
+                                "type": "string"
+                              },
+                              "Content-Length": {
+                                "type": "string"
+                              },
+                              "Content-Type": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "body": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              },
+                              "error": {
+                                "type": "object",
+                                "properties": {
+                                  "code": {
+                                    "type": "string"
+                                  },
+                                  "message": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "startTime": {
+                        "type": "string"
+                      },
+                      "endTime": {
+                        "type": "string"
+                      },
+                      "trackingId": {
+                        "type": "string"
+                      },
+                      "clientTrackingId": {
+                        "type": "string"
+                      },
+                      "clientKeywords": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "Apply_to_each_2": {
+              "foreach": "@body('Parse_JSON')",
+              "actions": {
+                "Append_to_string_variable": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "1706d89c-9b45-4896-97a2-8d0824721e48"
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "Message",
+                    "value": "@{items('Apply_to_each_2')?['error']?['message']} "
+                  }
+                },
+                "Append_to_string_variable_2": {
+                  "runAfter": {
+                    "Append_to_string_variable_3": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "c2284004-3909-4730-8243-9706a03e2db9"
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "Message",
+                    "value": "@items('Apply_to_each_2')?['outputs']?['body']?['error']?['message']"
+                  }
+                },
+                "Append_to_string_variable_3": {
+                  "runAfter": {
+                    "Append_to_string_variable": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "a839ddb4-6684-4934-b541-5c7366eff9eb"
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "Message",
+                    "value": "@items('Apply_to_each_2')?['outputs']?['body']?['message']"
+                  }
+                }
+              },
+              "runAfter": {
+                "Set_variable_status_failed": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "77a16a7a-c95b-4d3e-ad3d-c534f84b0ff6"
+              },
+              "type": "Foreach"
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "Skipped",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "2a47f4f7-7f4a-4e7b-b315-ebfbf4ca32ad"
+          },
+          "type": "Scope"
+        },
+        "Respond_to_a_PowerApp_or_flow": {
+          "runAfter": {
+            "Catch": [
+              "Succeeded",
+              "Skipped",
+              "Failed"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b2ca2728-fa48-4c07-819f-64cb6a1fc271"
+          },
+          "type": "Response",
+          "kind": "PowerApp",
+          "inputs": {
+            "statusCode": 200,
+            "body": {
+              "status": "@variables('Status')",
+              "message": "@variables('Message')"
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "title": "Status",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                },
+                "message": {
+                  "title": "Message",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "Initialize_variable_-_Status": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "69406b33-eb12-44a4-b148-be010a631d5d"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Status",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_Message": {
+          "runAfter": {
+            "Initialize_variable_-_Status": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "7f37d889-b6d8-46fa-ba63-5689e9596eb6"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Message",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}
