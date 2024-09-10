@@ -1,0 +1,652 @@
+App As appinfo:
+    BackEnabled: =false
+    Formulas: |
+        =//BAP API Version
+        BAPAPIVersion = "2023-06-01";
+        //Apps
+        SAPGoodsReceiptApp = LookUp(
+            PowerAppsforAdmins.GetAdminApps(
+                varCurrentEnvironment.name,
+                {'api-version': BAPAPIVersion}
+            ).value,
+            properties.displayName = "SAP Goods Receipts"
+        );
+        SAPPurchaseOrdersApp = LookUp(
+            PowerAppsforAdmins.GetAdminApps(
+                varCurrentEnvironment.name,
+                {'api-version': BAPAPIVersion}
+            ).value,
+            properties.displayName = "SAP Purchase Orders"
+        );
+        SAPPurchaseRequisitionsApp = LookUp(
+            PowerAppsforAdmins.GetAdminApps(
+                varCurrentEnvironment.name,
+                {'api-version': BAPAPIVersion}
+            ).value,
+            properties.displayName = "SAP Purchase Requisitions"
+        );
+        SAPVendorInvoicesApp = LookUp(
+            PowerAppsforAdmins.GetAdminApps(
+                varCurrentEnvironment.name,
+                {'api-version': BAPAPIVersion}
+            ).value,
+            properties.displayName = "SAP Vendor Invoices"
+        );
+        SAPVendorManagementApp = LookUp(
+            PowerAppsforAdmins.GetAdminApps(
+                varCurrentEnvironment.name,
+                {'api-version': BAPAPIVersion}
+            ).value,
+            properties.displayName = "SAP Vendor Management"
+        );
+        SAPVendorPaymentsApp = LookUp(
+            PowerAppsforAdmins.GetAdminApps(
+                varCurrentEnvironment.name,
+                {'api-version': BAPAPIVersion}
+            ).value,
+            properties.displayName = "SAP Vendor Payments"
+        );
+        //SAP Admin App
+        SAPAdminApp = AddColumns(
+            LookUp(
+                'Model-driven Apps',
+                'Unique Name' = "mpa_SAPSolutionAdministrator"
+            ),
+            _AppURL,
+            Concatenate(
+                varCurrentEnvironment.instanceurl,
+                "main.aspx?appid=",
+                AppModuleId
+            )
+        );
+        //SAP Template Installer App
+        SAPTemplateInstallerApp = LookUp(
+            PowerAppsforAdmins.GetAdminApps(
+                varCurrentEnvironment.name,
+                {'api-version': BAPAPIVersion}
+            ).value,
+            properties.displayName = "SAP Setup Assistant"
+        );
+        //User
+        CurrentUser = LookUp(
+            Users,
+            'User Name' = Office365Users.MyProfileV2().userPrincipalName
+        );
+        //Security roles
+        SAPUserSecurityRoles = ShowColumns(
+            Filter(
+                'Security Roles',
+                Name in Table(
+                    {Name: "Basic User"},
+                    {Name: "SAP Template User"}
+                )
+            ),
+            roleid
+        );
+        //SAP Admin app security roles
+        SAPAdminSecurityRoles = ShowColumns(
+            Filter(
+                'Security Roles',
+                Name in Table(
+                    {Name: "Basic User"},
+                    {Name: "SAP Template Administrator"}
+                )
+            ),
+            roleid
+        );
+        //Deployment team security roles
+        DeploymentTeamSecurityRoles = ShowColumns(
+            Filter(
+                'Security Roles',
+                Name in Table(
+                    {Name: "Basic User"},
+                    {Name: "Template Installer"}
+                )
+            ),
+            roleid
+        );
+        
+        //Solution Files
+        SolutionFiles = Table(
+            {
+                Solution: "mpa_SAPBase",
+                FileName: "mpa_SAPBase_managed.zip",
+                ShortFileName: "mpa_SAPBase_managed",
+                Type: "Managed",
+                Link: "https://aka.ms/SAPBaseManagedSolution"
+            },
+            {
+                Solution: "mpa_SAPBase",
+                FileName: "mpa_SAPBase_unmanaged.zip",
+                ShortFileName: "mpa_SAPBase_unmanaged",
+                Type: "Unmanaged",
+                Link: "https://aka.ms/SAPBaseUnmanagedSolution"
+            },
+            {
+                Solution: "mpa_SAPProcurement",
+                FileName: "mpa_SAPProcurement_managed.zip",
+                ShortFileName: "mpa_SAPProcurement_managed",
+                Type: "Managed",
+                Link: "https://aka.ms/SAPProcurementManagedSolution"
+            },
+            {
+                Solution: "mpa_SAPProcurement",
+                FileName: "mpa_SAPProcurement_unmanaged.zip",
+                ShortFileName: "mpa_SAPProcurement_unmanaged",
+                Type: "Unmanaged",
+                Link: "https://aka.ms/SAPProcurementUnmanagedSolution"
+            },
+            {
+                Solution: "mpa_SAPTemplateInstallerDesktopFlows",
+                FileName: "mpa_SAPTemplateInstallerDesktopFlows_managed.zip",
+                ShortFileName: "mpa_SAPTemplateInstallerDesktopFlows_managed",
+                Type: "Managed",
+                Link: "https://aka.ms/DownloadSAPTemplateInstallerDesktopFlows"
+            },
+            {
+                Solution: "mpa_SAPTemplateInstallerDropDownValues",
+                FileName: "mpa_SAPTemplateInstallerDropDownValues_managed.zip",
+                ShortFileName: "mpa_SAPTemplateInstallerDropDownValues_managed",
+                Type: "Managed",
+                Link: "https://aka.ms/DownloadSAPTemplateInstallerDropDownSyncSolution"
+            },
+            {
+                Solution: "mpa_SAPSetupAssistantDropDownValues",
+                FileName: "mpa_SAPSetupAssistantDropDownValues_managed.zip",
+                ShortFileName: "mpa_SAPSetupAssistantDropDownValues_managed",
+                Type: "Managed",
+                Link: "https://aka.ms/DownloadSAPSetupAssistantDropDownSyncSolution"
+            }
+        
+        );
+        
+        PowerShellScripts = Table(
+            { 
+                FileName : "DownloadSAPSetupAssistantValidationScripts",
+                Link : "https://aka.ms/DownloadSAPSetupAssistantValidationScripts"
+            }
+        
+        );
+        // Apps chosen to deploy
+        SAPAppsChosenToDeploy = Filter(
+            Table(
+                {
+                    Name: "Vendor Management",
+                    AppDetails: SAPVendorManagementApp,
+                    Deployed: Value(
+                        LookUp(
+                            'Activity Step Values',
+                            'Control Name' = "RadioGroupCanvas1_7"
+                        ).Value
+                    ) <> 3
+                },
+                {
+                    Name: "Purchase Requisitions",
+                    AppDetails: SAPPurchaseRequisitionsApp,
+                    Deployed: Value(
+                        LookUp(
+                            'Activity Step Values',
+                            'Control Name' = "RadioGroupCanvas1_10"
+                        ).Value
+                    ) <> 3
+                },
+                {
+                    Name: "Purchase Orders",
+                    AppDetails: SAPPurchaseOrdersApp,
+                    Deployed: Value(
+                        LookUp(
+                            'Activity Step Values',
+                            'Control Name' = "RadioGroupCanvas1_11"
+                        ).Value
+                    ) <> 3
+                },
+                {
+                    Name: "Goods Receipts",
+                    AppDetails: SAPGoodsReceiptApp,
+                    Deployed: Value(
+                        LookUp(
+                            'Activity Step Values',
+                            'Control Name' = "RadioGroupCanvas1_12"
+                        ).Value
+                    ) <> 3
+                },
+                {
+                    Name: "Vendor Invoices",
+                    AppDetails: SAPVendorInvoicesApp,
+                    Deployed: Value(
+                        LookUp(
+                            'Activity Step Values',
+                            'Control Name' = "RadioGroupCanvas1_13"
+                        ).Value
+                    ) <> 3
+                },
+                {
+                    Name: "Vendor Payments",
+                    AppDetails: SAPVendorPaymentsApp,
+                    Deployed: Value(
+                        LookUp(
+                            'Activity Step Values',
+                            'Control Name' = "RadioGroupCanvas1_14"
+                        ).Value
+                    ) <> 3
+                }
+            ),
+            Deployed = true
+        );
+        // Shared flows
+        SAPFlowsToShare = Sort(
+            Filter(
+                AddColumns(
+                    PowerAutomateManagement.ListFlowsInEnvironmentV2(varCurrentEnvironment.name).value,
+                    _displayName,
+                    Trim(properties.displayName)
+                ),
+                _displayName in Filter(
+                    FlowMappings,
+                    Or(
+                        If(
+                            "Vandor Management" in SAPAppsChosenToDeploy.Name,
+                            'Vendor Management' = true
+                        ),
+                        If(
+                            "Purchase Requisitions" in SAPAppsChosenToDeploy.Name,
+                            'Purchase Requisitions' = true
+                        ),
+                        If(
+                            "Purchase Orders" in SAPAppsChosenToDeploy.Name,
+                            'Purchase Orders' = true
+                        ),
+                        If(
+                            "Goods Receipts" in SAPAppsChosenToDeploy.Name,
+                            'Goods Receipts' = true
+                        ),
+                        If(
+                            "Vendor Invoices" in SAPAppsChosenToDeploy.Name,
+                            'Vendor Invoices' = true
+                        ),
+                        If(
+                            "Vendor Payments" in SAPAppsChosenToDeploy.Name,
+                            'Vendor Payments' = true
+                        )
+                    )
+                ).'Flow Name'
+            ),
+            _displayName
+        );
+        //Share installer template flows
+        InstallerTemplateFlows = Filter(
+            AddColumns(
+                PowerAutomateManagement.ListFlowsInEnvironmentV2(varCurrentEnvironment.name).value,
+                _displayName,
+                Trim(properties.displayName)
+            ),
+            Or(
+                _displayName = "InstallTemplateShareFlows",
+                _displayName = "InstallTemplateShareApps",
+                _displayName = "InstallTemplateTurnOnFlow",
+                _displayName = "InstallTemplateSAPProcess",
+                _displayName = "InstallTemplateGetCurrentEnvironment",
+                _displayName = "InstallTemplateSAPStrings",
+                _displayName = "InstallTemplateImportSolutionFile",
+                _displayName = "InstallTemplateSAPCheckGatewayConfiguration",
+                _displayName = "InstallTemplateSAPCheckKerberosConfiguration",
+                _displayName = "InstallTemplateSAPCheckNetworkConnection",
+                _displayName = "InstallTemplateSAPMenuItem",
+                _displayName = "InstallTemplateSAPDropDownSyncBatchRun",
+                _displayName = "InstallTemplateSAPDropDownSync",
+                _displayName = "InstallTemplateSAPDesktopFlowsBatchRun"
+            )
+        );
+        //Completed Stage Activities
+        UnlockedStageActivities = Filter(
+            'Stage Activities',
+            'Activity Status' <> 'Activity Status (Stage Activities)'.'Not Started',
+            'Process Stage'.'Process Stage' in colProcessStages.'Process Stage'
+        );
+        // Current activity
+        CurrentActivity = LookUp(
+            colStageActivities,
+            And(
+                'Activity Screen' = varAppActiveScreen.Name,
+                'Process Stage'.'Process Stage' in colProcessStages.'Process Stage'
+            )
+        );
+        //First activity step
+        CurrentActivityStep = LookUp(
+            colActivitySteps,
+            And(
+                'Stage Activity'.'Stage Activity' = CurrentActivity.'Stage Activity',
+                Order = varCurrentActivityStepOrder
+            )
+        );
+        //Next Activity Screen
+        NextActivityScreen = With(
+            {
+                _nextActivityOrder: CurrentActivity.Order + 1,
+                _nextStageOrder: CurrentActivity.'Process Stage'.Order + 1
+            },
+            With(
+                {
+                    _nextActivityScreenWithInStage: LookUp(
+                        colStageActivities,
+                        'Process Stage'.'Process Stage' = CurrentActivity.'Process Stage'.'Process Stage' && Order = _nextActivityOrder
+                    ),
+                    _nextStage: LookUp(
+                        colProcessStages,
+                        And(
+                            Order = _nextStageOrder,
+                            'Install Process'.'Install Process' = varInstallProcess.'Install Process'
+                        )
+                    ).'Process Stage'
+                },
+                If(
+                    !IsBlank(_nextActivityScreenWithInStage),
+                    _nextActivityScreenWithInStage,
+                    First(
+                        Sort(
+                            Filter(
+                                colStageActivities,
+                                'Process Stage'.'Process Stage' = _nextStage
+                            ),
+                            Order
+                        )
+                    )
+                )
+            )
+        );
+        //Next button visible
+        NextButtonVisible = Not(
+            CurrentActivityStep.mpa_order = Max(
+                Filter(
+                    colActivitySteps,
+                    'Stage Activity'.'Stage Activity' = CurrentActivity.'Stage Activity'
+                ),
+                Order
+            )
+        );
+        //Back button visibile
+        BackButtonVisible = Not(
+            CurrentActivityStep.mpa_order = Min(
+                Filter(
+                    colActivitySteps,
+                    'Stage Activity'.'Stage Activity' = CurrentActivity.'Stage Activity'
+                ),
+                Order
+            )
+        );
+        // Finish button display mode
+        FinishButtonDisplayMode = If(
+            Or(
+                IsEmpty(
+                    Filter(
+                        'Activity Steps',
+                        'Stage Activity'.'Stage Activity' = CurrentActivity.'Stage Activity',
+                        Order <> Max(
+                            Filter(
+                                'Activity Steps',
+                                'Stage Activity'.'Stage Activity' = CurrentActivity.'Stage Activity'
+                            ),
+                            Order
+                        ),
+                        Or(
+                            'Step Status' = 'Step Status (Activity Steps)'.Incomplete,
+                            'Step Status' = 'Step Status (Activity Steps)'.'Not Started'
+                        )
+                    )
+                ),
+                CurrentActivity.Optional
+            ),
+            DisplayMode.Edit,
+            DisplayMode.Disabled
+        );
+        //Used for notifications if activity complete or not
+        IsActivityComplete = IsEmpty(
+            Filter(
+                'Activity Steps',
+                'Stage Activity'.'Stage Activity' = CurrentActivity.'Stage Activity',
+                Order <> Max(
+                    Filter(
+                        'Activity Steps',
+                        'Stage Activity'.'Stage Activity' = CurrentActivity.'Stage Activity'
+                    ),
+                    Order
+                ),
+                'Step Status' <> 'Step Status (Activity Steps)'.Completed,
+                'Step Status' <> 'Step Status (Activity Steps)'.'Not Applicable'
+            )
+        );
+        //Current App Owner
+        CurrentTemplateInstallerAppOwner = First(
+            Filter(
+                AddColumns(
+                    PowerAppsforMakers.GetAppRoleAssignment(
+                        SAPTemplateInstallerApp.name,
+                        {'api-version': BAPAPIVersion}
+                    ).value,
+                    _roleName,
+                    properties.roleName
+                ),
+                _roleName = "Owner"
+            )
+        );
+        // Screen mappings
+        ScreenMappings = Table(
+            {
+                AppScreen: "Welcome Screen",
+                Screen: 'Welcome Screen'
+            },
+            {
+                AppScreen: "Overview Screen",
+                Screen: 'Overview Screen'
+            },
+            {
+                AppScreen: "Confirm Licensing Screen",
+                Screen: 'Confirm Licensing Screen'
+            },
+            {
+                AppScreen: "Environment Setup Screen",
+                Screen: 'Environment Setup Screen'
+            },
+            {
+                AppScreen: "Get Validation Scripts",
+                Screen: 'Get Validation Scripts'
+            },
+            {
+                AppScreen: "Desktop Flows Screen",
+                Screen: 'Desktop Flows Screen'
+            },
+            {
+                AppScreen: "Data Gateway Screen",
+                Screen: 'Data Gateway Screen'
+            },
+            {
+                AppScreen: "Network Screen",
+                Screen: 'Network Screen'
+            },
+            {
+                AppScreen: "Authentication Screen",
+                Screen: 'Authentication Screen'
+            },
+            {
+                AppScreen: "Solution Import Screen",
+                Screen: 'Solution Import Screen'
+            },
+            {
+                AppScreen: "Share the App Screen",
+                Screen: 'Share the App Screen'
+            },
+            {
+                AppScreen: "Share the Flows Screen",
+                Screen: 'Share the Flows Screen'
+            },
+            {
+                AppScreen: "Drop Down Values Screen",
+                Screen: 'Drop Down Values Screen'
+            },
+            {
+                AppScreen: "Localization Screen",
+                Screen: 'Localization Screen'
+            },
+            {
+                AppScreen: "Wrap-Up Screen",
+                Screen: 'Wrap-Up Screen'
+            }
+        );
+        SAPtoDVLanguageMappings = Table(
+            {
+                Name: "Arabic",
+                SAPCode: "AR",
+                ISOCode: "ar",
+                DVCode: 865420006
+            },
+            {
+                Name: "German",
+                SAPCode: "DE",
+                ISOCode: "de",
+                DVCode: 865420004
+            },
+            {
+                Name: "English",
+                SAPCode: "EN",
+                ISOCode: "en",
+                DVCode: 865420000
+            },
+            {
+                Name: "Spanish",
+                SAPCode: "ES",
+                ISOCode: "es",
+                DVCode: 865420001
+            },
+            {
+                Name: "French",
+                SAPCode: "FR",
+                ISOCode: "fr",
+                DVCode: 865420003
+            },
+            {
+                Name: "Hebrew",
+                SAPCode: "HE",
+                ISOCode: "he",
+                DVCode: 865420009
+            },
+            {
+                Name: "Italian",
+                SAPCode: "IT",
+                ISOCode: "it",
+                DVCode: 865420005
+            },
+            {
+                Name: "Japanese",
+                SAPCode: "JA",
+                ISOCode: "ja",
+                DVCode: 865420007
+            },
+            {
+                Name: "Korean",
+                SAPCode: "KO",
+                ISOCode: "ko",
+                DVCode: 865420010
+            },
+            {
+                Name: "Portugese",
+                SAPCode: "PT",
+                ISOCode: "pt",
+                DVCode: 865420002
+            },
+            {
+                Name: "Chinese",
+                SAPCode: "ZH",
+                ISOCode: "zh",
+                DVCode: 865420008
+            }
+        );
+    OnStart: |
+        =Set(
+            varExpandMenu,
+            true
+        );
+        Set(
+            varExpandHelp,
+            true
+        );
+        Set(
+            varDisableControls,
+            false
+        );
+        Set(
+            varNavBack,
+            false
+        );
+        Set(
+            varSkip,
+            false
+        );
+        Set(
+            varInstallProcess,
+            LookUp(
+                'Install Processes',
+                And(
+                    Template = 'Template (Install Processes)'.SAP,
+                    'Install Status' = 'Install Status (Install Processes)'.Completed
+                )
+            )
+        );
+        ClearCollect(
+            colProcessStages,
+            Filter(
+                'Process Stages',
+                'Install Process'.'Install Process' = varInstallProcess.'Install Process'
+            )
+        );
+        ClearCollect(
+            colStageActivities,
+            Filter(
+                'Stage Activities',
+                'Process Stage'.'Process Stage' in colProcessStages.'Process Stage'
+            )
+        );
+        ClearCollect(
+            colUnlockedStageActivities,
+            ShowColumns(
+                Filter(
+                    colStageActivities,
+                    'Activity Status' <> 'Activity Status (Stage Activities)'.'Not Started'
+                ),
+                'Stage Activity'
+            )
+        );
+        ClearCollect(
+            colActivitySteps,
+            Filter(
+                'Activity Steps',
+                'Stage Activity'.'Stage Activity' in colStageActivities.'Stage Activity'
+            )
+        );
+        Set(
+            varCurrentEnvironment,
+            'Copyof-InstallTemplateGetCurrentEnvironment'.Run(BAPAPIVersion)
+        );
+    StartScreen: |-
+        =If(
+            IsBlank(
+                LookUp(
+                    'Install Processes',
+                    And(
+                        Template = 'Template (Install Processes)'.SAP,
+                        'Install Status' = 'Install Status (Install Processes)'.Completed,
+                        'First App Launch' = 'First App Launch (Install Processes)'.No
+                    )
+                )
+            ),
+            'Initialization Screen',
+            'Welcome Screen'
+        )
+    Theme: =PowerAppsTheme
+
+    Host As hostControl.DefaultHostControlVariant:
+        OnCancel: =false
+        OnEdit: =false
+        OnNew: =false
+        OnSave: =false
+        OnView: =false
+

@@ -1,0 +1,1508 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_powerappsforappmakers": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_sharedpowerappsforappmakers_bf12b"
+        },
+        "api": {
+          "name": "shared_powerappsforappmakers"
+        }
+      },
+      "shared_office365users": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_sharedoffice365users_f61b7"
+        },
+        "api": {
+          "name": "shared_office365users"
+        }
+      },
+      "shared_commondataserviceforapps": {
+        "impersonation": {
+          "source": "invoker"
+        },
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_sharedcommondataserviceforapps_fadb4"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      },
+      "shared_powerplatformforadmins": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_sharedpowerplatformforadmins_5f783"
+        },
+        "api": {
+          "name": "shared_powerplatformforadmins"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "c9b802bc-8d4f-4e70-8385-0e29a19766ff"
+          },
+          "type": "Request",
+          "kind": "PowerAppV2",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "AppName",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Unique identifier for the app",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "text_1": {
+                  "title": "BAPAPIVersion",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "BAP API version to use",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "text_2": {
+                  "title": "RoleList",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "JSON list of role id's to assign",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "text_3": {
+                  "title": "AddShareList",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "List of user and/or team object id's to assign",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "text_4": {
+                  "title": "RemoveShareList",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "List of user and/or team object id's to remove",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text",
+                "text_1",
+                "text_2",
+                "text_3",
+                "text_4"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Try": {
+          "actions": {
+            "Parse_JSON_Add_Share_List": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "2ae38ac2-e3d0-4566-b1c5-488f45e21108"
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@triggerBody()['text_3']",
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "Id": {
+                        "type": "string"
+                      },
+                      "DisplayName": {
+                        "type": "string"
+                      },
+                      "Role": {
+                        "type": "string"
+                      },
+                      "Type": {
+                        "type": "string",
+                        "enum": [
+                          "User",
+                          "Team"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "Id",
+                      "Type",
+                      "Role",
+                      "DisplayName"
+                    ]
+                  }
+                }
+              }
+            },
+            "Apply_to_add": {
+              "foreach": "@body('Parse_JSON_Add_Share_List')",
+              "actions": {
+                "Compose": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "b7636198-37b9-4288-b06a-f39a25510c36"
+                  },
+                  "type": "Compose",
+                  "inputs": "Placeholder"
+                },
+                "Get_App_Role_Assignments": {
+                  "runAfter": {
+                    "Compose": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "034e9166-9a20-4378-bc66-6fd091663086"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_powerappsforappmakers",
+                      "operationId": "Get-AppRoleAssignment",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerappsforappmakers"
+                    },
+                    "parameters": {
+                      "app": "@triggerBody()['text']",
+                      "api-version": "@triggerBody()['text_1']",
+                      "$top": 250
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Filter_Assigned_Already": {
+                  "runAfter": {
+                    "Get_App_Role_Assignments": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "44a6be7b-2daf-4788-a9d3-d130625a34ec"
+                  },
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@outputs('Get_App_Role_Assignments')?['body/value']",
+                    "where": "@equals(item()?['properties/principal/id'], items('Apply_to_add')['Id'])"
+                  }
+                },
+                "Condition": {
+                  "actions": {
+                    "Check_if_Owner": {
+                      "actions": {
+                        "Edit_App_Role_Assignment": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "03771ba3-1936-4258-9e06-c871acf070d4"
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_powerappsforappmakers",
+                              "operationId": "Edit-AppRoleAssignment",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerappsforappmakers"
+                            },
+                            "parameters": {
+                              "app": "@triggerBody()['text']",
+                              "api-version": "@triggerBody()['text_1']",
+                              "$filter": "environment eq ''",
+                              "Content-Type": "application/json",
+                              "body/delete": [
+                                {
+                                  "id": "@items('Apply_to_add')['Id']"
+                                }
+                              ]
+                            },
+                            "authentication": "@parameters('$authentication')"
+                          }
+                        },
+                        "Edit_App_Role_Assignment_-_Add_2": {
+                          "runAfter": {
+                            "Edit_App_Role_Assignment": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "a736df2a-51b6-480d-829a-fac12967a158"
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_powerappsforappmakers",
+                              "operationId": "Edit-AppRoleAssignment",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerappsforappmakers"
+                            },
+                            "parameters": {
+                              "app": "@triggerBody()['text']",
+                              "api-version": "@triggerBody()['text_1']",
+                              "$filter": "environment eq ''",
+                              "Content-Type": "application/json",
+                              "body/put": [
+                                {
+                                  "properties/principal/tenantId": "null",
+                                  "properties/principal/id": "@items('Apply_to_add')['Id']",
+                                  "properties/principal/type": "@items('Apply_to_add')['Type']",
+                                  "properties/roleName": "@{items('Apply_to_add')['Role']}"
+                                }
+                              ]
+                            },
+                            "authentication": "@parameters('$authentication')",
+                            "retryPolicy": {
+                              "type": "none"
+                            }
+                          }
+                        }
+                      },
+                      "runAfter": {},
+                      "expression": {
+                        "not": {
+                          "equals": [
+                            "@first(body('Filter_Assigned_Already'))['properties']['roleName']",
+                            "Owner"
+                          ]
+                        }
+                      },
+                      "metadata": {
+                        "operationMetadataId": "d981190c-0f23-4615-8e04-f62b3f4b8da4"
+                      },
+                      "type": "If"
+                    }
+                  },
+                  "runAfter": {
+                    "Filter_Assigned_Already": [
+                      "Succeeded"
+                    ]
+                  },
+                  "else": {
+                    "actions": {
+                      "Edit_App_Role_Assignment_-_Add": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "a736df2a-51b6-480d-829a-fac12967a158"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_powerappsforappmakers",
+                            "operationId": "Edit-AppRoleAssignment",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerappsforappmakers"
+                          },
+                          "parameters": {
+                            "app": "@triggerBody()['text']",
+                            "api-version": "@triggerBody()['text_1']",
+                            "$filter": "environment eq ''",
+                            "Content-Type": "application/json",
+                            "body/put": [
+                              {
+                                "properties/principal/tenantId": "null",
+                                "properties/principal/id": "@items('Apply_to_add')['Id']",
+                                "properties/principal/type": "@items('Apply_to_add')['Type']",
+                                "properties/roleName": "@{items('Apply_to_add')['Role']}"
+                              }
+                            ]
+                          },
+                          "authentication": "@parameters('$authentication')",
+                          "retryPolicy": {
+                            "type": "none"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "expression": {
+                    "not": {
+                      "equals": [
+                        "@length(body('Filter_Assigned_Already'))",
+                        0
+                      ]
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "247986ea-638e-4596-94b0-d1551e03bce2"
+                  },
+                  "type": "If"
+                },
+                "Check_User_or_Team": {
+                  "actions": {
+                    "Get_user_profile_(V2)": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "df15ccc3-0981-4889-b03a-eea250bb90a8"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365users",
+                          "operationId": "UserProfile_V2",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365users"
+                        },
+                        "parameters": {
+                          "id": "@items('Apply_to_add')?['Id']"
+                        },
+                        "authentication": "@parameters('$authentication')",
+                        "retryPolicy": {
+                          "type": "none"
+                        }
+                      }
+                    },
+                    "Find_User_-_Add": {
+                      "runAfter": {
+                        "Get_user_profile_(V2)": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "5906c34b-1f44-4742-be6a-1e15afd051c8"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps",
+                          "operationId": "ListRecords",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "systemusers",
+                          "$filter": "domainname eq '@{outputs('Get_user_profile_(V2)')?['body/userPrincipalName']}'",
+                          "$expand": "systemuserroles_association"
+                        },
+                        "authentication": "@parameters('$authentication')",
+                        "retryPolicy": {
+                          "type": "none"
+                        }
+                      }
+                    },
+                    "Apply_to_each_role_for_user": {
+                      "foreach": "@body('Parse_JSON_Roles')",
+                      "actions": {
+                        "Filter_Role_Exists": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "9fa08685-3de1-48ca-8e82-97a733d1ca54"
+                          },
+                          "type": "Query",
+                          "inputs": {
+                            "from": "@variables('User')['systemuserroles_association']",
+                            "where": "@equals(items('Apply_to_each_role_for_user')['roleid'], item()['roleid'])"
+                          }
+                        },
+                        "Check_Role_Exists": {
+                          "actions": {
+                            "Relate_security_role_to_user": {
+                              "runAfter": {},
+                              "metadata": {
+                                "operationMetadataId": "d8a39338-2856-4004-9802-e8693a146a68"
+                              },
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "host": {
+                                  "connectionName": "shared_commondataserviceforapps",
+                                  "operationId": "AssociateEntities",
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                                },
+                                "parameters": {
+                                  "entityName": "roles",
+                                  "recordId": "@items('Apply_to_each_role_for_user')['roleid']",
+                                  "associationEntityRelationship": "systemuserroles_association",
+                                  "item/@odata.id": "@variables('User')['@odata.id']"
+                                },
+                                "authentication": "@parameters('$authentication')"
+                              }
+                            }
+                          },
+                          "runAfter": {
+                            "Filter_Role_Exists": [
+                              "Succeeded"
+                            ]
+                          },
+                          "expression": {
+                            "equals": [
+                              "@length(body('Filter_Role_Exists'))",
+                              0
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "cb739d12-f996-4af8-b6a3-af27cb459a96"
+                          },
+                          "type": "If"
+                        }
+                      },
+                      "runAfter": {
+                        "Check_User_Exists": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "e4a704a1-d87d-4a8c-ae3b-2c8badefe166"
+                      },
+                      "type": "Foreach",
+                      "runtimeConfiguration": {
+                        "concurrency": {
+                          "repetitions": 20
+                        }
+                      }
+                    },
+                    "Check_User_Exists": {
+                      "actions": {
+                        "Force_Sync_user": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "4f9cdc6a-d4eb-4267-8a8d-a528b2aec755"
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_powerplatformforadmins",
+                              "operationId": "Add-AdminPowerAppsSyncUser",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerplatformforadmins"
+                            },
+                            "parameters": {
+                              "environment": "@workflow().tags.environmentName",
+                              "body/ObjectId": "@items('Apply_to_add')['Id']",
+                              "api-version": "2019-05-01"
+                            },
+                            "authentication": "@parameters('$authentication')"
+                          }
+                        },
+                        "Find_User_-_Add_Post_Sync": {
+                          "runAfter": {
+                            "Force_Sync_user": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "4f5b3c40-1fc4-4e70-94df-d176f3c7143c"
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_commondataserviceforapps",
+                              "operationId": "ListRecords",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                            },
+                            "parameters": {
+                              "entityName": "systemusers",
+                              "$filter": "domainname eq '@{outputs('Get_user_profile_(V2)')?['body/userPrincipalName']}'",
+                              "$expand": "systemuserroles_association"
+                            },
+                            "authentication": "@parameters('$authentication')"
+                          }
+                        },
+                        "Set_variable_-_UserID_Post_Sync": {
+                          "runAfter": {
+                            "Find_User_-_Add_Post_Sync": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "dedaacbe-5068-4270-ad3c-faef019863bf"
+                          },
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "User",
+                            "value": "@outputs('Find_User_-_Add_Post_Sync')?['body/value']"
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "Find_User_-_Add": [
+                          "Succeeded"
+                        ]
+                      },
+                      "else": {
+                        "actions": {
+                          "Set_variable_-_UserID": {
+                            "runAfter": {},
+                            "metadata": {
+                              "operationMetadataId": "19e3e874-9c17-48b6-b794-d755149fa5f8"
+                            },
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "User",
+                              "value": "@first(outputs('Find_User_-_Add')?['body/value'])"
+                            }
+                          }
+                        }
+                      },
+                      "expression": {
+                        "equals": [
+                          "@empty(outputs('Find_User_-_Add')?['body/value'])",
+                          true
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "e899422f-97a8-4845-86c9-eba78afa7f1d"
+                      },
+                      "type": "If"
+                    }
+                  },
+                  "runAfter": {
+                    "Condition": [
+                      "Succeeded"
+                    ]
+                  },
+                  "else": {
+                    "actions": {
+                      "Find_Team_-_Add": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "624cdd2c-7669-484b-b7da-c9b6d5984c08"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_commondataserviceforapps",
+                            "operationId": "ListRecords",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                          },
+                          "parameters": {
+                            "entityName": "teams",
+                            "$filter": "azureactivedirectoryobjectid eq '@{items('Apply_to_add')['Id']}'",
+                            "$top": 1
+                          },
+                          "authentication": "@parameters('$authentication')"
+                        }
+                      },
+                      "Check_Team_Exists": {
+                        "actions": {
+                          "Get_Root_BU": {
+                            "runAfter": {},
+                            "metadata": {
+                              "operationMetadataId": "3b4106b4-df21-4bb4-949e-bd7ec955ef4c"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_commondataserviceforapps",
+                                "operationId": "ListRecords",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                              },
+                              "parameters": {
+                                "entityName": "businessunits",
+                                "$filter": "parentbusinessunitid eq null"
+                              },
+                              "authentication": "@parameters('$authentication')"
+                            }
+                          },
+                          "Create_Team": {
+                            "runAfter": {
+                              "User_Administrator_ID": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "a576d572-9f2d-4e35-b8e6-58306c5c23a9"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_commondataserviceforapps",
+                                "operationId": "CreateRecord",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                              },
+                              "parameters": {
+                                "entityName": "teams",
+                                "item/administratorid@odata.bind": "/systemusers(@{outputs('User_Administrator_ID')})",
+                                "item/businessunitid@odata.bind": "/businessunits(@{outputs('Root_Business_Unit_ID')})",
+                                "item/membershiptype": 1,
+                                "item/name": "@items('Apply_to_add')?['DisplayName']",
+                                "item/teamtype": 2,
+                                "item/azureactivedirectoryobjectid": "@items('Apply_to_add')['Id']"
+                              },
+                              "authentication": "@parameters('$authentication')"
+                            }
+                          },
+                          "Get_my_profile_(V2)": {
+                            "runAfter": {
+                              "Root_Business_Unit_ID": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "1dfefcb7-6726-472d-a06b-c0b15f61633a"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_office365users",
+                                "operationId": "MyProfile_V2",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365users"
+                              },
+                              "parameters": {},
+                              "authentication": "@parameters('$authentication')"
+                            }
+                          },
+                          "Get_Administrator": {
+                            "runAfter": {
+                              "Get_my_profile_(V2)": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "9a34c4a2-a9ba-4db7-93a3-86c1bea3a7df"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_commondataserviceforapps",
+                                "operationId": "ListRecords",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                              },
+                              "parameters": {
+                                "entityName": "systemusers",
+                                "$filter": "domainname eq '@{outputs('Get_my_profile_(V2)')?['body/userPrincipalName']}'"
+                              },
+                              "authentication": "@parameters('$authentication')"
+                            }
+                          },
+                          "Set_variable_-_Team_ID_Post_Create": {
+                            "runAfter": {
+                              "Create_Team": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "6ab4cbdf-ef64-4857-b66e-164b2e5a961b"
+                            },
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "TeamID",
+                              "value": "@outputs('Create_Team')?['body/@odata.id']"
+                            }
+                          },
+                          "Root_Business_Unit_ID": {
+                            "runAfter": {
+                              "Get_Root_BU": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "56471ea1-9e9b-4dbb-8f87-470ca18adb2e"
+                            },
+                            "type": "Compose",
+                            "inputs": "@first(outputs('Get_Root_BU')?['body/value'])['businessunitid']"
+                          },
+                          "User_Administrator_ID": {
+                            "runAfter": {
+                              "Get_Administrator": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "1ed8ab56-6f90-41a4-8853-8a40da112177"
+                            },
+                            "type": "Compose",
+                            "inputs": "@first(outputs('Get_Administrator')?['body/value'])['systemuserid']"
+                          }
+                        },
+                        "runAfter": {
+                          "Find_Team_-_Add": [
+                            "Succeeded"
+                          ]
+                        },
+                        "else": {
+                          "actions": {
+                            "Set_variable_-_Team_ID": {
+                              "runAfter": {},
+                              "metadata": {
+                                "operationMetadataId": "31e44f3f-0b4b-4cab-a4d9-dfd81197de49"
+                              },
+                              "type": "SetVariable",
+                              "inputs": {
+                                "name": "TeamID",
+                                "value": "@{first(outputs('Find_Team_-_Add')?['body/value'])['@odata.id']}"
+                              }
+                            }
+                          }
+                        },
+                        "expression": {
+                          "equals": [
+                            "@empty(outputs('Find_Team_-_Add')?['body/value'])",
+                            true
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "7e6878fa-3319-4cfb-824a-cc7b63f71c5c"
+                        },
+                        "type": "If"
+                      },
+                      "Apply_to_each_role_for_team": {
+                        "foreach": "@body('Parse_JSON_Roles')",
+                        "actions": {
+                          "Relate_rows_to_team": {
+                            "runAfter": {},
+                            "metadata": {
+                              "operationMetadataId": "2a6d9b90-f817-4a18-9010-33a8079ebc1a"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_commondataserviceforapps",
+                                "operationId": "AssociateEntities",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                              },
+                              "parameters": {
+                                "entityName": "roles",
+                                "recordId": "@items('Apply_to_each_role_for_team')['roleid']",
+                                "associationEntityRelationship": "teamroles_association",
+                                "item/@odata.id": "@variables('TeamID')"
+                              },
+                              "authentication": "@parameters('$authentication')"
+                            }
+                          }
+                        },
+                        "runAfter": {
+                          "Check_Team_Exists": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "aa50e16d-003e-4ae9-bce5-8d70af099438"
+                        },
+                        "type": "Foreach",
+                        "runtimeConfiguration": {
+                          "concurrency": {
+                            "repetitions": 20
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "expression": {
+                    "equals": [
+                      "@items('Apply_to_add')['Type']",
+                      "User"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "a1b2a739-89cf-4638-ab13-9c5dc41f01e4"
+                  },
+                  "type": "If"
+                }
+              },
+              "runAfter": {
+                "Parse_JSON_Roles": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "0918868b-f927-4cb8-aaab-b0d6024c1451"
+              },
+              "type": "Foreach",
+              "runtimeConfiguration": {
+                "concurrency": {
+                  "repetitions": 20
+                }
+              }
+            },
+            "Parse_JSON_Roles": {
+              "runAfter": {
+                "Parse_JSON_Remove_Share_List": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "a6131792-d028-4255-a350-65ce74d9a974"
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@triggerBody()['text_2']",
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "roleid": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "roleid"
+                    ]
+                  }
+                }
+              }
+            },
+            "Parse_JSON_Remove_Share_List": {
+              "runAfter": {
+                "Parse_JSON_Add_Share_List": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "224f41bb-2a87-4667-842c-28ddd75c211a"
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@triggerBody()['text_4']",
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "Id": {
+                        "type": "string"
+                      },
+                      "Type": {
+                        "type": "string",
+                        "enum": [
+                          "User",
+                          "Team"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "Id",
+                      "Type"
+                    ]
+                  }
+                }
+              }
+            },
+            "Apply_to_each_remove": {
+              "foreach": "@body('Parse_JSON_Remove_Share_List')",
+              "actions": {
+                "Compose_2": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "bc8463e0-2771-4784-ab8a-f83edc70519b"
+                  },
+                  "type": "Compose",
+                  "inputs": "Branch"
+                },
+                "Edit_App_Role_Assignment_-_Remove": {
+                  "runAfter": {
+                    "Compose_2": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "478dbd79-84e6-4a95-b2d0-c58e4d5948e3"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_powerappsforappmakers",
+                      "operationId": "Edit-AppRoleAssignment",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerappsforappmakers"
+                    },
+                    "parameters": {
+                      "app": "@triggerBody()['text']",
+                      "api-version": "@triggerBody()['text_1']",
+                      "$filter": "environment eq ''",
+                      "Content-Type": "application/json",
+                      "body/delete": [
+                        {
+                          "id": "@items('Apply_to_each_remove')['Id']"
+                        }
+                      ]
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Check_Type_For_Remove": {
+                  "actions": {
+                    "Get_user_profile_(V2)_2": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "fa4fd413-3e8b-416b-adda-339c77e2b00b"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365users",
+                          "operationId": "UserProfile_V2",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365users"
+                        },
+                        "parameters": {
+                          "id": "@items('Apply_to_each_remove')['Id']"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Find_User_-_Remove": {
+                      "runAfter": {
+                        "Get_user_profile_(V2)_2": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "7f204a8a-c4ac-4e6e-b821-3e525927b426"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps",
+                          "operationId": "ListRecords",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "systemusers",
+                          "$filter": "domainname eq '@{outputs('Get_user_profile_(V2)_2')?['body/userPrincipalName']}'"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Apply_to_each_remove_user": {
+                      "foreach": "@body('Parse_JSON_Roles')",
+                      "actions": {
+                        "Unrelate_rows_user": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "984d1140-d397-442f-8ce5-3090a8ff6924"
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_commondataserviceforapps",
+                              "operationId": "DisassociateEntities",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                            },
+                            "parameters": {
+                              "entityName": "roles",
+                              "recordId": "@items('Apply_to_each_remove_user')['roleid']",
+                              "associationEntityRelationship": "systemuserroles_association",
+                              "$id": "@first(outputs('Find_User_-_Remove')?['body/value'])['@odata.id']"
+                            },
+                            "authentication": "@parameters('$authentication')"
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "Find_User_-_Remove": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "fd7fda6f-f46c-466d-9dd7-35f2b901baf2"
+                      },
+                      "type": "Foreach",
+                      "runtimeConfiguration": {
+                        "concurrency": {
+                          "repetitions": 20
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Compose_2": [
+                      "Succeeded"
+                    ]
+                  },
+                  "else": {
+                    "actions": {
+                      "Find_Team_-_Remove": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "3a0874bc-6fc3-472f-af39-876685d04069"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_commondataserviceforapps",
+                            "operationId": "ListRecords",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                          },
+                          "parameters": {
+                            "entityName": "teams",
+                            "$filter": "azureactivedirectoryobjectid eq '@{items('Apply_to_each_remove')['Id']}'"
+                          },
+                          "authentication": "@parameters('$authentication')"
+                        }
+                      },
+                      "Apply_to_each": {
+                        "foreach": "@body('Parse_JSON_Roles')",
+                        "actions": {
+                          "Unrelate_rows_team": {
+                            "runAfter": {},
+                            "metadata": {
+                              "operationMetadataId": "d324c2a3-4ca3-4d27-aea4-24cc49857ee1"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_commondataserviceforapps",
+                                "operationId": "DisassociateEntities",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                              },
+                              "parameters": {
+                                "entityName": "roles",
+                                "recordId": "@items('Apply_to_each')['roleid']",
+                                "associationEntityRelationship": "teamroles_association",
+                                "$id": "@items('Apply_to_each_remove')['Id']"
+                              },
+                              "authentication": "@parameters('$authentication')"
+                            }
+                          }
+                        },
+                        "runAfter": {
+                          "Find_Team_-_Remove": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "da650eba-ce20-468b-92a4-0f0a91f13183"
+                        },
+                        "type": "Foreach",
+                        "runtimeConfiguration": {
+                          "concurrency": {
+                            "repetitions": 20
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "expression": {
+                    "equals": [
+                      "@items('Apply_to_each_remove')['Type']",
+                      "User"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "cfa1083a-f68c-4470-bdab-98f56f370a43"
+                  },
+                  "type": "If"
+                }
+              },
+              "runAfter": {
+                "Parse_JSON_Roles": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "cfdca3cd-789f-4091-aa46-71955f522676"
+              },
+              "type": "Foreach",
+              "runtimeConfiguration": {
+                "concurrency": {
+                  "repetitions": 20
+                }
+              }
+            },
+            "Set_variable_-_Status_Message": {
+              "runAfter": {
+                "Apply_to_add": [
+                  "Succeeded"
+                ],
+                "Apply_to_each_remove": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "885c062c-8319-4979-9ce2-e19e78058d07"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "Status Message",
+                "value": "The app was successfull shared."
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_variable_-_Team_ID": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "4611c649-2bcc-4f2d-b877-dc8fd2551754"
+          },
+          "type": "Scope"
+        },
+        "Catch": {
+          "actions": {
+            "Filter_array": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "f91a43a4-0e64-4a69-822b-54e5e2377f90"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@result('Try')",
+                "where": "@or(equals(item()?['Status'], 'Failed'), equals(item()?['Status'], 'TimedOut'))"
+              }
+            },
+            "Set_variable_status": {
+              "runAfter": {
+                "Parse_JSON": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "049fe80a-2c2b-4f2f-834e-8e5ca22a3437"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "Status",
+                "value": "Error"
+              }
+            },
+            "Parse_JSON": {
+              "runAfter": {
+                "Filter_array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "49af6e50-df1b-4e23-9f00-cb5786c9ac64"
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@body('Filter_array')",
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "error": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "inputs": {
+                        "type": "object",
+                        "properties": {
+                          "host": {
+                            "type": "object",
+                            "properties": {
+                              "apiId": {
+                                "type": "string"
+                              },
+                              "connectionReferenceName": {
+                                "type": "string"
+                              },
+                              "operationId": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "parameters": {
+                            "type": "object",
+                            "properties": {
+                              "environment": {
+                                "type": "string"
+                              },
+                              "api-version": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "outputs": {
+                        "type": "object",
+                        "properties": {
+                          "statusCode": {
+                            "type": "integer"
+                          },
+                          "headers": {
+                            "type": "object",
+                            "properties": {
+                              "Cache-Control": {
+                                "type": "string"
+                              },
+                              "Strict-Transport-Security": {
+                                "type": "string"
+                              },
+                              "x-ms-islandgateway": {
+                                "type": "string"
+                              },
+                              "x-ms-request-id": {
+                                "type": "string"
+                              },
+                              "x-ms-correlation-request-id": {
+                                "type": "string"
+                              },
+                              "x-ms-correlation-id": {
+                                "type": "string"
+                              },
+                              "Server-Timing": {
+                                "type": "string"
+                              },
+                              "X-Content-Type-Options": {
+                                "type": "string"
+                              },
+                              "x-ms-service-request-id": {
+                                "type": "string"
+                              },
+                              "x-ms-activity-vector": {
+                                "type": "string"
+                              },
+                              "Timing-Allow-Origin": {
+                                "type": "string"
+                              },
+                              "x-ms-apihub-cached-response": {
+                                "type": "string"
+                              },
+                              "x-ms-apihub-obo": {
+                                "type": "string"
+                              },
+                              "Date": {
+                                "type": "string"
+                              },
+                              "Content-Length": {
+                                "type": "string"
+                              },
+                              "Content-Type": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "body": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              },
+                              "error": {
+                                "type": "object",
+                                "properties": {
+                                  "code": {
+                                    "type": "string"
+                                  },
+                                  "message": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "startTime": {
+                        "type": "string"
+                      },
+                      "endTime": {
+                        "type": "string"
+                      },
+                      "trackingId": {
+                        "type": "string"
+                      },
+                      "clientTrackingId": {
+                        "type": "string"
+                      },
+                      "clientKeywords": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "Apply_to_each_error": {
+              "foreach": "@body('Parse_JSON')",
+              "actions": {
+                "Append_to_string_variable_2": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "46dec2cd-a526-465e-80cd-13551facb9ef"
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "Status Message",
+                    "value": "@items('Apply_to_each_error')?['error']?['message']"
+                  }
+                },
+                "Append_to_string_variable": {
+                  "runAfter": {
+                    "Append_to_string_variable_3": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "d0db4296-eea2-46fe-9f2a-2f11a7f50e41"
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "Status Message",
+                    "value": "@items('Apply_to_each_error')?['outputs']?['body']?['error']?['message']"
+                  }
+                },
+                "Append_to_string_variable_3": {
+                  "runAfter": {
+                    "Append_to_string_variable_2": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "bbd2ee61-720c-4bca-856f-7eaab0610aef"
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "Status Message",
+                    "value": "@items('Apply_to_each_error')?['outputs']?['body']?['message']"
+                  }
+                }
+              },
+              "runAfter": {
+                "Set_variable_status": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "270ecdbb-c594-4ca5-b844-e17257304957"
+              },
+              "type": "Foreach"
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "12091a34-a842-4723-a69a-9ec94a3e1dcd"
+          },
+          "type": "Scope"
+        },
+        "Initialize_variable_-_Status": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "69d1e973-7b0e-46b0-bae4-7169aa1ea479"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Status",
+                "type": "string",
+                "value": "Success"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_Message": {
+          "runAfter": {
+            "Initialize_variable_-_Status": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b85ecbe4-be59-4ef1-bf5b-1a5d3d1ee24c"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Status Message",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Respond_to_a_PowerApp_or_flow": {
+          "runAfter": {
+            "Catch": [
+              "Succeeded",
+              "Skipped"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b03401e5-70f7-444f-907c-53fb437875e1"
+          },
+          "type": "Response",
+          "kind": "PowerApp",
+          "inputs": {
+            "statusCode": 200,
+            "body": {
+              "status": "@variables('Status')",
+              "statusmessage": "@variables('Status Message')"
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "title": "Status",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                },
+                "statusmessage": {
+                  "title": "StatusMessage",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "Initialize_variable_-_User_ID": {
+          "runAfter": {
+            "Initialize_variable_-_Message": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "248ecb77-d350-4392-9219-3fc5400cf261"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "User",
+                "type": "object"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_Team_ID": {
+          "runAfter": {
+            "Initialize_variable_-_User_ID": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "43e369a2-62e9-4506-8413-7304e8b87ace"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "TeamID",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

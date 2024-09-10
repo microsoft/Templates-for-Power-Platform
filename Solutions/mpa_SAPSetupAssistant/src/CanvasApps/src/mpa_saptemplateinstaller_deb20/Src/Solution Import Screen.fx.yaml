@@ -1,0 +1,2681 @@
+"'Solution Import Screen' As screen":
+    LoadingSpinner: =LoadingSpinner.Data
+    OnVisible: |-
+        =Set(
+            varCurrentActivityStepOrder,
+            1
+        );
+        Set(
+            varAppActiveScreen,
+            App.ActiveScreen
+        );
+        UpdateContext(
+            {
+                _solutionImport: Blank(),
+                _checkImportStatus: false,
+                _importingSolution: false,
+                _totalDuration: 0
+            }
+        );
+        Set(
+            varDisableControls,
+            false
+        );
+        ClearCollect(
+            colConnections,
+            AddColumns(
+                PowerAppsforMakers.GetConnections(
+                    {
+                        'api-version': BAPAPIVersion,
+                        '$filter': "environment eq '" & varCurrentEnvironment.name & "'"
+                    }
+                ).value As temp,
+                _displayName,
+                temp.properties.displayName
+            )
+        );
+        Clear(colJSONStrings);
+        ForAll(
+            Filter(
+                'Activity Step Values',
+                'Activity Step'.'Activity Step' = LookUp(
+                    colActivitySteps,
+                    'Step Name' = "SAP Application Server"
+                ).'Activity Step',
+                'Control Name' in SAPSystemParameters.Property
+            ),
+            Collect(
+                colJSONStrings,
+                Table(
+                    {
+                        Control: ThisRecord.'Control Name',
+                        Value: ThisRecord.Value,
+                        Type: ThisRecord.'Data Type',
+                        JSONString: Concatenate(
+                            """",
+                            ThisRecord.'Control Name',
+                            """",
+                            ": ",
+                            """",
+                            ThisRecord.Value,
+                            """"
+                        )
+                    }
+                )
+            )
+        );
+        Reset(RadioGroupCanvas1_6);
+        Reset(DataCardValue7);
+        Reset(DataCardValue7_1);
+        Reset(CheckboxCanvas5_5);
+        Reset(CheckboxCanvas5_4);
+        Reset(CheckboxCanvas5_16);
+        Reset(TextInputFieldSAPApplicationServer);
+        Reset(TextInputFieldClient_1);
+        Reset(TextInputFieldSAPRowsToRead);
+        Reset(TextInputFieldSAPLanguageKey);
+        Reset(TextInputFieldSAPSystemID);
+        Reset(CheckboxCanvas5_17);
+        Reset(CheckboxCanvas5_26);
+        Reset(TextInputFieldClient_1)
+
+    Container6_5 As groupContainer.horizontalAutoLayoutContainer:
+        DropShadow: =DropShadow.None
+        Height: =Parent.Height
+        LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+        LayoutMode: =LayoutMode.Auto
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =Parent.Width
+        ZIndex: =4
+
+        cmpLeftNav_8 As LeftNavigation:
+            Height: =Parent.Height-2
+            LayoutMinHeight: =0
+            LayoutMinWidth: =640
+            SetExpandMenu: =App.ActiveScreen.Size <= ScreenSize.Medium
+            Width: =cmpLeftNav_8.MenuWidth
+
+        conScreenMain_8 As groupContainer.verticalAutoLayoutContainer:
+            DropShadow: =DropShadow.Semibold
+            Fill: =Color.White
+            Height: =Parent.Height
+            LayoutAlignItems: =LayoutAlignItems.Stretch
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutGap: =10
+            LayoutMinHeight: =App.MinScreenHeight
+            LayoutMinWidth: =320 - 3*Self.PaddingLeft
+            LayoutMode: =LayoutMode.Auto
+            PaddingBottom: =20
+            PaddingLeft: |-
+                =Switch(
+                    App.ActiveScreen.Size,
+                    ScreenSize.ExtraLarge,
+                    100,
+                    ScreenSize.Large,
+                    50,
+                    ScreenSize.Medium,
+                    25,
+                    ScreenSize.Small,
+                    12.5
+                )
+            PaddingRight: =Self.PaddingLeft
+            PaddingTop: =20
+            Visible: |-
+                =If(
+                    And(
+                        App.ActiveScreen.Size = ScreenSize.Small,
+                        Or(
+                            varExpandHelp,
+                            varExpandMenu
+                        )
+                    ),
+                    false,
+                    true
+                )
+            Width: =cmpHelpAssistant_8.X-Self.X
+            X: =cmpLeftNav_8.Width
+            ZIndex: =2
+
+            Header_6 As Header:
+                LayoutMinHeight: =640
+                LayoutMinWidth: =0
+
+            ProgressBar_4 As ProgressBar:
+                LayoutMinHeight: =640
+                LayoutMinWidth: =0
+                ZIndex: =2
+
+            Container1_19 As groupContainer.verticalAutoLayoutContainer:
+                ContentLanguage: ="The installation will require importing multiple solutions. Depending on your deployment plan, you may choose to import either managed or unmanaged versions of the solutions. This activity will walk you through and automate the steps for importing the template solution files into your previously selected target environment of '" & varCurrentEnvironment.displayname & "'"
+                DropShadow: =DropShadow.None
+                Height: =450
+                LayoutAlignItems: =LayoutAlignItems.Stretch
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutGap: =10
+                LayoutMinHeight: =100
+                LayoutMinWidth: =0
+                LayoutMode: =LayoutMode.Auto
+                LayoutOverflowY: =LayoutOverflow.Scroll
+                Visible: =CurrentActivityStep.'Step Name' = "Solutions Overview"
+                Width: =0
+                ZIndex: =3
+
+                HtmlText2_13 As htmlViewer:
+                    AutoHeight: =true
+                    DisabledBorderColor: =RGBA(56, 56, 56, 1)
+                    Font: =Font.'Segoe UI'
+                    HtmlText: =CurrentActivityStep.Summary
+                    ZIndex: =1
+
+            Container1_20 As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                DropShadow: =DropShadow.None
+                Height: =450
+                LayoutAlignItems: =LayoutAlignItems.Stretch
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutGap: =10
+                LayoutMinHeight: =100
+                LayoutMinWidth: =0
+                LayoutMode: =LayoutMode.Auto
+                LayoutOverflowY: =LayoutOverflow.Scroll
+                Visible: =CurrentActivityStep.'Step Name' = "Select Solution Type" 
+                Width: =0
+                ZIndex: =4
+
+                HtmlText2_14 As htmlViewer:
+                    AutoHeight: =true
+                    DisabledBorderColor: =RGBA(56, 56, 56, 1)
+                    Font: =Font.'Segoe UI'
+                    HtmlText: =CurrentActivityStep.Summary
+                    ZIndex: =1
+
+                RadioGroupCanvas1_6 As Radio.pcfdataset:
+                    AccessibleLabel: ="Managed vs. Unmanaged solution file options"
+                    BasePaletteColor: =
+                    DefaultSelectedItems: |-
+                        =With(
+                            {
+                                _activityStep: LookUp (
+                                    'Activity Step Values',
+                                    'Control Name' = "RadioGroupCanvas1_6"
+                                ),
+                                _items: Table(
+                                    {
+                                        Option: "Unmanaged - Gives you the most flexibility but future updates to the template from Microsoft cannot be consumed. Start editing the template components from Microsoft immediately according to your local business requirements.",
+                                        Value: 1
+                                    },
+                                    {
+                                        Option: "Managed - Future updates to the template from Microsoft can be consumed if components supports it. To extend the templates with your own business requirements, this will require you to create your own solution layers ontop of the managed solutions. The managed template solutions as well as your local solution containing the modified components will need to be deployed together across your various environments according to your application lifecycle management (ALM) strategy.",
+                                        Value: 2
+                                    }
+                                )
+                            },
+                            First(
+                                Filter(
+                                    _items,
+                                    Value = If(
+                                        IsBlank(_activityStep),
+                                        1,
+                                        Value(_activityStep.Value)
+                                    )
+                                ).Option
+                            )
+                        )
+                    DisplayMode: =DisplayMode.Edit
+                    FillPortions: =1
+                    Font: =""
+                    FontItalic: =false
+                    FontSize: =0
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    FontWeight: =""
+                    Height: =70
+                    Items: |-
+                        =Table(
+                            {
+                                Option: "Unmanaged - Gives you the most flexibility but future updates to the template from Microsoft cannot be consumed. Start editing the template components from Microsoft immediately according to your local business requirements.",
+                                Value: 1
+                            },
+                            {
+                                Option: "Managed - Future updates to the template from Microsoft can be consumed if components supports it. To extend the templates with your own business requirements, this will require you to create your own solution layers ontop of the managed solutions. The managed template solutions as well as your local solution containing the modified components will need to be deployed together across your various environments according to your application lifecycle management (ALM) strategy.",
+                                Value: 2
+                            }
+                        )
+                    Layout: ='RadioGroupCanvas.Layout'.Vertical
+                    LayoutMinHeight: =96
+                    LayoutMinWidth: =320
+                    OnChange: =
+                    RadioSize: =16
+                    Width: =0
+                    X: =0
+                    Y: =
+                    ZIndex: =3
+
+                    Option1_4 As PowerApps_CoreControls_RadioGroupCanvasTemplate_dataField.textualColumn:
+                        FieldDisplayName: ="Option"
+                        FieldName: ="Option"
+                        FieldType: ="s"
+                        FieldVariantName: ="textualColumn"
+                        Order: =1
+                        ZIndex: =5
+
+            Container1_78 As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                DropShadow: =DropShadow.None
+                LayoutAlignItems: =LayoutAlignItems.Stretch
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutGap: =20
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                LayoutOverflowY: =LayoutOverflow.Scroll
+                PaddingBottom: =2
+                PaddingLeft: =2
+                PaddingRight: =2
+                PaddingTop: =2
+                Visible: =CurrentActivityStep.'Step Name' = "Connections"
+                ZIndex: =5
+
+                HtmlText2_65 As htmlViewer:
+                    AutoHeight: =true
+                    DisabledBorderColor: =RGBA(56, 56, 56, 1)
+                    Font: =Font.'Segoe UI'
+                    HtmlText: =CurrentActivityStep.Summary
+                    ZIndex: =1
+
+                ButtonCanvas3_5 As Button:
+                    AccessibleLabel: ="Create Dataverse Connection"
+                    Align: =""
+                    AlignInContainer: =AlignInContainer.Start
+                    BasePaletteColor: =
+                    BorderColor: =
+                    BorderStyle: =""
+                    DisplayMode: |-
+                        =If(
+                            varDisableControls,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontSize: =0
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    FontWeight: =""
+                    Height: =30
+                    Icon: =""
+                    IconRotation: =0
+                    IconStyle: ="Outline"
+                    Layout: ="Icon before"
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    OnSelect: |-
+                        =Launch(
+                            Concatenate(
+                                "https://make.powerapps.com/environments/",
+                                varCurrentEnvironment.name,
+                                "/connections/available"
+                            )
+                        )
+                    Text: ="Launch to create new connection"
+                    VerticalAlign: =""
+                    Visible: =true
+                    Width: =250
+                    X: =0
+                    Y: =0
+                    ZIndex: =2
+
+                Container12_4 As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.Start
+                    DropShadow: =DropShadow.None
+                    FillPortions: =0
+                    Height: =35
+                    LayoutAlignItems: =LayoutAlignItems.Center
+                    LayoutGap: =10
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    ZIndex: =3
+
+                    ComboboxCanvas1_7 As Combobox.pcfdataset:
+                        AccessibleLabel: ="Select existing Dataverse connections"
+                        Appearance: ="FilledDarker"
+                        BasePaletteColor: =
+                        BorderStyle: =""
+                        DefaultSelectedItems: |-
+                            =With(
+                                {
+                                    _activityStepValue: LookUp (
+                                        'Activity Step Values',
+                                        'Control Name' = "ComboboxCanvas1_5"
+                                    ).Value
+                                },
+                                First(
+                                    Filter(
+                                        colConnections,
+                                        StartsWith(
+                                            id,
+                                            "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps/connections"
+                                        ),
+                                        If(
+                                            !IsBlank(_activityStepValue),
+                                            name = _activityStepValue,
+                                            !IsBlank(name)
+                                        )
+                                    )
+                                )
+                            )
+                        DisplayMode: =DisplayMode.Edit
+                        FillPortions: =1
+                        Font: =""
+                        FontItalic: =false
+                        FontSize: =0
+                        FontStrikethrough: =false
+                        FontUnderline: =false
+                        FontWeight: =""
+                        Height: =32
+                        InputTextPlaceholder: ="Select Microsoft Dataverse connection"
+                        Items: |
+                            =Filter(
+                                colConnections,
+                                StartsWith(
+                                    id,
+                                    "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps/connections"
+                                )
+                            )
+                        LayoutMinHeight: =32
+                        OnChange: =
+                        ValidationState: ="None"
+                        Visible: =true
+                        Width: =400
+                        X: =0
+                        Y: =0
+                        ZIndex: =1
+
+                        _displayName3_2 As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn:
+                            FieldDisplayName: ="_displayName"
+                            FieldName: ="_displayName"
+                            FieldType: ="s"
+                            FieldVariantName: ="textualColumn"
+                            Order: =1
+                            ZIndex: =11
+
+                    Image3_3 As image:
+                        AccessibleLabel: ="Dataverse logo"
+                        Height: =35
+                        Image: ='Dataverse Icon'
+                        PaddingBottom: =5
+                        PaddingLeft: =5
+                        PaddingRight: =5
+                        PaddingTop: =5
+                        Width: =35
+                        ZIndex: =2
+
+                    Icon1_2 As icon.Reload:
+                        AccessibleLabel: ="Refresh"
+                        Color: =RGBA(0, 0, 0, 1)
+                        Height: =35
+                        Icon: =Icon.Reload
+                        OnSelect: |-
+                            =ClearCollect(
+                                colConnections,
+                                AddColumns(
+                                    PowerAppsforMakers.GetConnections(
+                                        {
+                                            'api-version': BAPAPIVersion,
+                                            '$filter': "environment eq '" & varCurrentEnvironment.name & "'"
+                                        }
+                                    ).value As temp,
+                                    _displayName,
+                                    temp.properties.displayName
+                                )
+                            )
+                        PaddingBottom: =7
+                        PaddingLeft: =5
+                        PaddingRight: =7
+                        PaddingTop: =7
+                        TabIndex: =0
+                        Tooltip: ="Refresh"
+                        Width: =35
+                        ZIndex: =3
+
+                Container12_5 As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.Start
+                    DropShadow: =DropShadow.None
+                    FillPortions: =0
+                    Height: =35
+                    LayoutAlignItems: =LayoutAlignItems.Center
+                    LayoutGap: =10
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    ZIndex: =4
+
+                    ComboboxCanvas1_9 As Combobox.pcfdataset:
+                        AccessibleLabel: ="Select existing Dataverse connections"
+                        Appearance: ="FilledDarker"
+                        BasePaletteColor: =
+                        BorderStyle: =""
+                        DefaultSelectedItems: |-
+                            =With(
+                                {
+                                    _activityStepValue: LookUp (
+                                        'Activity Step Values',
+                                        'Control Name' = "ComboboxCanvas1_6"
+                                    ).Value
+                                },
+                                First(
+                                    Filter(
+                                        colConnections,
+                                        StartsWith(
+                                            id,
+                                            "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                                        ),
+                                        If(
+                                            !IsBlank(_activityStepValue),
+                                            name = _activityStepValue,
+                                            !IsBlank(name)
+                                        )
+                                    )
+                                )
+                            )
+                        DisplayMode: =DisplayMode.Edit
+                        FillPortions: =1
+                        Font: =""
+                        FontItalic: =false
+                        FontSize: =0
+                        FontStrikethrough: =false
+                        FontUnderline: =false
+                        FontWeight: =""
+                        Height: =32
+                        InputTextPlaceholder: ="Select SAP ERP connection"
+                        Items: |
+                            =Filter(
+                                colConnections,
+                                StartsWith(
+                                    id,
+                                    "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                                )
+                            )
+                        LayoutMinHeight: =32
+                        OnChange: =
+                        ValidationState: ="None"
+                        Visible: =true
+                        Width: =400
+                        X: =0
+                        Y: =0
+                        ZIndex: =1
+
+                        _displayName3_3 As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn:
+                            FieldDisplayName: ="_displayName"
+                            FieldName: ="_displayName"
+                            FieldType: ="s"
+                            FieldVariantName: ="textualColumn"
+                            Order: =1
+                            ZIndex: =11
+
+                    Image3_4 As image:
+                        AccessibleLabel: ="SAP ERP logo"
+                        Height: =35
+                        Image: ='SAP ERP Icon'
+                        PaddingBottom: =5
+                        PaddingLeft: =5
+                        PaddingRight: =5
+                        PaddingTop: =5
+                        Width: =35
+                        ZIndex: =2
+
+                    Icon1_3 As icon.Reload:
+                        AccessibleLabel: ="Refresh"
+                        Color: =RGBA(0, 0, 0, 1)
+                        Height: =35
+                        Icon: =Icon.Reload
+                        OnSelect: |-
+                            =ClearCollect(
+                                colConnections,
+                                AddColumns(
+                                    PowerAppsforMakers.GetConnections(
+                                        {
+                                            'api-version': BAPAPIVersion,
+                                            '$filter': "environment eq '" & varCurrentEnvironment.name & "'"
+                                        }
+                                    ).value As temp,
+                                    _displayName,
+                                    temp.properties.displayName
+                                )
+                            )
+                        PaddingBottom: =7
+                        PaddingLeft: =7
+                        PaddingRight: =7
+                        PaddingTop: =7
+                        TabIndex: =0
+                        Tooltip: ="Refresh"
+                        Width: =35
+                        ZIndex: =3
+
+                CheckboxCanvas5_16 As Checkbox:
+                    AccessibleLabel: ="Confirmed connections created"
+                    AlignInContainer: =AlignInContainer.Stretch
+                    BasePaletteColor: =
+                    CheckboxSize: =16
+                    Checked: |-
+                        =With(
+                            {
+                                _stepValue: LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = "CheckboxCanvas5_16"
+                                ).Value
+                            },
+                            If(_stepValue = "true",true,false)
+                        )
+                    DisplayMode: |-
+                        =If(
+                            varDisableControls,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    FontWeight: =""
+                    Height: =60
+                    Label: ="Confirmed connections created"
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =160
+                    OnCheck: =false
+                    OnUncheck: =false
+                    Width: =160
+                    X: =40
+                    Y: =40
+                    ZIndex: =5
+
+            Container1_86 As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                DropShadow: =DropShadow.None
+                LayoutAlignItems: =LayoutAlignItems.Stretch
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutGap: =20
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                LayoutOverflowY: =LayoutOverflow.Scroll
+                PaddingBottom: =2
+                PaddingLeft: =2
+                PaddingRight: =2
+                PaddingTop: =2
+                Visible: =CurrentActivityStep.'Step Name' = "SAP Application Server"
+                ZIndex: =6
+
+                HtmlText2_72 As htmlViewer:
+                    AutoHeight: =true
+                    DisabledBorderColor: =RGBA(56, 56, 56, 1)
+                    Font: =Font.'Segoe UI'
+                    HtmlText: =CurrentActivityStep.Summary
+                    ZIndex: =1
+
+                CheckboxCanvas5_26 As Checkbox:
+                    AccessibleLabel: ="Confirmed SAP Application Server values added."
+                    AlignInContainer: =AlignInContainer.Stretch
+                    BasePaletteColor: =
+                    CheckboxSize: =16
+                    Checked: |-
+                        =With(
+                            {
+                                _stepValue: LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = "CheckboxCanvas5_26"
+                                ).Value
+                            },
+                            If(_stepValue = "true",true,false)
+                        )
+                    DisplayMode: |-
+                        =If(
+                            varDisableControls,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    FontWeight: =""
+                    Height: =60
+                    Label: ="Confirmed SAP Application Server values added."
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =160
+                    OnCheck: =false
+                    OnUncheck: =false
+                    Width: =160
+                    X: =40
+                    Y: =40
+                    ZIndex: =2
+
+                Container23 As groupContainer.horizontalAutoLayoutContainer:
+                    DropShadow: =DropShadow.None
+                    LayoutGap: =20
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    ZIndex: =3
+
+                    Container24 As groupContainer.verticalAutoLayoutContainer:
+                        DropShadow: =DropShadow.None
+                        LayoutAlignItems: =LayoutAlignItems.Stretch
+                        LayoutDirection: =LayoutDirection.Vertical
+                        LayoutGap: =10
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        LayoutOverflowY: =LayoutOverflow.Scroll
+                        ZIndex: =1
+
+                        TextInputFieldClient As TextInputField:
+                            Default: |-
+                                =LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = Self.PropertyLabel
+                                ).Value
+                            Height: =TextInputFieldClient.CurrentHeight
+                            InfoText: ="The SAP client ID to connect to the SAP system. The SAP backends' client (or 'Mandant') into which to log in"
+                            LabelText: ="Client"
+                            LabelWidth: =40
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =200
+                            PropertyLabel: ="Client"
+                            Visible: =true
+                            Width: =200
+
+                        ComboBoxFieldConnectionType As ComboBoxField:
+                            AccessibilityLabel: ="Select connection type"
+                            ComboBoxItems: |-
+                                =Table({Display: "Application Server",Value: "ApplicationServer"},{Display: "Message Server",Value: "Group"})
+                            DefaultSectedItems: |-
+                                =With(
+                                    {
+                                        _stepValue: LookUp(
+                                            'Activity Step Values',
+                                            'Control Name' = Self.PropertyLabel
+                                        ).Value
+                                    },
+                                    First(
+                                        Filter(
+                                            Table(
+                                                {
+                                                    Display: "Application Server",
+                                                    Value: "ApplicationServer"
+                                                },
+                                                {
+                                                    Display: "Message Server",
+                                                    Value: "Group"
+                                                }
+                                            ),
+                                            Value = _stepValue
+                                        ).Value
+                                    )
+                                )
+                            Height: =ComboBoxFieldConnectionType.CurrentHeight
+                            InfoText: =""
+                            LabelText: ="Connection type"
+                            LabelWidth: =110
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =0
+                            PropertyLabel: ="LogonType"
+                            ZIndex: =2
+
+                        TextInputFieldAppServerHost As TextInputField:
+                            Default: |-
+                                =LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = Self.PropertyLabel
+                                ).Value
+                            Height: =TextInputFieldAppServerHost.CurrentHeight
+                            InfoText: ="The hostname of the SAP application Server"
+                            LabelText: ="Application Server Host"
+                            LabelWidth: =155
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =200
+                            PropertyLabel: ="AppServerHost"
+                            Visible: =ComboBoxFieldConnectionType.SelectedRecord.Display = "Application Server"
+                            Width: =200
+                            ZIndex: =3
+
+                        TextInputFieldAppServerService As TextInputField:
+                            Default: |-
+                                =LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = Self.PropertyLabel
+                                ).Value
+                            Height: =TextInputFieldAppServerService.CurrentHeight
+                            InfoText: ="The service name or port number of the specific SAP application server to connect to"
+                            LabelText: ="Application Server Service"
+                            LabelWidth: =170
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =200
+                            PropertyLabel: ="AppServerService"
+                            Required: =false
+                            Visible: =ComboBoxFieldConnectionType.SelectedRecord.Display = "Application Server"
+                            Width: =200
+                            ZIndex: =4
+
+                        TextInputFieldSystemNumber As TextInputField:
+                            Default: |-
+                                =LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = Self.PropertyLabel
+                                ).Value
+                            Height: =TextInputFieldSystemNumber.CurrentHeight
+                            InfoText: ="The service name or port number of the specific SAP application server to connect to"
+                            LabelText: ="System Number"
+                            LabelWidth: =105
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =200
+                            PropertyLabel: ="SystemNumber"
+                            Visible: =ComboBoxFieldConnectionType.SelectedRecord.Display = "Application Server"
+                            Width: =200
+                            ZIndex: =5
+
+                        TextInputFieldMessageServerHost As TextInputField:
+                            Default: |-
+                                =LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = Self.PropertyLabel
+                                ).Value
+                            Height: =TextInputFieldMessageServerHost.CurrentHeight
+                            InfoText: ="The hostname of the SAP system's message server (central instance) also known as R3 system name"
+                            LabelText: ="Message Server Host"
+                            LabelWidth: =140
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =200
+                            PropertyLabel: ="MessageServerHost"
+                            Visible: =ComboBoxFieldConnectionType.SelectedRecord.Display = "Message Server"
+                            Width: =200
+                            ZIndex: =6
+
+                        TextInputFieldMessageServerService As TextInputField:
+                            Default: |-
+                                =LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = Self.PropertyLabel
+                                ).Value
+                            Height: =TextInputFieldMessageServerService.CurrentHeight
+                            InfoText: ="The hostname of the SAP system's message server (central instance) also known as R3 system name"
+                            LabelText: ="Message Server Service"
+                            LabelWidth: =155
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =200
+                            PropertyLabel: ="MessageServerService"
+                            Required: =false
+                            Visible: =ComboBoxFieldConnectionType.SelectedRecord.Display = "Message Server"
+                            Width: =200
+                            ZIndex: =7
+
+                        TextInputFieldLogonGroup As TextInputField:
+                            Default: |-
+                                =LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = Self.PropertyLabel
+                                ).Value
+                            Height: =TextInputFieldLogonGroup.CurrentHeight
+                            InfoText: |-
+                                ="The logon group for the SAP system, from which the message server selects an application server. default: PUBLIC"
+                            LabelText: ="Logon Group"
+                            LabelWidth: =90
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =200
+                            PropertyLabel: ="LogonGroup"
+                            Required: =false
+                            Visible: =ComboBoxFieldConnectionType.SelectedRecord.Display = "Message Server"
+                            Width: =200
+                            ZIndex: =8
+
+                    Container24_1 As groupContainer.verticalAutoLayoutContainer:
+                        DropShadow: =DropShadow.None
+                        LayoutAlignItems: =LayoutAlignItems.Stretch
+                        LayoutDirection: =LayoutDirection.Vertical
+                        LayoutGap: =10
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        LayoutOverflowY: =LayoutOverflow.Scroll
+                        ZIndex: =2
+
+                        TextInputFieldSystemID As TextInputField:
+                            Default: |-
+                                =LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = Self.PropertyLabel
+                                ).Value
+                            Height: =TextInputFieldSystemID.CurrentHeight
+                            InfoText: |-
+                                ="
+                                The SAP system's three-letter system ID"
+                            LabelText: ="System ID"
+                            LabelWidth: =70
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =200
+                            PropertyLabel: ="SystemId"
+                            Required: =false
+                            Visible: =true
+                            Width: =200
+
+                        ComboBoxFieldUseSNC As ComboBoxField:
+                            AccessibilityLabel: ="Select whether to use SNC or not"
+                            ComboBoxItems: |-
+                                =Table(
+                                    {
+                                        Display: "Yes",
+                                        Value: "Yes"
+                                    },
+                                    {
+                                        Display: "No",
+                                        Value: "No"
+                                    }
+                                )
+                            DefaultSectedItems: |-
+                                =With(
+                                    {
+                                        _stepValue: LookUp(
+                                            'Activity Step Values',
+                                            'Control Name' = Self.PropertyLabel
+                                        ).Value
+                                    },
+                                    First(
+                                        Filter(
+                                            Table(
+                                                {
+                                                    Display: "Yes",
+                                                    Value: "Yes"
+                                                },
+                                                {
+                                                    Display: "No",
+                                                    Value: "No"
+                                                }
+                                            ),
+                                            Value = _stepValue
+                                        ).Value
+                                    )
+                                )
+                            Height: =ComboBoxFieldUseSNC.CurrentHeight
+                            InfoText: ="When selected Yes, the connections will be secured with SNC"
+                            LabelText: ="Use SNC"
+                            LabelWidth: =60
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =0
+                            PropertyLabel: ="UseSnc"
+                            ZIndex: =2
+
+                        TextInputFieldSNCCertificate As TextInputField:
+                            Default: |-
+                                =LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = Self.PropertyLabel
+                                ).Value
+                            Height: =TextInputFieldSNCCertificate.CurrentHeight
+                            InfoText: ="The X.509 certificate in Base64 encoded form, without the begin or end certificate tags"
+                            LabelText: ="SNC Certificate"
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =200
+                            PropertyLabel: ="SncCertificate"
+                            Required: =false
+                            Visible: =ComboBoxFieldUseSNC.SelectedRecord.Display = "Yes"
+                            Width: =200
+                            ZIndex: =3
+
+                        TextInputFieldSNCMyName As TextInputField:
+                            Default: |-
+                                =LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = Self.PropertyLabel
+                                ).Value
+                            Height: =TextInputFieldSNCMyName.CurrentHeight
+                            InfoText: ="The installed SNC solution usually knows its own SNC name. For solutions supporting multiple identities, you may need to specify the identity to be used for this destination/server"
+                            LabelText: ="SNC My Name"
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =200
+                            PropertyLabel: ="SncMyName"
+                            Required: =false
+                            Visible: =ComboBoxFieldUseSNC.SelectedRecord.Display = "Yes"
+                            Width: =200
+                            ZIndex: =4
+
+                        TextInputFieldSNCLibraryPath As TextInputField:
+                            Default: |-
+                                =LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = Self.PropertyLabel
+                                ).Value
+                            Height: =TextInputFieldSNCLibraryPath.CurrentHeight
+                            InfoText: ="The service name or port number of the specific SAP application server to connect to"
+                            LabelText: ="SNC Library Path"
+                            LabelWidth: =115
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =200
+                            PropertyLabel: ="SncLibraryPath"
+                            Visible: =ComboBoxFieldUseSNC.SelectedRecord.Display = "Yes"
+                            Width: =200
+                            ZIndex: =5
+
+                        TextInputFieldSNCPartnerName As TextInputField:
+                            Default: |-
+                                =LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = Self.PropertyLabel
+                                ).Value
+                            Height: =TextInputFieldSNCPartnerName.CurrentHeight
+                            InfoText: ="The backends' SNC name"
+                            LabelText: ="SNC Partner Name"
+                            LabelWidth: =125
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =200
+                            PropertyLabel: ="SncPartnerName"
+                            Visible: =ComboBoxFieldUseSNC.SelectedRecord.Display = "Yes"
+                            Width: =200
+                            ZIndex: =6
+
+                        ComboBoxFieldSNCQoP As ComboBoxField:
+                            AccessibilityLabel: ="Select SNC QoP"
+                            ComboBoxItems: |-
+                                =Table(
+                                    {
+                                        Display: "Authentication",
+                                        Value: "Authentication"
+                                    },
+                                    {
+                                        Display: "Integrity",
+                                        Value: "Integrity"
+                                    },
+                                    {
+                                        Display: "Privacy",
+                                        Value: "Privacy"
+                                    },
+                                    {
+                                        Display: "Default",
+                                        Value: "Default"
+                                    },
+                                    {
+                                        Display: "Maximum",
+                                        Value: "Maximum"
+                                    }
+                                )
+                            DefaultSectedItems: |-
+                                =With(
+                                    {
+                                        _stepValue: LookUp(
+                                            'Activity Step Values',
+                                            'Control Name' = Self.PropertyLabel
+                                        ).Value
+                                    },
+                                    First(
+                                        Filter(
+                                            Table(
+                                                {
+                                                    Display: "Authentication",
+                                                    Value: "Authentication"
+                                                },
+                                                {
+                                                    Display: "Integrity",
+                                                    Value: "Integrity"
+                                                },
+                                                {
+                                                    Display: "Privacy",
+                                                    Value: "Privacy"
+                                                },
+                                                {
+                                                    Display: "Default",
+                                                    Value: "Default"
+                                                },
+                                                {
+                                                    Display: "Maximum",
+                                                    Value: "Maximum"
+                                                }
+                                            ),
+                                            Value = _stepValue
+                                        ).Value
+                                    )
+                                )
+                            Height: =ComboBoxFieldSNCQoP.CurrentHeight
+                            InfoText: =""
+                            LabelText: ="SNC QoP"
+                            LabelWidth: =80
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =0
+                            PropertyLabel: ="SncQop"
+                            Required: =false
+                            Visible: =ComboBoxFieldUseSNC.SelectedRecord.Display = "Yes"
+                            ZIndex: =7
+
+                        ComboBoxFieldSNCSSO As ComboBoxField:
+                            AccessibilityLabel: ="Select SNC SSO"
+                            ComboBoxItems: |-
+                                =Table(
+                                    {
+                                        Display: "Off",
+                                        Value: "Off"
+                                    },
+                                    {
+                                        Display: "On",
+                                        Value: "On"
+                                    }
+                                )
+                            DefaultSectedItems: |-
+                                =With(
+                                    {
+                                        _stepValue: LookUp(
+                                            'Activity Step Values',
+                                            'Control Name' = Self.PropertyLabel
+                                        ).Value
+                                    },
+                                    First(
+                                        Filter(
+                                            Table(
+                                                {
+                                                    Display: "Off",
+                                                    Value: "Off"
+                                                },
+                                                {
+                                                    Display: "On",
+                                                    Value: "On"
+                                                }
+                                            ),
+                                            Value = _stepValue
+                                        ).Value
+                                    )
+                                )
+                            Height: =ComboBoxFieldSNCSSO.CurrentHeight
+                            InfoText: =""
+                            LabelText: ="SNC SSO"
+                            LabelWidth: =80
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =0
+                            PropertyLabel: ="SncSso"
+                            Required: =false
+                            Visible: =ComboBoxFieldUseSNC.SelectedRecord.Display = "Yes"
+                            ZIndex: =8
+
+            Container1_81 As groupContainer.verticalAutoLayoutContainer:
+                DropShadow: =DropShadow.None
+                LayoutAlignItems: =LayoutAlignItems.Stretch
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutGap: =10
+                LayoutMinHeight: =100
+                LayoutMinWidth: =0
+                LayoutMode: =LayoutMode.Auto
+                LayoutOverflowY: =LayoutOverflow.Scroll
+                PaddingRight: =15
+                Visible: =CurrentActivityStep.'Step Name' = "Environment Variables"
+                Width: =0
+                ZIndex: =7
+
+                HtmlText2_66 As htmlViewer:
+                    AutoHeight: =true
+                    DisabledBorderColor: =RGBA(56, 56, 56, 1)
+                    Font: =Font.'Segoe UI'
+                    HtmlText: =CurrentActivityStep.Summary
+                    ZIndex: =1
+
+                CheckboxCanvas5_17 As Checkbox:
+                    AccessibleLabel: ="Confirmed all environment variables are populated"
+                    AlignInContainer: =AlignInContainer.Stretch
+                    BasePaletteColor: =
+                    CheckboxSize: =16
+                    Checked: |-
+                        =With(
+                            {
+                                _stepValue: LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = "CheckboxCanvas5_17"
+                                ).Value
+                            },
+                            If(_stepValue = "true",true,false)
+                        )
+                    DisplayMode: |-
+                        =If(
+                            varDisableControls,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    FontWeight: =""
+                    Height: =40
+                    Label: ="Confirmed all environment variables are populated"
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =160
+                    OnCheck: =false
+                    OnUncheck: =false
+                    Width: =160
+                    X: =40
+                    Y: =40
+                    ZIndex: =2
+
+                TextInputFieldSAPApplicationServer As TextInputField:
+                    Default: |-
+                        =If(
+                            !IsEmpty(colJSONStrings),
+                            With(
+                                {
+                                    _allProperties: Filter(
+                                        SAPSystemParameters,
+                                        'Include With' = "All"
+                                    ).Property,
+                                    _serverProperties: If(
+                                        ComboBoxFieldConnectionType.SelectedRecord.Display = "Application Server",
+                                        Filter(
+                                            SAPSystemParameters,
+                                            'Include With' = "Application Server"
+                                        ).Property,
+                                        Filter(
+                                            SAPSystemParameters,
+                                            'Include With' = "Message Server"
+                                        ).Property
+                                    ),
+                                    _SNCProperties: If(
+                                        ComboBoxFieldUseSNC.SelectedRecord.Display = "Yes",
+                                        Filter(
+                                            SAPSystemParameters,
+                                            'Include With' = "SNC"
+                                        ).Property
+                                    )
+                                },
+                                "{" & Concat(
+                                    Sort(
+                                        Filter(
+                                            colJSONStrings,
+                                            Control in _serverProperties || Control in _allProperties || Control in _SNCProperties
+                                        ),
+                                        Control
+                                    ),
+                                    JSONString,
+                                    ", "
+                                ) & "}"
+                            )
+                        )
+                    Height: =TextInputFieldSAPApplicationServer.CurrentHeight
+                    InfoText: ="Configured from the SAP system properties selected in the previous step. JSON string that contains system parameters, host, system number, client, and more."
+                    InputDisplayMode: =DisplayMode.View
+                    LabelText: ="SAP Application Server"
+                    LabelWidth: =150
+                    LayoutMinHeight: =640
+                    LayoutMinWidth: =200
+                    PropertyLabel: =""
+                    Visible: =true
+                    Width: =200
+                    ZIndex: =3
+
+                Container23_1 As groupContainer.horizontalAutoLayoutContainer:
+                    DropShadow: =DropShadow.None
+                    LayoutGap: =20
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    ZIndex: =4
+
+                    Container24_2 As groupContainer.verticalAutoLayoutContainer:
+                        DropShadow: =DropShadow.None
+                        LayoutAlignItems: =LayoutAlignItems.Stretch
+                        LayoutDirection: =LayoutDirection.Vertical
+                        LayoutGap: =10
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        LayoutOverflowY: =LayoutOverflow.Scroll
+                        ZIndex: =1
+
+                        TextInputFieldClient_1 As TextInputField:
+                            CollectJSONStrings: =false
+                            Default: |-
+                                =LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = "TextInputFieldClient_1"
+                                ).Value
+                            Height: =TextInputFieldClient_1.CurrentHeight
+                            InfoText: ="""The SAP client ID identifies your connection to the SAP system. The SAP backend client (or 'Mandant') into which to log in. It's a number ranging from 000 to 999. Used separately in IDoc transactions."""
+                            LabelText: ="Client"
+                            LabelWidth: =40
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =200
+                            PropertyLabel: ="SAP Client ID"
+                            Visible: =true
+                            Width: =200
+
+                        TextInputFieldSAPRowsToRead As TextInputField:
+                            CollectJSONStrings: =false
+                            Default: |-
+                                =LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = "TextInputFieldSAPRowsToRead"
+                                ).Value
+                            Height: =TextInputFieldSAPRowsToRead.CurrentHeight
+                            InfoText: ="The service name or port number of the specific SAP application server to connect to"
+                            LabelText: ="SAP Count of Rows to Read"
+                            LabelWidth: =175
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =200
+                            PropertyLabel: =""
+                            Required: =false
+                            Visible: =true
+                            Width: =200
+                            ZIndex: =4
+
+                    Container24_3 As groupContainer.verticalAutoLayoutContainer:
+                        DropShadow: =DropShadow.None
+                        LayoutAlignItems: =LayoutAlignItems.Stretch
+                        LayoutDirection: =LayoutDirection.Vertical
+                        LayoutGap: =10
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        LayoutOverflowY: =LayoutOverflow.Scroll
+                        ZIndex: =2
+
+                        TextInputFieldSAPLanguageKey As TextInputField:
+                            Default: |-
+                                =LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = "TextInputFieldSAPLanguageKey"
+                                ).Value
+                            Height: =TextInputFieldSAPLanguageKey.CurrentHeight
+                            InfoText: ="There are times when you will need to specify a language on specific transactions, such as ReadMaterial. We have created an environmental variable called SAP SPRAS that allows you to easily control the value in one place according to your localization requirements"
+                            LabelText: ="SAP Language Key"
+                            LabelWidth: =120
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =200
+                            PropertyLabel: =""
+                            Required: =false
+                            Visible: =true
+                            Width: =200
+                            ZIndex: =3
+
+                        TextInputFieldSAPSystemID As TextInputField:
+                            CollectJSONStrings: =false
+                            Default: |-
+                                =LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = "TextInputFieldSAPSystemID"
+                                ).Value
+                            Height: =TextInputFieldSAPSystemID.CurrentHeight
+                            InfoText: ="""The SAP system's three-letter system ID (Mandatory if connection type is Message Server and a message server service isn't present). Used separately in IDoc transactions."""
+                            LabelText: ="SAP System ID"
+                            LayoutMinHeight: =640
+                            LayoutMinWidth: =200
+                            PropertyLabel: =""
+                            Visible: =true
+                            Width: =200
+                            ZIndex: =4
+
+            Container1_26 As groupContainer.verticalAutoLayoutContainer:
+                DropShadow: =DropShadow.None
+                LayoutAlignItems: =LayoutAlignItems.Stretch
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutGap: =10
+                LayoutMinHeight: =100
+                LayoutMinWidth: =0
+                LayoutMode: =LayoutMode.Auto
+                LayoutOverflowY: =LayoutOverflow.Scroll
+                Visible: =CurrentActivityStep.'Step Name' = "Import Base Solution"
+                Width: =0
+                ZIndex: =8
+
+                HtmlText2_15 As htmlViewer:
+                    AutoHeight: =true
+                    DisabledBorderColor: =RGBA(56, 56, 56, 1)
+                    Font: =Font.'Segoe UI'
+                    HtmlText: =CurrentActivityStep.Summary
+                    ZIndex: =1
+
+                TextCanvas6_3 As Text:
+                    BorderColor: =
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Fill: =
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Text: ="Step 1 ----"
+                    Visible: =true
+                    Weight: ='TextCanvas.Weight'.Semibold
+                    Width: =96
+                    X: =0
+                    Y: =0
+                    ZIndex: =3
+
+                TextCanvas6 As Text:
+                    AutoHeight: =true
+                    BorderColor: =
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Fill: =
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Text: ="Download the '"&If(RadioGroupCanvas1_6.Selected.Value = 1,"mpa_SAPBase_unmanaged.zip","mpa_SAPBase_managed.zip")&"' file and save it to your local machine."
+                    VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                    Visible: =true
+                    Width: =96
+                    X: =0
+                    Y: =0
+                    ZIndex: =4
+
+                ButtonCanvas1 As Button:
+                    AccessibleLabel: ="Download file"
+                    Align: =""
+                    AlignInContainer: =AlignInContainer.Start
+                    BasePaletteColor: =
+                    BorderColor: =
+                    BorderStyle: =""
+                    DisplayMode: |-
+                        =If(
+                           varDisableControls,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    FontWeight: =""
+                    Height: =32
+                    Icon: =""
+                    IconRotation: =0
+                    IconStyle: ="Outline"
+                    Layout: ="Icon before"
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    OnSelect: |-
+                        =If(
+                            RadioGroupCanvas1_6.Selected.Value = 1,
+                            Launch(
+                                LookUp(
+                                    SolutionFiles,
+                                    Solution = "mpa_SAPBase" && Type = "Unmanaged"
+                                ).Link
+                            ),
+                            Launch(
+                                LookUp(
+                                    SolutionFiles,
+                                    Solution = "mpa_SAPBase" && Type = "Managed"
+                                ).Link
+                            )
+                        )
+                    Text: ="Download file"
+                    VerticalAlign: =""
+                    Visible: =true
+                    Width: =150
+                    X: =0
+                    Y: =0
+                    ZIndex: =5
+
+                TextCanvas6_4 As Text:
+                    BorderColor: =
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Fill: =
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Text: ="Step 2 ----"
+                    Visible: =true
+                    Weight: ='TextCanvas.Weight'.Semibold
+                    Width: =96
+                    X: =0
+                    Y: =0
+                    ZIndex: =6
+
+                TextCanvas6_2 As Text:
+                    AutoHeight: =true
+                    BorderColor: =
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Fill: =
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Text: ="Select the file downloaded."
+                    Visible: =true
+                    Width: =96
+                    X: =0
+                    Y: =0
+                    ZIndex: =7
+
+                DataCardValue7 As attachments:
+                    AccessibleLabel: ="Select downloaded file"
+                    AlignInContainer: =AlignInContainer.Start
+                    BorderColor: =RGBA(0,0,0,0)
+                    DisplayMode: |-
+                        =If(
+                            varDisableControls,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Font: =Font.'Segoe UI'
+                    Height: =100
+                    IsInDataCard: =true
+                    Items: =
+                    MaxAttachments: =1
+                    MaxAttachmentSize: =20
+                    NoAttachmentsText: ="There is no file selected."
+                    OnAddFile: |
+                        =Set(
+                            varAttachmentControl,
+                            JSON(
+                                Image4.Image,
+                                JSONFormat.IncludeBinaryData
+                            )
+                        );
+                        Set(
+                            varAttachmentBinaryOnly,
+                            Mid(
+                                varAttachmentControl,
+                                Find(
+                                    ",",
+                                    varAttachmentControl
+                                ) + 1,
+                                Len(varAttachmentControl) - Find(
+                                    ",",
+                                    varAttachmentControl
+                                ) - 1
+                            )
+                        );
+                        ClearCollect(
+                            colAttachedFiles,
+                            {
+                                filename: Last(DataCardValue7.Attachments).Name,
+                                filecontents: varAttachmentBinaryOnly,
+                                filelink: ""
+                            }
+                        );
+                    OnRemoveFile: |
+                        =RemoveIf(colAttachedFiles, IsBlankOrError(LookUp(Self.Attachments, filename exactin Self.Attachments.Name)));
+                        Set(varAttachmentControl, "");
+                        Set(varAttachmentBinaryOnly, "");
+                        Clear(colAttachedFiles);
+                    PaddingBottom: =5
+                    PaddingLeft: =If(Self.DisplayMode = DisplayMode.Edit, 5, 0)
+                    PaddingRight: =5
+                    PaddingTop: =5
+                    Size: =10
+                    Tooltip: =
+                    Width: =450
+                    X: =2
+                    Y: =400
+                    ZIndex: =8
+
+                TextCanvas6_5 As Text:
+                    BorderColor: =
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Fill: =
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Text: ="Step 3 ----"
+                    Visible: =true
+                    Weight: ='TextCanvas.Weight'.Semibold
+                    Width: =96
+                    X: =0
+                    Y: =0
+                    ZIndex: =9
+
+                TextCanvas6_6 As Text:
+                    AutoHeight: =true
+                    BorderColor: =
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Fill: =
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Text: ="Import the selected file into your environment."
+                    Visible: =true
+                    Width: =96
+                    X: =0
+                    Y: =0
+                    ZIndex: =10
+
+                Container13 As groupContainer.horizontalAutoLayoutContainer:
+                    DropShadow: =DropShadow.None
+                    FillPortions: =0
+                    Height: =35
+                    LayoutAlignItems: =LayoutAlignItems.Center
+                    LayoutGap: =10
+                    LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    ZIndex: =11
+
+                    ButtonCanvas3_9 As Button:
+                        AccessibleLabel: ="Import solution"
+                        Align: =""
+                        BasePaletteColor: =
+                        BorderColor: =
+                        BorderStyle: =""
+                        DisplayMode: |-
+                            =If(
+                                Or(
+                                    IsEmpty(DataCardValue7.Attachments),
+                                    varDisableControls
+                                ),
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )
+                        Font: =""
+                        FontColor: =
+                        FontItalic: =false
+                        FontSize: =0
+                        FontStrikethrough: =false
+                        FontUnderline: =false
+                        FontWeight: =""
+                        Height: =32
+                        Icon: =""
+                        IconRotation: =0
+                        IconStyle: ="Outline"
+                        Layout: ="Icon before"
+                        LayoutMinHeight: =32
+                        LayoutMinWidth: =96
+                        OnSelect: |-
+                            =Switch(
+                                true,
+                                And(
+                                    RadioGroupCanvas1_6.Selected.Value = 1,
+                                    IsBlank(
+                                        Find(
+                                            LookUp(
+                                                SolutionFiles,
+                                                Solution = "mpa_SAPBase" && Type = "Unmanaged"
+                                            ).ShortFileName,
+                                            Last(DataCardValue7.Attachments).Name
+                                        )
+                                    )
+                                ),
+                                Notify(
+                                    "The file '" & First(DataCardValue7.Attachments).Name & "' selected to import is not the expected '" & LookUp(
+                                        SolutionFiles,
+                                        Solution = "mpa_SAPBase" && Type = "Unmanaged"
+                                    ).FileName & "' file.",
+                                    NotificationType.Error,
+                                    0
+                                ),
+                                And(
+                                    RadioGroupCanvas1_6.Selected.Value = 2,
+                                    IsBlank(
+                                        Find(
+                                            LookUp(
+                                                SolutionFiles,
+                                                Solution = "mpa_SAPBase" && Type = "Managed"
+                                            ).ShortFileName,
+                                            Last(DataCardValue7.Attachments).Name
+                                        )
+                                    )
+                                ),
+                                Notify(
+                                    "The file '" & First(DataCardValue7.Attachments).Name & "' selected to import is not the expected '" & LookUp(
+                                        SolutionFiles,
+                                        Solution = "mpa_SAPBase" && Type = "Unmanaged"
+                                    ).FileName & "' file.",
+                                    NotificationType.Error,
+                                    0
+                                ),
+                                //File selected is valid, execute import
+                                Notify(
+                                    "Currently importing solution " & Last(DataCardValue7.Attachments).Name & ". This can take several minutes. Please do not navigate away from this page.",
+                                    NotificationType.Information,
+                                    0
+                                );
+                                Set(
+                                    varDisableControls,
+                                    true
+                                );
+                                UpdateContext(
+                                    {
+                                        _importingSolution: true,
+                                        _totalDuration: 0,
+                                        _completeCheckBox: "CheckboxCanvas5_4"
+                                    }
+                                );
+                                UpdateContext(
+                                    {
+                                        _solutionImport: InstallTemplateImportSolutionFile.Run(
+                                            varAttachmentBinaryOnly,
+                                            First(
+                                                Filter(
+                                                    SolutionFiles,
+                                                    ShortFileName in First(DataCardValue7.Attachments).Name
+                                                )
+                                            ).Solution,
+                                            JSON(
+                                                Table(
+                                                    {
+                                                        '@odata.type': "Microsoft.Dynamics.CRM.environmentvariablevalue",
+                                                        schemaname: "mpa_SAPApplicationServer",
+                                                        value: Trim(TextInputFieldSAPApplicationServer.Value)
+                                                    },
+                                                    {
+                                                        '@odata.type': "Microsoft.Dynamics.CRM.environmentvariablevalue",
+                                                        schemaname: "mpa_SAPClientID",
+                                                        value: Trim(TextInputFieldClient_1.Value)
+                                                    },
+                                                    {
+                                                        '@odata.type': "Microsoft.Dynamics.CRM.environmentvariablevalue",
+                                                        schemaname: "mpa_SAPCountofRowsToRead",
+                                                        value: Value(TextInputFieldSAPRowsToRead.Value)
+                                                    },
+                                                    {
+                                                        '@odata.type': "Microsoft.Dynamics.CRM.environmentvariablevalue",
+                                                        schemaname: "mpa_SAPSPRAS",
+                                                        value: Trim(TextInputFieldSAPLanguageKey.Value)
+                                                    },
+                                                    {
+                                                        '@odata.type': "Microsoft.Dynamics.CRM.environmentvariablevalue",
+                                                        schemaname: "mpa_SAPSystemID",
+                                                        value: Trim(TextInputFieldSAPSystemID.Value)
+                                                    }
+                                                ),
+                                                JSONFormat.IndentFour
+                                            )
+                                        )
+                                    }
+                                );
+                                If(
+                                    _solutionImport.status = "Success",
+                                    UpdateContext({_checkImportStatus: true}),
+                                    Notify(
+                                        _solutionImport.statusmessage,
+                                        NotificationType.Error,
+                                        0
+                                    );
+                                    Set(
+                                        varDisableControls,
+                                        false
+                                    );
+                                );
+                                UpdateContext({_importingSolution: false})
+                            )
+                        Text: ="Import selected file"
+                        VerticalAlign: =""
+                        Visible: =true
+                        Width: =200
+                        X: =0
+                        Y: =0
+                        ZIndex: =1
+
+                    Spinner1 As Spinner:
+                        AccessibleLabel: |-
+                            =With(
+                                {
+                                    _solutionHistory: LookUp(
+                                        'Solutions History',
+                                        'Activity Id' = _solutionImport.solutionhistoryid
+                                    )
+                                },
+                                Switch(
+                                    true,
+                                    _importingSolution,
+                                    "Initiating import",
+                                    And(
+                                        _checkImportStatus,
+                                        IsBlank(_solutionHistory.Result)
+                                    ),
+                                    _solutionHistory.Status,
+                                    _solutionHistory.Result
+                                )
+                            )
+                        AlignInContainer: =AlignInContainer.Stretch
+                        Appearance: ='Spinner.Appearance'.Primary
+                        BasePaletteColor: =
+                        DisplayMode: =DisplayMode.Edit
+                        Font: =""
+                        FontColor: =
+                        FontItalic: =true
+                        FontSize: =12
+                        FontStrikethrough: =false
+                        FontUnderline: =false
+                        FontWeight: =""
+                        Height: =Parent.Height
+                        Label: |-
+                            =With(
+                                {
+                                    _solutionHistory: LookUp(
+                                        'Solutions History',
+                                        'Activity Id' = _solutionImport.solutionhistoryid
+                                    )
+                                },
+                                Switch(
+                                    true,
+                                    _importingSolution,
+                                    "Initiating import",
+                                    And(
+                                        _checkImportStatus,
+                                        IsBlank(_solutionHistory.Result)
+                                    ),
+                                    _solutionHistory.Status,
+                                    _solutionHistory.Result
+                                )
+                            )
+                        LabelPosition: ='Spinner.LabelPosition'.Before
+                        LayoutMinWidth: =50
+                        SpinnerColor: =
+                        SpinnerSize: ='Spinner.SpinnerSize'.Tiny
+                        TrackColor: =
+                        Visible: |
+                            =Or(_importingSolution,_checkImportStatus)
+                        Width: =150
+                        X: =0
+                        Y: =0
+                        ZIndex: =2
+
+                Image4 As image:
+                    AccessibleLabel: ="Attachment icon"
+                    DisplayMode: =DisplayMode.Disabled
+                    Image: =Last(DataCardValue7.Attachments).Value
+                    TabIndex: =0
+                    Visible: =false
+                    ZIndex: =12
+
+                CheckboxCanvas5_4 As Checkbox:
+                    AccessibleLabel: ="SAP Base solution file has been imported."
+                    AlignInContainer: =AlignInContainer.Stretch
+                    BasePaletteColor: =
+                    CheckboxSize: =16
+                    Checked: |-
+                        =With(
+                            {
+                                _stepValue: LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = "CheckboxCanvas5_4"
+                                ).Value
+                            },
+                            If(_stepValue = "true",true,false)
+                        )
+                    DisplayMode: |-
+                        =If(
+                            varDisableControls,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    FontWeight: =""
+                    Height: =40
+                    Label: ="SAP Base solution file has been imported."
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =160
+                    OnCheck: =false
+                    OnUncheck: =false
+                    Width: =160
+                    X: =40
+                    Y: =40
+                    ZIndex: =13
+
+                Timer1 As timer:
+                    Duration: =10000
+                    OnSelect: |-
+                        =UpdateContext({_checkImportStatus:true})
+                    OnTimerEnd: |-
+                        =Refresh('Solutions History');
+                        With(
+                            {
+                                _solutionHistory: LookUp(
+                                    'Solutions History',
+                                    'Activity Id' = _solutionImport.solutionhistoryid
+                                )
+                            },
+                            Switch(
+                                true,
+                                _totalDuration >= 5 * 60 * 1000,//"Timeout"
+                                Notify(
+                                    "The import process is taking longer than expected. Please navigate to the solutions history to check on latest import status",
+                                    NotificationType.Warning,
+                                    0
+                                );
+                                UpdateContext({_checkImportStatus: false});
+                                Set(
+                                    varDisableControls,
+                                    false
+                                ),//Success
+                                And(
+                                    _solutionHistory.Status = 'Status (Solutions History)'.Completed,
+                                    _solutionHistory.Result = 'Result (Solutions History)'.Success
+                                ),
+                                Patch(
+                                    'Activity Step Values',
+                                    Coalesce(
+                                        LookUp(
+                                            'Activity Step Values',
+                                            'Control Name' = _completeCheckBox
+                                        ),
+                                        Defaults('Activity Step Values')
+                                    ),
+                                    {
+                                        'Control Name': _completeCheckBox,
+                                        'Data Type': 'Data Type (Activity Step Values)'.Boolean,
+                                        'Activity Step': CurrentActivityStep,
+                                        Value: "true"
+                                    }
+                                );
+                                Reset(CheckboxCanvas5_4);
+                                Reset(CheckboxCanvas5_5);
+                                UpdateContext({_checkImportStatus: false});
+                                Notify(
+                                    "The solution file '" & _solutionHistory.'Solution Name' & "' was imported successfully.",
+                                    NotificationType.Success,
+                                    5000
+                                );
+                                Set(
+                                    varDisableControls,
+                                    false
+                                );
+                                ,//Failure
+                                And(
+                                    _solutionHistory.Status = 'Status (Solutions History)'.Completed,
+                                    _solutionHistory.Result = 'Result (Solutions History)'.Failure
+                                ),
+                                Notify(
+                                    "The solution file '" & _solutionHistory.'Solution Name' & "' failed to import for reason: " & _solutionHistory.'Exception Message',
+                                    NotificationType.Error,
+                                    0
+                                );
+                                UpdateContext({_checkImportStatus: false});
+                                Set(
+                                    varDisableControls,
+                                    false
+                                );
+                                ,
+                                UpdateContext({_totalDuration: Self.Duration + _totalDuration})
+                            )
+                        )
+                    OnTimerStart: =
+                    Repeat: =true
+                    Start: =_checkImportStatus
+                    Visible: =false
+                    X: =765
+                    Y: =60
+                    ZIndex: =14
+
+            Container1_27 As groupContainer.verticalAutoLayoutContainer:
+                DropShadow: =DropShadow.None
+                LayoutAlignItems: =LayoutAlignItems.Stretch
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutGap: =10
+                LayoutMinHeight: =100
+                LayoutMinWidth: =0
+                LayoutMode: =LayoutMode.Auto
+                LayoutOverflowY: =LayoutOverflow.Scroll
+                Visible: =CurrentActivityStep.'Step Name' = "Import SAP Procurement Solution"
+                Width: =0
+                ZIndex: =9
+
+                HtmlText2_16 As htmlViewer:
+                    AutoHeight: =true
+                    DisabledBorderColor: =RGBA(56, 56, 56, 1)
+                    Font: =Font.'Segoe UI'
+                    HtmlText: =CurrentActivityStep.Summary
+                    ZIndex: =1
+
+                TextCanvas6_10 As Text:
+                    AutoHeight: =true
+                    BorderColor: =
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Fill: =
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Text: ="Step 1 ----"
+                    Visible: =true
+                    Weight: ='TextCanvas.Weight'.Semibold
+                    Width: =96
+                    X: =0
+                    Y: =0
+                    ZIndex: =3
+
+                TextCanvas6_7 As Text:
+                    AutoHeight: =true
+                    BorderColor: =
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Fill: =
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Text: ="Download the '"&If(RadioGroupCanvas1_6.Selected.Value = 1,"mpa_SAPProcurement_unmanaged.zip","mpa_SAPProcurement_managed.zip")&"' file and save it to your local machine."
+                    Visible: =true
+                    Width: =96
+                    X: =0
+                    Y: =0
+                    ZIndex: =4
+
+                ButtonCanvas1_1 As Button:
+                    AccessibleLabel: ="Download file"
+                    Align: =""
+                    AlignInContainer: =AlignInContainer.Start
+                    BasePaletteColor: =
+                    BorderColor: =
+                    BorderStyle: =""
+                    DisplayMode: |-
+                        =If(
+                           varDisableControls,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    FontWeight: =""
+                    Height: =32
+                    Icon: =""
+                    IconRotation: =0
+                    IconStyle: ="Outline"
+                    Layout: ="Icon before"
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    OnSelect: |-
+                        =If(
+                            RadioGroupCanvas1_6.Selected.Value = 1,
+                            Launch(
+                                LookUp(
+                                    SolutionFiles,
+                                    Solution = "mpa_SAPProcurement" && Type = "Unmanaged"
+                                ).Link
+                            ),
+                            Launch(LookUp(
+                                    SolutionFiles,
+                                    Solution = "mpa_SAPProcurement" && Type = "Managed"
+                                ).Link)
+                        )
+                    Text: ="Download file"
+                    VerticalAlign: =""
+                    Visible: =true
+                    Width: =150
+                    X: =0
+                    Y: =0
+                    ZIndex: =5
+
+                TextCanvas6_11 As Text:
+                    AutoHeight: =true
+                    BorderColor: =
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Fill: =
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Text: ="Step 2 ----"
+                    Visible: =true
+                    Weight: ='TextCanvas.Weight'.Semibold
+                    Width: =96
+                    X: =0
+                    Y: =0
+                    ZIndex: =6
+
+                TextCanvas6_8 As Text:
+                    AutoHeight: =true
+                    BorderColor: =
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Fill: =
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Text: ="Select the file downloaded."
+                    VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                    Visible: =true
+                    Width: =96
+                    X: =0
+                    Y: =0
+                    ZIndex: =7
+
+                DataCardValue7_1 As attachments:
+                    AccessibleLabel: ="Select downloaded file"
+                    AlignInContainer: =AlignInContainer.Start
+                    BorderColor: =RGBA(0,0,0,0)
+                    DisplayMode: |-
+                        =If(
+                            varDisableControls,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Font: =Font.'Segoe UI'
+                    Height: =100
+                    IsInDataCard: =true
+                    Items: =
+                    MaxAttachments: =1
+                    MaxAttachmentSize: =20
+                    NoAttachmentsText: ="There is no file selected."
+                    OnAddFile: |
+                        =Set(
+                            varAttachmentControl,
+                            JSON(
+                                Image4_1.Image,
+                                JSONFormat.IncludeBinaryData
+                            )
+                        );
+                        Set(
+                            varAttachmentBinaryOnly,
+                            Mid(
+                                varAttachmentControl,
+                                Find(
+                                    ",",
+                                    varAttachmentControl
+                                ) + 1,
+                                Len(varAttachmentControl) - Find(
+                                    ",",
+                                    varAttachmentControl
+                                ) - 1
+                            )
+                        );
+                        ClearCollect(
+                            colAttachedFiles,
+                            {
+                                filename: Last(DataCardValue7_1.Attachments).Name,
+                                filecontents: varAttachmentBinaryOnly,
+                                filelink: ""
+                            }
+                        );
+                    OnRemoveFile: |
+                        =RemoveIf(colAttachedFiles, IsBlankOrError(LookUp(Self.Attachments, filename exactin Self.Attachments.Name)));
+                        Set(varAttachmentControl, "");
+                        Set(varAttachmentBinaryOnly, "");
+                        Clear(colAttachedFiles);
+                    PaddingBottom: =5
+                    PaddingLeft: =If(Self.DisplayMode = DisplayMode.Edit, 5, 0)
+                    PaddingRight: =5
+                    PaddingTop: =5
+                    Size: =10
+                    Tooltip: =
+                    Width: =450
+                    X: =2
+                    Y: =400
+                    ZIndex: =8
+
+                TextCanvas6_12 As Text:
+                    AutoHeight: =true
+                    BorderColor: =
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Fill: =
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Text: ="Step 3 ----"
+                    Visible: =true
+                    Weight: ='TextCanvas.Weight'.Semibold
+                    Width: =96
+                    X: =0
+                    Y: =0
+                    ZIndex: =9
+
+                TextCanvas6_13 As Text:
+                    AutoHeight: =true
+                    BorderColor: =
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Fill: =
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Text: ="Import the selected file into your environment."
+                    Visible: =true
+                    Width: =96
+                    X: =0
+                    Y: =0
+                    ZIndex: =10
+
+                Container13_1 As groupContainer.horizontalAutoLayoutContainer:
+                    DropShadow: =DropShadow.None
+                    FillPortions: =0
+                    Height: =35
+                    LayoutAlignItems: =LayoutAlignItems.Center
+                    LayoutGap: =10
+                    LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    ZIndex: =11
+
+                    ButtonCanvas3_10 As Button:
+                        AccessibleLabel: ="Import solution"
+                        Align: =""
+                        BasePaletteColor: =
+                        BorderColor: =
+                        BorderStyle: =""
+                        DisplayMode: |-
+                            =If(
+                                Or(
+                                    IsEmpty(DataCardValue7_1.Attachments),
+                                    varDisableControls
+                                ),
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )
+                        Font: =""
+                        FontColor: =
+                        FontItalic: =false
+                        FontSize: =0
+                        FontStrikethrough: =false
+                        FontUnderline: =false
+                        FontWeight: =""
+                        Height: =32
+                        Icon: =""
+                        IconRotation: =0
+                        IconStyle: ="Outline"
+                        Layout: ="Icon before"
+                        LayoutMinHeight: =32
+                        LayoutMinWidth: =96
+                        OnSelect: |-
+                            =Switch(
+                                true,
+                                And(
+                                    RadioGroupCanvas1_6.Selected.Value = 1,
+                                    IsBlank(
+                                        Find(
+                                            LookUp(
+                                                SolutionFiles,
+                                                Solution = "mpa_SAPProcurement" && Type = "Unmanaged"
+                                            ).ShortFileName,
+                                            Last(DataCardValue7_1.Attachments).Name
+                                        )
+                                    )
+                                ),
+                                Notify(
+                                    "The file '" & First(DataCardValue7_1.Attachments).Name & "' selected to import is not the expected '" & LookUp(
+                                        SolutionFiles,
+                                        Solution = "mpa_SAPProcurement" && Type = "Unmanaged"
+                                    ).FileName & "' file.",
+                                    NotificationType.Error,
+                                    0
+                                ),
+                                And(
+                                    RadioGroupCanvas1_6.Selected.Value = 2,
+                                    IsBlank(
+                                        Find(
+                                            LookUp(
+                                                SolutionFiles,
+                                                Solution = "mpa_SAPProcurement" && Type = "Managed"
+                                            ).ShortFileName,
+                                            Last(DataCardValue7_1.Attachments).Name
+                                        )
+                                    )
+                                ),
+                                Notify(
+                                    "The file '" & First(DataCardValue7_1.Attachments).Name & "' selected to import is not the expected '" & LookUp(
+                                        SolutionFiles,
+                                        Solution = "mpa_SAPProcurement" && Type = "Unmanaged"
+                                    ).FileName & "' file.",
+                                    NotificationType.Error,
+                                    0
+                                ),
+                                //File selected is valid, execute import
+                                Notify(
+                                    "Currently importing solution " & Last(DataCardValue7_1.Attachments).Name & ". This can take several minutes. Please do not navigate away from this page.",
+                                    NotificationType.Information,
+                                    0
+                                );
+                                Set(
+                                    varDisableControls,
+                                    true
+                                );
+                                UpdateContext(
+                                    {
+                                        _importingSolution: true,
+                                        _totalDuration: 0,
+                                        _completeCheckBox: "CheckboxCanvas5_5"
+                                    }
+                                );
+                                UpdateContext(
+                                    {
+                                        _solutionImport: InstallTemplateImportSolutionFile.Run(
+                                            varAttachmentBinaryOnly,
+                                            First(
+                                                Filter(
+                                                    SolutionFiles,
+                                                    ShortFileName in First(DataCardValue7_1.Attachments).Name
+                                                )
+                                            ).Solution,
+                                            JSON(
+                                                Table(
+                                                    {
+                                                        '@odata.type': "Microsoft.Dynamics.CRM.connectionreference",
+                                                        connectionreferencelogicalname: "mpa_SAPDataverse",
+                                                        connectionid: ComboboxCanvas1_7.Selected.name,
+                                                        connectorid: "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                                                    },
+                                                    {
+                                                        '@odata.type': "Microsoft.Dynamics.CRM.connectionreference",
+                                                        connectionreferencelogicalname: "mpa_SAPERP",
+                                                        connectionid: ComboboxCanvas1_9.Selected.name,
+                                                        connectorid: "/providers/Microsoft.PowerApps/apis/shared_saperp"
+                                                    }
+                                                ),
+                                                JSONFormat.IndentFour
+                                            )
+                                        )
+                                    }
+                                );
+                                If(
+                                    _solutionImport.status = "Success",
+                                    Select(Timer1),
+                                    Notify(
+                                        _solutionImport.statusmessage,
+                                        NotificationType.Error,
+                                        0
+                                    );
+                                    Set(
+                                        varDisableControls,
+                                        false
+                                    );
+                                );
+                                UpdateContext({_importingSolution: false})
+                            )
+                        Text: ="Import selected file"
+                        VerticalAlign: =""
+                        Visible: =true
+                        Width: =200
+                        X: =0
+                        Y: =0
+                        ZIndex: =1
+
+                    Spinner1_1 As Spinner:
+                        AccessibleLabel: ="Solution importing progress indicator"
+                        AlignInContainer: =AlignInContainer.Stretch
+                        Appearance: ='Spinner.Appearance'.Primary
+                        BasePaletteColor: =
+                        DisplayMode: =DisplayMode.Edit
+                        Font: =""
+                        FontColor: =
+                        FontItalic: =true
+                        FontSize: =12
+                        FontStrikethrough: =false
+                        FontUnderline: =false
+                        FontWeight: =""
+                        Height: =Parent.Height
+                        Label: |-
+                            =With(
+                                {
+                                    _solutionHistory: LookUp(
+                                        'Solutions History',
+                                        'Activity Id' = _solutionImport.solutionhistoryid
+                                    )
+                                },
+                                Switch(
+                                    true,
+                                    _importingSolution,
+                                    "Initiating import",
+                                    And(
+                                        _checkImportStatus,
+                                        IsBlank(_solutionHistory.Result)
+                                    ),
+                                    _solutionHistory.Status,
+                                    _solutionHistory.Result
+                                )
+                            )
+                        LabelPosition: ='Spinner.LabelPosition'.Before
+                        LayoutMinWidth: =50
+                        SpinnerColor: =
+                        SpinnerSize: ='Spinner.SpinnerSize'.Tiny
+                        TrackColor: =
+                        Visible: =Or(_importingSolution,_checkImportStatus)
+                        Width: =150
+                        X: =0
+                        Y: =0
+                        ZIndex: =2
+
+                Image4_1 As image:
+                    AccessibleLabel: ="Attachment icon"
+                    DisplayMode: =DisplayMode.Disabled
+                    Image: =Last(DataCardValue7_1.Attachments).Value
+                    TabIndex: =0
+                    Visible: =false
+                    ZIndex: =12
+
+                CheckboxCanvas5_5 As Checkbox:
+                    AccessibleLabel: ="SAP Procurement solution file has been successfully imported."
+                    AlignInContainer: =AlignInContainer.Stretch
+                    BasePaletteColor: =
+                    CheckboxSize: =16
+                    Checked: |-
+                        =With(
+                            {
+                                _stepValue: LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = "CheckboxCanvas5_5"
+                                ).Value
+                            },
+                            If(_stepValue = "true",true,false)
+                        )
+                    DisplayMode: |-
+                        =If(
+                            varDisableControls,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    FontWeight: =""
+                    Height: =40
+                    Label: ="SAP Procurement solution file has been successfully imported."
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =160
+                    OnCheck: =false
+                    OnUncheck: =false
+                    Width: =160
+                    X: =40
+                    Y: =40
+                    ZIndex: =13
+
+            Container1_25 As groupContainer.verticalAutoLayoutContainer:
+                DropShadow: =DropShadow.None
+                LayoutAlignItems: =LayoutAlignItems.Stretch
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutGap: =10
+                LayoutMinHeight: =100
+                LayoutMinWidth: =0
+                LayoutMode: =LayoutMode.Auto
+                LayoutOverflowY: =LayoutOverflow.Scroll
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Visible: =CurrentActivityStep.'Step Name' = "Review"
+                Width: =0
+                ZIndex: =10
+
+                ReviewCompletionSteps_6 As ReviewCompletionSteps:
+                    FillPortions: =1
+                    Height: =Parent.Height
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =100
+                    Width: =Parent.Width
+                    ZIndex: =3
+
+            NavigationButtons_6 As NavigationButtons:
+                LayoutMinHeight: =640
+                LayoutMinWidth: =0
+                StepStatus: |-
+                    =If(
+                        varSkip,
+                        'Step Status (Activity Steps)'.Skipped,
+                        Switch(
+                            true,
+                            Container1_19.Visible,
+                            'Step Status (Activity Steps)'.Completed,
+                            Container1_20.Visible,
+                            If(
+                                !IsBlank(RadioGroupCanvas1_6.Selected),
+                                'Step Status (Activity Steps)'.Completed,
+                                'Step Status (Activity Steps)'.Incomplete
+                            ),
+                            Container1_78.Visible,
+                            If(
+                                CheckboxCanvas5_16.Checked = true,
+                                'Step Status (Activity Steps)'.Completed,
+                                'Step Status (Activity Steps)'.Incomplete
+                            ),
+                            Container1_26.Visible,
+                            If(
+                                CheckboxCanvas5_4.Checked = true,
+                                'Step Status (Activity Steps)'.Completed,
+                                'Step Status (Activity Steps)'.Incomplete
+                            ),
+                            Container1_86.Visible,
+                            If(
+                                CheckboxCanvas5_26.Checked = true,
+                                'Step Status (Activity Steps)'.Completed,
+                                'Step Status (Activity Steps)'.Incomplete
+                            ),
+                            Container1_27.Visible,
+                            If(
+                                CheckboxCanvas5_5.Checked = true,
+                                'Step Status (Activity Steps)'.Completed,
+                                'Step Status (Activity Steps)'.Incomplete
+                            ),
+                            Container1_81.Visible,
+                            If(
+                                CheckboxCanvas5_17.Checked = true,
+                                'Step Status (Activity Steps)'.Completed,
+                                'Step Status (Activity Steps)'.Incomplete
+                            )
+                        )
+                    )
+                StepValues: |-
+                    =Switch(
+                        true,
+                        Container1_20.Visible,
+                        Table(
+                            {
+                                Control: "RadioGroupCanvas1_6",
+                                Value: Text(RadioGroupCanvas1_6.Selected.Value),
+                                Type: 'Data Type (Activity Step Values)'.Number
+                            }
+                        ),
+                        Container1_78.Visible,
+                        Table(
+                            {
+                                Control: "CheckboxCanvas5_16",
+                                Value: Text(CheckboxCanvas5_16.Checked),
+                                Type: 'Data Type (Activity Step Values)'.Boolean
+                            }
+                        ),
+                        Container1_26.Visible,
+                        Table(
+                            {
+                                Control: "CheckboxCanvas5_4",
+                                Value: Text(CheckboxCanvas5_4.Checked),
+                                Type: 'Data Type (Activity Step Values)'.Boolean
+                            }
+                        ),
+                        Container1_27.Visible,
+                        Table(
+                            {
+                                Control: "CheckboxCanvas5_5",
+                                Value: Text(CheckboxCanvas5_5.Checked),
+                                Type: 'Data Type (Activity Step Values)'.Boolean
+                            }
+                        ),
+                        Container1_86.Visible,
+                        Filter(
+                            Ungroup(
+                                Table(
+                                    {
+                                        Values: Table(
+                                            {
+                                                Control: "CheckboxCanvas5_26",
+                                                Value: Text(CheckboxCanvas5_26.Checked),
+                                                Type: 'Data Type (Activity Step Values)'.Boolean
+                                            }
+                                        )
+                                    },
+                                    {Values: colJSONStrings}
+                                ),
+                                Values
+                            ),
+                            !IsBlank(Control)
+                        ),
+                        Container1_81.Visible,
+                        Table(
+                            {
+                                Control: "CheckboxCanvas5_17",
+                                Value: Text(CheckboxCanvas5_17.Checked),
+                                Type: 'Data Type (Activity Step Values)'.Boolean
+                            },
+                            {
+                                Control: "TextInputFieldSAPApplicationServer",
+                                Value: Trim(TextInputFieldSAPApplicationServer.Value),
+                                Type: 'Data Type (Activity Step Values)'.String
+                            },
+                            {
+                                Control: "TextInputFieldClient_1",
+                                Value: Trim(TextInputFieldClient_1.Value),
+                                Type: 'Data Type (Activity Step Values)'.String
+                            },
+                            {
+                                Control: "TextInputFieldSAPRowsToRead",
+                                Value: Value(TextInputFieldSAPRowsToRead.Value),
+                                Type: 'Data Type (Activity Step Values)'.Number
+                            },
+                            {
+                                Control: "TextInputFieldSAPLanguageKey",
+                                Value: Trim(TextInputFieldSAPLanguageKey.Value),
+                                Type: 'Data Type (Activity Step Values)'.String
+                            },
+                            {
+                                Control: "TextInputFieldSAPSystemID",
+                                Value: Trim(TextInputFieldSAPSystemID.Value),
+                                Type: 'Data Type (Activity Step Values)'.String
+                            }
+                        )
+                    )
+                ZIndex: =11
+
+        "icoConMainScreenExpand_5 As icon.'3DPrinting'":
+            AccessibleLabel: ="Expand step detail"
+            AlignInContainer: =AlignInContainer.Start
+            BorderColor: =RGBA(0,0,0,0)
+            Color: =Color.Black
+            DisabledBorderColor: |-
+                =ColorValue("#A19F9D")
+            DisabledColor: |-
+                =ColorValue("#F3F2F1")
+            DisabledFill: =RGBA(0,0,0,0)
+            DisplayMode: |-
+                =If(
+                    varDisableControls,
+                    DisplayMode.Disabled,
+                    DisplayMode.Edit
+                )
+            Fill: =RGBA(0,0,0,0)
+            FocusedBorderColor: |-
+                =ColorValue("#605E5C")
+            Height: =48
+            HoverBorderColor: =
+            HoverColor: |-
+                =ColorValue("#8A8886")
+            HoverFill: =RGBA(0,0,0,0)
+            Icon: =Icon.ListScrollEmpty
+            OnSelect: |-
+                =Set(
+                    varExpandHelp,
+                    false
+                );
+                Set(
+                    varExpandMenu,
+                    false
+                )
+            PaddingBottom: =10
+            PaddingLeft: =12
+            PaddingRight: =12
+            PaddingTop: =10
+            PressedBorderColor: =
+            PressedColor: |-
+                =ColorValue("#8A8886")
+            PressedFill: =RGBA(0,0,0,0)
+            TabIndex: =0
+            Tooltip: ="Expand step detail"
+            Visible: |-
+                =And(
+                    App.ActiveScreen.Size = ScreenSize.Small,
+                    Or(
+                        varExpandHelp,
+                        varExpandMenu
+                    )
+                )
+            Width: =48
+            X: =Self.FocusedBorderThickness
+            ZIndex: =3
+
+        cmpHelpAssistant_8 As HelpResources:
+            Height: =Parent.Height
+            LayoutMinHeight: =0
+            LayoutMinWidth: =640
+            SetExpandHelp: =App.ActiveScreen.Size <= ScreenSize.Medium
+            Width: =cmpHelpAssistant_8.HelpResourcesWidth
+            X: =Parent.Width-Self.Width
+            ZIndex: =4
+

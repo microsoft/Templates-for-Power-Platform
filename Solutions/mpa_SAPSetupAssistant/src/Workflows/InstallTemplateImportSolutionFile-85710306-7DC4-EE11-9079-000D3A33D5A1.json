@@ -1,0 +1,568 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_sharedcommondataserviceforapps_fadb4"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "a7897481-0244-4dad-8d71-3ed334d63de6"
+          },
+          "type": "Request",
+          "kind": "PowerAppV2",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "File",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Solution file in base64 string",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "text_1": {
+                  "title": "SolutionName",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Unique name of the solution",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "text_2": {
+                  "title": "Parameters JSON",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "JSON array containing connection references and environment variables to initialize",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text",
+                "text_1",
+                "text_2"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Try": {
+          "actions": {
+            "Set_variable_-_Message": {
+              "runAfter": {
+                "Do_until": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "8f843d0e-19d8-46c9-893d-79cf64744433"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "Status Message",
+                "value": "The process was successfully initialized."
+              }
+            },
+            "Compose": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "686038b0-7651-4dfb-9234-4c9b5a6cd3a1"
+              },
+              "type": "Compose",
+              "inputs": "@guid()"
+            },
+            "Import_Solution": {
+              "runAfter": {
+                "Compose": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "b0f24ad7-93e9-434c-a6f6-139bd0da163f"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "PerformUnboundAction",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "actionName": "ImportSolutionAsync",
+                  "item/OverwriteUnmanagedCustomizations": false,
+                  "item/PublishWorkflows": true,
+                  "item/CustomizationFile": "@triggerBody()['text']",
+                  "item/ImportJobId": "@outputs('Compose')",
+                  "item/ConvertToManaged": false,
+                  "item/SkipProductUpdateDependencies": false,
+                  "item/HoldingSolution": false,
+                  "item/SkipQueueRibbonJob": false,
+                  "item/AsyncRibbonProcessing": false,
+                  "item/ComponentParameters": "@if(equals(empty(triggerBody()['text_2']),true),null,json(triggerBody()['text_2']))",
+                  "item/IsTemplateMode": false
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Do_until": {
+              "actions": {
+                "Get_Solution_History": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "352eca89-0a07-4fe1-a4da-1ef242219c62"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "ListRecords",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "msdyn_solutionhistories",
+                      "$filter": "msdyn_name eq '@{triggerBody()['text_1']}' and msdyn_status eq 0 and msdyn_operation eq 0",
+                      "$orderby": "msdyn_starttime desc",
+                      "$top": 1
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Apply_to_each_2": {
+                  "foreach": "@outputs('Get_Solution_History')?['body/value']",
+                  "actions": {
+                    "Set_variable": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "f858baad-e062-42da-b7fd-672601c580b7"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "Activity ID",
+                        "value": "@items('Apply_to_each_2')?['msdyn_activityid']"
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Get_Solution_History": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "0c68c3a7-1f6e-4a07-95d5-da41fdc75123"
+                  },
+                  "type": "Foreach"
+                }
+              },
+              "runAfter": {
+                "Import_Solution": [
+                  "Succeeded"
+                ]
+              },
+              "expression": "@equals(empty(variables('Activity ID')), false)",
+              "limit": {
+                "count": 120,
+                "timeout": "PT2M"
+              },
+              "metadata": {
+                "operationMetadataId": "6d9098ac-3399-4cb0-92d9-69690b932f48"
+              },
+              "type": "Until"
+            }
+          },
+          "runAfter": {
+            "Initialize_variable_activity_id": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "4611c649-2bcc-4f2d-b877-dc8fd2551754"
+          },
+          "type": "Scope"
+        },
+        "Catch": {
+          "actions": {
+            "Filter_array": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "f91a43a4-0e64-4a69-822b-54e5e2377f90"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@result('Try')",
+                "where": "@or(equals(item()?['Status'], 'Failed'), equals(item()?['Status'], 'TimedOut'))"
+              }
+            },
+            "Set_variable_status": {
+              "runAfter": {
+                "Parse_JSON": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "049fe80a-2c2b-4f2f-834e-8e5ca22a3437"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "Status",
+                "value": "Error"
+              }
+            },
+            "Parse_JSON": {
+              "runAfter": {
+                "Filter_array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "90839a3a-38bf-44ba-85ed-2093d918c47a"
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@body('Filter_array')",
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "error": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "inputs": {
+                        "type": "object",
+                        "properties": {
+                          "host": {
+                            "type": "object",
+                            "properties": {
+                              "apiId": {
+                                "type": "string"
+                              },
+                              "connectionReferenceName": {
+                                "type": "string"
+                              },
+                              "operationId": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "parameters": {
+                            "type": "object",
+                            "properties": {
+                              "environment": {
+                                "type": "string"
+                              },
+                              "api-version": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "outputs": {
+                        "type": "object",
+                        "properties": {
+                          "statusCode": {
+                            "type": "integer"
+                          },
+                          "headers": {
+                            "type": "object",
+                            "properties": {
+                              "Cache-Control": {
+                                "type": "string"
+                              },
+                              "Strict-Transport-Security": {
+                                "type": "string"
+                              },
+                              "x-ms-islandgateway": {
+                                "type": "string"
+                              },
+                              "x-ms-request-id": {
+                                "type": "string"
+                              },
+                              "x-ms-correlation-request-id": {
+                                "type": "string"
+                              },
+                              "x-ms-correlation-id": {
+                                "type": "string"
+                              },
+                              "Server-Timing": {
+                                "type": "string"
+                              },
+                              "X-Content-Type-Options": {
+                                "type": "string"
+                              },
+                              "x-ms-service-request-id": {
+                                "type": "string"
+                              },
+                              "x-ms-activity-vector": {
+                                "type": "string"
+                              },
+                              "Timing-Allow-Origin": {
+                                "type": "string"
+                              },
+                              "x-ms-apihub-cached-response": {
+                                "type": "string"
+                              },
+                              "x-ms-apihub-obo": {
+                                "type": "string"
+                              },
+                              "Date": {
+                                "type": "string"
+                              },
+                              "Content-Length": {
+                                "type": "string"
+                              },
+                              "Content-Type": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "body": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              },
+                              "error": {
+                                "type": "object",
+                                "properties": {
+                                  "code": {
+                                    "type": "string"
+                                  },
+                                  "message": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "startTime": {
+                        "type": "string"
+                      },
+                      "endTime": {
+                        "type": "string"
+                      },
+                      "trackingId": {
+                        "type": "string"
+                      },
+                      "clientTrackingId": {
+                        "type": "string"
+                      },
+                      "clientKeywords": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "Apply_to_each": {
+              "foreach": "@body('Parse_JSON')",
+              "actions": {
+                "Append_to_string_variable": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "6e061c9f-59b1-4ea8-9594-a70523819810"
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "Status Message",
+                    "value": "@items('Apply_to_each')?['error']?['message']"
+                  }
+                },
+                "Append_to_string_variable_2": {
+                  "runAfter": {
+                    "Append_to_string_variable_3": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "43972062-e7c6-4731-8a81-5d6f1c0df573"
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "Status Message",
+                    "value": "@items('Apply_to_each')?['outputs']?['body']?['error']?['message']"
+                  }
+                },
+                "Append_to_string_variable_3": {
+                  "runAfter": {
+                    "Append_to_string_variable": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "54455120-15f0-411a-a166-88b055a69109"
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "Status Message",
+                    "value": "@items('Apply_to_each')?['outputs']?['body']?['message']"
+                  }
+                }
+              },
+              "runAfter": {
+                "Set_variable_status": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "42d35ffd-e207-4436-96f7-4354b1d0b902"
+              },
+              "type": "Foreach"
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "12091a34-a842-4723-a69a-9ec94a3e1dcd"
+          },
+          "type": "Scope"
+        },
+        "Initialize_variable_-_Status": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "69d1e973-7b0e-46b0-bae4-7169aa1ea479"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Status",
+                "type": "string",
+                "value": "Success"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_Message": {
+          "runAfter": {
+            "Initialize_variable_-_Status": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b85ecbe4-be59-4ef1-bf5b-1a5d3d1ee24c"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Status Message",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Respond_to_a_PowerApp_or_flow": {
+          "runAfter": {
+            "Catch": [
+              "Succeeded",
+              "Skipped"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b03401e5-70f7-444f-907c-53fb437875e1"
+          },
+          "type": "Response",
+          "kind": "PowerApp",
+          "inputs": {
+            "statusCode": 200,
+            "body": {
+              "status": "@variables('Status')",
+              "statusmessage": "@variables('Status Message')",
+              "solutionhistoryid": "@variables('Activity ID')"
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "title": "Status",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                },
+                "statusmessage": {
+                  "title": "StatusMessage",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                },
+                "solutionhistoryid": {
+                  "title": "SolutionHistoryID",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "Initialize_variable_activity_id": {
+          "runAfter": {
+            "Initialize_variable_-_Message": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "9be2bea1-3d2b-4b4e-9949-2900cfc23a04"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Activity ID",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

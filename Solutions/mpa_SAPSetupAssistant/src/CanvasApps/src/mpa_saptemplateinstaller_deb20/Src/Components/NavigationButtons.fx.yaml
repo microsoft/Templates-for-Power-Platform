@@ -1,0 +1,341 @@
+NavigationButtons As CanvasComponent:
+    Fill: =RGBA(0, 0, 0, 0)
+    Height: =60
+    StepStatus: ="Text"
+    StepValues: |-
+        =Table(
+            {
+                Control: "CheckboxCanvas3_13",
+                Value: "false",
+                Type: 'Data Type (Activity Step Values)'.Boolean
+            },
+            {
+                Control: "RadioGroupCanvas1_1",
+                Value: "1",
+                Type: 'Data Type (Activity Step Values)'.Number
+            }
+        )
+    Width: =640
+    X: =0
+    Y: =0
+    ZIndex: =1
+
+    conNavigationButtons_15 As groupContainer.horizontalAutoLayoutContainer:
+        BorderColor: =RGBA(0, 0, 0, 0)
+        DropShadow: =DropShadow.None
+        Height: =43
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+        LayoutMode: =LayoutMode.Auto
+        Width: =NavigationButtons.Width
+        Y: =17
+        ZIndex: =1
+
+        btnBack_15 As Button:
+            AccessibleLabel: ="Back step"
+            Align: =""
+            Appearance: ='ButtonCanvas.Appearance'.Secondary
+            BasePaletteColor: =
+            BorderColor: =
+            BorderStyle: =""
+            DisplayMode: |-
+                =If(
+                    varDisableControls,
+                    DisplayMode.Disabled,
+                    DisplayMode.Edit
+                )
+            Font: =""
+            FontColor: =
+            FontItalic: =false
+            FontSize: =0
+            FontStrikethrough: =false
+            FontUnderline: =false
+            FontWeight: =""
+            Height: =32
+            Icon: =""
+            IconRotation: =0
+            IconStyle: ="Outline"
+            Layout: ="Icon before"
+            LayoutMinHeight: =32
+            LayoutMinWidth: =96
+            OnSelect: |-
+                =Set(
+                    varNavBack,
+                    true
+                );
+                Select(btnNavigationNext_21)
+            Text: ="<< Back"
+            VerticalAlign: =""
+            Visible: =BackButtonVisible
+            Width: =96
+            X: =0
+            Y: =0
+            ZIndex: =1
+
+        conNavButtonsRight_16 As groupContainer.horizontalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            DropShadow: =DropShadow.None
+            Height: =43
+            LayoutAlignItems: =LayoutAlignItems.Center
+            LayoutGap: =10
+            LayoutJustifyContent: =LayoutJustifyContent.End
+            LayoutMinHeight: =0
+            LayoutMinWidth: =0
+            LayoutMode: =LayoutMode.Auto
+            ZIndex: =2
+
+            btnSkip_13 As Button:
+                AccessibleLabel: ="Skip step"
+                Align: =""
+                Appearance: ='ButtonCanvas.Appearance'.Secondary
+                BasePaletteColor: =
+                BorderColor: =
+                BorderStyle: =""
+                DisplayMode: |-
+                    =If(
+                        varDisableControls,
+                        DisplayMode.Disabled,
+                        DisplayMode.Edit
+                    )
+                Font: =""
+                FontColor: =
+                FontItalic: =false
+                FontSize: =0
+                FontStrikethrough: =false
+                FontUnderline: =false
+                FontWeight: =""
+                Height: =32
+                Icon: =""
+                IconRotation: =0
+                IconStyle: ="Outline"
+                Layout: ="Icon before"
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                OnSelect: |
+                    =Set(
+                        varSkip,
+                        true
+                    );
+                    Select(btnNavigationNext_21)
+                Text: ="Skip"
+                VerticalAlign: =""
+                Visible: =btnNavigationNext_21.Visible
+                Width: =96
+                X: =0
+                Y: =0
+                ZIndex: =1
+
+            btnNavigationNext_21 As Button:
+                AccessibleLabel: ="Next step"
+                Align: =""
+                BasePaletteColor: =
+                BorderColor: =
+                BorderStyle: =""
+                DisplayMode: |-
+                    =If(
+                        varDisableControls,
+                        DisplayMode.Disabled,
+                        DisplayMode.Edit
+                    )
+                Font: =""
+                FontColor: =
+                FontItalic: =false
+                FontSize: =0
+                FontStrikethrough: =false
+                FontUnderline: =false
+                FontWeight: =""
+                Height: =32
+                Icon: =""
+                IconRotation: =0
+                IconStyle: ="Outline"
+                Layout: ="Icon before"
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                OnSelect: |-
+                    =Set(
+                        varDisableControls,
+                        true
+                    );
+                    Concurrent(
+                        Patch(
+                            'Activity Steps',
+                            CurrentActivityStep,
+                            {
+                                'Step Status': Switch(
+                                    NavigationButtons.StepStatus,
+                                    "Completed",
+                                    'Step Status (Activity Steps)'.Completed,
+                                    "Skipped",
+                                    'Step Status (Activity Steps)'.Skipped,
+                                    "Incomplete",
+                                    'Step Status (Activity Steps)'.Incomplete,
+                                    'Step Status (Activity Steps)'.'Not Started'
+                                )
+                            }
+                        ),
+                        ForAll(
+                            NavigationButtons.StepValues As temp,
+                            Patch(
+                                'Activity Step Values',
+                                Coalesce(
+                                    LookUp(
+                                        'Activity Step Values',
+                                        'Control Name' = temp.Control
+                                    ),
+                                    Defaults('Activity Step Values')
+                                ),
+                                {
+                                    'Control Name': temp.Control,
+                                    'Data Type': temp.Type,
+                                    'Activity Step': CurrentActivityStep,
+                                    Value: temp.Value
+                                }
+                            )
+                        )
+                    );
+                    With(
+                        {
+                            _currentSteps: Sort(
+                                Filter(
+                                    'Activity Steps',
+                                    'Stage Activity'.'Stage Activity' = CurrentActivity.'Stage Activity',
+                                    'Step Status' <> 'Step Status (Activity Steps)'.'Not Applicable'
+                                ),
+                                Order
+                            )
+                        },
+                        Set(
+                            varCurrentActivityStepOrder,
+                            If(
+                                varNavBack,
+                                Last(
+                                    Filter(
+                                        _currentSteps,
+                                        Order < CurrentActivityStep.Order
+                                    )
+                                ).Order,
+                                First(
+                                    Filter(
+                                        _currentSteps,
+                                        Order > CurrentActivityStep.Order
+                                    )
+                                ).Order
+                            )
+                        );
+                        
+                    );
+                    Set(
+                        varNavBack,
+                        false
+                    );
+                    Set(
+                        varSkip,
+                        false
+                    );
+                    Set(
+                        varDisableControls,
+                        false
+                    );
+                Text: ="Next >>"
+                VerticalAlign: =""
+                Visible: =NextButtonVisible
+                Width: =96
+                X: =0
+                Y: =0
+                ZIndex: =2
+
+            btnFinish_19 As Button:
+                AccessibleLabel: ="Finish step"
+                Align: =""
+                Appearance: ='ButtonCanvas.Appearance'.Primary
+                BasePaletteColor: =
+                BorderColor: =
+                BorderStyle: =""
+                DisplayMode: =FinishButtonDisplayMode
+                Font: =""
+                FontColor: =
+                FontItalic: =false
+                FontSize: =0
+                FontStrikethrough: =false
+                FontUnderline: =false
+                FontWeight: =""
+                Height: =32
+                Icon: =""
+                IconRotation: =0
+                IconStyle: ="Outline"
+                Layout: ="Icon before"
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                OnSelect: |
+                    =Concurrent(
+                        Patch(
+                            'Stage Activities',
+                            LookUp(
+                                'Stage Activities',
+                                'Stage Activity' = CurrentActivity.'Stage Activity'
+                            ),
+                            {
+                                'Activity Status': 'Activity Status (Stage Activities)'.Completed,
+                                'Completed On': Now()
+                            }
+                        ),
+                        Patch(
+                            'Activity Steps',
+                            CurrentActivityStep,
+                            {'Step Status': 'Step Status (Activity Steps)'.Completed}
+                        );
+                        
+                    );
+                    If(
+                        IsActivityComplete,
+                        Notify(
+                            "Congratulations! You have successfully completed activity '" & CurrentActivity.'Activity Name' & "'.",
+                            NotificationType.Success,
+                            5000
+                        ),
+                        Notify(
+                            "You have completed the '" & CurrentActivity.'Activity Name' & "' activity with one or more steps that have not been fully complete. Not doing so may cause issues later on in the install process.",
+                            NotificationType.Warning,
+                            0
+                        )
+                    );
+                    If(
+                        NextActivityScreen.'Activity Status' = 'Activity Status (Stage Activities)'.'Not Started',
+                        Patch(
+                            'Stage Activities',
+                            LookUp(
+                                'Stage Activities',
+                                'Stage Activity' = NextActivityScreen.'Stage Activity'
+                            ),
+                            {
+                                'Activity Status': 'Activity Status (Stage Activities)'.'In Progress',
+                                'Started On': Now()
+                            }
+                        );
+                        Collect(
+                            colUnlockedStageActivities,
+                            Table({mpa_installprocessactivityid: NextActivityScreen.'Stage Activity'})
+                        );
+                        
+                    );
+                    Navigate(
+                        LookUp(
+                            ScreenMappings,
+                            AppScreen = NextActivityScreen.'Activity Screen'
+                        ).Screen
+                    );
+                Text: ="Finish"
+                VerticalAlign: =""
+                Visible: =!btnNavigationNext_21.Visible
+                Width: =96
+                X: =0
+                Y: =0
+                ZIndex: =3
+
+    recDevider_15 As rectangle:
+        Fill: |-
+            =ColorValue ("#C8C6C4")
+        Height: =1
+        Width: =Parent.Width
+        ZIndex: =2
+

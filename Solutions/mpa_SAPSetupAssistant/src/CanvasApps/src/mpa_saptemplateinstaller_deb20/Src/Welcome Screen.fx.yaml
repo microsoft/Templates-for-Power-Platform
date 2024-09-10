@@ -1,0 +1,206 @@
+"'Welcome Screen' As screen":
+    OnVisible: |-
+        =Set(
+            varAppActiveScreen,
+            App.ActiveScreen
+        );
+        Set(
+            varCurrentActivityStepOrder,
+            1
+        );
+        If(
+            varFirstAppLaunch,
+            With(
+                {
+                    _defaultActivity: LookUp(
+                        colStageActivities,
+                        'Default Activity' = 'Default Activity (Stage Activities)'.Yes
+                    )
+                },
+                Patch(
+                    'Stage Activities',
+                    _defaultActivity,
+                    {
+                        'Activity Status': 'Activity Status (Stage Activities)'.'In Progress',
+                        'Started On': Now()
+                    }
+                );
+                Collect(
+                    colUnlockedStageActivities,
+                    Table({mpa_installprocessactivityid: _defaultActivity.'Stage Activity'})
+                );
+            );
+            Set(
+                varFirstAppLaunch,
+                false
+            )
+        )
+
+    Container6 As groupContainer.horizontalAutoLayoutContainer:
+        DropShadow: =DropShadow.None
+        Height: =Parent.Height
+        LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+        LayoutMode: =LayoutMode.Auto
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =Parent.Width
+        ZIndex: =4
+
+        cmpLeftNav As LeftNavigation:
+            Height: =Parent.Height
+            LayoutMinHeight: =0
+            LayoutMinWidth: =0
+            SetExpandMenu: =App.ActiveScreen.Size <= ScreenSize.Medium
+            Width: =cmpLeftNav.MenuWidth
+
+        conScreenMain As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            DropShadow: =DropShadow.Semibold
+            Fill: =Color.White
+            Height: =Parent.Height
+            LayoutAlignItems: =LayoutAlignItems.Stretch
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutGap: =10
+            LayoutMinHeight: =0
+            LayoutMinWidth: =320 - 3*Self.PaddingLeft
+            LayoutMode: =LayoutMode.Auto
+            PaddingBottom: =20
+            PaddingLeft: |-
+                =Switch(
+                    App.ActiveScreen.Size,
+                    ScreenSize.ExtraLarge,
+                    100,
+                    ScreenSize.Large,
+                    50,
+                    ScreenSize.Medium,
+                    25,
+                    ScreenSize.Small,
+                    12.5,
+                    100
+                )
+            PaddingRight: =Self.PaddingLeft
+            PaddingTop: =20
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Visible: |-
+                =If(
+                    And(
+                        App.ActiveScreen.Size = ScreenSize.Small,
+                        Or(
+                            varExpandHelp,
+                            varExpandMenu
+                        )
+                    ),
+                    false,
+                    true
+                )
+            Width: =cmpHelpAssistant.X-Self.X
+            X: =cmpLeftNav.Width
+            ZIndex: =2
+
+            Header_1 As Header:
+                LayoutMinHeight: =640
+                LayoutMinWidth: =0
+                Width: =0
+
+            recDevider_4 As rectangle:
+                Fill: |-
+                    =ColorValue ("#C8C6C4")
+                Height: =1
+                LayoutMinWidth: =0
+                ZIndex: =2
+
+            Container16 As groupContainer.verticalAutoLayoutContainer:
+                DropShadow: =DropShadow.None
+                LayoutAlignItems: =LayoutAlignItems.Stretch
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutMinHeight: =100
+                LayoutMinWidth: =0
+                LayoutMode: =LayoutMode.Auto
+                LayoutOverflowY: =LayoutOverflow.Scroll
+                Width: =0
+                ZIndex: =3
+
+                HtmlText2 As htmlViewer:
+                    AutoHeight: =true
+                    DisabledBorderColor: =RGBA(56, 56, 56, 1)
+                    Font: =Font.'Segoe UI'
+                    HtmlText: =CurrentActivityStep.Summary
+                    LayoutMinWidth: =0
+                    ZIndex: =3
+
+            NavigationButtons_11 As NavigationButtons:
+                LayoutMinHeight: =640
+                LayoutMinWidth: =0
+                StepStatus: ='Step Status (Activity Steps)'.Completed
+                ZIndex: =4
+
+        "icoConMainScreenExpand As icon.'3DPrinting'":
+            AccessibleLabel: ="Expand step detail"
+            AlignInContainer: =AlignInContainer.Start
+            BorderColor: =RGBA(0,0,0,0)
+            Color: =Color.Black
+            DisabledBorderColor: |-
+                =ColorValue("#A19F9D")
+            DisabledColor: |-
+                =ColorValue("#F3F2F1")
+            DisabledFill: =RGBA(0,0,0,0)
+            DisplayMode: |-
+                =If(
+                    varDisableControls,
+                    DisplayMode.Disabled,
+                    DisplayMode.Edit
+                )
+            Fill: =RGBA(0,0,0,0)
+            FocusedBorderColor: |-
+                =ColorValue("#605E5C")
+            Height: =48
+            HoverBorderColor: =
+            HoverColor: |-
+                =ColorValue("#8A8886")
+            HoverFill: =RGBA(0,0,0,0)
+            Icon: =Icon.ListScrollEmpty
+            OnSelect: |-
+                =Set(
+                    varExpandHelp,
+                    false
+                );
+                Set(
+                    varExpandMenu,
+                    false
+                )
+            PaddingBottom: =10
+            PaddingLeft: =12
+            PaddingRight: =12
+            PaddingTop: =10
+            PressedBorderColor: =
+            PressedColor: |-
+                =ColorValue("#8A8886")
+            PressedFill: =RGBA(0,0,0,0)
+            TabIndex: =0
+            Tooltip: ="Expand step detail"
+            Visible: |-
+                =And(
+                    App.ActiveScreen.Size = ScreenSize.Small,
+                    Or(
+                        varExpandHelp,
+                        varExpandMenu
+                    )
+                )
+            Width: =48
+            X: =Self.FocusedBorderThickness
+            ZIndex: =3
+
+        cmpHelpAssistant As HelpResources:
+            Height: =Parent.Height
+            LayoutMinHeight: =0
+            LayoutMinWidth: =0
+            SetExpandHelp: =App.ActiveScreen.Size <= ScreenSize.Medium
+            Width: =cmpHelpAssistant.HelpResourcesWidth
+            X: =Parent.Width-Self.Width
+            ZIndex: =4
+

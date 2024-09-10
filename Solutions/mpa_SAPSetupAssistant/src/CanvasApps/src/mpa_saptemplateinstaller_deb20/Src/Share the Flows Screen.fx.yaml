@@ -1,0 +1,1012 @@
+"'Share the Flows Screen' As screen":
+    LoadingSpinner: =LoadingSpinner.Data
+    OnVisible: |+
+        =Set(
+            varCurrentActivityStepOrder,
+            1
+        );
+        Set(
+            varAppActiveScreen,
+            App.ActiveScreen
+        );
+        ClearCollect(
+            colShareAppFlows,
+            AddColumns(
+                SAPAppsChosenToDeploy,
+                _Status,
+                "Not Started",
+                _Message,
+                ""
+            )
+        );
+        Set(
+            varDisableControls,
+            false
+        );
+        Reset(CheckboxCanvas5_3);
+        
+
+    Container6_7 As groupContainer.horizontalAutoLayoutContainer:
+        DropShadow: =DropShadow.None
+        Height: =Parent.Height
+        LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+        LayoutMode: =LayoutMode.Auto
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =Parent.Width
+        ZIndex: =4
+
+        cmpLeftNav_12 As LeftNavigation:
+            Height: =Parent.Height-2
+            LayoutMinWidth: =640
+            SetExpandMenu: =App.ActiveScreen.Size <= ScreenSize.Medium
+            Width: =cmpLeftNav_12.MenuWidth
+
+        conScreenMain_12 As groupContainer.verticalAutoLayoutContainer:
+            DropShadow: =DropShadow.Semibold
+            Fill: =Color.White
+            Height: =Parent.Height
+            LayoutAlignItems: =LayoutAlignItems.Stretch
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutGap: =10
+            LayoutMinHeight: =App.MinScreenHeight
+            LayoutMinWidth: =320 - 3*Self.PaddingLeft
+            LayoutMode: =LayoutMode.Auto
+            PaddingBottom: =20
+            PaddingLeft: |-
+                =Switch(
+                    App.ActiveScreen.Size,
+                    ScreenSize.ExtraLarge,
+                    100,
+                    ScreenSize.Large,
+                    50,
+                    ScreenSize.Medium,
+                    25,
+                    ScreenSize.Small,
+                    12.5
+                )
+            PaddingRight: =Self.PaddingLeft
+            PaddingTop: =20
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Visible: |-
+                =If(
+                    And(
+                        App.ActiveScreen.Size = ScreenSize.Small,
+                        Or(
+                            varExpandHelp,
+                            varExpandMenu
+                        )
+                    ),
+                    false,
+                    true
+                )
+            Width: =cmpHelpAssistant_12.X-Self.X
+            X: =cmpLeftNav_12.Width
+            ZIndex: =2
+
+            Header_8 As Header:
+                LayoutMinHeight: =640
+                LayoutMinWidth: =0
+
+            ProgressBar_6 As ProgressBar:
+                LayoutMinHeight: =640
+                LayoutMinWidth: =0
+                ZIndex: =2
+
+            Container1_41 As groupContainer.verticalAutoLayoutContainer:
+                DropShadow: =DropShadow.None
+                LayoutAlignItems: =LayoutAlignItems.Stretch
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutGap: =10
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                LayoutOverflowY: =LayoutOverflow.Scroll
+                Visible: =CurrentActivityStep.'Step Name' = "Overview Flow Sharing"
+                ZIndex: =3
+
+                HtmlText2_21 As htmlViewer:
+                    AutoHeight: =true
+                    DisabledBorderColor: =RGBA(56, 56, 56, 1)
+                    Font: =Font.'Segoe UI'
+                    HtmlText: =CurrentActivityStep.Summary
+                    ZIndex: =4
+
+            Container1_37 As groupContainer.verticalAutoLayoutContainer:
+                DropShadow: =DropShadow.None
+                LayoutAlignItems: =LayoutAlignItems.Stretch
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutGap: =10
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                LayoutOverflowY: =LayoutOverflow.Scroll
+                PaddingLeft: =2
+                PaddingRight: =2
+                Visible: =CurrentActivityStep.'Step Name' = "Assign Run-Only Access"
+                ZIndex: =4
+
+                HtmlText2_22 As htmlViewer:
+                    AutoHeight: =true
+                    DisabledBorderColor: =RGBA(56, 56, 56, 1)
+                    Font: =Font.'Segoe UI'
+                    HtmlText: =CurrentActivityStep.Summary
+                    ZIndex: =1
+
+                ButtonCanvas2_4 As Button:
+                    AccessibleLabel: ="Share the SAP procurement template flows"
+                    Align: =""
+                    AlignInContainer: =AlignInContainer.Start
+                    BasePaletteColor: =
+                    BorderColor: =
+                    BorderStyle: =""
+                    DisplayMode: |-
+                        =If(
+                            varDisableControls,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    FontWeight: =""
+                    Height: =32
+                    Icon: =""
+                    IconRotation: =0
+                    IconStyle: ="Outline"
+                    Layout: ="Icon before"
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    OnSelect: |
+                        =Set(
+                            varDisableControls,
+                            true
+                        );
+                        Clear(colShareAppFlowsNet);
+                        Notify(
+                            "Sharing flows to support deployed apps which can take several minutes. Please do not navigate away from this screen.",
+                            NotificationType.Information,
+                            0
+                        );
+                        UpdateIf(
+                            colShareAppFlows,
+                            !IsBlank(_Status),
+                            {
+                                _Status: "Not Started",
+                                _Message: ""
+                            }
+                        );
+                        //Vendor Management
+                        With(
+                            {
+                                _shareFlowsApp: LookUp(
+                                    colShareAppFlows,
+                                    Name = "Vendor Management"
+                                )
+                            },
+                            If(
+                                !IsBlank(_shareFlowsApp),
+                                Patch(
+                                    colShareAppFlows,
+                                    _shareFlowsApp,
+                                    {_Status: "In Progress"}
+                                );
+                                
+                                UpdateContext(
+                                    {
+                                        _vendorMgmtShareFlowsResponse: InstallTemplateShareFlows.Run(
+                                            JSON(
+                                                Filter(
+                                                    SAPFlowsToShare,
+                                                    _displayName in Filter(
+                                                        FlowMappings,
+                                                        'Vendor Management' = true
+                                                    ).'Flow Name',
+                                                    Not(_displayName in colShareAppFlowsNet._displayName)
+                                                ),
+                                                JSONFormat.IndentFour
+                                            ),
+                                            BAPAPIVersion,
+                                            JSON(
+                                                AddColumns(
+                                                    PowerAppsforAdmins.GetAdminAppRoleAssignment(
+                                                        varCurrentEnvironment.name,
+                                                        _shareFlowsApp.AppDetails.name,
+                                                        {'api-version': BAPAPIVersion}
+                                                    ).value,
+                                                    Role,
+                                                    "CanView",
+                                                    DisplayName,
+                                                    properties.principal.displayName,
+                                                    Type,
+                                                    properties.principal.type,
+                                                    Id,
+                                                    properties.principal.id
+                                                ),
+                                                JSONFormat.IndentFour
+                                            ),
+                                            "[]"
+                                        )
+                                    }
+                                );
+                                Collect(
+                                    colShareAppFlowsNet,
+                                    Filter(
+                                        SAPFlowsToShare,
+                                        _displayName in Filter(
+                                            FlowMappings,
+                                            'Vendor Management' = true
+                                        ).'Flow Name',
+                                        Not(_displayName in colShareAppFlowsNet._displayName)
+                                    )._displayName
+                                );
+                                Patch(
+                                    colShareAppFlows,
+                                    _shareFlowsApp,
+                                    {
+                                        _Status: _vendorMgmtShareFlowsResponse.status,
+                                        _Message: _vendorMgmtShareFlowsResponse.statusmessage
+                                    }
+                                )
+                            )
+                        );
+                        //Purchase Requisitions
+                        With(
+                            {
+                                _shareFlowsApp: LookUp(
+                                    colShareAppFlows,
+                                    Name = "Purchase Requisitions"
+                                )
+                            },
+                            If(
+                                !IsBlank(_shareFlowsApp),
+                                Patch(
+                                    colShareAppFlows,
+                                    _shareFlowsApp,
+                                    {_Status: "In Progress"}
+                                );
+                                
+                                UpdateContext(
+                                    {
+                                        _purchaseRequisitionsShareFlowsResponse: InstallTemplateShareFlows.Run(
+                                            JSON(
+                                                Filter(
+                                                    SAPFlowsToShare,
+                                                    _displayName in Filter(
+                                                        FlowMappings,
+                                                        'Purchase Requisitions' = true
+                                                    ).'Flow Name',
+                                                    Not(_displayName in colShareAppFlowsNet._displayName)
+                                                ),
+                                                JSONFormat.IndentFour
+                                            ),
+                                            BAPAPIVersion,
+                                            JSON(
+                                                AddColumns(
+                                                    PowerAppsforAdmins.GetAdminAppRoleAssignment(
+                                                        varCurrentEnvironment.name,
+                                                        _shareFlowsApp.AppDetails.name,
+                                                        {'api-version': BAPAPIVersion}
+                                                    ).value,
+                                                    Role,
+                                                    "CanView",
+                                                    DisplayName,
+                                                    properties.principal.displayName,
+                                                    Type,
+                                                    properties.principal.type,
+                                                    Id,
+                                                    properties.principal.id
+                                                ),
+                                                JSONFormat.IndentFour
+                                            ),
+                                            "[]"
+                                        )
+                                    }
+                                );
+                                Collect(
+                                    colShareAppFlowsNet,
+                                    Filter(
+                                        SAPFlowsToShare,
+                                        _displayName in Filter(
+                                            FlowMappings,
+                                            'Purchase Requisitions' = true
+                                        ).'Flow Name',
+                                        Not(_displayName in colShareAppFlowsNet._displayName)
+                                    )._displayName
+                                );
+                                Patch(
+                                    colShareAppFlows,
+                                    _shareFlowsApp,
+                                    {
+                                        _Status: _purchaseRequisitionsShareFlowsResponse.status,
+                                        _Message: _purchaseRequisitionsShareFlowsResponse.statusmessage
+                                    }
+                                )
+                            )
+                        );
+                        //Purchase Orders
+                        With(
+                            {
+                                _shareFlowsApp: LookUp(
+                                    colShareAppFlows,
+                                    Name = "Purchase Orders"
+                                )
+                            },
+                            If(
+                                !IsBlank(_shareFlowsApp),
+                                Patch(
+                                    colShareAppFlows,
+                                    _shareFlowsApp,
+                                    {_Status: "In Progress"}
+                                );
+                                
+                                UpdateContext(
+                                    {
+                                        _purchaseOrdersShareFlowsResponse: InstallTemplateShareFlows.Run(
+                                            JSON(
+                                                Filter(
+                                                    SAPFlowsToShare,
+                                                    _displayName in Filter(
+                                                        FlowMappings,
+                                                        'Purchase Orders' = true
+                                                    ).'Flow Name',
+                                                    Not(_displayName in colShareAppFlowsNet._displayName)
+                                                ),
+                                                JSONFormat.IndentFour
+                                            ),
+                                            BAPAPIVersion,
+                                            JSON(
+                                                AddColumns(
+                                                    PowerAppsforAdmins.GetAdminAppRoleAssignment(
+                                                        varCurrentEnvironment.name,
+                                                        _shareFlowsApp.AppDetails.name,
+                                                        {'api-version': BAPAPIVersion}
+                                                    ).value,
+                                                    Role,
+                                                    "CanView",
+                                                    DisplayName,
+                                                    properties.principal.displayName,
+                                                    Type,
+                                                    properties.principal.type,
+                                                    Id,
+                                                    properties.principal.id
+                                                ),
+                                                JSONFormat.IndentFour
+                                            ),
+                                            "[]"
+                                        )
+                                    }
+                                );
+                                Collect(
+                                    colShareAppFlowsNet,
+                                    Filter(
+                                        SAPFlowsToShare,
+                                        _displayName in Filter(
+                                            FlowMappings,
+                                            'Purchase Orders' = true
+                                        ).'Flow Name',
+                                        Not(_displayName in colShareAppFlowsNet._displayName)
+                                    )._displayName
+                                );
+                                Patch(
+                                    colShareAppFlows,
+                                    _shareFlowsApp,
+                                    {
+                                        _Status: _purchaseOrdersShareFlowsResponse.status,
+                                        _Message: _purchaseOrdersShareFlowsResponse.statusmessage
+                                    }
+                                )
+                            )
+                        );
+                        //Goods Receipts
+                        With(
+                            {
+                                _shareFlowsApp: LookUp(
+                                    colShareAppFlows,
+                                    Name = "Goods Receipts"
+                                )
+                            },
+                            If(
+                                !IsBlank(_shareFlowsApp),
+                                Patch(
+                                    colShareAppFlows,
+                                    _shareFlowsApp,
+                                    {_Status: "In Progress"}
+                                );
+                                
+                                UpdateContext(
+                                    {
+                                        _goodsReceiptsShareFlowsResponse: InstallTemplateShareFlows.Run(
+                                            JSON(
+                                                Filter(
+                                                    SAPFlowsToShare,
+                                                    _displayName in Filter(
+                                                        FlowMappings,
+                                                        'Goods Receipts' = true
+                                                    ).'Flow Name',
+                                                    Not(_displayName in colShareAppFlowsNet._displayName)
+                                                ),
+                                                JSONFormat.IndentFour
+                                            ),
+                                            BAPAPIVersion,
+                                            JSON(
+                                                AddColumns(
+                                                    PowerAppsforAdmins.GetAdminAppRoleAssignment(
+                                                        varCurrentEnvironment.name,
+                                                        _shareFlowsApp.AppDetails.name,
+                                                        {'api-version': BAPAPIVersion}
+                                                    ).value,
+                                                    Role,
+                                                    "CanView",
+                                                    DisplayName,
+                                                    properties.principal.displayName,
+                                                    Type,
+                                                    properties.principal.type,
+                                                    Id,
+                                                    properties.principal.id
+                                                ),
+                                                JSONFormat.IndentFour
+                                            ),
+                                            "[]"
+                                        )
+                                    }
+                                );
+                                Collect(
+                                    colShareAppFlowsNet,
+                                    Filter(
+                                        SAPFlowsToShare,
+                                        _displayName in Filter(
+                                            FlowMappings,
+                                            'Goods Receipts' = true
+                                        ).'Flow Name',
+                                        Not(_displayName in colShareAppFlowsNet._displayName)
+                                    )._displayName
+                                );
+                                Patch(
+                                    colShareAppFlows,
+                                    _shareFlowsApp,
+                                    {
+                                        _Status: _goodsReceiptsShareFlowsResponse.status,
+                                        _Message: _goodsReceiptsShareFlowsResponse.statusmessage
+                                    }
+                                )
+                            )
+                        );
+                        //Vendor Invoices
+                        With(
+                            {
+                                _shareFlowsApp: LookUp(
+                                    colShareAppFlows,
+                                    Name = "Vendor Invoices"
+                                )
+                            },
+                            If(
+                                !IsBlank(_shareFlowsApp),
+                                Patch(
+                                    colShareAppFlows,
+                                    _shareFlowsApp,
+                                    {_Status: "In Progress"}
+                                );
+                                
+                                UpdateContext(
+                                    {
+                                        _vendorInvoicesShareFlowsResponse: InstallTemplateShareFlows.Run(
+                                            JSON(
+                                                Filter(
+                                                    SAPFlowsToShare,
+                                                    _displayName in Filter(
+                                                        FlowMappings,
+                                                        'Vendor Invoices' = true
+                                                    ).'Flow Name',
+                                                    Not(_displayName in colShareAppFlowsNet._displayName)
+                                                ),
+                                                JSONFormat.IndentFour
+                                            ),
+                                            BAPAPIVersion,
+                                            JSON(
+                                                AddColumns(
+                                                    PowerAppsforAdmins.GetAdminAppRoleAssignment(
+                                                        varCurrentEnvironment.name,
+                                                        _shareFlowsApp.AppDetails.name,
+                                                        {'api-version': BAPAPIVersion}
+                                                    ).value,
+                                                    Role,
+                                                    "CanView",
+                                                    DisplayName,
+                                                    properties.principal.displayName,
+                                                    Type,
+                                                    properties.principal.type,
+                                                    Id,
+                                                    properties.principal.id
+                                                ),
+                                                JSONFormat.IndentFour
+                                            ),
+                                            "[]"
+                                        )
+                                    }
+                                );
+                                Collect(
+                                    colShareAppFlowsNet,
+                                    Filter(
+                                        SAPFlowsToShare,
+                                        _displayName in Filter(
+                                            FlowMappings,
+                                            'Vendor Invoices' = true
+                                        ).'Flow Name',
+                                        Not(_displayName in colShareAppFlowsNet._displayName)
+                                    )._displayName
+                                );
+                                Patch(
+                                    colShareAppFlows,
+                                    _shareFlowsApp,
+                                    {
+                                        _Status: _vendorInvoicesShareFlowsResponse.status,
+                                        _Message: _vendorInvoicesShareFlowsResponse.statusmessage
+                                    }
+                                )
+                            )
+                        );
+                        //Vendor Payments
+                        With(
+                            {
+                                _shareFlowsApp: LookUp(
+                                    colShareAppFlows,
+                                    Name = "Vendor Payments"
+                                )
+                            },
+                            If(
+                                !IsBlank(_shareFlowsApp),
+                                Patch(
+                                    colShareAppFlows,
+                                    _shareFlowsApp,
+                                    {_Status: "In Progress"}
+                                );
+                                
+                                UpdateContext(
+                                    {
+                                        _vendorPaymentsShareFlowsResponse: InstallTemplateShareFlows.Run(
+                                            JSON(
+                                                Filter(
+                                                    SAPFlowsToShare,
+                                                    _displayName in Filter(
+                                                        FlowMappings,
+                                                        'Vendor Payments' = true
+                                                    ).'Flow Name',
+                                                    Not(_displayName in colShareAppFlowsNet._displayName)
+                                                ),
+                                                JSONFormat.IndentFour
+                                            ),
+                                            BAPAPIVersion,
+                                            JSON(
+                                                AddColumns(
+                                                    PowerAppsforAdmins.GetAdminAppRoleAssignment(
+                                                        varCurrentEnvironment.name,
+                                                        _shareFlowsApp.AppDetails.name,
+                                                        {'api-version': BAPAPIVersion}
+                                                    ).value,
+                                                    Role,
+                                                    "CanView",
+                                                    DisplayName,
+                                                    properties.principal.displayName,
+                                                    Type,
+                                                    properties.principal.type,
+                                                    Id,
+                                                    properties.principal.id
+                                                ),
+                                                JSONFormat.IndentFour
+                                            ),
+                                            "[]"
+                                        )
+                                    }
+                                );
+                                Collect(
+                                    colShareAppFlowsNet,
+                                    Filter(
+                                        SAPFlowsToShare,
+                                        _displayName in Filter(
+                                            FlowMappings,
+                                            'Vendor Payments' = true
+                                        ).'Flow Name',
+                                        Not(_displayName in colShareAppFlowsNet._displayName)
+                                    )._displayName
+                                );
+                                Patch(
+                                    colShareAppFlows,
+                                    _shareFlowsApp,
+                                    {
+                                        _Status: _vendorPaymentsShareFlowsResponse.status,
+                                        _Message: _vendorPaymentsShareFlowsResponse.statusmessage
+                                    }
+                                )
+                            )
+                        );
+                        If(
+                            Or(
+                                _vendorMgmtShareFlowsResponse.status = "Error",
+                                _purchaseRequisitionsShareFlowsResponse.status = "Error",
+                                _purchaseOrdersShareFlowsResponse.status = "Error",
+                                _goodsReceiptsShareFlowsResponse.status = "Error",
+                                _vendorInvoicesShareFlowsResponse.status = "Error",
+                                _vendorPaymentsShareFlowsResponse.status = "Error"
+                            ),
+                            Notify(
+                                "One or more apps failed to have their flows successfully shared. Please see the error details below.",
+                                NotificationType.Error,
+                                0
+                            ),
+                            Notify(
+                                "All apps had their flows shared successfully.",
+                                NotificationType.Success,
+                                5000
+                            );
+                            With(
+                                {_controlName: "CheckboxCanvas5_3"},
+                                Patch(
+                                    'Activity Step Values',
+                                    Coalesce(
+                                        LookUp(
+                                            'Activity Step Values',
+                                            'Control Name' = _controlName
+                                        ),
+                                        Defaults('Activity Step Values')
+                                    ),
+                                    {
+                                        'Control Name': _controlName,
+                                        'Data Type': 'Data Type (Activity Step Values)'.Boolean,
+                                        'Activity Step': CurrentActivityStep,
+                                        Value: "true"
+                                    }
+                                )
+                            );
+                            Reset(CheckboxCanvas5_3)
+                        );
+                        Set(
+                            varDisableControls,
+                            false
+                        );
+                    Text: ="Share flows"
+                    VerticalAlign: =""
+                    Visible: =true
+                    Width: =125
+                    X: =0
+                    Y: =0
+                    ZIndex: =2
+
+                CheckboxCanvas5_3 As Checkbox:
+                    AccessibleLabel: ="SAP Procuremente template flows have been shared with employees using run only user privileges"
+                    BasePaletteColor: =
+                    CheckboxSize: =16
+                    Checked: |-
+                        =With(
+                            {
+                                _stepValue: LookUp(
+                                    'Activity Step Values',
+                                    'Control Name' = "CheckboxCanvas5_3"
+                                ).Value
+                            },
+                            If(
+                                _stepValue = "true",
+                                true,
+                                false
+                            )
+                        )
+                    DisplayMode: |-
+                        =If(
+                            varDisableControls,
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =false
+                    FontStrikethrough: =false
+                    FontUnderline: =false
+                    FontWeight: =""
+                    Height: =40
+                    Label: ="SAP Procurement template flows have been shared with employees using run only user privileges"
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =160
+                    OnCheck: =false
+                    OnUncheck: =false
+                    Width: =160
+                    X: =40
+                    Y: =40
+                    ZIndex: =3
+
+                TextCanvas12 As Text:
+                    BorderColor: =
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Fill: =
+                    FontColor: =
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Text: ="Apps to share flows with"
+                    Weight: ='TextCanvas.Weight'.Semibold
+                    Width: =96
+                    X: =0
+                    Y: =0
+                    ZIndex: =4
+
+                Gallery1 As gallery.variableTemplateHeightGallery:
+                    '#CopilotOverlayLabel': ="Filtered"
+                    AccessibleLabel: ="List of apps to share flows"
+                    DelayItemLoading: =true
+                    FocusedBorderThickness: =2
+                    ItemAccessibleLabel: =ThisItem.Name
+                    Items: =colShareAppFlows
+                    Layout: =Layout.Vertical
+                    LayoutMinHeight: =287
+                    LayoutMinWidth: =320
+                    LoadingSpinner: =LoadingSpinner.Data
+                    TabIndex: =0
+                    TemplateSize: =280
+                    ZIndex: =5
+
+                    TextCanvas2_1 As Text:
+                        AutoHeight: =true
+                        BorderColor: =
+                        BorderStyle: =""
+                        DisplayMode: =DisplayMode.Edit
+                        Fill: =
+                        FontColor: =
+                        FontItalic: =true
+                        Height: =32
+                        Size: =12
+                        Text: =ThisItem._Message
+                        VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                        Weight: ='TextCanvas.Weight'.Medium
+                        Width: =Parent.TemplateWidth
+                        X: =0
+                        Y: =TextCanvas2_2.Height+TextCanvas2_2.Y
+                        ZIndex: =1
+
+                    Spinner4 As Spinner:
+                        AccessibleLabel: ="Processing"
+                        BasePaletteColor: =
+                        DisplayMode: =DisplayMode.Edit
+                        FontColor: =
+                        Height: =Icon2_13.Height
+                        SpinnerColor: =
+                        SpinnerSize: ='Spinner.SpinnerSize'.Tiny
+                        TrackColor: =
+                        Visible: =ThisItem._Status = "In Progress"
+                        Width: =Self.Height
+                        X: =Icon2_13.X
+                        Y: =Icon2_13.Y
+                        ZIndex: =2
+
+                    Icon2_13 As icon.CheckBadge:
+                        AccessibleLabel: =ThisItem._Status
+                        Color: |-
+                            =Switch(
+                                ThisItem._Status,
+                                "Success",
+                                RGBA(
+                                    54,
+                                    176,
+                                    75,
+                                    1
+                                ),
+                                "Error",
+                                RGBA(
+                                    255,
+                                    0,
+                                    0,
+                                    1
+                                ),
+                                "Not Started",
+                                RGBA(
+                                    0,
+                                    0,
+                                    0,
+                                    1
+                                )
+                            )
+                        Height: =22
+                        Icon: |-
+                            =Switch(
+                                ThisItem._Status,
+                                "Success",
+                                Icon.CheckBadge,
+                                "Error",
+                                Icon.CancelBadge,
+                                "Not Started",
+                                Icon.Clock
+                            )
+                        OnSelect: =Select(Parent)
+                        TabIndex: =0
+                        Tooltip: =Self.AccessibleLabel
+                        Visible: =ThisItem._Status <> "In Progress"
+                        Width: =Self.Height
+                        X: =Parent.TemplateWidth-Self.Width-10
+                        Y: =(TextCanvas2_2.Y+TextCanvas2_2.Height-Self.Height)/2
+                        ZIndex: =3
+
+                    TextCanvas2_2 As Text:
+                        BorderColor: =
+                        BorderStyle: =""
+                        DisplayMode: =DisplayMode.Edit
+                        Fill: =
+                        FontColor: =
+                        Height: =25
+                        Size: =12
+                        Text: |-
+                            =CountRows(
+                                Filter(
+                                    FlowMappings,
+                                    Switch(
+                                        ThisItem.Name,
+                                        "Vendor Management",
+                                        'Vendor Management' = true,
+                                        "Purchase Requisitions",
+                                        'Purchase Requisitions' = true,
+                                        "Purchase Orders",
+                                        'Purchase Orders' = true,
+                                        "Goods Receipts",
+                                        'Goods Receipts' = true,
+                                        "Vendor Invoices",
+                                        'Vendor Invoices' = true,
+                                        "Vendor Payments",
+                                        'Vendor Payments' = true
+                                    )
+                                )
+                            ) & " flows to share"
+                        VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                        Weight: ='TextCanvas.Weight'.Regular
+                        Width: =Parent.TemplateWidth-(Parent.TemplateWidth-Icon2_13.X)
+                        X: =0
+                        Y: =TextCanvas2.Height
+                        ZIndex: =4
+
+                    TextCanvas2 As Text:
+                        BorderColor: =
+                        BorderStyle: =""
+                        DisplayMode: =DisplayMode.Edit
+                        Fill: =
+                        FontColor: =
+                        Height: =25
+                        Text: =ThisItem.Name
+                        VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                        Weight: ='TextCanvas.Weight'.Semibold
+                        Width: =Parent.TemplateWidth-(Parent.TemplateWidth-Icon2_13.X)
+                        X: =0
+                        Y: =1
+                        ZIndex: =5
+
+                    Rectangle2 As rectangle:
+                        Fill: =RGBA(214, 221, 224, 1)
+                        Height: =1
+                        OnSelect: =Select(Parent)
+                        Width: =Parent.TemplateWidth
+                        ZIndex: =6
+
+            Container1_40 As groupContainer.verticalAutoLayoutContainer:
+                DropShadow: =DropShadow.None
+                LayoutAlignItems: =LayoutAlignItems.Stretch
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutGap: =10
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                LayoutOverflowY: =LayoutOverflow.Scroll
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Visible: =CurrentActivityStep.'Step Name' = "Review"
+                ZIndex: =6
+
+                ReviewCompletionSteps_8 As ReviewCompletionSteps:
+                    FillPortions: =1
+                    Height: =Parent.Height
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =100
+                    Width: =Parent.Width
+                    ZIndex: =3
+
+            NavigationButtons_4 As NavigationButtons:
+                LayoutMinHeight: =640
+                LayoutMinWidth: =0
+                StepStatus: |-
+                    =If(
+                        varSkip,
+                        'Step Status (Activity Steps)'.Skipped,
+                        Switch(
+                            true,
+                            Container1_41.Visible,
+                            'Step Status (Activity Steps)'.Completed,
+                            Container1_37.Visible,
+                            If(
+                                CheckboxCanvas5_3.Checked = true,
+                                'Step Status (Activity Steps)'.Completed,
+                                'Step Status (Activity Steps)'.Incomplete
+                            )
+                        )
+                    )
+                StepValues: |-
+                    =Switch(
+                        true,
+                        Container1_37.Visible,
+                        Table(
+                            {
+                                Control: "CheckboxCanvas5_3",
+                                Value: Text(CheckboxCanvas5_3.Checked),
+                                Type: 'Data Type (Activity Step Values)'.Boolean
+                            }
+                        )
+                    )
+                ZIndex: =7
+
+        "icoConMainScreenExpand_7 As icon.'3DPrinting'":
+            AccessibleLabel: ="Expand step detail"
+            AlignInContainer: =AlignInContainer.Start
+            BorderColor: =RGBA(0,0,0,0)
+            Color: =Color.Black
+            DisabledBorderColor: |-
+                =ColorValue("#A19F9D")
+            DisabledColor: |-
+                =ColorValue("#F3F2F1")
+            DisabledFill: =RGBA(0,0,0,0)
+            DisplayMode: |-
+                =If(
+                    varDisableControls,
+                    DisplayMode.Disabled,
+                    DisplayMode.Edit
+                )
+            Fill: =RGBA(0,0,0,0)
+            FocusedBorderColor: |-
+                =ColorValue("#605E5C")
+            Height: =48
+            HoverBorderColor: =
+            HoverColor: |-
+                =ColorValue("#8A8886")
+            HoverFill: =RGBA(0,0,0,0)
+            Icon: =Icon.ListScrollEmpty
+            OnSelect: |-
+                =Set(
+                    varExpandHelp,
+                    false
+                );
+                Set(
+                    varExpandMenu,
+                    false
+                )
+            PaddingBottom: =10
+            PaddingLeft: =12
+            PaddingRight: =12
+            PaddingTop: =10
+            PressedBorderColor: =
+            PressedColor: |-
+                =ColorValue("#8A8886")
+            PressedFill: =RGBA(0,0,0,0)
+            TabIndex: =0
+            Tooltip: ="Expand step detail"
+            Visible: |-
+                =And(
+                    App.ActiveScreen.Size = ScreenSize.Small,
+                    Or(
+                        varExpandHelp,
+                        varExpandMenu
+                    )
+                )
+            Width: =48
+            X: =Self.FocusedBorderThickness
+            ZIndex: =3
+
+        cmpHelpAssistant_12 As HelpResources:
+            Height: =Parent.Height
+            LayoutMinWidth: =640
+            SetExpandHelp: =App.ActiveScreen.Size <= ScreenSize.Medium
+            Width: =cmpHelpAssistant_12.HelpResourcesWidth
+            X: =Parent.Width-Self.Width
+            ZIndex: =4
+
