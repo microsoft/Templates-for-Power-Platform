@@ -22,7 +22,7 @@ $job = Start-Job -ScriptBlock {
     Test-NetConnection -ComputerName $hostName -Port $port
 } -ArgumentList $hostName, $port
 
-if (Wait-Job -Job $job -Timeout 10) {
+if (Wait-Job -Job $job -Timeout 15) {
     $result = Receive-Job -Job $job
 
     if ($result.TcpTestSucceeded) {
@@ -33,7 +33,7 @@ if (Wait-Job -Job $job -Timeout 10) {
     }
 }
 else {
-    Write-Host -NoNewLine "[{'step': 'CheckNetworkConnection', 'status': 'Error', 'message': 'The connection to $hostName over port $port timed out after 5 seconds.'}]"
+    Write-Host -NoNewLine "[{'step': 'CheckNetworkConnection', 'status': 'Error', 'message': 'The connection to $hostName over port $port timed out after 15 seconds.'}]"
 }
 
 Remove-Job -Force -Job $job
