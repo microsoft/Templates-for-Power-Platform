@@ -1,0 +1,157 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRecognizedIntent
+  id: main
+  intent:
+    triggerQueries:
+      - See recognitions I've submitted
+      - See my submitted recognitions
+      - recognitions I've submitted
+      - submitted recognitions
+      - recognitions submitted
+      - See my nominations
+
+  actions:
+    - kind: InvokeConnectorAction
+      id: invokeConnectorAction_mqNOgR
+      input:
+        binding:
+          $expand: mpa_NominationPeriod($select=mpa_name),mpa_Award($select=mpa_name,mpa_description)
+          $filter: "=\"_mpa_submittedbyid_value eq '\" & Global.UserId & \"'\""
+          $orderby: createdon desc
+          $top: 10
+          entityName: mpa_nominations
+          organization: current
+
+      output:
+        binding:
+          value: Topic.value
+
+      connectionReference: mpa_awardsAndRecognition.cr.0A-LiI5Z
+      connectionProperties:
+        mode: Invoker
+
+      operationId: ListRecordsWithOrganization
+      dynamicOutputSchema:
+        kind: Record
+        properties:
+          @odata.nextLink:
+            displayName: Next link
+            description: The url to fetch next page data.
+            visibility: Advanced
+            order: 1
+            type: String
+
+          value:
+            order: 0
+            type:
+              kind: Table
+              properties:
+                dynamicProperties:
+                  order: 0
+                  type: Any
+
+    - kind: ConditionGroup
+      id: conditionGroup_eBrvR7
+      conditions:
+        - id: conditionItem_59tdMl
+          condition: =!IsEmpty(Topic.value)
+          actions:
+            - kind: SendActivity
+              id: sendActivity_EoYX6v
+              activity: Sure, I can help you with that. Please see the recognitions you've submitted from the list below.
+
+            - kind: ParseValue
+              id: 9nRvng
+              variable: Global.Nominations
+              valueType:
+                kind: Table
+                properties:
+                  _createdby_value: String
+                  _createdonbehalfby_value: Blank
+                  _modifiedby_value: String
+                  _modifiedonbehalfby_value: Blank
+                  _mpa_award_value: String
+                  _mpa_groupid_value: Blank
+                  _mpa_nominationperiod_value: String
+                  _mpa_nomineeid_value: String
+                  _mpa_reviewedbyid_value: Blank
+                  _mpa_submittedbyid_value: String
+                  _ownerid_value: String
+                  _owningbusinessunit_value: String
+                  _owningteam_value: Blank
+                  _owninguser_value: String
+                  @odata.etag: String
+                  createdon: String
+                  importsequencenumber: Blank
+                  modifiedon: String
+                  mpa_Award:
+                    type:
+                      kind: Record
+                      properties:
+                        mpa_awardid: String
+                        mpa_description: String
+                        mpa_name: String
+
+                  mpa_name: String
+                  mpa_nominationid: String
+                  mpa_NominationPeriod:
+                    type:
+                      kind: Record
+                      properties:
+                        mpa_name: String
+                        mpa_nominationperiodid: String
+
+                  mpa_nomineename: String
+                  mpa_rationale: String
+                  mpa_reviewedon: Blank
+                  mpa_reviewnotes: Blank
+                  mpa_searchterms: String
+                  mpa_submittedbyname: String
+                  mpa_type: Number
+                  overriddencreatedon: Blank
+                  statecode: Number
+                  statuscode: Number
+                  timezoneruleversionnumber: Blank
+                  utcconversiontimezonecode: Blank
+                  versionnumber: Number
+
+              value: "=\"[]\""
+
+            - kind: SetVariable
+              id: Xmwr8T
+              variable: Global.Nominations
+              value: =Topic.value
+
+            - kind: BeginDialog
+              id: 0XgoZj
+              input: {}
+              dialog: mpa_awardsAndRecognition.topic.Function-RetrieveRecognitionInfo
+              output: {}
+
+            - kind: SendActivity
+              id: GPclWW
+              activity: |-
+                {Concat(
+                    ForAll(
+                        Global.Nominations,
+                        Concatenate(
+                            Char(13), "Award: ", ThisRecord.mpa_Award.mpa_name, Char(13),
+                            "- ", "Nominees: ", If(ThisRecord.mpa_type = 865420002, LookUp(Global.GroupMap, mpa_nominationid = ThisRecord.id).nominees, LookUp(Global.NomineeMap, mpa_nominationid = ThisRecord.id).nominees), Char(13),
+                            "- ", "Description: ", ThisRecord.mpa_Award.mpa_description, Char(13),
+                            "- ", "Nomination Period: ", ThisRecord.mpa_NominationPeriod.mpa_name, Char(13),
+                            "- ", "Rationale: ", ThisRecord.mpa_rationale, Char(13),
+                            "- ", "Submitted On: ", Text(DateValue(ThisRecord.createdon), DateTimeFormat.LongDate), Char(13)
+                        ) As Value
+                        ),
+                    Value
+                )}
+
+      elseActions:
+        - kind: SendActivity
+          id: sendActivity_ZmTbj1
+          activity: You do not have any submitted recognitions.
+
+    - kind: BeginDialog
+      id: qjKAx0
+      dialog: mpa_awardsAndRecognition.topic.Anythingelse

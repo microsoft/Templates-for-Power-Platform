@@ -1,0 +1,169 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRedirect
+  id: main
+  actions:
+    - kind: InvokeConnectorAction
+      id: invokeConnectorAction_YFKbDw
+      input:
+        binding:
+          entityName: mpa_awards
+          fetchXml: "=\"<fetch version='1.0' output-format='xml-platform' mapping='logical' distinct='true'> <entity name='mpa_award'> <attribute name='mpa_awardid' /> <attribute name='mpa_name' /> <attribute name='createdon' /> <attribute name='mpa_description' /> <attribute name='mpa_availabletosingleindividuals' /> <attribute name='mpa_availabletouserdefinedgroups' /> <attribute name='mpa_availabletopredefinedgroups' /> <order attribute='mpa_name' descending='false' /> <link-entity name='mpa_nominationperiod_mpa_award' from='mpa_awardid' to='mpa_awardid' visible='false' intersect='true'> <link-entity name='mpa_nominationperiod' from='mpa_nominationperiodid' to='mpa_nominationperiodid' alias='ab'> <filter type='and'> <condition attribute='mpa_nominationperiodid' operator='eq' value='\" & Global.NominationPeriod & \"' /> </filter> </link-entity> </link-entity> </entity> </fetch>\""
+          organization: current
+
+      output:
+        binding:
+          value: Topic.awards
+
+      connectionReference: mpa_awardsAndRecognition.cr.0A-LiI5Z
+      connectionProperties:
+        mode: Invoker
+
+      operationId: ListRecordsWithOrganization
+      dynamicOutputSchema:
+        kind: Record
+        properties:
+          @odata.nextLink:
+            displayName: Next link
+            description: The url to fetch next page data.
+            visibility: Advanced
+            order: 1
+            type: String
+
+          value:
+            order: 0
+            type:
+              kind: Table
+              properties:
+                dynamicProperties:
+                  order: 0
+                  type: Any
+
+    - kind: ParseValue
+      id: ntnrj8
+      variable: Topic.ParsedRequest
+      valueType:
+        kind: Table
+        properties:
+          mpa_availabletopredefinedgroups: String
+          mpa_availabletosingleindividuals: String
+          mpa_availabletouserdefinedgroups: String
+          mpa_awardid: String
+          mpa_description: String
+          mpa_name: String
+
+      value: "=\"[]\""
+
+    - kind: SetVariable
+      id: setVariable_4Mg6H5
+      variable: Topic.ParsedRequest
+      value: =Topic.awards
+
+    - kind: SetVariable
+      id: setVariable_HOHCdY
+      variable: Topic.Awards
+      value: "=ForAll(Topic.ParsedRequest, { mpa_name: mpa_name, mpa_awardid: mpa_awardid, mpa_availabletosingleindividuals: mpa_availabletosingleindividuals, mpa_availabletouserdefinedgroups: mpa_availabletouserdefinedgroups, mpa_availabletopredefinedgroups: mpa_availabletopredefinedgroups })"
+
+    - kind: AdaptiveCardPrompt
+      id: fQ6HOI
+      card: |-
+        ={
+                type: "AdaptiveCard",
+                version: "1.5",
+                body: [
+                    {
+                        type: "TextBlock",
+                        text: "Select an award",
+                        weight: "bolder",
+                        size: "medium"
+                    },
+        	        {
+                    	type: "TextBlock",
+                    	text: "Please select the award you want to nominate for in this period.",
+                        wrap: true
+                    },
+                    {
+                        type: "Input.ChoiceSet",
+                        isRequired: true,
+                        errorMessage: "Award is required",
+                        label: "Award",
+                        id: "selectedAward",
+                        style: "compact",
+                        isMultiSelect: false,
+                        choices: ForAll(
+                            Topic.Awards,
+                            {
+                                title: mpa_name,
+                                value: mpa_awardid
+                            }
+                        )
+                    }
+                ],
+                actions: [
+                    {
+                        type: "Action.Submit",
+                        title: "Select",
+                        id: "SelectId"
+                    },
+                    {
+                        type: "Action.Submit",
+                        title: "Cancel",
+                        id: "CancelId",
+                        associatedInputs: "none"
+                    }
+                ],
+                '$schema': "http://adaptivecards.io/schemas/adaptive-card.json"
+            }
+      output:
+        binding:
+          actionSubmitId: Topic.actionSubmitId
+          selectedAward: Topic.selectedAward
+
+      outputType:
+        properties:
+          actionSubmitId: String
+          selectedAward: String
+
+    - kind: SetVariable
+      id: setVariable_F4ujov
+      variable: Global.ActionId
+      value: =Topic.actionSubmitId
+
+    - kind: BeginDialog
+      id: d0811y
+      dialog: mpa_awardsAndRecognition.topic.ConfirmorCancel
+
+    - kind: ConditionGroup
+      id: conditionGroup_TJaXDP
+      conditions:
+        - id: conditionItem_nh9S71
+          condition: =Global.ActionId = "Select"
+
+      elseActions:
+        - kind: GotoAction
+          id: 19Z8jL
+          actionId: fQ6HOI
+
+        - kind: EndDialog
+          id: 8btpOg
+
+    - kind: SetVariable
+      id: setVariable_as3gyM
+      variable: Global.AwardId
+      value: =Topic.selectedAward
+
+    - kind: SetVariable
+      id: setVariable_qjY7yz
+      variable: Topic.AwardTitleLookup
+      value: |-
+        ={
+            title: LookUp(Topic.Awards, mpa_awardid = Topic.selectedAward).mpa_name
+        }
+
+    - kind: SetVariable
+      id: setVariable_ct918D
+      variable: Global.AwardTitle
+      value: =Topic.AwardTitleLookup.title
+
+    - kind: EndDialog
+      id: IUFWoG

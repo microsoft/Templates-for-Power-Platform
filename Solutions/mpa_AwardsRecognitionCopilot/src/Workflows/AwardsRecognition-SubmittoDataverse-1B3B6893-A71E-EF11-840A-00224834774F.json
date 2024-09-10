@@ -1,0 +1,649 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_awardsAndRecognition.cr.0A-LiI5Z"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "d167b886-9cd9-4406-b568-df994075acd7"
+          },
+          "type": "Request",
+          "kind": "Skills",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "awardId",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "text_1": {
+                  "title": "nominationPeriodId",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "text_2": {
+                  "title": "nominees",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "text_3": {
+                  "title": "nomineeType",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "text_4": {
+                  "title": "rationale",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "text_5": {
+                  "title": "userId",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "text_6": {
+                  "title": "awardRatings",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "text_7": {
+                  "title": "nomineeNames",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "text_8": {
+                  "title": "timezone",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text",
+                "text_1",
+                "text_2",
+                "text_3",
+                "text_4",
+                "text_5",
+                "text_6",
+                "text_7",
+                "text_8"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Scope": {
+          "actions": {
+            "Convert_time_zone": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "99fc1838-3213-4980-8a0b-4e8a093270f0"
+              },
+              "type": "Expression",
+              "kind": "ConvertTimeZone",
+              "inputs": {
+                "baseTime": "@{utcNow()}",
+                "formatString": "@{'MM/dd/yyyy hh:mm:ss'}",
+                "sourceTimeZone": "UTC",
+                "destinationTimeZone": "@triggerBody()['text_8']"
+              }
+            },
+            "Compose_Nomination_Type": {
+              "runAfter": {
+                "Convert_time_zone": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "b2d02d17-fa3c-4878-92d6-deef7d28f24c"
+              },
+              "type": "Compose",
+              "inputs": "@if(equals(triggerBody()['text_3'], 'team'), 'Team', if(equals(triggerBody()['text_3'], 'multiple'), 'People', 'Person'))"
+            },
+            "Get_Award_by_ID": {
+              "runAfter": {
+                "Compose_Nomination_Type": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6e769cde-4c1d-43c8-91be-50fc3f080b7d"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_awards",
+                  "recordId": "@triggerBody()['text']",
+                  "$select": "mpa_name"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Compose_Award_Name": {
+              "runAfter": {
+                "Get_Award_by_ID": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "0be9cd50-53f9-423a-aa4f-15a5fa281477"
+              },
+              "type": "Compose",
+              "inputs": "@{outputs('Compose_Nomination_Type')}-@{outputs('Get_Award_by_ID')?['body/mpa_name']}-@{body('Convert_time_zone')}"
+            },
+            "Team_Type": {
+              "actions": {
+                "List_Group_Members_-_Names": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "835abbb1-f3da-4c7d-b54c-6e3447ee694b"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "ListRecords",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_groupmembers",
+                      "$select": "mpa_memberid",
+                      "$filter": "_mpa_groupid_value eq '@{triggerBody()['text_2']}'",
+                      "$expand": "mpa_memberid($select=fullname),mpa_groupid($select=mpa_name)"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Set_searchText_variable": {
+                  "runAfter": {
+                    "Select": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "42bdc347-a44d-44ab-a1c4-5aafd514f333"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "searchText",
+                    "value": "@{outputs('Compose_Nomination_Type')} @{first(outputs('List_Group_Members_-_Names')?['body/value'])?['mpa_groupid']?['mpa_namea']}@{join(body('Select'), ' ')}"
+                  }
+                },
+                "Select": {
+                  "runAfter": {
+                    "List_Group_Members_-_Names": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "8910c7bf-cc71-490f-9d67-1395ee8c55c9"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@outputs('List_Group_Members_-_Names')?['body/value']",
+                    "select": "@item()?['mpa_memberid']?['fullname']"
+                  }
+                }
+              },
+              "runAfter": {
+                "Compose_Award_Name": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "equals": [
+                  "@triggerBody()['text_3']",
+                  "team"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "c8c1144f-e0a0-4baa-b20c-427c75838829"
+              },
+              "type": "If"
+            },
+            "Add_a_new_nomination_row": {
+              "runAfter": {
+                "Team_Type": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "a71cf136-07d5-494e-a15c-494ebb468edd"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "CreateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_nominations",
+                  "item/mpa_Award@odata.bind": "/mpa_awards(@{triggerBody()['text']})",
+                  "item/mpa_name": "@outputs('Compose_Award_Name')",
+                  "item/mpa_NominationPeriod@odata.bind": "/mpa_nominationperiods(@{triggerBody()['text_1']})",
+                  "item/mpa_submittedbyid@odata.bind": "/systemusers(@{triggerBody()['text_5']})",
+                  "item/mpa_type": "@if(equals(triggerBody()['text_3'], 'team'), 865420002, if(equals(triggerBody()['text_3'], 'multiple'), 865420001, 865420000))",
+                  "item/mpa_groupid@odata.bind": "@if(equals(triggerBody()['text_3'], 'team'), concat('/mpa_groups(', triggerBody()['text_2'], ')'), null)",
+                  "item/mpa_nomineeid@odata.bind": "@if(equals(triggerBody()['text_3'], 'single'), concat('/systemusers(', triggerBody()['text_2'], ')'), null)",
+                  "item/mpa_rationale": "@triggerBody()['text_4']",
+                  "item/mpa_searchterms": "@variables('searchText')"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Switch": {
+              "runAfter": {
+                "Add_a_new_nomination_row": [
+                  "Succeeded"
+                ]
+              },
+              "cases": {
+                "Single_Case": {
+                  "case": "single",
+                  "actions": {
+                    "Add_a_new_nominated_users_row": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "a03f196f-fb73-4600-b76c-d699147289d7"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps_1",
+                          "operationId": "CreateRecord",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "mpa_nominatedusers",
+                          "item/mpa_name": "@null",
+                          "item/mpa_Award@odata.bind": "/mpa_awards(@{triggerBody()['text']})",
+                          "item/mpa_nomination@odata.bind": "@outputs('Add_a_new_nomination_row')?['body/@odata.id']",
+                          "item/mpa_NominationPeriod@odata.bind": "/mpa_nominationperiods(@{triggerBody()['text_1']})",
+                          "item/mpa_SubmittedBy@odata.bind": "/systemusers(@{triggerBody()['text_5']})",
+                          "item/mpa_SystemUser@odata.bind": "/systemusers(@{triggerBody()['text_2']})"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    }
+                  }
+                },
+                "Multiple_Case": {
+                  "case": "multiple",
+                  "actions": {
+                    "Compose_User_Ids": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "f398264a-287d-43d8-9818-ce698dbf7c82"
+                      },
+                      "type": "Compose",
+                      "inputs": "@split(triggerBody()['text_2'], ',')"
+                    },
+                    "Apply_to_each_-_Multiple": {
+                      "foreach": "@outputs('Compose_User_Ids')",
+                      "actions": {
+                        "Add_a_new_nominated_users_row_multiple": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "a03f196f-fb73-4600-b76c-d699147289d7"
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_commondataserviceforapps_1",
+                              "operationId": "CreateRecord",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                            },
+                            "parameters": {
+                              "entityName": "mpa_nominatedusers",
+                              "item/mpa_name": "@null",
+                              "item/mpa_Award@odata.bind": "/mpa_awards(@{triggerBody()['text']})",
+                              "item/mpa_nomination@odata.bind": "@outputs('Add_a_new_nomination_row')?['body/@odata.id']",
+                              "item/mpa_NominationPeriod@odata.bind": "/mpa_nominationperiods(@{triggerBody()['text_1']})",
+                              "item/mpa_SubmittedBy@odata.bind": "/systemusers(@{triggerBody()['text_5']})",
+                              "item/mpa_SystemUser@odata.bind": "/systemusers(@{items('Apply_to_each_-_Multiple')})"
+                            },
+                            "authentication": "@parameters('$authentication')"
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "Compose_User_Ids": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "94364a68-ec33-4bb1-9d18-054564d664f4"
+                      },
+                      "type": "Foreach"
+                    }
+                  }
+                },
+                "Team_Case": {
+                  "case": "team",
+                  "actions": {
+                    "List_Group_Members": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "835abbb1-f3da-4c7d-b54c-6e3447ee694b"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps_1",
+                          "operationId": "ListRecords",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "mpa_groupmembers",
+                          "$select": "mpa_memberid",
+                          "$filter": "_mpa_groupid_value eq '@{triggerBody()['text_2']}'"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Apply_to_each_-_Team": {
+                      "foreach": "@outputs('List_Group_Members')?['body/value']",
+                      "actions": {
+                        "Add_a_new_nominated_users_row_team": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "dfe8b63b-113b-4d69-8b8d-4694f233a41b"
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_commondataserviceforapps_1",
+                              "operationId": "CreateRecord",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                            },
+                            "parameters": {
+                              "entityName": "mpa_nominatedusers",
+                              "item/mpa_name": "@null",
+                              "item/mpa_Award@odata.bind": "/mpa_awards(@{triggerBody()['text']})",
+                              "item/mpa_group@odata.bind": "/mpa_groups(@{triggerBody()['text_2']})",
+                              "item/mpa_nomination@odata.bind": "@outputs('Add_a_new_nomination_row')?['body/@odata.id']",
+                              "item/mpa_NominationPeriod@odata.bind": "/mpa_nominationperiods(@{triggerBody()['text_1']})",
+                              "item/mpa_SubmittedBy@odata.bind": "/systemusers(@{triggerBody()['text_5']})",
+                              "item/mpa_SystemUser@odata.bind": "/systemusers(@{items('Apply_to_each_-_Team')?['_mpa_memberid_value']})"
+                            },
+                            "authentication": "@parameters('$authentication')"
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "List_Group_Members": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "b0d4e3a2-4949-4872-9289-925260b232a6"
+                      },
+                      "type": "Foreach"
+                    }
+                  }
+                }
+              },
+              "default": {
+                "actions": {}
+              },
+              "expression": "@triggerBody()['text_3']",
+              "metadata": {
+                "operationMetadataId": "0235360d-db30-480a-aff3-dc5e4bbda14b"
+              },
+              "type": "Switch"
+            },
+            "Parse_Award_Ratings_JSON": {
+              "runAfter": {
+                "Switch": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "8857d2e5-77c4-4c1e-87a5-2b398b7d4292"
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@triggerBody()['text_6']",
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "AwardRatingId": {
+                        "type": "string"
+                      },
+                      "Value": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "AwardRatingId",
+                      "Value"
+                    ]
+                  }
+                }
+              }
+            },
+            "Apply_to_each_-_Ratings": {
+              "foreach": "@body('Parse_Award_Ratings_JSON')",
+              "actions": {
+                "Add_a_new_row_-_Rating": {
+                  "runAfter": {
+                    "Compose_Name": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "7834f10d-67a1-4682-98d3-3802db870a3c"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "CreateRecord",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_nominationratings",
+                      "item/mpa_name": "@outputs('Compose_Name')",
+                      "item/mpa_AwardAssessmentRatings@odata.bind": "/mpa_awardassessmentratingses(@{items('Apply_to_each_-_Ratings')['AwardRatingId']})",
+                      "item/mpa_nomination@odata.bind": "@outputs('Add_a_new_nomination_row')?['body/@odata.id']",
+                      "item/mpa_rating": "@int(items('Apply_to_each_-_Ratings')['Value'])"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Get_Award_Rating_by_ID": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "d7b556c8-80dc-4cca-a7e4-d22ac0293a00"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "GetItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_awardassessmentratingses",
+                      "recordId": "@items('Apply_to_each_-_Ratings')['AwardRatingId']",
+                      "$select": "mpa_name"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Compose_Name": {
+                  "runAfter": {
+                    "Get_Award_Rating_by_ID": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "ec338488-af9e-4762-9028-c23cb301db99"
+                  },
+                  "type": "Compose",
+                  "inputs": "@{outputs('Get_Award_Rating_by_ID')?['body/mpa_name']} - @{items('Apply_to_each_-_Ratings')['Value']}"
+                }
+              },
+              "runAfter": {
+                "Parse_Award_Ratings_JSON": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6c9a0bcd-03a8-4ca1-8286-745c5922802d"
+              },
+              "type": "Foreach"
+            }
+          },
+          "runAfter": {
+            "Initialize_searchText_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "45e7329f-30b8-446f-8ee1-9d35e801ed06"
+          },
+          "type": "Scope"
+        },
+        "Initialize_searchText_variable": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "1ae32a6c-0478-4750-a6d5-3a01f62e07c1"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "searchText",
+                "type": "string",
+                "value": "@{if(equals(triggerBody()['text_3'], 'multiple'), 'People', 'Person')} @{triggerBody()['text_7']}"
+              }
+            ]
+          }
+        },
+        "Respond_to_Copilot_-_Success": {
+          "runAfter": {
+            "Scope": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "53610fb2-f2cc-4a51-921a-6f9eba7a294e"
+          },
+          "type": "Response",
+          "kind": "Skills",
+          "inputs": {
+            "statusCode": 200,
+            "body": {
+              "success": "@{true}",
+              "message": "Your request has been submitted and will be reviewed for approval."
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "title": "success",
+                  "x-ms-dynamically-added": true,
+                  "type": "boolean"
+                },
+                "message": {
+                  "title": "message",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "Respond_to_Copilot_-_Error": {
+          "runAfter": {
+            "Scope": [
+              "Failed"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "185d22a2-26ee-4b9a-a450-850bb0d5e92d"
+          },
+          "type": "Response",
+          "kind": "Skills",
+          "inputs": {
+            "statusCode": 200,
+            "body": {
+              "success": "@{false}",
+              "message": "There was an error submitting your request and therefore, it was not submitted. Please contact your system administrator."
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "title": "success",
+                  "x-ms-dynamically-added": true,
+                  "type": "boolean"
+                },
+                "message": {
+                  "title": "message",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

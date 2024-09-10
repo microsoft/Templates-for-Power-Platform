@@ -1,0 +1,81 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRedirect
+  id: main
+  actions:
+    - kind: SetVariable
+      id: setVariable_cSBO25
+      variable: Topic.FilterRows
+      value: =Concatenate("domainname eq ","'", System.User.PrincipalName, "'")
+
+    - kind: InvokeConnectorAction
+      id: 26ERWM
+      input:
+        binding:
+          $filter: =Topic.FilterRows
+          $select: "=\"parentsystemuserid,systemuserid,fullname\""
+          $top: 1
+          entityName: systemusers
+          organization: current
+
+      output:
+        binding:
+          value: Topic.user
+
+      connectionReference: mpa_awardsAndRecognition.cr.0A-LiI5Z
+      connectionProperties:
+        mode: Invoker
+
+      operationId: ListRecordsWithOrganization
+      dynamicOutputSchema:
+        kind: Record
+        properties:
+          @odata.nextLink:
+            displayName: Next link
+            description: The url to fetch next page data.
+            visibility: Advanced
+            order: 1
+            type: String
+
+          value:
+            order: 0
+            type:
+              kind: Table
+              properties:
+                dynamicProperties:
+                  order: 0
+                  type: Any
+
+    - kind: ParseValue
+      id: p74vm8
+      variable: Topic.ParsedUser
+      valueType:
+        kind: Table
+        properties:
+          @odata.etag: String
+          fullname: String
+          ownerid: String
+          systemuserid: String
+
+      value: "=\"[]\""
+
+    - kind: SetVariable
+      id: setVariable_zkDwPa
+      variable: Topic.ParsedUser
+      value: =Topic.user
+
+    - kind: SetVariable
+      id: setVariable_lcDqvk
+      variable: Global.UserId
+      value: =First(Topic.ParsedUser).systemuserid
+
+    - kind: ParseValue
+      id: 6JZdbE
+      variable: Global.StarRatings
+      valueType:
+        kind: Table
+        properties:
+          title: String
+          value: String
+
+      value: "[{\"title\": \"(1) ⭐\", \"value\": \"1\" }, {\"title\": \"(2) ⭐⭐\", \"value\": \"2\" }, {\"title\": \"(3) ⭐⭐⭐\", \"value\": \"3\" }, {\"title\": \"(4) ⭐⭐⭐⭐\", \"value\": \"4\" }, {\"title\": \"(5) ⭐⭐⭐⭐⭐\", \"value\": \"5\" }]"

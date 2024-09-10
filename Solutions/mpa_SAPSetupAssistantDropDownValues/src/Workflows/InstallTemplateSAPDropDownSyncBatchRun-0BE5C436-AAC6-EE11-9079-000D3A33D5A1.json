@@ -1,0 +1,809 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_sharedcommondataserviceforapps_fadb4"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      },
+      "shared_dataflows": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_shareddataflows_39423"
+        },
+        "api": {
+          "name": "shared_dataflows"
+        }
+      },
+      "shared_office365users_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_sharedoffice365users_f61b7"
+        },
+        "api": {
+          "name": "shared_office365users"
+        }
+      },
+      "shared_office365": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_sharedoffice365_fbe3e"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_a_row_is_added,_modified_or_deleted": {
+          "metadata": {
+            "operationMetadataId": "4f5fb6a9-3976-4447-b5fd-59318164bdea"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "SubscribeWebhookTrigger",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 3,
+              "subscriptionRequest/entityname": "mpa_installtemplatebatchprocess",
+              "subscriptionRequest/scope": 4,
+              "subscriptionRequest/filteringattributes": "mpa_batchstatus",
+              "subscriptionRequest/filterexpression": "mpa_batchstatus eq 865420001 and mpa_batchtype eq 865420000"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      },
+      "actions": {
+        "Try": {
+          "actions": {
+            "Apply_to_each_batch_item_-_No_Dependencies": {
+              "foreach": "@body('Filter_array_-_No_Dependencies')",
+              "actions": {
+                "Run_a_Child_Flow_-_Sync_SAP_Domains_-_No_Dependencies": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "f6629080-fc80-4e38-b058-85e82f275b49"
+                  },
+                  "type": "Workflow",
+                  "inputs": {
+                    "host": {
+                      "workflowReferenceName": "801d4fb4-90b0-ee11-a569-00224825b0d2"
+                    },
+                    "body": {
+                      "text": "@items('Apply_to_each_batch_item_-_No_Dependencies')?['mpa_installtemplatebatchprocessitemid']"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Filter_array_-_No_Dependencies": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "cd011b36-dca4-41ee-8868-47f945b9d57b"
+              },
+              "type": "Foreach",
+              "runtimeConfiguration": {
+                "concurrency": {
+                  "repetitions": 20
+                }
+              }
+            },
+            "Apply_to_each_batch_item_-_Has_Dependencies": {
+              "foreach": "@body('Filter_array_-_Has_Dependencies')",
+              "actions": {
+                "Run_a_Child_Flow_-_Sync_SAP_Domains_-_HasDependencies": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "7039eaaa-39e0-45bc-9881-3d43a6f5ed52"
+                  },
+                  "type": "Workflow",
+                  "inputs": {
+                    "host": {
+                      "workflowReferenceName": "801d4fb4-90b0-ee11-a569-00224825b0d2"
+                    },
+                    "body": {
+                      "text": "@items('Apply_to_each_batch_item_-_Has_Dependencies')?['mpa_installtemplatebatchprocessitemid']"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Filter_array_-_Has_Dependencies": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "01fee752-db12-42d9-b754-d1c266e507a3"
+              },
+              "type": "Foreach",
+              "runtimeConfiguration": {
+                "concurrency": {
+                  "repetitions": 20
+                }
+              }
+            },
+            "Get_Batch_Items": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "bfd7f17a-8f53-42e6-8959-bc7257a06195"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "ListRecords",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_installtemplatebatchprocessitems",
+                  "$filter": "_mpa_batchprocess_value eq '@{triggerOutputs()?['body/mpa_installtemplatebatchprocessid']}'",
+                  "$orderby": "mpa_name asc"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Filter_array_-_No_Dependencies": {
+              "runAfter": {
+                "Apply_to_each_-_Delete_Sync_Domains_rows": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "b761db89-f524-42d3-ac54-f0d58e1fba44"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@outputs('Get_Batch_Items')?['body/value']",
+                "where": "@equals(item()?['mpa_hasdependency'], false)"
+              }
+            },
+            "Filter_array_-_Has_Dependencies": {
+              "runAfter": {
+                "Apply_to_each_batch_item_-_No_Dependencies": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "254122a5-e683-47c6-9353-f13b25c9e80b"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@outputs('Get_Batch_Items')?['body/value']",
+                "where": "@equals(item()?['mpa_hasdependency'], true)"
+              }
+            },
+            "List_Sync_Domains_rows": {
+              "runAfter": {
+                "Get_Batch_Items": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "ac1c8b7f-614d-4066-83c7-a8187085c287"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "ListRecords",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "new_saptemplatesyncdomains"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Apply_to_each_-_Delete_Sync_Domains_rows": {
+              "foreach": "@outputs('List_Sync_Domains_rows')?['body/value']",
+              "actions": {
+                "Delete_a_row": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "c7f5f446-9b62-449c-9c42-7a34989e072f"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "DeleteRecord",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "new_saptemplatesyncdomains",
+                      "recordId": "@items('Apply_to_each_-_Delete_Sync_Domains_rows')?['new_saptemplatesyncdomainid']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {
+                "List_Sync_Domains_rows": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "7f6063b2-6cd5-4906-ac81-9391929c95f8"
+              },
+              "type": "Foreach"
+            },
+            "Get_Sync_Dataflow": {
+              "runAfter": {
+                "Apply_to_each_batch_item_-_Has_Dependencies": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "f2952da1-419c-479d-94ef-29d53b571811"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "ListRecords",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "msdyn_dataflows",
+                  "$filter": "msdyn_name eq 'SAP Sync Domains' and componentstate eq 0",
+                  "$orderby": "modifiedon desc"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Refresh_a_dataflow": {
+              "runAfter": {
+                "Get_Sync_Dataflow": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "143449a3-b9fa-45ab-8bb7-035d46d2ae89"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_dataflows",
+                  "operationId": "RefreshDataflow",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_dataflows"
+                },
+                "parameters": {
+                  "workspaceType": "Environment",
+                  "groupIdForRefreshDataflow": "@concat(workflow().tags.environmentName,'-31c688f59-us')",
+                  "dataflowIdForRefreshDataflow": "@first(outputs('Get_Sync_Dataflow')?['body/value'])['msdyn_originaldataflowid']"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "When_a_dataflow_refresh_completes": {
+              "runAfter": {
+                "Refresh_a_dataflow": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "50100a64-0534-4b87-ad48-b99d7401c286"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_dataflows",
+                  "operationId": "OnRefreshComplete",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_dataflows"
+                },
+                "parameters": {
+                  "workspaceType": "Environment",
+                  "groupIdForOnRefreshComplete": "@concat(workflow().tags.environmentName,'-31c688f59-us')",
+                  "dataflowIdForOnRefreshComplete": "@first(outputs('Get_Sync_Dataflow')?['body/value'])['msdyn_originaldataflowid']"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Condition": {
+              "actions": {
+                "Set_variable": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "648320eb-0521-4e46-a93a-b0e8b1244701"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "Status Message",
+                    "value": "The batch process has completed."
+                  }
+                },
+                "Get_Created_By_User": {
+                  "runAfter": {
+                    "Set_variable": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "3605041d-c700-4967-970c-088dc9750143"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "GetItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "systemusers",
+                      "recordId": "@triggerOutputs()?['body/_createdby_value']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Get_user_profile_(V2)": {
+                  "runAfter": {
+                    "Get_Created_By_User": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "f7ff8395-33b7-470f-9d5a-7d4d63337b52"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365users_1",
+                      "operationId": "UserProfile_V2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365users"
+                    },
+                    "parameters": {
+                      "id": "@outputs('Get_Created_By_User')?['body/domainname']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Get_Refreshed_Batch_Items": {
+                  "runAfter": {
+                    "Get_user_profile_(V2)": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "c5bcae0d-09d2-4aa7-a9f6-0edac398de65"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "ListRecords",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_installtemplatebatchprocessitems",
+                      "$filter": "_mpa_batchprocess_value eq '@{triggerOutputs()?['body/mpa_installtemplatebatchprocessid']}'",
+                      "$orderby": "mpa_name asc"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Create_HTML_table": {
+                  "runAfter": {
+                    "Get_Refreshed_Batch_Items": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "6f5c0218-ae0b-413e-9b4f-7bb788255c2d"
+                  },
+                  "type": "Table",
+                  "inputs": {
+                    "from": "@outputs('Get_Refreshed_Batch_Items')?['body/value']",
+                    "format": "HTML",
+                    "columns": [
+                      {
+                        "header": "Domain",
+                        "value": "@item()?['mpa_name']"
+                      },
+                      {
+                        "header": "Status",
+                        "value": "@If(equals(item()?['mpa_processingstatus'], 865420000), 'Not Started', If(equals(item()?['mpa_processingstatus'], 865420001), 'In Progress', If(equals(item()?['mpa_processingstatus'], 865420002), 'Completed', 'Error')))"
+                      },
+                      {
+                        "header": "Message",
+                        "value": "@item()?['mpa_message']"
+                      }
+                    ]
+                  }
+                },
+                "Send_an_email_(V2)": {
+                  "runAfter": {
+                    "Create_HTML_table": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "0cf5f93b-c822-4d69-8a59-3aa55f726a50"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@outputs('Get_user_profile_(V2)')?['body/mail']",
+                      "emailMessage/Subject": "SAP domain sync process completed",
+                      "emailMessage/Body": "<p>The following SAP domains have completed syncing to Microsoft Dataverse as part of the SAP Procurement template installation.<br>\n<br>\n@{outputs('Compose_-_CSS_Table_Style')}@{body('Create_HTML_table')}<br>\n<br>\n</p>",
+                      "emailMessage/Importance": "Normal"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {
+                "When_a_dataflow_refresh_completes": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "or": [
+                  {
+                    "equals": [
+                      "@outputs('When_a_dataflow_refresh_completes')?['body/status']",
+                      "Success"
+                    ]
+                  },
+                  {
+                    "equals": [
+                      "@outputs('When_a_dataflow_refresh_completes')?['body/status']",
+                      "Failed"
+                    ]
+                  }
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "72319006-d502-4567-811f-770d701ac0b1"
+              },
+              "type": "If"
+            }
+          },
+          "runAfter": {
+            "Compose_-_CSS_Table_Style": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "029855d1-d7ea-479c-b211-18ed9751b14d"
+          },
+          "type": "Scope"
+        },
+        "Catch": {
+          "actions": {
+            "Filter_array": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "8451bacc-b6a3-47e2-bc1c-e2cc509a00d0"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@result('Try')",
+                "where": "@or(equals(item()?['Status'], 'Failed'), equals(item()?['Status'], 'TimedOut'))"
+              }
+            },
+            "Parse_JSON_Error": {
+              "runAfter": {
+                "Filter_array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "94719fee-49a1-4d68-8482-b0264add7e26"
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@body('Filter_array')",
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "error": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "inputs": {
+                        "type": "object",
+                        "properties": {
+                          "host": {
+                            "type": "object",
+                            "properties": {
+                              "apiId": {
+                                "type": "string"
+                              },
+                              "connectionReferenceName": {
+                                "type": "string"
+                              },
+                              "operationId": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "parameters": {
+                            "type": "object",
+                            "properties": {
+                              "environment": {
+                                "type": "string"
+                              },
+                              "api-version": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "outputs": {
+                        "type": "object",
+                        "properties": {
+                          "statusCode": {
+                            "type": "integer"
+                          },
+                          "headers": {
+                            "type": "object",
+                            "properties": {
+                              "Cache-Control": {
+                                "type": "string"
+                              },
+                              "Strict-Transport-Security": {
+                                "type": "string"
+                              },
+                              "x-ms-islandgateway": {
+                                "type": "string"
+                              },
+                              "x-ms-request-id": {
+                                "type": "string"
+                              },
+                              "x-ms-correlation-request-id": {
+                                "type": "string"
+                              },
+                              "x-ms-correlation-id": {
+                                "type": "string"
+                              },
+                              "Server-Timing": {
+                                "type": "string"
+                              },
+                              "X-Content-Type-Options": {
+                                "type": "string"
+                              },
+                              "x-ms-service-request-id": {
+                                "type": "string"
+                              },
+                              "x-ms-activity-vector": {
+                                "type": "string"
+                              },
+                              "Timing-Allow-Origin": {
+                                "type": "string"
+                              },
+                              "x-ms-apihub-cached-response": {
+                                "type": "string"
+                              },
+                              "x-ms-apihub-obo": {
+                                "type": "string"
+                              },
+                              "Date": {
+                                "type": "string"
+                              },
+                              "Content-Length": {
+                                "type": "string"
+                              },
+                              "Content-Type": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "body": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              },
+                              "error": {
+                                "type": "object",
+                                "properties": {
+                                  "code": {
+                                    "type": "string"
+                                  },
+                                  "message": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "startTime": {
+                        "type": "string"
+                      },
+                      "endTime": {
+                        "type": "string"
+                      },
+                      "trackingId": {
+                        "type": "string"
+                      },
+                      "clientTrackingId": {
+                        "type": "string"
+                      },
+                      "clientKeywords": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "Apply_to_each_error": {
+              "foreach": "@body('Parse_JSON_Error')",
+              "actions": {
+                "Append_to_string_variable": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "f5ee58f7-1661-4b96-94c2-3acbe38ed8b7"
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "Status Message",
+                    "value": "@{items('Apply_to_each_error')?['error']?['message']} "
+                  }
+                },
+                "Append_to_string_variable_2": {
+                  "runAfter": {
+                    "Append_to_string_variable_3": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "57baecbb-902e-453a-b458-e478bd159651"
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "Status Message",
+                    "value": "@items('Apply_to_each_error')?['outputs']?['body']?['error']?['message']"
+                  }
+                },
+                "Append_to_string_variable_3": {
+                  "runAfter": {
+                    "Append_to_string_variable": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "0e3e8155-b53e-4424-bc74-7374b4624c33"
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "Status Message",
+                    "value": "@items('Apply_to_each_error')?['outputs']?['body']?['message']"
+                  }
+                }
+              },
+              "runAfter": {
+                "Parse_JSON_Error": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "2accf560-831a-4d59-b2c3-cf0af2a01675"
+              },
+              "type": "Foreach"
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b1cd5d2b-2bed-4963-afee-5d2f33b6be19"
+          },
+          "type": "Scope"
+        },
+        "Initialize_variable_-_Message": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "e7f41205-1984-44f4-918b-878e88ea4261"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Status Message",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Update_a_row": {
+          "runAfter": {
+            "Catch": [
+              "Succeeded",
+              "Skipped"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b049a0e6-cf67-4af1-9fef-78a7b2220c86"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "UpdateRecord",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "mpa_installtemplatebatchprocesses",
+              "recordId": "@triggerOutputs()?['body/mpa_installtemplatebatchprocessid']",
+              "item/mpa_batchstatus": 865420002,
+              "item/mpa_completedon": "@utcNow()",
+              "item/mpa_message": "Batch processing complete.",
+              "item/mpa_startedon": "@utcNow()"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Compose_-_CSS_Table_Style": {
+          "runAfter": {
+            "Initialize_variable_-_Message": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "90948d51-e2f6-4384-98ba-46a199789db5"
+          },
+          "type": "Compose",
+          "inputs": "<style>\nTable {\n  font-family: Arial, Helvetica, sans-serif;\n  background-color: #EEEEEE;\n  border-collapse: collapse;\n  width: 100%;\n}\n\nTable td, Table th {\n  border: 1px solid #ddd;\n  padding: 3px 3px;\n}\n\nTable th {\n  font-size: 15px;\n  font-weight: bold;\n  padding-top: 12px;\n  padding-bottom: 12px;\n  text-align: left;\n  background-color: #1C6EA4;\n  color: white;\n}\n</style>"
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}
