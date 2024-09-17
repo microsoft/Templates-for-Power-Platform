@@ -1,0 +1,388 @@
+"'Confirmation Screen' As screen":
+    Fill: =Color.White
+    LoadingSpinnerColor: =App.Theme.Colors.Primary
+
+    conMainContent_Confirmation As groupContainer.verticalAutoLayoutContainer:
+        Fill: =ColorValue(varTheme.neutralBackground2)
+        Height: =Parent.Height - compHeaderCompound_Confirmation.Height
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutGap: =10
+        LayoutJustifyContent: =LayoutJustifyContent.Center
+        LayoutMode: =LayoutMode.Auto
+        LayoutOverflowY: =LayoutOverflow.Scroll
+        PaddingLeft: |-
+            =Switch(App.ActiveScreen.Size,
+            5, (App.Width - 1580)/2,
+            4, 20,
+            3, 20,
+            2, 20,
+            1, 20
+            )
+        PaddingRight: |-
+            =Switch(App.ActiveScreen.Size,
+            5, (App.Width - 1580)/2,
+            4, 20,
+            3, 20,
+            2, 20,
+            1, 20
+            )
+        Width: =Parent.Width
+        Y: =compHeaderCompound_Confirmation.Y + compHeaderCompound_Confirmation.Height
+        ZIndex: =1
+
+        conBodyContent_Confirmation As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            DropShadow: =DropShadow.ExtraBold
+            Fill: =ColorValue(varTheme.neutralBackground1)
+            FillPortions: =0
+            Height: =170
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutGap: =8
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            LayoutOverflowY: =LayoutOverflow.Scroll
+            PaddingBottom: =24
+            PaddingLeft: =24
+            PaddingRight: =24
+            PaddingTop: =24
+            RadiusBottomLeft: =8
+            RadiusBottomRight: =8
+            RadiusTopLeft: =8
+            RadiusTopRight: =8
+            Width: =600
+            ZIndex: =2
+
+            txtTitle_Confirmation As Text:
+                AutoHeight: =false
+                DisplayMode: =DisplayMode.Edit
+                FontColor: =ColorValue(varTheme.neutralForeground1)
+                Height: =Self.Size * 1.5
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                Size: =varThemeFont.H3.size
+                Text: =varHeader
+                VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                Weight: =varThemeFont.H3.weightBold
+                Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                X: =0
+                Y: =0
+                ZIndex: =1
+
+            txtSubHeader_Confirmation As Text:
+                AutoHeight: =true
+                DisplayMode: =DisplayMode.Edit
+                Font: =""
+                FontColor: =ColorValue(varTheme.neutralForeground1)
+                Height: =40
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                Size: =14
+                Text: =varMessage
+                Weight: =
+                Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                X: =0
+                Y: =0
+                ZIndex: =2
+
+            conButton_Confirmation As groupContainer.verticalAutoLayoutContainer:
+                Fill: =ColorValue(varTheme.neutralBackground1)
+                FillPortions: =0
+                Height: =50
+                LayoutAlignItems: =LayoutAlignItems.Center
+                LayoutGap: =8
+                LayoutJustifyContent: =LayoutJustifyContent.End
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                LayoutOverflowY: =LayoutOverflow.Scroll
+                PaddingBottom: =20
+                PaddingLeft: =20
+                PaddingTop: =20
+                X: =20
+                Y: =72
+                ZIndex: =3
+
+                btnNo_Confirmation As Button:
+                    AccessibleLabel: ="No"
+                    Align: =""
+                    Appearance: ='ButtonCanvas.Appearance'.Secondary
+                    BasePaletteColor: =
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =
+                    FontSize: =0
+                    FontWeight: =""
+                    Height: =32
+                    Icon: =""
+                    IconRotation: =0
+                    IconStyle: ="Outline"
+                    Layout: ="Icon before"
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    OnSelect: =Back()
+                    Text: ="No"
+                    VerticalAlign: =""
+                    Width: =44
+                    X: =0
+                    Y: =0
+                    ZIndex: =1
+
+                btnYes_Confirmation As Button:
+                    AccessibleLabel: ="Yes"
+                    Align: =""
+                    BasePaletteColor: =
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =
+                    FontSize: =0
+                    FontWeight: =""
+                    Height: =32
+                    Icon: =""
+                    IconRotation: =0
+                    IconStyle: ="Outline"
+                    Layout: ="Icon before"
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    OnSelect: |
+                        =Switch(
+                            true,
+                            // User saved changes to preferences
+                            varFromPreference_Save,
+                            IfError(
+                                Patch(
+                                    Users,
+                                    LookUp(
+                                        Users,
+                                        User = varD365User.User
+                                    ),
+                                    {
+                                        'Preferred Building': cmbBuilding_Preferences.Selected,
+                                        'Preferred Vehicle': cmbVehicles_Preferences.Selected
+                                    }
+                                ),
+                                Notify(
+                                    "Unable to update preferrences. Error: " & FirstError.Message,
+                                    NotificationType.Error,
+                                    3000
+                                ),
+                                Notify(
+                                    "You have successfully updated your preferences!",
+                                    NotificationType.Success,
+                                    3000
+                                );
+                                Refresh(Users);
+                                Set(
+                                    varFromPreference_Save,
+                                    false
+                                );
+                                Navigate(Preferences)
+                            ),
+                            // User cancelled changes to preferences
+                            varFromPreference_Cancel,
+                            Set(
+                                varFromPreference_Cancel,
+                                false
+                            );
+                            // reset combo box controls
+                            Reset(cmbBuilding_Preferences);
+                            Reset(cmbVehicles_Preferences);
+                            Navigate(Preferences);
+                            ,
+                            // User cancelled the new reservation
+                            varFromCancel_NewReservation,
+                            Set(
+                                varFromCancel_NewReservation,
+                                false
+                            );
+                            Navigate('My Reservations Screen');
+                            ,
+                            If(
+                                varProc = 'Status Reason (Reservations)'.Cancelled,
+                                If(
+                                    IsBlank(
+                                        LookUp(
+                                            Reservations,
+                                            Reservation = varReservationToCancel.Reservation
+                                        ).'Long Term Reservation'
+                                    ),
+                                    //Cancel single reservation
+                                    IfError(
+                                        Patch(
+                                            Reservations,
+                                            LookUp(
+                                                Reservations,
+                                                Reservation = varReservationToCancel.Reservation
+                                            ),
+                                            {'Status Reason': varProc}
+                                        ),
+                                        Notify(
+                                            "Error on cancelling the reservation due to: " & FirstError.Message,
+                                            3000
+                                        ),
+                                        Notify(
+                                            "Successfully cancelled the reservation.",
+                                            NotificationType.Success,
+                                            2000
+                                        );
+                                        Navigate('My Reservations Screen')
+                                    );
+                                    ,
+                                    // Cancel long term reservation
+                                    IfError(
+                                        ForAll(
+                                            colLongTermReservationListToCancel As CancelLongTerm,
+                                            // Cancel all reservations included in the long term reservation group
+                                            Patch(
+                                                Reservations,
+                                                LookUp(
+                                                    Reservations,
+                                                    Reservation = CancelLongTerm.Reservation
+                                                ),
+                                                {'Status Reason': varProc}
+                                            )
+                                        ),
+                                        Notify(
+                                            "Error on cancellation due to: " & FirstError.Message,
+                                            NotificationType.Error,
+                                            3000
+                                        );
+                                        false,
+                                        // Cancel long term reservation record
+                                        Patch(
+                                            'Long Term Reservations',
+                                            First(colLongTermReservationListToCancel).'Long Term Reservation',
+                                            {'Status Reason': 'Status Reason (Long Term Reservations)'.Cancelled}
+                                        ),
+                                        Notify(
+                                            "Error on cancellation due to: " & FirstError.Message,
+                                            NotificationType.Error,
+                                            3000
+                                        );
+                                        false,
+                                        Notify(
+                                            "Reservation(s) has been cancelled successfully ",
+                                            NotificationType.Success,
+                                            3000
+                                        );
+                                        Navigate('My Reservations Screen')
+                                    );
+                                );
+                                ,
+                                //varProc is submitted
+                                //New reservations
+                                // Create Single reservation
+                                If(
+                                    !IsLongterm,
+                                    IfError(
+                                        SubmitForm(frmReservations_ReserveASpot),
+                                        Notify(
+                                            "Error submitting form due to: " & FirstError.Message,
+                                            NotificationType.Error,
+                                            3000
+                                        ),
+                                        Set(
+                                            varEmptyField_NewReservation,
+                                            false
+                                        );
+                                        Set(
+                                            VarReserveThisSpot,
+                                            false
+                                        );
+                                        Notify(
+                                            "Successfully reserved a parking slot.",
+                                            NotificationType.Success,
+                                            2000
+                                        );
+                                        Navigate('My Reservations Screen')
+                                    ),
+                                    // Create Long term reservation
+                                    IfError(
+                                        Set(
+                                            varDateDiff,
+                                            DateDiff(
+                                                dteReservationStartDate_ReserveASpot.SelectedDate,
+                                                dteEndDate_ReserveASpot.SelectedDate
+                                            ) + 1
+                                        );
+                                        Set(
+                                            varLongTermReservation,
+                                            Patch(
+                                                'Long Term Reservations',
+                                                Defaults('Long Term Reservations'),
+                                                {
+                                                    Name: "",
+                                                    'Start Date': dteReservationStartDate_ReserveASpot.SelectedDate,
+                                                    'End Date': dteEndDate_ReserveASpot.SelectedDate
+                                                }
+                                            )
+                                        );
+                                        
+                                        //Create parent record for long term reservation
+                                        //Create reservation record for each dates
+                                        ForAll(
+                                            Sequence(varDateDiff),
+                                            Patch(
+                                                Reservations,
+                                                Defaults(Reservations),
+                                                {
+                                                    Name: "",
+                                                    'Reservation Start Date': DateAdd(
+                                                        dteReservationStartDate_ReserveASpot.SelectedDate - 1,
+                                                        ThisRecord.Value
+                                                    ),
+                                                    'Reservation End Date': dteEndDate_ReserveASpot.SelectedDate,
+                                                    'Long Term Reservation': varLongTermReservation,
+                                                    Building: cmbBuilding_ReserveASpot.Selected,
+                                                    Vehicle: cmbVehicle_ReserveASpot.Selected,
+                                                    Floor: cmbFloor_ReserveASpot.Selected,
+                                                    'Parking Spot': cmbParkingSpot_ReserveASpot.Selected,
+                                                    'Spot Type': cmbSpotType_ReserveASpot.Selected.Value,
+                                                    'Requested Accessible Spot': If(
+                                                        togIsAccessible_ReserveASpot.Checked,
+                                                        'Requested Accessible Spot (Reservations)'.Yes,
+                                                        'Requested Accessible Spot (Reservations)'.No
+                                                    )
+                                                }
+                                            );
+                                        ),
+                                        Notify(
+                                            "Error submitting form due to: " & FirstError.Message,
+                                            NotificationType.Error,
+                                            3000
+                                        ),
+                                        Set(
+                                            varEmptyField_NewReservation,
+                                            false
+                                        );
+                                        Set(
+                                            VarReserveThisSpot,
+                                            false
+                                        );
+                                        Notify(
+                                            "Successfully reserved a parking slot.",
+                                            NotificationType.Success,
+                                            2000
+                                        );
+                                        Navigate('My Reservations Screen')
+                                    )
+                                )
+                            )
+                        );
+                    Text: ="Yes"
+                    VerticalAlign: =""
+                    Width: =44
+                    X: =0
+                    Y: =0
+                    ZIndex: =2
+
+    compHeaderCompound_Confirmation As compHeaderCompound:
+        HeaderWidth: =Parent.Width
+        Height: =compHeaderCompound_Confirmation.HeaderHeight
+        IsBackSettingsOn: =false
+        Width: =compHeaderCompound_Confirmation.HeaderWidth
+        ZIndex: =2
+
