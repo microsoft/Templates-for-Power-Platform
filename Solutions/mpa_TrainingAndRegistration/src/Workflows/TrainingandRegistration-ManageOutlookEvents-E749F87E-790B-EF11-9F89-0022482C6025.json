@@ -1,0 +1,1288 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_office365": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_microsoftpoweracceleratoroutlook"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      },
+      "shared_commondataserviceforapps_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_microsoftpoweracceleratordataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "Shared Calendar Name (mpa_sharedcalendarname)": {
+          "defaultValue": "Calendar",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_sharedcalendarname",
+            "description": "Holds the shared calendar name for the organization"
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "d11b3436-d70c-491d-97b6-b88a73b6632a"
+          },
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "boolean": {
+                  "title": "CreateTrainerEvent",
+                  "type": "boolean",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please select yes or no",
+                  "x-ms-content-hint": "BOOLEAN"
+                },
+                "boolean_1": {
+                  "title": "CreateAttendeeEvent",
+                  "type": "boolean",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please select yes or no",
+                  "x-ms-content-hint": "BOOLEAN"
+                },
+                "text": {
+                  "title": "TrainingSessionId",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "boolean_4": {
+                  "title": "AddRecipients",
+                  "type": "boolean",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please select yes or no",
+                  "x-ms-content-hint": "BOOLEAN"
+                },
+                "boolean_2": {
+                  "title": "UpdateAttendee",
+                  "type": "boolean",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please select yes or no",
+                  "x-ms-content-hint": "BOOLEAN"
+                },
+                "boolean_5": {
+                  "title": "UpdateTrainer",
+                  "type": "boolean",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please select yes or no",
+                  "x-ms-content-hint": "BOOLEAN"
+                },
+                "boolean_6": {
+                  "title": "DeleteSession",
+                  "type": "boolean",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please select yes or no",
+                  "x-ms-content-hint": "BOOLEAN"
+                }
+              },
+              "required": [
+                "boolean",
+                "boolean_1",
+                "text",
+                "boolean_4",
+                "boolean_2",
+                "boolean_5",
+                "boolean_6"
+              ]
+            }
+          },
+          "description": "Child flow to manage the trainer and attendees placeholder invites"
+        }
+      },
+      "actions": {
+        "Initialize_CalendarId_variable": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "3a6431f3-58a8-494b-aee8-c6262bf14a67"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "CalendarId",
+                "type": "string",
+                "value": "@{null}"
+              }
+            ]
+          },
+          "description": "Stores the outlook's calendar id variable"
+        },
+        "Get_list_of_calendars": {
+          "runAfter": {
+            "Initialize_FlowResponse": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "effb7ac7-e646-4d01-bab5-f3e2049f3916"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "CalendarGetTables_V2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {},
+            "authentication": {
+              "type": "Raw",
+              "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+            }
+          },
+          "description": "Get the list of the existing calendars"
+        },
+        "Loop_calendars": {
+          "foreach": "@outputs('Get_list_of_calendars')?['body/value']",
+          "actions": {
+            "Check_is_this_calendar_is_the_configured_one": {
+              "actions": {
+                "Set_CalendarId": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "dff0653a-0f99-41ee-a762-c3b531ab1e9d"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "CalendarId",
+                    "value": "@items('Loop_calendars')?['id']"
+                  },
+                  "description": "Set Calendar Id with the selected calendar unique id"
+                }
+              },
+              "runAfter": {},
+              "expression": {
+                "equals": [
+                  "@items('Loop_calendars')?['name']",
+                  "@parameters('Shared Calendar Name (mpa_sharedcalendarname)')"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6dbc5613-40f9-4526-938c-ba1ee3ae4f86"
+              },
+              "type": "If",
+              "description": "Check if this calendar is the one we are looking for, based on the env. variable"
+            }
+          },
+          "runAfter": {
+            "Get_list_of_calendars": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "03f8d170-1cf5-444c-b3fc-8e1bc89b1ea4"
+          },
+          "type": "Foreach",
+          "description": "Loop the calendar to look for the one setup in the env. variable"
+        },
+        "Validate_Calendar_Exists": {
+          "actions": {
+            "Get_Training_record": {
+              "runAfter": {
+                "Get_Trainer_Information": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "322b9cdb-2f31-4ad1-96df-5e65fb67cdb2"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_trainings",
+                  "recordId": "@outputs('Get_Training_Session_Info')?['body/_mpa_training_value']",
+                  "$select": "mpa_agenda,_mpa_category_value,mpa_description,mpa_details,mpa_goal,mpa_hasprerequisite,mpa_name,_mpa_prerequisite_value,_mpa_skilllevel_value,mpa_trainingid,_ownerid_value,statecode"
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              },
+              "description": "Get the training record details"
+            },
+            "Get_Training_Session_Info": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "688cde65-3f08-42ba-91b4-86ba0d3e47f1"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_trainingsessions",
+                  "recordId": "@triggerBody()['text']",
+                  "$select": "mpa_enddateandtime,mpa_startdateandtime,mpa_trainingsessionid,_ownerid_value,mpa_calendarid,mpa_trainereventid,statecode,statuscode,mpa_capacity,_mpa_category_value,mpa_duration,mpa_link,mpa_name,mpa_notificationsent,mpa_platform,_mpa_training_value"
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              },
+              "description": "Get Trainings Session info, to use it in the email"
+            },
+            "Get_Trainer_Information": {
+              "runAfter": {
+                "Get_Training_Session_Info": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "89484c02-26c3-4bb1-a081-a80595693106"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "systemusers",
+                  "recordId": "@outputs('Get_Training_Session_Info')?['body/_ownerid_value']",
+                  "$select": "systemuserid,fullname,internalemailaddress"
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              },
+              "description": "Get Trainers information"
+            },
+            "Set_AttendeeEventId_when_applies": {
+              "runAfter": {
+                "Get_Training_record": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "d24f5999-eafe-4994-aacc-e1a5d3795cd0"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "AttendeeEventId",
+                "value": "@outputs('Get_Training_Session_Info')?['body/mpa_calendarid']"
+              },
+              "description": "If the CalendarId is already populated, set AttendeeEventId with the CalendarId value"
+            },
+            "Set_TrainerEventId_when_applies": {
+              "runAfter": {
+                "Set_AttendeeEventId_when_applies": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "b360ce28-a217-4c73-b256-6d23c412f916"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "TrainerEventId",
+                "value": "@outputs('Get_Training_Session_Info')?['body/mpa_trainereventid']"
+              },
+              "description": "If the TrainerEventId is already populated, set TrainerEventId with the TrainerEventId value"
+            },
+            "DeleteSession": {
+              "actions": {
+                "Remove_calendar_ids": {
+                  "runAfter": {
+                    "Attendee_Event_Exists": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "ac507852-930a-4cb7-9dbc-d4658929e66c"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "UpdateRecord",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_trainingsessions",
+                      "recordId": "@triggerBody()['text']",
+                      "item/mpa_calendarid": "@null",
+                      "item/mpa_trainereventid": "@null"
+                    },
+                    "authentication": {
+                      "type": "Raw",
+                      "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                    }
+                  },
+                  "description": "Update the session to remove calendar id and trainer event id"
+                },
+                "Trainer_Event_exists": {
+                  "actions": {
+                    "Get_Trainer_Event": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "37537d81-7b3f-4361-9739-c98eccee1166"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365",
+                          "operationId": "V3CalendarGetItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                        },
+                        "parameters": {
+                          "table": "@variables('CalendarId')",
+                          "id": "@variables('TrainerEventId')"
+                        },
+                        "authentication": {
+                          "type": "Raw",
+                          "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                        }
+                      },
+                      "description": "Get the existing event"
+                    },
+                    "Delete_Trainer_Event": {
+                      "runAfter": {
+                        "Get_Trainer_Event": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "c16db7fc-cf64-4a67-9c87-b0a5c5b7046a"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365",
+                          "operationId": "CalendarDeleteItem_V2",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                        },
+                        "parameters": {
+                          "calendar": "@variables('CalendarId')",
+                          "event": "@outputs('Get_Trainer_Event')?['body/id']"
+                        },
+                        "authentication": {
+                          "type": "Raw",
+                          "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                        }
+                      },
+                      "description": "Delete the trainer's placeholder"
+                    }
+                  },
+                  "runAfter": {},
+                  "else": {
+                    "actions": {
+                      "FlowResponse_-_Trainer_event_missing": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "dabf7cce-c419-47e1-a949-859eaab8a282"
+                        },
+                        "type": "SetVariable",
+                        "inputs": {
+                          "name": "FlowResponse",
+                          "value": "- The Trainer placeholder id is missing"
+                        },
+                        "description": "Update the FlowResponse variable to notify that the dates are missing"
+                      }
+                    }
+                  },
+                  "expression": {
+                    "and": [
+                      {
+                        "not": {
+                          "equals": [
+                            "@variables('TrainerEventId')",
+                            "@null"
+                          ]
+                        }
+                      },
+                      {
+                        "equals": [
+                          "@empty(variables('TrainerEventId'))",
+                          "@false"
+                        ]
+                      }
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "ea44cf57-aea2-4643-a2aa-6573f244be12"
+                  },
+                  "type": "If",
+                  "description": "Validate the Trainer Event Id exists"
+                },
+                "Attendee_Event_Exists": {
+                  "actions": {
+                    "Get_Attendee_Event": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "37537d81-7b3f-4361-9739-c98eccee1166"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365",
+                          "operationId": "V3CalendarGetItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                        },
+                        "parameters": {
+                          "table": "@variables('CalendarId')",
+                          "id": "@variables('AttendeeEventId')"
+                        },
+                        "authentication": {
+                          "type": "Raw",
+                          "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                        }
+                      },
+                      "description": "Get the existing event"
+                    },
+                    "Delete_Attendee_Event": {
+                      "runAfter": {
+                        "Get_Attendee_Event": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "471713ad-a4f3-427b-9c8f-d922381415fc"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365",
+                          "operationId": "CalendarDeleteItem_V2",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                        },
+                        "parameters": {
+                          "calendar": "@variables('CalendarId')",
+                          "event": "@outputs('Get_Attendee_Event')?['body/id']"
+                        },
+                        "authentication": {
+                          "type": "Raw",
+                          "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                        }
+                      },
+                      "description": "Deletes the attendee placeholder"
+                    }
+                  },
+                  "runAfter": {
+                    "Trainer_Event_exists": [
+                      "Succeeded"
+                    ]
+                  },
+                  "else": {
+                    "actions": {
+                      "Append_to_string_variable": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "fb6edf87-fac3-425a-b61e-cfd0353f5ce6"
+                        },
+                        "type": "AppendToStringVariable",
+                        "inputs": {
+                          "name": "FlowResponse",
+                          "value": "- Attendee Event Id is missing"
+                        }
+                      }
+                    }
+                  },
+                  "expression": {
+                    "and": [
+                      {
+                        "not": {
+                          "equals": [
+                            "@variables('AttendeeEventId')",
+                            "@null"
+                          ]
+                        }
+                      },
+                      {
+                        "equals": [
+                          "@empty(variables('AttendeeEventId'))",
+                          "@false"
+                        ]
+                      }
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "889c0391-bc2f-4ef0-b60d-66e45f3d6ea6"
+                  },
+                  "type": "If",
+                  "description": "Validate attendee event exists"
+                }
+              },
+              "runAfter": {
+                "Set_TrainerEventId_when_applies": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Dates_are_populated": {
+                    "actions": {
+                      "Create_Trainer_Event": {
+                        "actions": {
+                          "Create_event_for_the_Trainer": {
+                            "runAfter": {},
+                            "metadata": {
+                              "operationMetadataId": "baa226bf-eaea-4dd9-99f5-0d43e6969455"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_office365",
+                                "operationId": "V4CalendarPostItem",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                              },
+                              "parameters": {
+                                "table": "@variables('CalendarId')",
+                                "item/subject": "Trainer Invite: @{outputs('Get_Training_Session_Info')?['body/mpa_name']} ",
+                                "item/start": "@formatDateTime(outputs('Get_Training_Session_Info')?['body/mpa_startdateandtime'], 'yyyy-MM-ddTHH:mm:ssZ')",
+                                "item/end": "@formatDateTime(outputs('Get_Training_Session_Info')?['body/mpa_enddateandtime'], 'yyyy-MM-ddTHH:mm:ssZ')",
+                                "item/timeZone": "(UTC) Coordinated Universal Time",
+                                "item/body": "<style>\n#training {\n  font-family: Arial, Helvetica, sans-serif;\nfont-size: small;\n  border-collapse: collapse;\n  width: 100%;\n}\n\n#training td, #training th {\n  border: 1px solid #ddd;\n  padding: 8px;\n}\n\n#training tr:nth-child(even){background-color: #f2f2f2;}\n\n#training tr:hover {background-color: #ddd;}\n\n#training th {\n  padding-top: 12px;\n  padding-bottom: 12px;\n  text-align: left;\n  background-color: Gray;\n  color: white;\n}\n</style>\n\n<br>\nThank you for registering as a trainer.\n<br>This is a blocker for your calendar. 1 day before the training, you will receive an invite with the details to join the session. <br>\n<br>Below you can see the details for your upcoming training: \n<br>\n<table id=\"training\">\n <tr>\n   <th>Skill Level</th>\n   <th>Training Category</th>\n   <th>Training Name</th>\n   <th>Description</th>\n   <th>Platform</th>\n   <th>Date</th>\n   <th>Capacity</th>\n </tr>\n <tr>\n  <td>  @{outputs('Get_Training_record')?['body/_mpa_skilllevel_value@OData.Community.Display.V1.FormattedValue']}</td>\n  <td>  @{outputs('Get_Training_record')?['body/_mpa_category_value@OData.Community.Display.V1.FormattedValue']}</td>\n  <td>  @{outputs('Get_Training_Session_Info')?['body/mpa_name']}</td>\n   <td> @{outputs('Get_Training_record')?['body/mpa_description']}</td>\n  <td>@{outputs('Get_Training_Session_Info')?['body/mpa_platform@OData.Community.Display.V1.FormattedValue']}  </td>\n   <td> @{formatDateTime(outputs('Get_Training_Session_Info')?['body/mpa_startdateandtime'], 'yyyy-MM-ddTHH:mm:ssZ')} - @{formatDateTime(outputs('Get_Training_Session_Info')?['body/mpa_enddateandtime'], 'yyyy-MM-ddTHH:mm:ssZ')} UTC </td>\n   <td> @{outputs('Get_Training_Session_Info')?['body/mpa_capacity']}</td>\n </tr>\n</table>\n<br>\n</p>",
+                                "item/isAllDay": false,
+                                "item/isReminderOn": false,
+                                "item/showAs": "busy",
+                                "item/responseRequested": false,
+                                "item/sensitivity": "normal"
+                              },
+                              "authentication": {
+                                "type": "Raw",
+                                "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                              }
+                            },
+                            "description": "Create a blocker for the trainer's calendar"
+                          },
+                          "Set_TrainerEventId": {
+                            "runAfter": {
+                              "Create_event_for_the_Trainer": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "d091b8ff-43b1-4a37-b39e-e4590e45f8bd"
+                            },
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "TrainerEventId",
+                              "value": "@outputs('Create_event_for_the_Trainer')?['body/id']"
+                            },
+                            "description": "Stores the trainer event id"
+                          }
+                        },
+                        "runAfter": {},
+                        "expression": {
+                          "equals": [
+                            "@triggerBody()['boolean']",
+                            "@true"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "226c0654-fd85-4b93-9f51-1b5952297e18"
+                        },
+                        "type": "If",
+                        "description": "Creates the placeholder event for the trainer"
+                      },
+                      "Create_Attendee_Event": {
+                        "actions": {
+                          "Create_event_for_attendees": {
+                            "runAfter": {},
+                            "metadata": {
+                              "operationMetadataId": "0adfada8-ea16-4165-b514-2f5e119ec79b"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_office365",
+                                "operationId": "V4CalendarPostItem",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                              },
+                              "parameters": {
+                                "table": "@variables('CalendarId')",
+                                "item/subject": "Confirmed registration: @{outputs('Get_Training_Session_Info')?['body/mpa_name']} ",
+                                "item/start": "@formatDateTime(outputs('Get_Training_Session_Info')?['body/mpa_startdateandtime'], 'yyyy-MM-ddTHH:mm:ssZ')",
+                                "item/end": "@formatDateTime(outputs('Get_Training_Session_Info')?['body/mpa_enddateandtime'], 'yyyy-MM-ddTHH:mm:ssZ')",
+                                "item/timeZone": "(UTC) Coordinated Universal Time",
+                                "item/body": "<style>\n#training {\n  font-family: Arial, Helvetica, sans-serif;\nfont-size: small;\n  border-collapse: collapse;\n  width: 100%;\n}\n\n#training td, #training th {\n  border: 1px solid #ddd;\n  padding: 8px;\n}\n\n#training tr:nth-child(even){background-color: #f2f2f2;}\n\n#training tr:hover {background-color: #ddd;}\n\n#training th {\n  padding-top: 12px;\n  padding-bottom: 12px;\n  text-align: left;\n  background-color: Gray;\n  color: white;\n}\n</style>\n\n<br>\nYou are now registered to attend the training <strong>@{outputs('Get_Training_Session_Info')?['body/mpa_name']} </strong>\n<br>This is a blocker for your calendar. 1 day before the training, you will receive an invite with the details to join the session. <br>\n<br>Below you can see the details for your upcoming training: \n<br>\n<table id=\"training\">\n <tr>\n   <th>Skill Level</th>\n   <th>Training Category</th>\n   <th>Training Name</th>\n   <th>Description</th>\n   <th>Platform</th>\n   <th>Date</th>\n   <th>Trainer</th>\n </tr>\n <tr>\n  <td>  @{outputs('Get_Training_record')?['body/_mpa_skilllevel_value@OData.Community.Display.V1.FormattedValue']}</td>\n  <td>  @{outputs('Get_Training_record')?['body/_mpa_category_value@OData.Community.Display.V1.FormattedValue']}</td>\n  <td>  @{outputs('Get_Training_Session_Info')?['body/mpa_name']}</td>\n   <td> @{outputs('Get_Training_record')?['body/mpa_description']}</td>\n  <td>  @{outputs('Get_Training_Session_Info')?['body/mpa_platform@OData.Community.Display.V1.FormattedValue']}</td>\n   <td> @{formatDateTime(outputs('Get_Training_Session_Info')?['body/mpa_startdateandtime'], 'yyyy-MM-ddTHH:mm:ssZ')} - @{formatDateTime(outputs('Get_Training_Session_Info')?['body/mpa_enddateandtime'], 'yyyy-MM-ddTHH:mm:ssZ')} UTC </td>\n   <td> @{outputs('Get_Trainer_Information')?['body/fullname']}</td>\n </tr>\n</table>\n<br>\n</p>",
+                                "item/importance": "normal",
+                                "item/isAllDay": false,
+                                "item/isReminderOn": false,
+                                "item/showAs": "busy",
+                                "item/responseRequested": false,
+                                "item/sensitivity": "normal"
+                              },
+                              "authentication": {
+                                "type": "Raw",
+                                "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                              }
+                            },
+                            "description": "Create placeholder event for attendees"
+                          },
+                          "Set_AttendeeEvenId": {
+                            "runAfter": {
+                              "Create_event_for_attendees": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "4bc71262-dd6e-498d-8972-7cb8adb613eb"
+                            },
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "AttendeeEventId",
+                              "value": "@outputs('Create_event_for_attendees')?['body/id']"
+                            },
+                            "description": "Stores the attended event id"
+                          }
+                        },
+                        "runAfter": {
+                          "Create_Trainer_Event": [
+                            "Succeeded"
+                          ]
+                        },
+                        "expression": {
+                          "equals": [
+                            "@triggerBody()['boolean_1']",
+                            "@true"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "68b2094d-090d-4db3-9cde-9d3acd551f7a"
+                        },
+                        "type": "If",
+                        "description": "Creates the placeholder event for the attendee"
+                      },
+                      "If_an_event_was_created": {
+                        "actions": {
+                          "Update_Training_Session_with_Trainer_Event_Id": {
+                            "runAfter": {},
+                            "metadata": {
+                              "operationMetadataId": "2515ae32-ae10-4731-b9a5-6f3daa1b7b45"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_commondataserviceforapps_1",
+                                "operationId": "UpdateRecord",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                              },
+                              "parameters": {
+                                "entityName": "mpa_trainingsessions",
+                                "recordId": "@outputs('Get_Training_Session_Info')?['body/mpa_trainingsessionid']",
+                                "item/mpa_calendarid": "@variables('AttendeeEventId')",
+                                "item/mpa_trainereventid": "@variables('TrainerEventId')"
+                              },
+                              "authentication": {
+                                "type": "Raw",
+                                "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                              }
+                            },
+                            "description": "Store the trainer's meeting id on the session "
+                          }
+                        },
+                        "runAfter": {
+                          "Create_Attendee_Event": [
+                            "Succeeded"
+                          ]
+                        },
+                        "expression": {
+                          "and": [
+                            {
+                              "not": {
+                                "equals": [
+                                  "@variables('AttendeeEventId')",
+                                  "@null"
+                                ]
+                              }
+                            },
+                            {
+                              "not": {
+                                "equals": [
+                                  "@variables('TrainerEventId')",
+                                  "@null"
+                                ]
+                              }
+                            },
+                            {
+                              "equals": [
+                                "@triggerBody()['boolean']",
+                                "@true"
+                              ]
+                            },
+                            {
+                              "equals": [
+                                "@triggerBody()['boolean_1']",
+                                "@true"
+                              ]
+                            }
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "71eedf32-d505-4854-8690-50421598fb2a"
+                        },
+                        "type": "If",
+                        "description": "Both events were created"
+                      },
+                      "UpdateAttendee_Event": {
+                        "actions": {
+                          "Get_Event": {
+                            "runAfter": {},
+                            "metadata": {
+                              "operationMetadataId": "37537d81-7b3f-4361-9739-c98eccee1166"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_office365",
+                                "operationId": "V3CalendarGetItem",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                              },
+                              "parameters": {
+                                "table": "@variables('CalendarId')",
+                                "id": "@variables('AttendeeEventId')"
+                              },
+                              "authentication": {
+                                "type": "Raw",
+                                "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                              }
+                            },
+                            "description": "Get the existing event for Attendees"
+                          },
+                          "Get_list_of_participants": {
+                            "runAfter": {
+                              "Get_Event": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "83a877e6-4d21-48ae-bcf5-1064892ec7ab"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_commondataserviceforapps_1",
+                                "operationId": "ListRecords",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                              },
+                              "parameters": {
+                                "entityName": "systemusers",
+                                "$select": "internalemailaddress,systemuserid",
+                                "$filter": "(user_mpa_booking/any(o1:(o1/_mpa_trainingsession_value eq @{outputs('Get_Training_Session_Info')?['body/mpa_trainingsessionid']} and o1/statecode eq 0)))"
+                              },
+                              "authentication": {
+                                "type": "Raw",
+                                "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                              }
+                            },
+                            "description": "Get the list of unique users that have booked this training"
+                          },
+                          "Select_Participants": {
+                            "runAfter": {
+                              "Get_list_of_participants": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "09eee3cf-9062-4dbe-8383-620380a29e75"
+                            },
+                            "type": "Select",
+                            "inputs": {
+                              "from": "@outputs('Get_list_of_participants')?['body/value']",
+                              "select": "@item()?['internalemailaddress']"
+                            },
+                            "description": "Create a json with the unique emails of the participants"
+                          },
+                          "Join_the_participants_emails": {
+                            "runAfter": {
+                              "Select_Participants": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "893d9b60-2089-4397-a58b-8fbd72bd9c06"
+                            },
+                            "type": "Compose",
+                            "inputs": "@join(body('Select_Participants'), ';')",
+                            "description": "Creates a string for the recipients line"
+                          },
+                          "AddRecipient_or_Update_Event": {
+                            "actions": {
+                              "Update_event_to_add_more_people": {
+                                "runAfter": {},
+                                "metadata": {
+                                  "operationMetadataId": "281aefb0-c4c1-4013-acf1-2571990c72e0"
+                                },
+                                "type": "OpenApiConnection",
+                                "inputs": {
+                                  "host": {
+                                    "connectionName": "shared_office365",
+                                    "operationId": "V4CalendarPatchItem",
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                                  },
+                                  "parameters": {
+                                    "table": "@variables('CalendarId')",
+                                    "id": "@variables('AttendeeEventId')",
+                                    "item/subject": "@outputs('Get_Event')?['body/subject']",
+                                    "item/start": "@outputs('Get_Event')?['body/start']",
+                                    "item/end": "@outputs('Get_Event')?['body/end']",
+                                    "item/timeZone": "(UTC) Coordinated Universal Time",
+                                    "item/requiredAttendees": "@outputs('Join_the_participants_emails')",
+                                    "item/body": "@outputs('Get_Event')?['body/body']",
+                                    "item/importance": "@outputs('Get_Event')?['body/importance']",
+                                    "item/isAllDay": "@outputs('Get_Event')?['body/isAllDay']",
+                                    "item/isReminderOn": "@outputs('Get_Event')?['body/isReminderOn']",
+                                    "item/showAs": "@outputs('Get_Event')?['body/showAs']",
+                                    "item/responseRequested": "@outputs('Get_Event')?['body/responseRequested']",
+                                    "item/sensitivity": "@outputs('Get_Event')?['body/sensitivity']"
+                                  },
+                                  "authentication": {
+                                    "type": "Raw",
+                                    "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                                  }
+                                },
+                                "description": "Update the recipient field of the event, keeping the rest of the fields"
+                              }
+                            },
+                            "runAfter": {
+                              "Join_the_participants_emails": [
+                                "Succeeded"
+                              ]
+                            },
+                            "else": {
+                              "actions": {
+                                "Update_attendee_event_dates": {
+                                  "runAfter": {},
+                                  "metadata": {
+                                    "operationMetadataId": "42b7d2bd-afa2-419e-b38d-30aa600e0f12"
+                                  },
+                                  "type": "OpenApiConnection",
+                                  "inputs": {
+                                    "host": {
+                                      "connectionName": "shared_office365",
+                                      "operationId": "V4CalendarPatchItem",
+                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                                    },
+                                    "parameters": {
+                                      "table": "@variables('CalendarId')",
+                                      "id": "@variables('AttendeeEventId')",
+                                      "item/subject": "@outputs('Get_Event')?['body/subject']",
+                                      "item/start": "@formatDateTime(outputs('Get_Training_Session_Info')?['body/mpa_startdateandtime'], 'yyyy-MM-ddTHH:mm:ssZ')",
+                                      "item/end": "@formatDateTime(outputs('Get_Training_Session_Info')?['body/mpa_enddateandtime'], 'yyyy-MM-ddTHH:mm:ssZ')",
+                                      "item/timeZone": "(UTC) Coordinated Universal Time",
+                                      "item/requiredAttendees": "@outputs('Join_the_participants_emails')",
+                                      "item/body": "<style>\n#training {\n  font-family: Arial, Helvetica, sans-serif;\nfont-size: small;\n  border-collapse: collapse;\n  width: 100%;\n}\n\n#training td, #training th {\n  border: 1px solid #ddd;\n  padding: 8px;\n}\n\n#training tr:nth-child(even){background-color: #f2f2f2;}\n\n#training tr:hover {background-color: #ddd;}\n\n#training th {\n  padding-top: 12px;\n  padding-bottom: 12px;\n  text-align: left;\n  background-color: Gray;\n  color: white;\n}\n</style>\n\n<br>\nYou are now registered to attend the training <strong>@{outputs('Get_Training_Session_Info')?['body/mpa_name']} </strong>\n<br>This is a blocker for your calendar. 1 day before the training, you will receive an invite with the details to join the session. <br>\n<br>Below you can see the details for your upcoming training: \n<br>\n<table id=\"training\">\n <tr>\n   <th>Skill Level</th>\n   <th>Training Category</th>\n   <th>Training Name</th>\n   <th>Description</th>\n   <th>Platform</th>\n   <th>Date</th>\n   <th>Trainer</th>\n </tr>\n <tr>\n  <td>  @{outputs('Get_Training_record')?['body/_mpa_skilllevel_value@OData.Community.Display.V1.FormattedValue']}</td>\n  <td>  @{outputs('Get_Training_record')?['body/_mpa_category_value@OData.Community.Display.V1.FormattedValue']}</td>\n  <td>  @{outputs('Get_Training_Session_Info')?['body/mpa_name']}</td>\n   <td> @{outputs('Get_Training_record')?['body/mpa_description']}</td>\n  <td>@{outputs('Get_Training_Session_Info')?['body/mpa_platform@OData.Community.Display.V1.FormattedValue']}  </td>\n   <td> @{formatDateTime(outputs('Get_Training_Session_Info')?['body/mpa_startdateandtime'], 'yyyy-MM-ddTHH:mm:ssZ')} - @{formatDateTime(outputs('Get_Training_Session_Info')?['body/mpa_enddateandtime'], 'yyyy-MM-ddTHH:mm:ssZ')} UTC </td>\n   <td> @{outputs('Get_Trainer_Information')?['body/fullname']}</td>\n </tr>\n</table>\n<br>\n</p>",
+                                      "item/importance": "@outputs('Get_Event')?['body/importance']",
+                                      "item/isAllDay": "@outputs('Get_Event')?['body/isAllDay']",
+                                      "item/isReminderOn": "@outputs('Get_Event')?['body/isReminderOn']",
+                                      "item/showAs": "@outputs('Get_Event')?['body/showAs']",
+                                      "item/responseRequested": "@outputs('Get_Event')?['body/responseRequested']",
+                                      "item/sensitivity": "@outputs('Get_Event')?['body/sensitivity']"
+                                    },
+                                    "authentication": {
+                                      "type": "Raw",
+                                      "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                                    }
+                                  },
+                                  "description": "Update the dates and time of the event "
+                                }
+                              }
+                            },
+                            "expression": {
+                              "equals": [
+                                "@triggerBody()['boolean_4']",
+                                "@true"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "e1a67155-4e07-4e31-a75a-9ddfa0719e85"
+                            },
+                            "type": "If",
+                            "description": "If AddRecipient is true, add recipients to the event. If false, update the actual event"
+                          }
+                        },
+                        "runAfter": {
+                          "If_an_event_was_created": [
+                            "Succeeded"
+                          ]
+                        },
+                        "expression": {
+                          "and": [
+                            {
+                              "equals": [
+                                "@triggerBody()['boolean_2']",
+                                "@true"
+                              ]
+                            },
+                            {
+                              "equals": [
+                                "@empty(variables('AttendeeEventId'))",
+                                "@false"
+                              ]
+                            }
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "422b17ef-a9c1-4e7e-885a-9c6d4f4703d6"
+                        },
+                        "type": "If",
+                        "description": "If UpdateAttende is true, it will update the event and or add recipients to it"
+                      },
+                      "Update_TrainerEvent": {
+                        "actions": {
+                          "Get_Trainer": {
+                            "runAfter": {},
+                            "metadata": {
+                              "operationMetadataId": "37537d81-7b3f-4361-9739-c98eccee1166"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_office365",
+                                "operationId": "V3CalendarGetItem",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                              },
+                              "parameters": {
+                                "table": "@variables('CalendarId')",
+                                "id": "@variables('TrainerEventId')"
+                              },
+                              "authentication": {
+                                "type": "Raw",
+                                "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                              }
+                            },
+                            "description": "Get the existing event "
+                          },
+                          "Update_Trainer_Event": {
+                            "runAfter": {
+                              "Get_Trainer": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "281aefb0-c4c1-4013-acf1-2571990c72e0"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_office365",
+                                "operationId": "V4CalendarPatchItem",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                              },
+                              "parameters": {
+                                "table": "@variables('CalendarId')",
+                                "id": "@variables('TrainerEventId')",
+                                "item/subject": "@outputs('Get_Trainer')?['body/subject']",
+                                "item/start": "@formatDateTime(outputs('Get_Training_Session_Info')?['body/mpa_startdateandtime'], 'yyyy-MM-ddTHH:mm:ssZ')",
+                                "item/end": "@formatDateTime(outputs('Get_Training_Session_Info')?['body/mpa_enddateandtime'], 'yyyy-MM-ddTHH:mm:ssZ')",
+                                "item/timeZone": "(UTC) Coordinated Universal Time",
+                                "item/body": "<style>\n#training {\n  font-family: Arial, Helvetica, sans-serif;\nfont-size: small;\n  border-collapse: collapse;\n  width: 100%;\n}\n\n#training td, #training th {\n  border: 1px solid #ddd;\n  padding: 8px;\n}\n\n#training tr:nth-child(even){background-color: #f2f2f2;}\n\n#training tr:hover {background-color: #ddd;}\n\n#training th {\n  padding-top: 12px;\n  padding-bottom: 12px;\n  text-align: left;\n  background-color: Gray;\n  color: white;\n}\n</style>\n\n<br>\nThank you for registering as a trainer.\n<br>This is a blocker for your calendar. 1 day before the training, you will receive an invite with the details to join the session. <br>\n<br>Below you can see the details for your upcoming training: \n<br>\n<table id=\"training\">\n <tr>\n   <th>Skill Level</th>\n   <th>Training Category</th>\n   <th>Training Name</th>\n   <th>Description</th>\n   <th>Platform</th>\n   <th>Date</th>\n   <th>Capacity</th>\n </tr>\n <tr>\n  <td>  @{outputs('Get_Training_record')?['body/_mpa_skilllevel_value@OData.Community.Display.V1.FormattedValue']}</td>\n  <td>  @{outputs('Get_Training_record')?['body/_mpa_category_value@OData.Community.Display.V1.FormattedValue']}</td>\n  <td>  @{outputs('Get_Training_Session_Info')?['body/mpa_name']}</td>\n   <td> @{outputs('Get_Training_record')?['body/mpa_description']}</td>\n  <td>  @{outputs('Get_Training_Session_Info')?['body/mpa_platform@OData.Community.Display.V1.FormattedValue']}</td>\n   <td> @{formatDateTime(outputs('Get_Training_Session_Info')?['body/mpa_startdateandtime'], 'yyyy-MM-ddTHH:mm:ssZ')} - @{formatDateTime(outputs('Get_Training_Session_Info')?['body/mpa_enddateandtime'], 'yyyy-MM-ddTHH:mm:ssZ')} UTC </td>\n   <td> @{outputs('Get_Training_Session_Info')?['body/mpa_capacity']}</td>\n </tr>\n</table>\n<br>\n</p>",
+                                "item/importance": "@outputs('Get_Trainer')?['body/importance']",
+                                "item/isAllDay": "@outputs('Get_Trainer')?['body/isAllDay']",
+                                "item/isReminderOn": "@outputs('Get_Trainer')?['body/isReminderOn']",
+                                "item/showAs": "@outputs('Get_Trainer')?['body/showAs']",
+                                "item/responseRequested": "@outputs('Get_Trainer')?['body/responseRequested']",
+                                "item/sensitivity": "@outputs('Get_Trainer')?['body/sensitivity']"
+                              },
+                              "authentication": {
+                                "type": "Raw",
+                                "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                              }
+                            },
+                            "description": "Update the trainer event with the new dates"
+                          }
+                        },
+                        "runAfter": {
+                          "UpdateAttendee_Event": [
+                            "Succeeded"
+                          ]
+                        },
+                        "expression": {
+                          "and": [
+                            {
+                              "equals": [
+                                "@triggerBody()['boolean_5']",
+                                "@true"
+                              ]
+                            },
+                            {
+                              "equals": [
+                                "@empty(variables('TrainerEventId'))",
+                                "@false"
+                              ]
+                            }
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "b8711abb-6991-4d7c-b403-1136da0f73e6"
+                        },
+                        "type": "If",
+                        "description": "If update trainer is true, updates the trainer placeholder"
+                      },
+                      "Flow_Response_-_Completed": {
+                        "runAfter": {
+                          "Update_TrainerEvent": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "b314e099-76dc-405e-968e-6758d80633e7"
+                        },
+                        "type": "SetVariable",
+                        "inputs": {
+                          "name": "FlowResponse",
+                          "value": "Actions completed"
+                        }
+                      }
+                    },
+                    "runAfter": {},
+                    "else": {
+                      "actions": {
+                        "FlowResponse_-_Dates_missing": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "dabf7cce-c419-47e1-a949-859eaab8a282"
+                          },
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "FlowResponse",
+                            "value": "The dates of this session are missing. "
+                          },
+                          "description": "Update the FlowResponse variable to notify that the dates are missing"
+                        }
+                      }
+                    },
+                    "expression": {
+                      "and": [
+                        {
+                          "not": {
+                            "equals": [
+                              "@outputs('Get_Training_Session_Info')?['body/mpa_startdateandtime']",
+                              "@null"
+                            ]
+                          }
+                        },
+                        {
+                          "not": {
+                            "equals": [
+                              "@outputs('Get_Training_Session_Info')?['body/mpa_enddateandtime']",
+                              "@null"
+                            ]
+                          }
+                        },
+                        {
+                          "equals": [
+                            "@empty(outputs('Get_Training_Session_Info')?['body/mpa_startdateandtime'])",
+                            "@false"
+                          ]
+                        },
+                        {
+                          "equals": [
+                            "@empty(outputs('Get_Training_Session_Info')?['body/mpa_enddateandtime'])",
+                            "@false"
+                          ]
+                        }
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "5dfd6ea8-37c6-4b66-b058-b6971cd9da9d"
+                    },
+                    "type": "If",
+                    "description": "Confirm Start Date, End Date and Trainer contains data. Otherwise, we cannot create placeholders."
+                  }
+                }
+              },
+              "expression": {
+                "equals": [
+                  "@triggerBody()['boolean_6']",
+                  "@true"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "01fd9b0e-0bcf-4c2a-9d3d-f24e4670293f"
+              },
+              "type": "If",
+              "description": "If DeleteSession is true, it will delete all sessions"
+            }
+          },
+          "runAfter": {
+            "Loop_calendars": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Flow_Response_-_Calendar_missing": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "892f8246-dbb4-4ddd-a425-c99814a08e68"
+                },
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "FlowResponse",
+                  "value": "The calendar was not found."
+                },
+                "description": "Update the FlowResponse variable to notify that the calendar was not found"
+              }
+            }
+          },
+          "expression": {
+            "and": [
+              {
+                "not": {
+                  "equals": [
+                    "@variables('CalendarId')",
+                    "@null"
+                  ]
+                }
+              },
+              {
+                "equals": [
+                  "@empty(variables('CalendarId'))",
+                  "@false"
+                ]
+              }
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "2dfe008e-8aca-48e1-a0e1-4bc197233325"
+          },
+          "type": "If",
+          "description": "Confirm the calendar was found. If calendar is not found, we cannot create invites."
+        },
+        "Initialize_TrainerEventid": {
+          "runAfter": {
+            "Initialize_CalendarId_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "01825149-6e77-48ad-a5e5-fd2a36e9ca61"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "TrainerEventId",
+                "type": "string",
+                "value": "@{null}"
+              }
+            ]
+          },
+          "description": "Holds the trainer event id variable once the invite is created"
+        },
+        "Initialize_AttendeeEventid": {
+          "runAfter": {
+            "Initialize_TrainerEventid": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "8d2c3674-a493-42c3-aa1a-d695f6fed741"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "AttendeeEventId",
+                "type": "string",
+                "value": "@{null}"
+              }
+            ]
+          },
+          "description": "Holds the attendee event id variable once the invite is created"
+        },
+        "Respond_to_a_PowerApp_or_flow": {
+          "runAfter": {
+            "FlowResponse-Compose": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "ae050121-9a7b-4865-bba4-785cc5a5f77c"
+          },
+          "type": "Response",
+          "kind": "PowerApp",
+          "inputs": {
+            "statusCode": 200,
+            "body": {
+              "flowresponse": "@outputs('FlowResponse-Compose')"
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "flowresponse": {
+                  "title": "FlowResponse",
+                  "x-ms-dynamically-added": true,
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        },
+        "Initialize_FlowResponse": {
+          "runAfter": {
+            "Initialize_AttendeeEventid": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "764db1b2-61d5-44da-9613-02bc034de671"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "FlowResponse",
+                "type": "string"
+              }
+            ]
+          },
+          "description": "Initialize variable for the flow resposne"
+        },
+        "FlowResponse-Compose": {
+          "runAfter": {
+            "Validate_Calendar_Exists": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "7edde181-f70d-4681-a0bb-4189fffcf307"
+          },
+          "type": "Compose",
+          "inputs": "@variables('FlowResponse')",
+          "description": "Compose the flow response variable to be able to send it as resposne"
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

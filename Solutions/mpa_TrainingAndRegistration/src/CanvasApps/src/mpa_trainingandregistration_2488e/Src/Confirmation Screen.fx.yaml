@@ -1,0 +1,387 @@
+"'Confirmation Screen' As screen":
+    Fill: =ColorValue(varTheme.neutralBackground2)
+    LoadingSpinnerColor: =App.Theme.Colors.Primary
+    OnHidden: |-
+        =//disable the button
+        UpdateContext({var_DisableSubmit: DisplayMode.Edit});
+    OnVisible: |+
+        =//disable the button
+        UpdateContext({var_DisableSubmit: DisplayMode.Edit});
+        
+        //Screen Layout properties
+        UpdateContext(
+        {   
+            var_LayoutProperties:
+            {
+                header: {height: 50},
+                confirmationComponent: {height: 144, width: 600},
+                modal : {padding: 24}
+        
+            }
+        }
+        );
+        
+
+    conConfirmationBody_Confirmation As groupContainer.verticalAutoLayoutContainer:
+        DropShadow: =DropShadow.ExtraBold
+        Fill: =ColorValue(varTheme.neutralBackground1)
+        Height: |
+            =
+            Max(var_LayoutProperties.confirmationComponent.height, txtHeadline_Confirmation.Height + txtMessage_Confirmation.Height + conButtons_Confirmation.Height + Self.PaddingTop + Self.PaddingBottom)
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutGap: =10
+        LayoutJustifyContent: =LayoutJustifyContent.Center
+        LayoutMode: =LayoutMode.Auto
+        PaddingBottom: =var_LayoutProperties.modal.padding
+        PaddingLeft: =var_LayoutProperties.modal.padding
+        PaddingRight: =var_LayoutProperties.modal.padding
+        PaddingTop: =var_LayoutProperties.modal.padding
+        RadiusBottomLeft: =8
+        RadiusBottomRight: =8
+        RadiusTopLeft: =8
+        RadiusTopRight: =8
+        Width: |-
+            =//Responsive condition 
+            If('Confirmation Screen'.Size = ScreenSize.Medium,
+                Parent.Width - 120,
+                'Confirmation Screen'.Size = ScreenSize.Small,
+                Parent.Width - 16,
+                var_LayoutProperties.confirmationComponent.width
+            )
+        X: =(Parent.Width /2) - (Self.Width /2)
+        Y: =((Parent.Height /2) - (Self.Height /2))
+        ZIndex: =1
+
+        txtHeadline_Confirmation As Text:
+            AutoHeight: =true
+            DisplayMode: =DisplayMode.Edit
+            Font: =""
+            FontColor: =
+            FontItalic: =varThemeFont.H3.italic
+            Height: =Self.Size * 3.6
+            LayoutMinHeight: =Self.Size * 1.8
+            LayoutMinWidth: =96
+            Size: =varThemeFont.H3.size
+            Text: |
+                =var_Header
+            VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+            Weight: =varThemeFont.H3.weightBold
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            Wrap: =true
+            X: =0
+            Y: =0
+            ZIndex: =1
+
+        txtMessage_Confirmation As Text:
+            AutoHeight: =true
+            DisplayMode: =DisplayMode.Edit
+            Font: =""
+            FontColor: =
+            FontItalic: =varThemeFont.H3.italic
+            Height: =Self.Size * Len(Self.Text)
+            LayoutMinHeight: =Self.Size * 1.8
+            LayoutMinWidth: =96
+            Size: =varThemeFont.B2.size
+            Text: =var_message
+            VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+            Weight: =varThemeFont.B2.weight
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            Wrap: =true
+            X: =0
+            Y: =0
+            ZIndex: =2
+
+        conButtons_Confirmation As groupContainer.horizontalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            FillPortions: =0
+            Height: |
+                =//Responsive condition 
+                If(
+                    'Confirmation Screen'.Size = ScreenSize.Small,
+                    varComponenentLayoutProperties.button.height * 2 + Self.LayoutGap,
+                    varComponenentLayoutProperties.button.height
+                )
+            LayoutDirection: |-
+                =//Responsive condition 
+                If(
+                    'Confirmation Screen'.Size = ScreenSize.Small,
+                    LayoutDirection.Vertical,
+                    LayoutDirection.Horizontal
+                )
+            LayoutGap: =8
+            LayoutJustifyContent: =LayoutJustifyContent.End
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            Width: =Parent.Width - Parent.PaddingRight - Parent.PaddingRight
+            ZIndex: =4
+
+            btnYes_Confirmation As Button:
+                AccessibleLabel: ="Yes"
+                Align: =""
+                BasePaletteColor: =
+                DisplayMode: =var_DisableSubmit
+                Font: =""
+                FontColor: =
+                FontItalic: =
+                FontSize: =0
+                FontWeight: =""
+                Height: =varComponenentLayoutProperties.button.height
+                Icon: =""
+                IconRotation: =0
+                IconStyle: ="Outline"
+                Layout: ="Icon before"
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                OnSelect: |-
+                    =//disable the button
+                    UpdateContext({var_DisableSubmit: DisplayMode.Disabled});
+                    If(
+                        var_IsUpdate,
+                        //PROCESS: Update
+                        IfError(
+                            ForAll(
+                                colRecordsToUpdate As varTrainingSessionItem,
+                                    //Check if existing training session is not the same with updated training session
+                                If(
+                                    varTrainingSessionItem.ExistingTrainingSession.'Training Session Id' <> varTrainingSessionItem.UpdatedTrainingSession.'Training Session Id',
+                                    With(
+                                        {
+                                            varTrainingSessionExistingTblRecord: LookUp(
+                                                'Training Sessions',
+                                                'Training Session Id' = varTrainingSessionItem.ExistingTrainingSession.'Training Session Id'
+                                            ),
+                                            varTrainingSessionUpdatedTblRecord: LookUp(
+                                                'Training Sessions',
+                                                'Training Session Id' = varTrainingSessionItem.UpdatedTrainingSession.'Training Session Id'
+                                            ),
+                                            varExistingTrainingSessionId: varTrainingSessionItem.ExistingTrainingSession.'Training Session Id',
+                                            varUpdatedTrainingSessionId: varTrainingSessionItem.UpdatedTrainingSession.'Training Session Id'
+                                        },
+                                            //If there is an existing booking - cancel it and create a new one (status reason - booking updated)
+                                        If(
+                                            !IsBlank(varTrainingSessionItem.ExistingBooking.'Booking Id'),
+                                            With(
+                                                {varExistingBookingId: varTrainingSessionItem.ExistingBooking.'Booking Id'},
+                                                    //Cancel existing booking
+                                                IfError(
+                                                    Patch(
+                                                        Bookings,
+                                                        LookUp(
+                                                            Bookings,
+                                                            'Booking Id' = varExistingBookingId
+                                                        ),
+                                                        {
+                                                            Status: 'Status (Bookings)'.Inactive,
+                                                            'Status Reason': 'Status Reason (Bookings)'.'Booking updated'
+                                                        }
+                                                    ),
+                                                        //Error encountered
+                                                    Notify(
+                                                        "Error cancelling existing booking on column(s): " & Concat(
+                                                            Errors(Bookings),
+                                                            Column & ": " & Message,
+                                                            "; "
+                                                        ),
+                                                        NotificationType.Error
+                                                    ),
+                                                    //Successful cancellation of existing booking
+                                                    //Return slot/capacity count
+                                                    Patch(
+                                                        'Training Sessions',
+                                                        varTrainingSessionExistingTblRecord,
+                                                        {
+                                                            'Booked Slot': CountIf(
+                                                                Bookings,
+                                                                'Training Session'.'Training Session Id' = varExistingTrainingSessionId And Status = 'Status (Bookings)'.Active
+                                                            ),
+                                                            'Day of the Week': Text(
+                                                                varTrainingSessionExistingTblRecord.'Start Date and Time',
+                                                                "ddd"
+                                                            )
+                                                        }
+                                                    ),
+                                                    //Error encountered
+                                                    Notify(
+                                                        "Error cancelling existing booking on column(s): " & Concat(
+                                                            Errors('Training Sessions'),
+                                                            Column & ": " & Message,
+                                                            "; "
+                                                        ),
+                                                        NotificationType.Error
+                                                    ),
+                                                    ""
+                                                );
+                                            );
+                                        );
+                                        //Create new booking
+                                        IfError(
+                                            Patch(
+                                                Bookings,
+                                                Defaults(Bookings),
+                                                {
+                                                    'Registered User': varCurrentUser,
+                                                    'Status Reason': 'Status Reason (Bookings)'.Registered,
+                                                    'Training Session': varTrainingSessionUpdatedTblRecord,
+                                                    Training: varTrainingSessionUpdatedTblRecord.Training,
+                                                    Category: LookUp(
+                                                        Categories,
+                                                        'Category Id' = cmbCategory.Selected.'Category Id'
+                                                    )
+                                                }
+                                            ),
+                                            //Error encountered
+                                            Notify(
+                                                "Error creating new booking on column(s): " & Concat(
+                                                    Errors(Bookings),
+                                                    Column & ": " & Message,
+                                                    "; "
+                                                ),
+                                                NotificationType.Error
+                                            ),
+                                            //Successful booking
+                                            //Update training sessions booked slot
+                                            
+                                            Patch(
+                                                'Training Sessions',
+                                                varTrainingSessionUpdatedTblRecord,
+                                                {
+                                                    'Booked Slot': CountIf(
+                                                        Bookings,
+                                                        'Training Session'.'Training Session Id' = varUpdatedTrainingSessionId And Status = 'Status (Bookings)'.Active
+                                                    ),
+                                                    'Day of the Week': Text(
+                                                        varTrainingSessionUpdatedTblRecord.'Start Date and Time',
+                                                        "ddd"
+                                                    )
+                                                }
+                                            ),
+                                            //Error encountered on training sessions update
+                                            Notify(
+                                                "Error creating new booking on column(s): " & Concat(
+                                                    Errors('Training Sessions'),
+                                                    Column & ": " & Message,
+                                                    "; "
+                                                ),
+                                                NotificationType.Error
+                                            ),
+                                            //Successful patch
+                                            Notify(
+                                                "You have successfully booked the Training.",
+                                                NotificationType.Success
+                                            );
+                                            Reset(cmbSkillLevel);
+                                            Reset(cmbCategory);
+                                            Navigate('Booking Screen')
+                                        );
+                                    );
+                                );
+                            ),
+                                //Error encountered on training sessions loop
+                            Notify(
+                                "Error updating bookings!" & Concat(
+                                    Errors('Training Sessions'),
+                                    Column & ": " & Message,
+                                    "; "
+                                ),
+                                NotificationType.Error
+                            ),
+                                //Updates successful
+                            Reset(cmbSkillLevel);
+                            Reset(cmbCategory);
+                            Navigate(
+                                'Booking Screen',
+                                Transition.None
+                            )
+                        ),
+                        //PROCESS: Cancel
+                        IfError(
+                            //Patch Bookings
+                            Patch(
+                                Bookings,
+                                DropColumns(
+                                    varBookingRecordToCancel,
+                                    Start_Date,
+                                    Session_Status
+                                ),
+                                {
+                                    Status: 'Status (Bookings)'.Inactive,
+                                    'Status Reason': 'Status Reason (Bookings)'.'Cancelled by user'
+                                }
+                            ),
+                            //Error encountered
+                            Notify(
+                                "Error on column(s)" & ": " & Concat(
+                                    Errors(Bookings),
+                                    Column & ": " & Message,
+                                    "; "
+                                ),
+                                NotificationType.Error
+                            ),
+                            Refresh(Bookings);
+                            Navigate('Booking Screen');
+                            //notify user
+                        Notify(
+                                "You have successfully cancelled your booking! You should receive an email confirmation.",
+                                NotificationType.Success
+                            )
+                        )
+                    )
+                Text: ="Yes"
+                VerticalAlign: =""
+                Width: |-
+                    =//Responsive condition 
+                    If(
+                        'Confirmation Screen'.Size = ScreenSize.Small,
+                        Parent.Width,
+                        varComponenentLayoutProperties.button.width
+                    )
+                X: =0
+                Y: =0
+                ZIndex: =1
+
+            btnNo_Confirmation As Button:
+                AccessibleLabel: ="No"
+                Align: =""
+                Appearance: ='ButtonCanvas.Appearance'.Secondary
+                BasePaletteColor: =
+                DisplayMode: =DisplayMode.Edit
+                Font: =""
+                FontColor: =
+                FontItalic: =
+                FontSize: =0
+                FontWeight: =""
+                Height: =varComponenentLayoutProperties.button.height
+                Icon: =""
+                IconRotation: =0
+                IconStyle: ="Outline"
+                Layout: ="Icon before"
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                OnSelect: |-
+                    =Navigate(If(
+                        varBookingActionType = "Cancel",
+                        'Training Session Details Screen',
+                        'Training Sessions Screen'
+                    ))
+                Text: ="No"
+                VerticalAlign: =""
+                Width: |-
+                    =//Responsive condition 
+                    If(
+                        'Confirmation Screen'.Size = ScreenSize.Small,
+                        Parent.Width,
+                        varComponenentLayoutProperties.button.width
+                    )
+                X: =0
+                Y: =0
+                ZIndex: =2
+
+    cmpHeaderCompound_Confirmation As compHeaderCompound:
+        BackButtonVisibility: =false
+        HeaderHeight: =varComponenentLayoutProperties.headerheight
+        HeaderWidth: =Parent.Width
+        Height: =cmpHeaderCompound_Confirmation.HeaderHeight
+        Width: =cmpHeaderCompound_Confirmation.HeaderWidth
+        ZIndex: =2
+
