@@ -1,0 +1,574 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_office365_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_PowerAppsInnovationCenterOutlook"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      },
+      "shared_commondataserviceforapps_1": {
+        "impersonation": {},
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_PowerAppsInnovationCenterDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_a_row_is_added,_modified_or_deleted": {
+          "metadata": {
+            "operationMetadataId": "80e49293-1832-4620-8d95-fd5a95d34397"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "SubscribeWebhookTrigger"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 3,
+              "subscriptionRequest/entityname": "mpa_parkres_longtermreservation",
+              "subscriptionRequest/scope": 4,
+              "subscriptionRequest/filteringattributes": "statuscode",
+              "subscriptionRequest/name": "11e32b86-870e-ef11-9f89-7c1e5201c0e0"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Trigger once a long term reservation is cancelled"
+        }
+      },
+      "actions": {
+        "Send_email": {
+          "runAfter": {
+            "Check_if_spot_is_accessible": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "32f30312-f460-41c9-884c-83dd23f37a48"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+              "connectionName": "shared_office365_1",
+              "operationId": "SendEmailV2"
+            },
+            "parameters": {
+              "emailMessage/To": "@outputs('Get_user_details')?['body/internalemailaddress']",
+              "emailMessage/Subject": "Long term parking reservation has been cancelled.",
+              "emailMessage/Body": "<p>Hi @{outputs('Get_user_details')?['body/firstname']},<br>\n<br>\nPlease be informed that your parking slot has been cancelled.<br>\n<br>\n<strong>Parking Spot:</strong> @{variables('varParkingSpot')}<br>\n<strong>Dates:</strong> @{formatDateTime(triggerOutputs()?['body/mpa_startdate'], 'MM/dd/yyyy')} - @{formatDateTime(triggerOutputs()?['body/mpa_enddate'], 'MM/dd/yyyy')}<br>\n<strong>Building:</strong> @{variables('varBuilding')}<br>\n<strong>Floor: </strong>&nbsp;@{variables('varFloor')}<br>\n<strong>Level:</strong> @{variables('varLevel')}<br>\n<strong>Accessible Spot:</strong> @{variables('varIsAccessible')}</p>",
+              "emailMessage/Importance": "Normal"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Send email notification to the requestor with the details"
+        },
+        "Initialize_variable_-_Building": {
+          "runAfter": {
+            "Check_status_if_cancelled": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "ea16919e-63f9-436f-ae25-b462edb73e92"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "varBuilding",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_Floor": {
+          "runAfter": {
+            "Initialize_variable_-_Building": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "06b09931-b88e-4cb4-8b8e-d26d3b9ca13a"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "varFloor",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_Level": {
+          "runAfter": {
+            "Initialize_variable_-_Floor": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "eb342e94-a452-4aee-bc0d-2244078cbc65"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "varLevel",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_Parking_Spot": {
+          "runAfter": {
+            "Initialize_variable_-_Level": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "f1a94982-8f78-4a1f-8fb4-7499fe92f00c"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "varParkingSpot",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Get_list_of_reservations": {
+          "runAfter": {
+            "Initialize_variable_-_IsAccessible": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "4700d6c9-9510-4fe4-91eb-9c1e38496e18"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "ListRecords"
+            },
+            "parameters": {
+              "entityName": "mpa_parkres_reservations",
+              "$filter": "_mpa_longtermreservation_value eq @{triggerOutputs()?['body/mpa_parkres_longtermreservationid']}"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Get the list of all reservations related to the long term group"
+        },
+        "Get_reservation_details": {
+          "runAfter": {
+            "Get_list_of_reservations": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "77478d6f-a0b4-4d2a-9f42-662deee6f595"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "GetItem"
+            },
+            "parameters": {
+              "entityName": "mpa_parkres_reservations",
+              "recordId": "@first(body('Get_list_of_reservations')?['value'])?['mpa_parkres_reservationid']"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Get the details of the reservation"
+        },
+        "Get_user_details": {
+          "runAfter": {
+            "Get_reservation_details": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "0ad1de49-5a38-4108-937e-6e48e5c48bdc"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "GetItem"
+            },
+            "parameters": {
+              "entityName": "systemusers",
+              "recordId": "@outputs('Get_reservation_details')?['body/_createdby_value']",
+              "$select": "firstname,internalemailaddress,fullname"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Get the details of the reservation owner"
+        },
+        "Check_if_parking_spot_is_null": {
+          "actions": {
+            "Set_parking_spot_to_null": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "e7dcc030-6ee2-40b9-86b4-2a7c81793ab5"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varParkingSpot",
+                "value": "N/A"
+              }
+            }
+          },
+          "runAfter": {
+            "Check_if_floor_is_null": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Get_parking_spot_details": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "02cca84f-8713-4c12-82f2-c05fa75407d5"
+                },
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                    "connectionName": "shared_commondataserviceforapps_1",
+                    "operationId": "GetItem"
+                  },
+                  "parameters": {
+                    "entityName": "mpa_parkres_parkingspots",
+                    "recordId": "@outputs('Get_reservation_details')?['body/_mpa_parkingspot_value']",
+                    "$select": "mpa_name"
+                  },
+                  "authentication": "@parameters('$authentication')"
+                },
+                "description": "Get the details of the parking spot"
+              },
+              "Set_parking_spot_value": {
+                "runAfter": {
+                  "Get_parking_spot_details": [
+                    "Succeeded"
+                  ]
+                },
+                "metadata": {
+                  "operationMetadataId": "cbc3023b-3045-43db-aa46-84db1cb5ac77"
+                },
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "varParkingSpot",
+                  "value": "@outputs('Get_parking_spot_details')?['body/mpa_name']"
+                }
+              }
+            }
+          },
+          "expression": {
+            "equals": [
+              "@outputs('Get_reservation_details')?['body/_mpa_parkingspot_value']",
+              "@null"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "8268a892-ae0a-4f28-be88-1db58b1ca9a7"
+          },
+          "type": "If"
+        },
+        "Check_if_floor_is_null": {
+          "actions": {
+            "Set_floor_to_null": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "4803d2a9-3e8f-447b-9612-6777defc3ad9"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varFloor",
+                "value": "N/A"
+              }
+            },
+            "Set_level_to_null": {
+              "runAfter": {
+                "Set_floor_to_null": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6a05097b-6867-4aa8-8fa3-60c880d593f6"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varLevel",
+                "value": "N/A"
+              }
+            }
+          },
+          "runAfter": {
+            "Check_if_building_is_null": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Get_floor_details": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "0047d13f-9245-4ff4-b8f1-59031d7a4e9f"
+                },
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                    "connectionName": "shared_commondataserviceforapps_1",
+                    "operationId": "GetItem"
+                  },
+                  "parameters": {
+                    "entityName": "mpa_parkres_floors",
+                    "recordId": "@outputs('Get_reservation_details')?['body/_mpa_floor_value']",
+                    "$select": "mpa_name, mpa_level"
+                  },
+                  "authentication": "@parameters('$authentication')"
+                },
+                "description": "Get the details of the floor"
+              },
+              "Set_floor_value": {
+                "runAfter": {
+                  "Get_floor_details": [
+                    "Succeeded"
+                  ]
+                },
+                "metadata": {
+                  "operationMetadataId": "e3fab803-6236-4fe9-b997-d142af279b85"
+                },
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "varFloor",
+                  "value": "@outputs('Get_floor_details')?['body/mpa_name']"
+                }
+              },
+              "Set_level_value": {
+                "runAfter": {
+                  "Set_floor_value": [
+                    "Succeeded"
+                  ]
+                },
+                "metadata": {
+                  "operationMetadataId": "7adc2e01-5aa5-40d9-964f-b27d586725c4"
+                },
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "varLevel",
+                  "value": "@outputs('Get_floor_details')?['body/mpa_level']"
+                }
+              }
+            }
+          },
+          "expression": {
+            "equals": [
+              "@outputs('Get_reservation_details')?['body/_mpa_floor_value']",
+              "@null"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c3a592ce-5349-4120-8baf-4a436e1d26f4"
+          },
+          "type": "If"
+        },
+        "Check_if_building_is_null": {
+          "actions": {
+            "Set_building_to_null": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "d1a13bd6-4b4c-40ee-924a-ab8f3ecdcc6e"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varBuilding",
+                "value": "N/A"
+              }
+            }
+          },
+          "runAfter": {
+            "Get_user_details": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Get_building_details": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "f5a53dc4-7ccc-4231-bc6b-764c908a219b"
+                },
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                    "connectionName": "shared_commondataserviceforapps_1",
+                    "operationId": "GetItem"
+                  },
+                  "parameters": {
+                    "entityName": "mpa_parkres_buildings",
+                    "recordId": "@outputs('Get_reservation_details')?['body/_mpa_building_value']",
+                    "$select": "mpa_name, mpa_country, mpa_state, mpa_street, mpa_zipcode"
+                  },
+                  "authentication": "@parameters('$authentication')"
+                },
+                "description": "Get the details of the building"
+              },
+              "Set_building_value": {
+                "runAfter": {
+                  "Get_building_details": [
+                    "Succeeded"
+                  ]
+                },
+                "metadata": {
+                  "operationMetadataId": "45c7756a-5d5a-4770-99c0-9c5226b5f6fd"
+                },
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "varBuilding",
+                  "value": "@outputs('Get_building_details')?['body/mpa_name']"
+                }
+              }
+            }
+          },
+          "expression": {
+            "equals": [
+              "@outputs('Get_reservation_details')?['body/_mpa_building_value']",
+              "@null"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "19d5e952-766b-4a28-a1c5-2869b569f87f"
+          },
+          "type": "If"
+        },
+        "Check_status_if_cancelled": {
+          "actions": {},
+          "runAfter": {},
+          "else": {
+            "actions": {
+              "Terminate": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "68c67ff3-a24a-4fa0-8d41-365a23aff6c8"
+                },
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Succeeded"
+                }
+              }
+            }
+          },
+          "expression": {
+            "equals": [
+              "@triggerOutputs()?['body/statuscode']",
+              865420001
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c83a847b-3a02-49a0-a064-84dede51dcd4"
+          },
+          "type": "If"
+        },
+        "Initialize_variable_-_IsAccessible": {
+          "runAfter": {
+            "Initialize_variable_-_Parking_Spot": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "7e0423b7-c13c-4a54-98ce-54aaa4df8826"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "varIsAccessible",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Check_if_spot_is_accessible": {
+          "actions": {
+            "Assign_Yes": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "9d3cc3e5-cf7f-42ba-b5a2-8cfbaf3555b2"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varIsAccessible",
+                "value": "Yes"
+              }
+            }
+          },
+          "runAfter": {
+            "Check_if_parking_spot_is_null": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Assign_No": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "173076ab-b131-4622-b48f-d7612d46402c"
+                },
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "varIsAccessible",
+                  "value": "No"
+                }
+              }
+            }
+          },
+          "expression": {
+            "equals": [
+              "@outputs('Get_reservation_details')?['body/mpa_requestedaccessiblespot']",
+              "@true"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "423caeef-c449-4855-b3d6-82cc52398ecb"
+          },
+          "type": "If"
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

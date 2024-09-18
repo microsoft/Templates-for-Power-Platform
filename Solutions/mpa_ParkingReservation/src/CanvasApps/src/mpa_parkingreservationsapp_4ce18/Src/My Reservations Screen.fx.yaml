@@ -1,0 +1,1281 @@
+"'My Reservations Screen' As screen":
+    Fill: =Color.White
+    LoadingSpinnerColor: =App.Theme.Colors.Primary
+    OnVisible: |-
+        =Set(
+            varDateSelected,
+            Today()
+        );
+        Set(
+            varFirstDayOfMonth,
+            DateAdd(
+                Today(),
+                1 - Day(Today()),
+                TimeUnit.Days
+            )
+        );
+        Set(
+            varFirstDayInView,
+            DateAdd(
+                varFirstDayOfMonth,
+                -(Weekday(varFirstDayOfMonth) - 2 + 1),
+                TimeUnit.Days
+            )
+        );
+        Set(
+            varLastDayOfMonth,
+            DateAdd(
+                DateAdd(
+                    varFirstDayOfMonth,
+                    1,
+                    TimeUnit.Months
+                ),
+                -1,
+                TimeUnit.Days
+            )
+        );
+        Set(
+            varMinDate,
+            DateAdd(
+                varFirstDayOfMonth,
+                -(Weekday(varFirstDayOfMonth) - 2 + 1),
+                TimeUnit.Days
+            )
+        );
+        Set(
+            varMaxDate,
+            DateAdd(
+                DateAdd(
+                    varFirstDayOfMonth,
+                    -(Weekday(varFirstDayOfMonth) - 2 + 1),
+                    TimeUnit.Days
+                ),
+                40,
+                TimeUnit.Days
+            )
+        );
+        
+        // Mock data for reservation dates, replace this with Sharepoint list or dataverse table
+        ClearCollect(
+            colAllMyCalendarEvents,
+        Filter(Reservations, 'Owning User'.'Primary Email' = varD365User.'Primary Email')
+        );
+        ClearCollect(colMyCalendarEvents, Filter(colAllMyCalendarEvents, 'Reservation Start Date' < DateAdd(varMaxDate, 1, TimeUnit.Days), 'Reservation Start Date' > DateAdd(varMinDate, -1, TimeUnit.Days)));
+
+    compHeaderCompound_MyReservations As compHeaderCompound:
+        HeaderWidth: =Parent.Width
+        Height: =compHeaderCompound_MyReservations.HeaderHeight
+        IsBackSettingsOn: =false
+        Width: =compHeaderCompound_MyReservations.HeaderWidth
+        ZIndex: =2
+
+    conMainContent_MyReservations As groupContainer.verticalAutoLayoutContainer:
+        Fill: =ColorValue(varTheme.neutralBackground2)
+        Height: =Parent.Height - compHeaderCompound_MyReservations.Height
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutMode: =LayoutMode.Auto
+        LayoutOverflowY: =LayoutOverflow.Scroll
+        PaddingLeft: |-
+            =Switch(App.ActiveScreen.Size,
+            5, (App.Width - 1580)/2,
+            4, 0,
+            3, 0,
+            2, 0,
+            1, 0
+            )
+        PaddingRight: |-
+            =Switch(App.ActiveScreen.Size,
+            5, (App.Width - 1580)/2,
+            4, 0,
+            3, 0,
+            2, 0,
+            1, 0
+            )
+        PaddingTop: =32
+        Width: =Parent.Width
+        Y: =compHeaderCompound_MyReservations.Y + compHeaderCompound_MyReservations.Height
+        ZIndex: =3
+
+        conTitle_MyReservations As groupContainer.horizontalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            FillPortions: =0
+            Height: |-
+                =Switch(
+                    App.ActiveScreen.Size,
+                    ScreenSize.ExtraLarge,
+                    48,
+                    ScreenSize.Large,
+                    48,
+                    ScreenSize.Medium,
+                    48 ,
+                    48* 2
+                )
+            LayoutAlignItems: =LayoutAlignItems.Center
+            LayoutDirection: |-
+                =Switch(
+                    App.ActiveScreen.Size,
+                    ScreenSize.ExtraLarge, LayoutDirection.Horizontal,
+                    ScreenSize.Large,
+                    LayoutDirection.Horizontal,
+                    ScreenSize.Medium,
+                    LayoutDirection.Horizontal,
+                    LayoutDirection.Vertical
+                )
+            LayoutJustifyContent: |-
+                =Switch(
+                    App.ActiveScreen.Size,
+                    ScreenSize.ExtraLarge,
+                    LayoutJustifyContent.SpaceBetween,
+                    ScreenSize.Large,
+                    LayoutJustifyContent.SpaceBetween,
+                    ScreenSize.Medium,
+                    LayoutJustifyContent.SpaceBetween,
+                    LayoutJustifyContent.Center
+                )
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            PaddingLeft: =32
+            PaddingRight: =32
+            Width: =Parent.Width - (Parent.PaddingLeft*2)
+            ZIndex: =1
+
+            txtTitle_MyReservations As Text:
+                Align: ='TextCanvas.Align'.Start
+                AutoHeight: =false
+                DisplayMode: =DisplayMode.Edit
+                FontColor: =ColorValue(varTheme.neutralForeground1)
+                Height: |-
+                    =
+                    Switch(
+                        App.ActiveScreen.Size,
+                        ScreenSize.ExtraLarge,
+                        Parent.Height,
+                        ScreenSize.Large,
+                        Parent.Height,
+                        ScreenSize.Medium,
+                        Parent.Height ,
+                        Parent.Height - btnReserve_MyReservations.Height
+                    )
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                Size: =varThemeFont.H1.size
+                Text: ="My reservations"
+                VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                Weight: =varThemeFont.H1.weightBold
+                Width: |-
+                    =
+                    Switch(
+                        App.ActiveScreen.Size,
+                        ScreenSize.ExtraLarge,
+                        (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight ) / 2,
+                        ScreenSize.Large,
+                        (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight ) / 2,
+                        ScreenSize.Medium,
+                        (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight ) / 2 ,
+                        Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    )
+                Wrap: =true
+                X: =0
+                Y: =0
+                ZIndex: =1
+
+            btnReserve_MyReservations As Button:
+                AccessibleLabel: ="Reserve a spot"
+                Align: =""
+                BasePaletteColor: =
+                DisplayMode: =DisplayMode.Edit
+                Font: =""
+                FontColor: =
+                FontItalic: =
+                FontSize: =0
+                FontWeight: =
+                Height: =32
+                Icon: =""
+                IconRotation: =0
+                IconStyle: ="Outline"
+                Layout: ="Icon before"
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                OnSelect: |+
+                    =Refresh(Users);
+                    //Gets D365 User of the current user based on the domain name//
+                    Set(
+                        varD365User,
+                        First(
+                            Filter(
+                                Users,
+                                'User Name' = User().Email
+                            )
+                        )
+                    );
+                    Set(
+                        IsLongterm,
+                        false
+                    );
+                    If(
+                        !varFromCancel_NewReservation && !VarReserveThisSpot,
+                        Set(
+                            varEmptyField_NewReservation,
+                            false
+                        );
+                        ResetForm(frmReservations_ReserveASpot);
+                        Refresh(Reservations);
+                        Refresh(Vehicles);
+                        Refresh(Buildings);
+                        Refresh(Floors);
+                        Refresh('Parking Spots');
+                        
+                    );
+                    ResetForm(frmReservations_ReserveASpot);
+                    Set(varFromCancel_NewReservation, false);
+                    Set(VarReserveThisSpot, false);
+                    Navigate('Reserve A Spot');
+                    
+                    
+                    
+                Text: ="Reserve a spot"
+                VerticalAlign: =""
+                Width: |-
+                    =Switch(
+                        App.ActiveScreen.Size,
+                        ScreenSize.ExtraLarge,
+                        125,
+                        ScreenSize.Large,
+                        125,
+                        ScreenSize.Medium,
+                        125 ,
+                        Parent.Width - Parent.PaddingLeft- Parent.PaddingRight
+                    )
+                X: =0
+                Y: =0
+                ZIndex: =2
+
+        conBodyContent_MyReservations As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            Fill: =ColorValue(varTheme.neutralBackground2)
+            FillPortions: =0
+            Height: |-
+                =Switch(
+                    App.ActiveScreen.Size,
+                    ScreenSize.ExtraLarge,
+                    Parent.Height,
+                    ScreenSize.Large,
+                    Parent.Height,
+                    ScreenSize.Medium,
+                    1300 + conBodyContent_CancelReservation_MyReservations.Height,
+                    1400+ conBodyContent_CancelReservation_MyReservations.Height
+                )
+            LayoutAlignItems: =LayoutAlignItems.Stretch
+            LayoutDirection: |-
+                =Switch(
+                    App.ActiveScreen.Size,
+                    ScreenSize.ExtraLarge,
+                    LayoutDirection.Horizontal,
+                    ScreenSize.Large,
+                    LayoutDirection.Horizontal,
+                    ScreenSize.Medium,
+                    LayoutDirection.Vertical,
+                    LayoutDirection.Vertical
+                )
+            LayoutGap: =20
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            PaddingBottom: =32
+            PaddingLeft: =32
+            PaddingRight: =32
+            PaddingTop: =16
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            ZIndex: =3
+
+            conBodyContent_Calendar_MyReservations As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.Start
+                DropShadow: =DropShadow.Semilight
+                Fill: =ColorValue(varTheme.neutralBackground1)
+                FillPortions: =0
+                Height: |-
+                    =Switch(
+                        App.ActiveScreen.Size,
+                        ScreenSize.ExtraLarge,
+                        Parent.Height - Parent.PaddingBottom - Parent.PaddingTop,
+                        ScreenSize.Large,
+                        Parent.Height - Parent.PaddingBottom - Parent.PaddingTop,
+                        ScreenSize.Medium,
+                        450 ,
+                        450
+                    )
+                LayoutAlignItems: =LayoutAlignItems.Center
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                PaddingBottom: =20
+                PaddingLeft: =20
+                PaddingRight: =20
+                PaddingTop: =20
+                RadiusBottomLeft: =8
+                RadiusBottomRight: =8
+                RadiusTopLeft: =8
+                RadiusTopRight: =8
+                Width: |-
+                    =Switch(
+                        App.ActiveScreen.Size,
+                        ScreenSize.ExtraLarge,
+                        Parent.Width / 3,
+                        ScreenSize.Large,
+                        Parent.Width / 3,
+                        ScreenSize.Medium,
+                        Parent.Width - Parent.PaddingLeft - Parent.PaddingRight,
+                        Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    )
+                ZIndex: =1
+
+                compCalendar_MyReservations As compCalendar:
+                    CalendarHeight: =Parent.Height - (Parent.PaddingBottom * 4)
+                    CalendarWidth: =Parent.Width - (Parent.PaddingLeft * 2)
+                    Height: =compCalendar_MyReservations.CalendarHeight
+                    LayoutMinHeight: =640
+                    LayoutMinWidth: =640
+                    Width: =compCalendar_MyReservations.CalendarWidth
+
+            conBodyContent_ReservationDetails_MyReservations As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.Start
+                DropShadow: =DropShadow.Semilight
+                Fill: =ColorValue(varTheme.neutralBackground1)
+                FillPortions: =0
+                Height: |-
+                    =Switch(
+                        App.ActiveScreen.Size,
+                        ScreenSize.ExtraLarge,
+                        Parent.Height - Parent.PaddingBottom - Parent.PaddingTop,
+                        ScreenSize.Large,
+                        Parent.Height - Parent.PaddingBottom - Parent.PaddingTop,
+                        ScreenSize.Medium,
+                        800 + conBodyContent_CancelReservation_MyReservations.Height,
+                        900 + conBodyContent_CancelReservation_MyReservations.Height
+                    )
+                LayoutAlignItems: =LayoutAlignItems.Stretch
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                PaddingBottom: =1
+                PaddingLeft: =1
+                PaddingRight: =1
+                PaddingTop: =1
+                RadiusBottomLeft: =8
+                RadiusBottomRight: =8
+                RadiusTopLeft: =8
+                RadiusTopRight: =8
+                Width: |-
+                    =
+                    
+                    
+                    Switch(
+                        App.ActiveScreen.Size,
+                        ScreenSize.ExtraLarge,
+                        Parent.Width - conBodyContent_Calendar_MyReservations.Width - (Parent.PaddingLeft*2) - Parent.LayoutGap,
+                        ScreenSize.Large,
+                        Parent.Width - conBodyContent_Calendar_MyReservations.Width - (Parent.PaddingLeft*2) - Parent.LayoutGap,
+                        ScreenSize.Medium,
+                        Parent.Width  - (Parent.PaddingLeft*2) ,
+                        Parent.Width  - (Parent.PaddingLeft*2)
+                    )
+                ZIndex: =2
+
+                conBodyContent_ReservationDetailsDays_MyReservations As groupContainer.verticalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    Fill: =ColorValue(varTheme.neutralBackground1)
+                    FillPortions: =0
+                    Height: |-
+                        =
+                        Switch(
+                            App.ActiveScreen.Size,
+                            ScreenSize.ExtraLarge,
+                            Self.PaddingTop + Self.PaddingBottom + 35,
+                            ScreenSize.Large,
+                            Self.PaddingTop + Self.PaddingBottom + 35,
+                            ScreenSize.Medium,
+                            Self.PaddingTop + Self.PaddingBottom + 35 ,
+                            Self.PaddingTop + Self.PaddingBottom + 45
+                        )
+                    LayoutDirection: =LayoutDirection.Vertical
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingBottom: =16
+                    PaddingLeft: =16
+                    PaddingRight: =16
+                    PaddingTop: =16
+                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    ZIndex: =1
+
+                    txtNumberOfDaysToCancel_MyReservations As Text:
+                        AutoHeight: =true
+                        DisplayMode: =DisplayMode.Edit
+                        FillPortions: =1
+                        FontColor: =
+                        Height: =32
+                        LayoutMinHeight: =32
+                        LayoutMinWidth: =96
+                        Text: |-
+                            =If(
+                                IsBlank(
+                                    LookUp(
+                                        Reservations,
+                                        'Reservation Start Date' = varDateSelected && 'Status Reason' = 'Status Reason (Reservations)'.Submitted && 'Owning User'.'Primary Email' = varD365User.'Primary Email'
+                                    ).Name
+                                ),
+                                "There is no reservation for the selected Date.",
+                            btnCancelReservation_MyReservations.DisplayMode = DisplayMode.Disabled || varSelectedReservation.Building.'Cancellation Policy Days' > varRemainingDate, "The window for cancelling this reservation has closed.",
+                            
+                                "You still have " & varRemainingDate & " days to cancel this reservation."
+                            )
+                        Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                        Wrap: =true
+                        X: =0
+                        Y: =0
+                        ZIndex: =1
+
+                shpDividerTop_MyReservations As rectangle:
+                    AccessibleLabel: =//customize the accesible label based in the shape
+                    BorderColor: =App.Theme.Colors.Primary
+                    BorderStyle: =BorderStyle.None
+                    DisabledFill: =ColorValue(varTheme.neutralBackgroundDisabled)
+                    Fill: =ColorValue(varTheme.neutralStroke2)
+                    FocusedBorderColor: =App.Theme.Colors.Primary
+                    FocusedBorderThickness: =4
+                    Height: =1
+                    HoverFill: =App.Theme.Colors.Darker20
+                    PressedFill: =App.Theme.Colors.Primary
+                    Width: =Parent.Width
+                    X: =182
+                    Y: =50
+                    ZIndex: =2
+
+                conBodyContent_ReservationDetailsMain_MyReservations As groupContainer.verticalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    Fill: =ColorValue(varTheme.neutralBackground1)
+                    FillPortions: =
+                    Height: =Parent.Height - conBodyContent_ReservationDetailsDays_MyReservations.Height - conBodyContent_CancelReservation_MyReservations.Height
+                    LayoutAlignItems: =LayoutAlignItems.Center
+                    LayoutDirection: =LayoutDirection.Vertical
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingBottom: =16
+                    PaddingLeft: =16
+                    PaddingRight: =16
+                    PaddingTop: =16
+                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    ZIndex: =3
+
+                    conBodyContent_ReservationDetailsMainTitle_MyReservations As groupContainer.verticalAutoLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        Fill: =ColorValue(varTheme.neutralBackground1)
+                        FillPortions: =0
+                        Height: |-
+                            =Switch(
+                                App.ActiveScreen.Size,
+                                ScreenSize.ExtraLarge,
+                                77,
+                                ScreenSize.Large,
+                                77,
+                                ScreenSize.Medium,
+                                77 ,
+                                160
+                            )
+                        LayoutAlignItems: |-
+                            =
+                            Switch(
+                                App.ActiveScreen.Size,
+                                ScreenSize.ExtraLarge,
+                                LayoutAlignItems.Center,
+                                ScreenSize.Large,
+                                LayoutAlignItems.Center,
+                                ScreenSize.Medium,
+                                LayoutAlignItems.Center ,
+                                LayoutAlignItems.Start
+                            )
+                        LayoutDirection: |-
+                            =Switch(
+                                App.ActiveScreen.Size,
+                                ScreenSize.ExtraLarge, LayoutDirection.Horizontal,
+                                ScreenSize.Large,
+                                LayoutDirection.Horizontal,
+                                ScreenSize.Medium,
+                                LayoutDirection.Horizontal,
+                                LayoutDirection.Vertical
+                            )
+                        LayoutGap: =20
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        PaddingBottom: =1
+                        PaddingLeft: =1
+                        PaddingRight: =1
+                        PaddingTop: =1
+                        Visible: |-
+                            =If(
+                                IsBlank(
+                                    LookUp(
+                                        Reservations,
+                                        'Reservation Start Date' = varDateSelected && 'Status Reason' = 'Status Reason (Reservations)'.Submitted && 'Owning User'.'Primary Email' = varD365User.'Primary Email'
+                                    ).Name
+                                ),
+                                false,
+                                true
+                            )
+                        Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                        ZIndex: =1
+
+                        conBodyContent_ReservationDetailsSubMain_MyReservations As groupContainer.verticalAutoLayoutContainer:
+                            AlignInContainer: =AlignInContainer.SetByContainer
+                            BorderColor: =App.Theme.Colors.Primary
+                            BorderThickness: =1
+                            Fill: =ColorValue(varTheme.neutralBackground1)
+                            FillPortions: =0
+                            Height: |-
+                                =
+                                
+                                Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.ExtraLarge,
+                                    (Parent.Height - Parent.PaddingBottom - Parent.PaddingTop) ,
+                                    ScreenSize.Large,
+                                    (Parent.Height - Parent.PaddingBottom - Parent.PaddingTop),
+                                    ScreenSize.Medium,
+                                    (Parent.Height - Parent.PaddingBottom - Parent.PaddingTop) ,
+                                    56
+                                )
+                            LayoutAlignItems: =LayoutAlignItems.Center
+                            LayoutDirection: =LayoutDirection.Vertical
+                            LayoutMinHeight: =100
+                            LayoutMinWidth: =250
+                            LayoutMode: =LayoutMode.Auto
+                            RadiusBottomLeft: =8
+                            RadiusBottomRight: =8
+                            RadiusTopLeft: =8
+                            RadiusTopRight: =8
+                            Width: =71
+                            ZIndex: =1
+
+                            conBodyContent_Calendar_Day_MyReservations As groupContainer.verticalAutoLayoutContainer:
+                                AlignInContainer: =AlignInContainer.SetByContainer
+                                Fill: =App.Theme.Colors.Lighter80
+                                FillPortions: =0
+                                Height: =(Parent.Height - Parent.PaddingBottom - Parent.PaddingTop) /3
+                                LayoutAlignItems: =LayoutAlignItems.Center
+                                LayoutMinHeight: =100
+                                LayoutMinWidth: =250
+                                LayoutMode: =LayoutMode.Auto
+                                Width: =(Parent.Width - Parent.PaddingLeft - Parent.PaddingRight)
+                                ZIndex: =3
+
+                                txtCalendarDay_MyReservations As Text:
+                                    Align: ='TextCanvas.Align'.Center
+                                    AutoHeight: =false
+                                    DisplayMode: =DisplayMode.Edit
+                                    FontColor: =App.Theme.Colors.Primary
+                                    Height: =32
+                                    LayoutMinHeight: =32
+                                    LayoutMinWidth: =96
+                                    Size: =14
+                                    Text: =Upper(Text(varDateSelected,"ddd"))
+                                    Weight: =varThemeFont.H3.weightBold
+                                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                    X: =0
+                                    Y: =0
+                                    ZIndex: =1
+
+                            conBodyContent_CalendarDate_MyReservations As groupContainer.verticalAutoLayoutContainer:
+                                AlignInContainer: =AlignInContainer.SetByContainer
+                                Fill: =ColorValue(varTheme.neutralBackground1)
+                                FillPortions: =0
+                                Height: =(Parent.Height - Parent.PaddingBottom - Parent.PaddingTop) /2
+                                LayoutAlignItems: =LayoutAlignItems.Center
+                                LayoutDirection: =LayoutDirection.Vertical
+                                LayoutJustifyContent: =LayoutJustifyContent.Center
+                                LayoutMinHeight: =15
+                                LayoutMinWidth: =250
+                                LayoutMode: =LayoutMode.Auto
+                                PaddingBottom: =20
+                                PaddingLeft: =20
+                                PaddingRight: =20
+                                PaddingTop: =20
+                                Width: =(Parent.Width - Parent.PaddingLeft - Parent.PaddingRight)
+                                ZIndex: =4
+
+                                txtCalendarDate_MyReservations As Text:
+                                    Align: ='TextCanvas.Align'.Center
+                                    AutoHeight: =true
+                                    DisplayMode: =DisplayMode.Edit
+                                    FillPortions: =1
+                                    FontColor: =App.Theme.Colors.Primary
+                                    Height: =varThemeFont.H1.size
+                                    LayoutMinHeight: =32
+                                    LayoutMinWidth: =96
+                                    Size: =varThemeFont.H3.size
+                                    Text: =Text(varDateSelected,"dd")
+                                    Weight: =varThemeFont.H3.weightBold
+                                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                    Wrap: =true
+                                    X: =0
+                                    Y: =0
+                                    ZIndex: =2
+
+                        conBodyContent_ReservationDetailsTitle_MyReservations As groupContainer.verticalAutoLayoutContainer:
+                            AlignInContainer: =AlignInContainer.Start
+                            Fill: =ColorValue(varTheme.neutralBackground1)
+                            FillPortions: =4
+                            Height: =(Parent.Height - Parent.PaddingBottom - Parent.PaddingTop)
+                            LayoutDirection: =LayoutDirection.Vertical
+                            LayoutGap: =5
+                            LayoutMinHeight: =100
+                            LayoutMinWidth: =250
+                            LayoutMode: =LayoutMode.Auto
+                            PaddingLeft: =2
+                            PaddingRight: =2
+                            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                            ZIndex: =2
+
+                            txtReservationName_MyReservations As Text:
+                                AutoHeight: =true
+                                DisplayMode: =DisplayMode.Edit
+                                FontColor: =
+                                Height: =Parent.Height / 1.5
+                                LayoutMinHeight: =32
+                                LayoutMinWidth: =96
+                                Size: =varThemeFont.H3.size
+                                Text: |-
+                                    ="Parking reservation" & " " & LookUp(
+                                        Reservations,
+                                        'Reservation Start Date' = varDateSelected && 'Status Reason' = 'Status Reason (Reservations)'.Submitted && 'Owning User'.'Primary Email' = varD365User.'Primary Email'
+                                    ).Name
+                                VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                                Weight: =varThemeFont.H2.weightBold
+                                Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                Wrap: =true
+                                X: =0
+                                Y: =0
+                                ZIndex: =1
+
+                            txtReservationLocation_MyReservations As Text:
+                                AutoHeight: =true
+                                DisplayMode: =DisplayMode.Edit
+                                FontColor: =
+                                Height: =32
+                                LayoutMinHeight: =32
+                                LayoutMinWidth: =96
+                                Text: |-
+                                    =Concatenate(
+                                        If(
+                                            IsBlankOrError(varSelectedReservation.Building.Street),
+                                            "",
+                                            varSelectedReservation.Building.Street & ", "
+                                        ),
+                                        If(
+                                            IsBlank(varSelectedReservation.Building.City.'City Name'),
+                                            "",
+                                            varSelectedReservation.Building.City.'City Name' & ", "
+                                        ),
+                                        If(
+                                            IsBlank(varSelectedReservation.Building.State),
+                                            "",
+                                            varSelectedReservation.Building.State & ", "
+                                        ),
+                                        If(
+                                            IsBlank(varSelectedReservation.Building.Country.'Country Name'),
+                                            "",
+                                            varSelectedReservation.Building.Country.'Country Name' & ", "
+                                        ),
+                                        varSelectedReservation.Building.'Zip Code'
+                                    )
+                                Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                X: =0
+                                Y: =0
+                                ZIndex: =2
+
+                    conBodyContent_ReservationDetailsLocation_MyReservations As groupContainer.verticalAutoLayoutContainer:
+                        AlignInContainer: =AlignInContainer.Center
+                        Fill: =ColorValue(varTheme.neutralBackground1)
+                        FillPortions: =
+                        Height: |-
+                            =Switch(
+                                App.ActiveScreen.Size,
+                                ScreenSize.ExtraLarge,
+                                300,
+                                ScreenSize.Large,
+                                300,
+                                ScreenSize.Medium,
+                                450 ,
+                                450
+                            )
+                        LayoutDirection: =LayoutDirection.Vertical
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        PaddingLeft: |+
+                            =Switch(
+                                App.ActiveScreen.Size,
+                                ScreenSize.ExtraLarge,
+                                conBodyContent_ReservationDetailsSubMain_MyReservations.Width + conBodyContent_ReservationDetailsMainTitle_MyReservations.LayoutGap,
+                                ScreenSize.Large,
+                                conBodyContent_ReservationDetailsSubMain_MyReservations.Width + conBodyContent_ReservationDetailsMainTitle_MyReservations.LayoutGap,
+                                ScreenSize.Medium,
+                                conBodyContent_ReservationDetailsSubMain_MyReservations.Width + conBodyContent_ReservationDetailsMainTitle_MyReservations.LayoutGap ,
+                                0
+                            )
+                            
+                        Visible: =If(IsBlank(LookUp(Reservations, 'Reservation Start Date' = varDateSelected && 'Status Reason' = 'Status Reason (Reservations)'.Submitted&& 'Owning User'.'Primary Email' = varD365User.'Primary Email').Name ),false,true)
+                        Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                        ZIndex: =2
+
+                        conBodyContent_ReservationDetailsLocation1st_MyReservations As groupContainer.verticalAutoLayoutContainer:
+                            AlignInContainer: =AlignInContainer.SetByContainer
+                            Fill: =ColorValue(varTheme.neutralBackground1)
+                            FillPortions: =0
+                            Height: |-
+                                =Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.ExtraLarge,
+                                    100,
+                                    ScreenSize.Large,
+                                    100,
+                                    ScreenSize.Medium,
+                                    300 ,
+                                    300
+                                )
+                            LayoutDirection: |-
+                                =Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.ExtraLarge,
+                                    LayoutDirection.Horizontal,
+                                    ScreenSize.Large,
+                                    LayoutDirection.Horizontal,
+                                    ScreenSize.Medium,
+                                    LayoutDirection.Vertical,
+                                    LayoutDirection.Vertical
+                                )
+                            LayoutGap: |-
+                                =Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.ExtraLarge,
+                                    10,
+                                    ScreenSize.Large,
+                                    10,
+                                    ScreenSize.Medium,
+                                    5 ,
+                                    5
+                                )
+                            LayoutMinHeight: =100
+                            LayoutMinWidth: =250
+                            LayoutMode: =LayoutMode.Auto
+                            PaddingTop: =10
+                            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                            ZIndex: =1
+
+                            conBodyContent_ReservationDate_MyReservations As groupContainer.verticalAutoLayoutContainer:
+                                AlignInContainer: =AlignInContainer.SetByContainer
+                                Fill: =ColorValue(varTheme.neutralBackground1)
+                                FillPortions: =0
+                                Height: |-
+                                    =Switch(
+                                        App.ActiveScreen.Size,
+                                        ScreenSize.ExtraLarge,
+                                        85,
+                                        ScreenSize.Large,
+                                        85,
+                                        ScreenSize.Medium,
+                                        80 ,
+                                        80
+                                    )
+                                LayoutDirection: =LayoutDirection.Vertical
+                                LayoutGap: =10
+                                LayoutMinHeight: =100
+                                LayoutMinWidth: =250
+                                LayoutMode: =LayoutMode.Auto
+                                PaddingLeft: =2
+                                PaddingRight: =2
+                                Width: |-
+                                    =
+                                    Switch(
+                                        App.ActiveScreen.Size,
+                                        ScreenSize.ExtraLarge,
+                                        (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight - Parent.LayoutGap) / 3,
+                                        ScreenSize.Large,
+                                        (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight - Parent.LayoutGap) / 3,
+                                        ScreenSize.Medium,
+                                        Parent.Width - Parent.PaddingRight - Parent.LayoutGap,
+                                        Parent.Width- Parent.PaddingRight - Parent.LayoutGap
+                                    )
+                                ZIndex: =1
+
+                                txtReservationDate_MyReservations As Text:
+                                    AutoHeight: =true
+                                    DisplayMode: =DisplayMode.Edit
+                                    FontColor: =
+                                    Height: =Parent.Height / 2
+                                    LayoutMinHeight: =32
+                                    LayoutMinWidth: =96
+                                    Size: =14
+                                    Text: ="Reservation date"
+                                    Weight: =varThemeFont.H2.weightBold
+                                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                    X: =0
+                                    Y: =0
+                                    ZIndex: =1
+
+                                txtReservationDateValue_MyReservations As Text:
+                                    AutoHeight: =true
+                                    DisplayMode: =DisplayMode.Edit
+                                    FillPortions: =1
+                                    FontColor: =
+                                    Height: =Parent.Height / 2
+                                    LayoutMinHeight: =32
+                                    LayoutMinWidth: =96
+                                    Text: |-
+                                        =Text(
+                                            LookUp(
+                                                Reservations,
+                                                'Reservation Start Date' = varDateSelected && 'Status Reason' = 'Status Reason (Reservations)'.Submitted && 'Owning User'.'Primary Email' = varD365User.'Primary Email'
+                                            ).'Reservation Start Date',
+                                            "ddd, mmm d, yyyy"
+                                        )
+                                    VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                    X: =0
+                                    Y: =0
+                                    ZIndex: =2
+
+                            conBodyContent_ReservationSpotType_MyReservations As groupContainer.verticalAutoLayoutContainer:
+                                AlignInContainer: =AlignInContainer.SetByContainer
+                                Fill: =ColorValue(varTheme.neutralBackground1)
+                                FillPortions: =0
+                                Height: |-
+                                    =Switch(
+                                        App.ActiveScreen.Size,
+                                        ScreenSize.ExtraLarge,
+                                        85,
+                                        ScreenSize.Large,
+                                        85,
+                                        ScreenSize.Medium,
+                                        80 ,
+                                        80
+                                    )
+                                LayoutDirection: =LayoutDirection.Vertical
+                                LayoutGap: =10
+                                LayoutMinHeight: =100
+                                LayoutMinWidth: =250
+                                LayoutMode: =LayoutMode.Auto
+                                PaddingLeft: =2
+                                PaddingRight: =2
+                                Width: =(Parent.Width - Parent.PaddingLeft - Parent.PaddingRight - Parent.LayoutGap) / 3
+                                ZIndex: =2
+
+                                txtReservationType_MyReservations As Text:
+                                    AutoHeight: =true
+                                    DisplayMode: =DisplayMode.Edit
+                                    FontColor: =
+                                    Height: =Parent.Height / 2
+                                    LayoutMinHeight: =32
+                                    LayoutMinWidth: =96
+                                    Size: =14
+                                    Text: ="Spot type"
+                                    Weight: =varThemeFont.H2.weightBold
+                                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                    X: =0
+                                    Y: =0
+                                    ZIndex: =1
+
+                                txtReservationTypeValue_MyReservations As Text:
+                                    AutoHeight: =true
+                                    DisplayMode: =DisplayMode.Edit
+                                    FillPortions: =1
+                                    FontColor: =
+                                    Height: =Parent.Height / 2
+                                    LayoutMinHeight: =32
+                                    LayoutMinWidth: =96
+                                    Text: |-
+                                        =LookUp(
+                                            Reservations,
+                                            'Reservation Start Date' = varDateSelected && 'Status Reason' = 'Status Reason (Reservations)'.Submitted && 'Owning User'.'Primary Email' = varD365User.'Primary Email'
+                                        ).'Spot Type'
+                                    VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                    X: =0
+                                    Y: =0
+                                    ZIndex: =2
+
+                            conBodyContent_ReservationSpot_MyReservations As groupContainer.verticalAutoLayoutContainer:
+                                AlignInContainer: =AlignInContainer.SetByContainer
+                                Fill: =ColorValue(varTheme.neutralBackground1)
+                                FillPortions: =0
+                                Height: |-
+                                    =Switch(
+                                        App.ActiveScreen.Size,
+                                        ScreenSize.ExtraLarge,
+                                        85,
+                                        ScreenSize.Large,
+                                        85,
+                                        ScreenSize.Medium,
+                                        80 ,
+                                        80
+                                    )
+                                LayoutDirection: =LayoutDirection.Vertical
+                                LayoutGap: =10
+                                LayoutMinHeight: =100
+                                LayoutMinWidth: =250
+                                LayoutMode: =LayoutMode.Auto
+                                PaddingLeft: =2
+                                PaddingRight: =2
+                                Width: =(Parent.Width - Parent.PaddingLeft - Parent.PaddingRight - Parent.LayoutGap) / 3
+                                ZIndex: =3
+
+                                txtReservationSpot_MyReservations As Text:
+                                    AutoHeight: =true
+                                    DisplayMode: =DisplayMode.Edit
+                                    FontColor: =
+                                    Height: =Parent.Height / 2
+                                    LayoutMinHeight: =32
+                                    LayoutMinWidth: =96
+                                    Size: =14
+                                    Text: ="Parking spot"
+                                    Weight: =varThemeFont.H2.weightBold
+                                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                    X: =0
+                                    Y: =0
+                                    ZIndex: =1
+
+                                txtReservationSpotValue_MyReservations As Text:
+                                    AutoHeight: =true
+                                    DisplayMode: =DisplayMode.Edit
+                                    FillPortions: =1
+                                    FontColor: =
+                                    Height: =Parent.Height / 2
+                                    LayoutMinHeight: =32
+                                    LayoutMinWidth: =96
+                                    Text: |-
+                                        =LookUp(
+                                            Reservations,
+                                            'Reservation Start Date' = varDateSelected && 'Status Reason' = 'Status Reason (Reservations)'.Submitted && 'Owning User'.'Primary Email' = varD365User.'Primary Email'
+                                        ).'Parking Spot'.Name
+                                    VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                    X: =0
+                                    Y: =0
+                                    ZIndex: =2
+
+                        conBodyContent_ReservationDetailsLocation2nd_MyReservations As groupContainer.verticalAutoLayoutContainer:
+                            AlignInContainer: =AlignInContainer.SetByContainer
+                            Fill: =ColorValue(varTheme.neutralBackground1)
+                            FillPortions: =0
+                            Height: |-
+                                =Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.ExtraLarge,
+                                    100,
+                                    ScreenSize.Large,
+                                    100,
+                                    ScreenSize.Medium,
+                                    150,
+                                    150
+                                )
+                            LayoutDirection: |-
+                                =Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.ExtraLarge,
+                                    LayoutDirection.Horizontal,
+                                    ScreenSize.Large,
+                                    LayoutDirection.Horizontal,
+                                    ScreenSize.Medium,
+                                    LayoutDirection.Vertical,
+                                    LayoutDirection.Vertical
+                                )
+                            LayoutGap: |-
+                                =Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.ExtraLarge,
+                                    10,
+                                    ScreenSize.Large,
+                                    10,
+                                    ScreenSize.Medium,
+                                    5 ,
+                                    5
+                                )
+                            LayoutMinHeight: =100
+                            LayoutMinWidth: =250
+                            LayoutMode: =LayoutMode.Auto
+                            PaddingTop: =10
+                            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                            ZIndex: =2
+
+                            conBodyContent_ReservationBuilding_MyReservations As groupContainer.verticalAutoLayoutContainer:
+                                AlignInContainer: =AlignInContainer.SetByContainer
+                                Fill: =ColorValue(varTheme.neutralBackground1)
+                                FillPortions: =0
+                                Height: |-
+                                    =Switch(
+                                        App.ActiveScreen.Size,
+                                        ScreenSize.ExtraLarge,
+                                        85,
+                                        ScreenSize.Large,
+                                        85,
+                                        ScreenSize.Medium,
+                                        80 ,
+                                        80
+                                    )
+                                LayoutDirection: =LayoutDirection.Vertical
+                                LayoutGap: =10
+                                LayoutMinHeight: =100
+                                LayoutMinWidth: =250
+                                LayoutMode: =LayoutMode.Auto
+                                PaddingLeft: =2
+                                PaddingRight: =2
+                                Width: |-
+                                    =
+                                    Switch(
+                                        App.ActiveScreen.Size,
+                                        ScreenSize.ExtraLarge,
+                                        (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight - Parent.LayoutGap) / 3,
+                                        ScreenSize.Large,
+                                        (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight - Parent.LayoutGap) / 3,
+                                        ScreenSize.Medium,
+                                        Parent.Width - Parent.PaddingLeft - Parent.PaddingRight - Parent.LayoutGap,
+                                        Parent.Width - Parent.PaddingLeft - Parent.PaddingRight - Parent.LayoutGap
+                                    )
+                                ZIndex: =1
+
+                                txtReservationBuilding_MyReservations As Text:
+                                    AutoHeight: =true
+                                    DisplayMode: =DisplayMode.Edit
+                                    FontColor: =
+                                    Height: =Parent.Height / 2
+                                    LayoutMinHeight: =32
+                                    LayoutMinWidth: =96
+                                    Size: =14
+                                    Text: ="Building"
+                                    Weight: =varThemeFont.H2.weightBold
+                                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                    X: =0
+                                    Y: =0
+                                    ZIndex: =1
+
+                                txtReservationBuildingValue_MyReservations As Text:
+                                    AutoHeight: =false
+                                    DisplayMode: =DisplayMode.Edit
+                                    FillPortions: =1
+                                    FontColor: =
+                                    Height: =Parent.Height - txtReservationBuilding_MyReservations.Height
+                                    LayoutMinHeight: =32
+                                    LayoutMinWidth: =96
+                                    Text: |-
+                                        =LookUp(
+                                            Reservations,
+                                            'Reservation Start Date' = varDateSelected && 'Status Reason' = 'Status Reason (Reservations)'.Submitted && 'Owning User'.'Primary Email' = varD365User.'Primary Email'
+                                        ).Building.Name
+                                    VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                    X: =0
+                                    Y: =0
+                                    ZIndex: =2
+
+                            conBodyContent_ReservationFloor_MyReservations As groupContainer.verticalAutoLayoutContainer:
+                                AlignInContainer: =AlignInContainer.SetByContainer
+                                Fill: =ColorValue(varTheme.neutralBackground1)
+                                FillPortions: =0
+                                Height: |-
+                                    =Switch(
+                                        App.ActiveScreen.Size,
+                                        ScreenSize.ExtraLarge,
+                                        85,
+                                        ScreenSize.Large,
+                                        85,
+                                        ScreenSize.Medium,
+                                        80 ,
+                                        80
+                                    )
+                                LayoutDirection: =LayoutDirection.Vertical
+                                LayoutGap: =10
+                                LayoutMinHeight: =100
+                                LayoutMinWidth: =250
+                                LayoutMode: =LayoutMode.Auto
+                                PaddingLeft: =2
+                                PaddingRight: =2
+                                Width: =(Parent.Width - Parent.PaddingLeft - Parent.PaddingRight - Parent.LayoutGap) / 3
+                                ZIndex: =2
+
+                                txtReservationFloor_MyReservations As Text:
+                                    AutoHeight: =true
+                                    DisplayMode: =DisplayMode.Edit
+                                    FontColor: =
+                                    Height: =Parent.Height / 2
+                                    LayoutMinHeight: =32
+                                    LayoutMinWidth: =96
+                                    Size: =14
+                                    Text: ="Floor"
+                                    Weight: =varThemeFont.H2.weightBold
+                                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                    X: =0
+                                    Y: =0
+                                    ZIndex: =1
+
+                                txtReservationFloorValue_MyReservations As Text:
+                                    AutoHeight: =true
+                                    DisplayMode: =DisplayMode.Edit
+                                    FontColor: =
+                                    Height: =Parent.Height / 2
+                                    LayoutMinHeight: =32
+                                    LayoutMinWidth: =96
+                                    Text: |-
+                                        =LookUp(
+                                            Reservations,
+                                            'Reservation Start Date' = varDateSelected && 'Status Reason' = 'Status Reason (Reservations)'.Submitted && 'Owning User'.'Primary Email' = varD365User.'Primary Email'
+                                        ).Floor.Level
+                                    VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                    X: =0
+                                    Y: =0
+                                    ZIndex: =2
+
+                shpDividerBottom_MyReservations As rectangle:
+                    AccessibleLabel: =//customize the accesible label based in the shape
+                    BorderColor: =App.Theme.Colors.Primary
+                    BorderStyle: =BorderStyle.None
+                    DisabledFill: =ColorValue(varTheme.neutralBackgroundDisabled)
+                    Fill: =ColorValue(varTheme.neutralStroke2)
+                    FocusedBorderColor: =App.Theme.Colors.Primary
+                    FocusedBorderThickness: =4
+                    Height: =1
+                    HoverFill: =App.Theme.Colors.Darker20
+                    PressedFill: =App.Theme.Colors.Primary
+                    Width: =Parent.Width
+                    X: =182
+                    Y: =50
+                    ZIndex: =4
+
+                conBodyContent_CancelReservation_MyReservations As groupContainer.verticalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    Fill: =ColorValue(varTheme.neutralBackground1)
+                    FillPortions: =0
+                    Height: =Self.PaddingBottom + Self.PaddingTop + btnCancelReservation_MyReservations.Height
+                    LayoutDirection: =LayoutDirection.Vertical
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingBottom: =16
+                    PaddingLeft: =16
+                    PaddingRight: =16
+                    PaddingTop: =16
+                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    ZIndex: =5
+
+                    btnCancelReservation_MyReservations As Button:
+                        AccessibleLabel: ="Cancel reservation"
+                        Align: =""
+                        Appearance: ='ButtonCanvas.Appearance'.Secondary
+                        BasePaletteColor: =
+                        DisplayMode: |-
+                            =If(
+                                IsBlank(varSelectedReservation.'Long Term Reservation'),
+                                If(
+                                //Check if name is blank
+                                    IsBlank(varSelectedReservation.Name) ||
+                                //Check the reservation date if less than the curent date
+                             varSelectedReservation.'Reservation Start Date' <= Today(),
+                                    DisplayMode.Disabled,
+                                    DisplayMode.Edit
+                                ),
+                                varSelectedReservation.'Long Term Reservation'.'Start Date' <= Today() + varSelectedReservation.Building.'Cancellation Policy Days' || varSelectedReservation.'Reservation Start Date' <= Today() + varSelectedReservation.Building.'Cancellation Policy Days',
+                                DisplayMode.Disabled,
+                                DisplayMode.Edit
+                            )
+                        Font: =""
+                        FontColor: =
+                        FontItalic: =
+                        FontSize: =0
+                        FontWeight: =""
+                        Height: =32
+                        Icon: =""
+                        IconRotation: =0
+                        IconStyle: ="Outline"
+                        Layout: ="Icon before"
+                        LayoutMinHeight: =32
+                        LayoutMinWidth: =96
+                        OnSelect: |-
+                            =//Get the selected reservation to cancel
+                            Set(
+                                varReservationToCancel,
+                                LookUp(
+                                    Reservations,
+                                    'Reservation Start Date' = varDateSelected && 'Status Reason' = 'Status Reason (Reservations)'.Submitted && 'Owning User'.'Primary Email' = varD365User.'Primary Email'
+                                )
+                            );
+                            //Get all reservations that are part of the long term reservation group
+                            If(
+                                !IsBlank(varReservationToCancel.'Long Term Reservation'.'Long Term Reservation'),
+                                ClearCollect(
+                                    colLongTermReservationListToCancel,
+                                    Filter(
+                                        Reservations,
+                                        'Long Term Reservation'.'Long Term Reservation' = varReservationToCancel.'Long Term Reservation'.'Long Term Reservation'
+                                    )
+                                ),//Else if Not longterm
+                                ClearCollect(
+                                    colLongTermReservationListToCancel,
+                                    varReservationToCancel
+                                )
+                            );
+                            //navigate to confirmation screen
+                            Navigate(
+                                'Confirmation Screen',
+                                ScreenTransition.None,
+                                If(
+                                    !IsBlank(
+                                        LookUp(
+                                            Reservations,
+                                            'Reservation Start Date' = varDateSelected && 'Status Reason' = 'Status Reason (Reservations)'.Submitted && 'Owning User'.'Primary Email' = varD365User.'Primary Email'
+                                        ).'Long Term Reservation'
+                                    ),
+                                    {
+                                        varHeader: "Cancel booking",
+                                        varMessage: "Are you sure you want to cancel your booking? You cannot undo this." & " You are about to cancel: " & Text(
+                                            LookUp(
+                                                'Long Term Reservations',
+                                                'Long Term Reservation' = varReservationToCancel.'Long Term Reservation'.'Long Term Reservation'
+                                            ).'Start Date',
+                                            "mm/dd/yyyy"
+                                        ) & " - " & Text(
+                                            LookUp(
+                                                'Long Term Reservations',
+                                                'Long Term Reservation' = varReservationToCancel.'Long Term Reservation'.'Long Term Reservation'
+                                            ).'End Date',
+                                            "mm/dd/yyyy"
+                                        ),
+                                        varProc: 'Status Reason (Reservations)'.Cancelled
+                                    },
+                                    {
+                                        varHeader: "Cancel booking",
+                                        varMessage: "Are you sure you want to cancel your booking? You cannot undo this.",
+                                        varProc: 'Status Reason (Reservations)'.Cancelled
+                                    }
+                                )
+                            );
+                        Text: ="Cancel reservation"
+                        VerticalAlign: =""
+                        Width: |-
+                            =Switch(
+                                App.ActiveScreen.Size,
+                                ScreenSize.ExtraLarge,
+                                Len(Self.Text) * 8.5,
+                                ScreenSize.Large,
+                                Len(Self.Text) * 8.5,
+                                ScreenSize.Medium,
+                                Len(Self.Text) * 8.5 ,
+                                Parent.Width - Parent.PaddingLeft- Parent.PaddingRight
+                            )
+                        X: =0
+                        Y: =0
+                        ZIndex: =1
+
