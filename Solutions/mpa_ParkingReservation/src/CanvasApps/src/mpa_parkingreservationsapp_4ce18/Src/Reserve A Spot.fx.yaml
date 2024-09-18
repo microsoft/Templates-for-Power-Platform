@@ -1,0 +1,1507 @@
+"'Reserve A Spot' As screen":
+    Fill: =Color.White
+    LoadingSpinnerColor: =App.Theme.Colors.Primary
+    OnVisible: |-
+        =//Gets D365 User of the current user based on the domain name//
+        Set(
+            varD365User,
+            First(
+                Filter(
+                    Users,
+                    'User Name' = User().Email
+                )
+            )
+        );
+        
+        Set(IsLongterm, false);
+        
+        If(
+            !varFromCancel_NewReservation && !VarReserveThisSpot,
+            Set(
+                varEmptyField_NewReservation,
+                false
+            );
+            ResetForm(frmReservations_ReserveASpot);
+            Refresh(Reservations);
+            Refresh(Vehicles);
+            Refresh(Buildings);
+            Refresh(Floors);
+            Refresh('Parking Spots');
+            
+        );
+        Refresh(Users);
+        
+        
+        UpdateContext(
+            {
+                _LayoutProperties:
+                {
+                    outerPadding: {top: 40, right: 40, bottom: 40, left: 40},
+                    innerPadding: {top: 20, right: 20, bottom: 20, left: 20},
+                    labelPadding: {top: 5, right: 5, bottom: 5, left: 5}
+                }
+            }
+        );
+
+    compHeaderCompound_ReserveASpot As compHeaderCompound:
+        HeaderWidth: =Parent.Width
+        Height: =compHeaderCompound_ReserveASpot.HeaderHeight
+        Width: =compHeaderCompound_ReserveASpot.HeaderWidth
+        ZIndex: =2
+
+    conMainContent_ReserveASpot As groupContainer.verticalAutoLayoutContainer:
+        Fill: =ColorValue(varTheme.neutralBackground2)
+        Height: =Parent.Height - compHeaderCompound_ReserveASpot.Height
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutGap: =10
+        LayoutMode: =LayoutMode.Auto
+        LayoutOverflowY: =LayoutOverflow.Scroll
+        PaddingBottom: =Self.PaddingTop
+        PaddingLeft: |-
+            =If(
+                App.ActiveScreen.Size = 1,
+                _LayoutProperties.outerPadding.top / 5,
+                _LayoutProperties.outerPadding.top
+            )
+        PaddingRight: =Self.PaddingLeft
+        PaddingTop: |-
+            =If(
+                App.ActiveScreen.Size = 1,
+                _LayoutProperties.outerPadding.top / 2,
+                _LayoutProperties.outerPadding.top /2.5
+            )
+        Width: =Parent.Width
+        Y: =compHeaderCompound_ReserveASpot.Y + compHeaderCompound_ReserveASpot.Height
+        ZIndex: =3
+
+        txtTitle_ReserveASpot As Text:
+            AutoHeight: =false
+            DisplayMode: =DisplayMode.Edit
+            FontColor: =
+            Height: =Self.Size * 1.5
+            LayoutMinHeight: =32
+            LayoutMinWidth: =96
+            Size: =varThemeFont.H1.size
+            Text: ="Reserve a spot"
+            VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+            Weight: =varThemeFont.H1.weightBold
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            X: =0
+            Y: =0
+            ZIndex: =1
+
+        conBodyContent_ReserveASpot As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            DropShadow: =DropShadow.Semilight
+            Fill: =ColorValue(varTheme.neutralBackground1)
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            RadiusBottomLeft: =8
+            RadiusBottomRight: =8
+            RadiusTopLeft: =8
+            RadiusTopRight: =8
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            ZIndex: =2
+
+            conReservationForm_ReserveASpot As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                FillPortions: =0
+                Height: =Parent.Height - conLower_ReserveASpot.Height - shpDividerBottom_ReserveASpot.Height
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                PaddingBottom: =16
+                PaddingLeft: =16
+                PaddingRight: =16
+                PaddingTop: =16
+                Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                ZIndex: =1
+
+                frmReservations_ReserveASpot As form.PowerApps_CoreControls_Form:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    BorderColor: =App.Theme.Colors.Darker40
+                    DataSource: =Reservations
+                    DefaultMode: =FormMode.New
+                    Height: =dtcdescription_ReserveASpot.Height + dtcFirstDivider_ReserveASpot.Height + dtcSecondDivider_ReserveASpot.Height + dtcVehicleDetails_ReserveASpot.Height + (dtcReservationStartDate_ReserveASpot.Height *5)
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =400
+                    SnapToColumns: =false
+                    UseFluentV9Cards: =true
+                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    ZIndex: =1
+
+                    dtcdescription_ReserveASpot As typedDataCard.blankCard:
+                        BorderColor: =App.Theme.Colors.Darker40
+                        BorderStyle: =BorderStyle.Solid
+                        DisplayMode: =DisplayMode.Edit
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =txtDescription_ReserveASpot.Height +10
+                        Width: =Parent.Width
+                        X: =0
+                        Y: =0
+                        ZIndex: =1
+
+                        txtDescription_ReserveASpot As Text:
+                            AutoHeight: =false
+                            DisplayMode: =DisplayMode.Edit
+                            Height: =If(App.ActiveScreen.Size = 1, 40, 20)
+                            Text: ="Fill out all the fields to reserve a parking spot."
+                            Weight: ='TextCanvas.Weight'.Semibold
+                            Width: =Parent.Width - 48
+                            X: =0
+                            Y: =
+                            ZIndex: =1
+
+                    dtcIsLongTerm_ReserveASpot As typedDataCard.fluentV9ComboBoxEditCard:
+                        BorderColor: =App.Theme.Colors.Darker40
+                        BorderStyle: =BorderStyle.Solid
+                        DataField: ="mpa_longtermreservation"
+                        Default: =ThisItem.'Long Term Reservation'
+                        DisplayMode: =Parent.DisplayMode
+                        DisplayName: =DataSourceInfo([@Reservations],DataSourceInfo.DisplayName,mpa_longtermreservation)
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =70
+                        Required: =false
+                        Update: =
+                        Width: =If(App.ActiveScreen.Size > ScreenSize.Medium, 120, Parent.Width)
+                        X: =0
+                        Y: =1
+                        ZIndex: =1
+
+                        txtIsLongTerm_ReserveASpot As Text:
+                            DisplayMode: =DisplayMode.Edit
+                            Height: =Self.Size * 2
+                            Text: ="Is long term"
+                            Weight: ='TextCanvas.Weight'.Semibold
+                            Width: =Parent.Width -20
+                            Wrap: =false
+                            X: =0
+                            Y: =4
+                            ZIndex: =1
+
+                        togIsLongTerm_ReserveASpot As Toggle:
+                            AccessibleLabel: ="Is long term"
+                            BasePaletteColor: =
+                            Checked: =false
+                            DisplayMode: |-
+                                =If(
+                                        And(
+                                            dteReservationStartDate_ReserveASpot.SelectedDate >= Today(),//The Reservation Date is in the Future//
+                                            CountRows(colReservation_SelectedDate_Owner) = 0//The user does not already have a Reservation on the selected Reservation Date//
+                                        ),
+                                        DisplayMode.Edit,
+                                        DisplayMode.Disabled
+                                    )
+                            Font: =""
+                            FontColor: =
+                            FontItalic: =
+                            FontSize: =0
+                            FontWeight: =""
+                            Height: =32
+                            Label: =If(Self.Checked, "Yes", "No")
+                            OnCheck: =Set(IsLongterm, true)
+                            OnUncheck: |-
+                                =Reset(dteEndDate_ReserveASpot);
+                                Set(IsLongterm, false)
+                            Width: =txtIsLongTerm_ReserveASpot.Width
+                            X: =txtIsLongTerm_ReserveASpot.X
+                            Y: =txtIsLongTerm_ReserveASpot.Y + txtIsLongTerm_ReserveASpot.Height +4
+                            ZIndex: =2
+
+                    dtcArrow_ReserveASpot As typedDataCard.blankCard:
+                        BorderColor: =App.Theme.Colors.Darker40
+                        BorderStyle: =BorderStyle.Solid
+                        DisplayMode: =DisplayMode.Edit
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =dtcReservationStartDate_ReserveASpot.Height
+                        Width: =20
+                        X: =2
+                        Y: =1
+                        ZIndex: =1
+
+                        icoRightArrow_ReserveASpot As icon.ChevronLeft:
+                            BorderColor: =App.Theme.Colors.Darker40
+                            Color: =ColorValue(varTheme.neutralForeground1)
+                            DisabledBorderColor: =RGBA(166, 166, 166, 1)
+                            DisabledColor: =RGBA(244, 244, 244, 1)
+                            Height: =icoRight_ReserveASpot.Height
+                            Icon: =Icon.ArrowRight
+                            Width: =Parent.Width
+                            Y: =icoRight_ReserveASpot.Y
+                            ZIndex: =1
+
+                    dtcFirstDivider_ReserveASpot As typedDataCard.blankCard:
+                        BorderColor: =App.Theme.Colors.Darker40
+                        BorderStyle: =BorderStyle.Solid
+                        DisplayMode: =DisplayMode.Edit
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =dtcdescription_ReserveASpot.Height /2
+                        Width: =dtcdescription_ReserveASpot.Width
+                        X: =4
+                        Y: =1
+                        ZIndex: =1
+
+                        shpFirstDivider_ReserveASpot As rectangle:
+                            AccessibleLabel: =//customize the accesible label based in the shape
+                            BorderColor: =App.Theme.Colors.Primary
+                            BorderStyle: =BorderStyle.None
+                            DisabledFill: =ColorValue(varTheme.neutralBackgroundDisabled)
+                            Fill: =ColorValue(varTheme.neutralStroke2)
+                            FocusedBorderColor: =App.Theme.Colors.Primary
+                            FocusedBorderThickness: =4
+                            Height: =1
+                            HoverFill: =App.Theme.Colors.Darker20
+                            PressedFill: =App.Theme.Colors.Primary
+                            Width: =Parent.Width
+                            Y: =Parent.Height /2
+                            ZIndex: =1
+
+                    dtcVehicle_ReserveASpot As typedDataCard.fluentV9ComboBoxEditCard:
+                        BorderColor: =App.Theme.Colors.Darker40
+                        BorderStyle: =BorderStyle.Solid
+                        DataField: ="mpa_vehicle"
+                        Default: =ThisItem.Vehicle
+                        DisplayMode: =Parent.DisplayMode
+                        DisplayName: =DataSourceInfo([@Reservations],DataSourceInfo.DisplayName,mpa_vehicle)
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =dtcReservationStartDate_ReserveASpot.Height
+                        Required: =true
+                        Update: =cmbVehicle_ReserveASpot.Selected
+                        Width: =If(App.ActiveScreen.Size = 1, Parent.Width, dtcReservationStartDate_ReserveASpot.Width)
+                        X: =5
+                        Y: =1
+                        ZIndex: =1
+
+                        txtVehicle_ReserveASpot As Text:
+                            DisplayMode: =DisplayMode.Edit
+                            Height: =Self.Size * 2
+                            Text: =Parent.DisplayName
+                            Weight: ='TextCanvas.Weight'.Semibold
+                            Width: =Parent.Width -16
+                            Wrap: =false
+                            X: =0
+                            Y: =4
+                            ZIndex: =1
+
+                        cmbVehicle_ReserveASpot As Combobox.pcfdataset:
+                            AccessibleLabel: ="Vehicle"
+                            Appearance: ="FilledDarker"
+                            DefaultSelectedItems: =LookUp(Vehicles,Vehicle = varD365User.'Preferred Vehicle'.Vehicle)
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                        dteReservationStartDate_ReserveASpot.SelectedDate >= Today(),//The Reservation Date is in the Future//
+                                        CountRows(colReservation_SelectedDate_Owner) = 0, //The user does not already have a Reservation on the selected Reservation Date//
+                                        !IsBlank(LookUp(Vehicles,Vehicle = varD365User.'Preferred Vehicle'.Vehicle))
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.Disabled
+                                )
+                            Font: =""
+                            FontItalic: =
+                            FontSize: =0
+                            FontWeight: =""
+                            Height: =32
+                            InputTextPlaceholder: ="Select a vehicle"
+                            Items: =Filter(Vehicles, 'Vehicles (Views)'.'My Vehicles')
+                            OnChange: =
+                            SelectMultiple: =false
+                            ValidationState: =If(varEmptyField_NewReservation && IsBlank(Self.Selected), "Error", "None")
+                            Width: =If(App.ActiveScreen.Size = 1, dteReservationStartDate_ReserveASpot.Width, txtVehicle_ReserveASpot.Width)
+                            X: =txtVehicle_ReserveASpot.X
+                            Y: =txtVehicle_ReserveASpot.Height + txtVehicle_ReserveASpot.Y +4
+                            ZIndex: =2
+
+                            Name1 As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn:
+                                FieldDisplayName: ="Name"
+                                FieldName: ="mpa_name"
+                                FieldType: ="s"
+                                FieldVariantName: ="textualColumn"
+                                Order: =1
+                                ZIndex: =29
+
+                            "'Plate Number1' As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn":
+                                FieldDisplayName: ="Plate Number"
+                                FieldName: ="mpa_platenumber"
+                                FieldType: ="s"
+                                FieldVariantName: ="textualColumn"
+                                Order: =2
+                                ZIndex: =30
+
+                            "'Status Reason1' As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn":
+                                FieldDisplayName: ="Status Reason"
+                                FieldName: ="statuscode"
+                                FieldType: ="l"
+                                FieldVariantName: ="textualColumn"
+                                Order: =4
+                                ZIndex: =31
+
+                            Status1 As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn:
+                                FieldDisplayName: ="Status"
+                                FieldName: ="statecode"
+                                FieldType: ="l"
+                                FieldVariantName: ="textualColumn"
+                                Order: =5
+                                ZIndex: =32
+
+                            "'Created On1' As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn":
+                                FieldDisplayName: ="Created On"
+                                FieldName: ="createdon"
+                                FieldType: ="d"
+                                FieldVariantName: ="textualColumn"
+                                Order: =6
+                                ZIndex: =33
+
+                    dtcVehicleDetails_ReserveASpot As typedDataCard.blankCard:
+                        BorderColor: =App.Theme.Colors.Darker40
+                        BorderStyle: =BorderStyle.Solid
+                        DisplayMode: =DisplayMode.Edit
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =If(App.ActiveScreen.Size <3, dtcdescription_ReserveASpot.Height *2, dtcdescription_ReserveASpot.Height)
+                        Width: =dtcdescription_ReserveASpot.Width
+                        X: =6
+                        Y: =1
+                        ZIndex: =1
+
+                        txtVehicleDetails_ReserveASpot As Text:
+                            DisplayMode: =DisplayMode.Edit
+                            Height: =If(App.ActiveScreen.Size <3, 40, Self.Size * 2)
+                            Text: ="You need a vehicle to reserve a spot. Manage your vehicles in Preferences."
+                            Weight: ='TextCanvas.Weight'.Semibold
+                            Width: =If(App.ActiveScreen.Size <3, Parent.Width, 482)
+                            X: =0
+                            Y: =If(App.ActiveScreen.Size <3, 0, 4)
+                            ZIndex: =1
+
+                        btnGoToPreference_ReserveASpot As Button:
+                            AccessibleLabel: ="Transparent"
+                            Align: =""
+                            Appearance: ='ButtonCanvas.Appearance'.Transparent
+                            BasePaletteColor: =
+                            DisplayMode: =DisplayMode.Edit
+                            Font: =""
+                            FontColor: =
+                            FontItalic: =false
+                            FontSize: =0
+                            FontUnderline: =true
+                            FontWeight: =""
+                            Height: =32
+                            Icon: =""
+                            IconRotation: =0
+                            IconStyle: ="Outline"
+                            Layout: ="Icon before"
+                            OnSelect: =Navigate(Preferences)
+                            Text: ="Go to preference"
+                            VerticalAlign: =""
+                            Width: =140
+                            X: =If(App.ActiveScreen.Size <3, 0, txtVehicleDetails_ReserveASpot.Width)
+                            Y: =If(App.ActiveScreen.Size <3, txtVehicleDetails_ReserveASpot.Height, 0)
+                            ZIndex: =2
+
+                    dtcSecondDivider_ReserveASpot As typedDataCard.blankCard:
+                        BorderColor: =App.Theme.Colors.Darker40
+                        BorderStyle: =BorderStyle.Solid
+                        DisplayMode: =DisplayMode.Edit
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =dtcdescription_ReserveASpot.Height/2
+                        Width: =dtcdescription_ReserveASpot.Width
+                        X: =7
+                        Y: =1
+                        ZIndex: =1
+
+                        shpSecondDivider_ReserveASpot As rectangle:
+                            AccessibleLabel: =//customize the accesible label based in the shape
+                            BorderColor: =App.Theme.Colors.Primary
+                            BorderStyle: =BorderStyle.None
+                            DisabledFill: =ColorValue(varTheme.neutralBackgroundDisabled)
+                            Fill: =ColorValue(varTheme.neutralStroke2)
+                            FocusedBorderColor: =App.Theme.Colors.Primary
+                            FocusedBorderThickness: =4
+                            Height: =1
+                            HoverFill: =App.Theme.Colors.Darker20
+                            PressedFill: =App.Theme.Colors.Primary
+                            Width: =Parent.Width
+                            Y: =Parent.Height /2
+                            ZIndex: =1
+
+                    dtcBuilding_ReserveASpot As typedDataCard.fluentV9ComboBoxEditCard:
+                        BorderColor: =App.Theme.Colors.Darker40
+                        BorderStyle: =BorderStyle.Solid
+                        DataField: ="mpa_building"
+                        Default: =ThisItem.Building
+                        DisplayMode: =Parent.DisplayMode
+                        DisplayName: =DataSourceInfo([@Reservations],DataSourceInfo.DisplayName,mpa_building)
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =70
+                        Required: =true
+                        Update: =cmbBuilding_ReserveASpot.Selected
+                        Width: =dtcReservationStartDate_ReserveASpot.Width
+                        X: =8
+                        Y: =1
+                        ZIndex: =1
+
+                        txtBuilding_ReserveASpot As Text:
+                            DisplayMode: =DisplayMode.Edit
+                            Height: =Self.Size * 2
+                            Text: =Parent.DisplayName
+                            Weight: ='TextCanvas.Weight'.Semibold
+                            Width: =Parent.Width - 16
+                            Wrap: =false
+                            X: =0
+                            Y: =4
+                            ZIndex: =1
+
+                        cmbBuilding_ReserveASpot As Combobox.pcfdataset:
+                            AccessibleLabel: ="Building"
+                            Appearance: ="FilledDarker"
+                            DefaultSelectedItems: =LookUp(Buildings, Building = varD365User.'Preferred Building'.Building)
+                            DisplayMode: |-
+                                =If(
+                                    IsLongterm,
+                                    If(
+                                        And(
+                                            dteReservationStartDate_ReserveASpot.SelectedDate >= Today(),//The Reservation Date is in the Future//
+                                            CountRows(colLongTerm_SubmittedReservation_Owner) = 0,//The user does not already have a Reservation on the selected Reservation Date//
+                                            dteEndDate_ReserveASpot.SelectedDate > dteReservationStartDate_ReserveASpot.SelectedDate
+                                        ),
+                                        DisplayMode.Edit,
+                                        DisplayMode.Disabled
+                                    ),
+                                    If(
+                                        And(
+                                            dteReservationStartDate_ReserveASpot.SelectedDate >= Today(),//The Reservation Date is in the Future//
+                                            CountRows(colReservation_SelectedDate_Owner) = 0//The user does not already have a Reservation on the selected Reservation Date//
+                                        ),
+                                        DisplayMode.Edit,
+                                        DisplayMode.Disabled
+                                    )
+                                )
+                            Font: =""
+                            FontItalic: =
+                            FontSize: =0
+                            FontWeight: =""
+                            Height: =32
+                            InputTextPlaceholder: ="Search for a building"
+                            Items: |-
+                                =//Dropdown displays Buildings that are active//
+                                Sort(Filter(Buildings, 'Buildings (Views)'.'Active Buildings'), Name, SortOrder.Ascending)
+                            OnChange: |-
+                                =
+                                //Resets the selected value in the drop down below//
+                                Reset(cmbFloor_ReserveASpot);
+                                Reset(cmbParkingSpot_ReserveASpot);
+                                Reset(cmbSpotType_ReserveASpot);
+                                
+                                If(
+                                    IsLongterm,
+                                    //User can only make a reservation x days in advanced, based on the booking policy of the building//
+                                    If(
+                                        cmbBuilding_ReserveASpot.Selected.'Book in Advance Days' > 0,
+                                        Notify(
+                                            Concatenate(
+                                                cmbBuilding_ReserveASpot.Selected.Name,
+                                                " - Days in advance a spot in this building can be reserved: ",
+                                                cmbBuilding_ReserveASpot.Selected.'Book in Advance Days'
+                                            ),
+                                            NotificationType.Information,
+                                            5000
+                                        ),
+                                        If(
+                                            cmbBuilding_ReserveASpot.Selected.'Book in Advance Days' <= 0 || IsBlank(cmbBuilding_ReserveASpot.Selected.'Book in Advance Days'),
+                                            Notify(
+                                                "Parking spots in this building cannot be booked in advance",
+                                                NotificationType.Information,
+                                                5000
+                                            )
+                                        )
+                                    );
+                                    If(DateDiff(Today(), dteEndDate_ReserveASpot.SelectedDate) > cmbBuilding_ReserveASpot.Selected.'Book in Advance Days', 
+                                    Notify(
+                                                "The selected end date for your reservation exceeds the allowable booking window for the selected building.",
+                                                NotificationType.Information,
+                                                5000));
+                                    
+                                    ,
+                                
+                                //User can only make a reservation x days in advanced, based on the booking policy of the building//
+                                    If(
+                                        cmbBuilding_ReserveASpot.Selected.'Book in Advance Days' > 0,
+                                        Notify(
+                                            Concatenate(
+                                                cmbBuilding_ReserveASpot.Selected.Name,
+                                                " - Days in advance a spot in this building can be reserved: ",
+                                                cmbBuilding_ReserveASpot.Selected.'Book in Advance Days'
+                                            ),
+                                            NotificationType.Information,
+                                            5000
+                                        ),
+                                        If(
+                                            cmbBuilding_ReserveASpot.Selected.'Book in Advance Days' <= 0 || IsBlank(cmbBuilding_ReserveASpot.Selected.'Book in Advance Days'),
+                                            Notify(
+                                                "Parking spots in this building cannot be booked in advance",
+                                                NotificationType.Information,
+                                                5000
+                                            )
+                                        )
+                                    )
+                                )
+                            SelectMultiple: =false
+                            ValidationState: =If(varEmptyField_NewReservation && IsBlank(Self.Selected), "Error", "None")
+                            Width: =txtBuilding_ReserveASpot.Width
+                            X: =txtBuilding_ReserveASpot.X
+                            Y: =txtBuilding_ReserveASpot.Height + txtBuilding_ReserveASpot.Y +4
+                            ZIndex: =2
+
+                            con_BuildingName_ReserveASpot As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn:
+                                FieldDisplayName: ="Name"
+                                FieldName: ="mpa_name"
+                                FieldType: ="s"
+                                FieldVariantName: ="textualColumn"
+                                Order: =1
+                                ZIndex: =5
+
+                    dtcRight_ReserveASpot As typedDataCard.blankCard:
+                        BorderColor: =App.Theme.Colors.Darker40
+                        BorderStyle: =BorderStyle.Solid
+                        DisplayMode: =DisplayMode.Edit
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =dtcReservationStartDate_ReserveASpot.Height
+                        Width: =20
+                        X: =9
+                        Y: =1
+                        ZIndex: =1
+
+                        icoRight_ReserveASpot As icon.ChevronLeft:
+                            BorderColor: =App.Theme.Colors.Darker40
+                            Color: =ColorValue(varTheme.neutralForeground1)
+                            DisabledBorderColor: =RGBA(166, 166, 166, 1)
+                            DisabledColor: =RGBA(244, 244, 244, 1)
+                            Height: =32
+                            Icon: =Icon.ChevronRight
+                            Width: =Parent.Width
+                            Y: =36
+                            ZIndex: =1
+
+                    dtcFloor_ReserveASpot As typedDataCard.fluentV9ComboBoxEditCard:
+                        BorderColor: =App.Theme.Colors.Darker40
+                        BorderStyle: =BorderStyle.Solid
+                        DataField: ="mpa_floor"
+                        Default: =ThisItem.Floor
+                        DisplayMode: =Parent.DisplayMode
+                        DisplayName: =DataSourceInfo([@Reservations],DataSourceInfo.DisplayName,mpa_floor)
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =dtcReservationStartDate_ReserveASpot.Height
+                        Required: =true
+                        Update: =cmbFloor_ReserveASpot.Selected
+                        Width: =If(App.ActiveScreen.Size <3, dtcEndDate_ReserveASpot.Width, Parent.Width - dtcBuilding_ReserveASpot.Width - dtcRight_ReserveASpot.Width -50)
+                        X: =10
+                        Y: =1
+                        ZIndex: =1
+
+                        txtFloor_ReserveASpot As Text:
+                            DisplayMode: =DisplayMode.Edit
+                            Height: =Self.Size * 2
+                            Text: =Parent.DisplayName
+                            Weight: ='TextCanvas.Weight'.Semibold
+                            Width: =txtBuilding_ReserveASpot.Width
+                            Wrap: =false
+                            X: =If(App.ActiveScreen.Size = 1, 0, 16)
+                            Y: =4
+                            ZIndex: =1
+
+                        cmbFloor_ReserveASpot As Combobox.pcfdataset:
+                            AccessibleLabel: ="Floor level"
+                            Appearance: ="FilledDarker"
+                            DisplayMode: |-
+                                =If(IsLongterm,
+                                If(
+                                    And(
+                                        dteReservationStartDate_ReserveASpot.SelectedDate >= Today(),//The Reservation Date is in the Future//
+                                        CountRows(colLongTerm_SubmittedReservation_Owner) = 0,//The user does not already have a Reservation on the selected Reservation Date//
+                                        !IsBlank(cmbBuilding_ReserveASpot.Selected),
+                                        Or(IsBlank(cmbBuilding_ReserveASpot.Selected.'Book in Advance Days'), 
+                                        
+                                        DateDiff(
+                                            Today(),
+                                            dteReservationStartDate_ReserveASpot.SelectedDate
+                                        ) <= cmbBuilding_ReserveASpot.Selected.'Book in Advance Days'),
+                                        
+                                         
+                                        DateDiff(
+                                            Today(),
+                                            dteEndDate_ReserveASpot.SelectedDate
+                                        ) <= cmbBuilding_ReserveASpot.Selected.'Book in Advance Days',
+                                        //The Reservation Date adheres to the Building's Book-in-Advance policy 
+                                
+                                        !IsBlank(cmbBuilding_ReserveASpot.Selected.'Book in Advance Days'), // if Days in advance is blank
+                                        cmbBuilding_ReserveASpot.DisplayMode = DisplayMode.Edit
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.Disabled
+                                ),
+                                
+                                If(
+                                    And(
+                                        dteReservationStartDate_ReserveASpot.SelectedDate >= Today(),//The Reservation Date is in the Future//
+                                        CountRows(colReservation_SelectedDate_Owner) = 0,//The user does not already have a Reservation on the selected Reservation Date//
+                                        !IsBlank(cmbBuilding_ReserveASpot.Selected),
+                                        Or(IsBlank(cmbBuilding_ReserveASpot.Selected.'Book in Advance Days'), DateDiff(
+                                            Today(),
+                                            dteReservationStartDate_ReserveASpot.SelectedDate
+                                        ) <= cmbBuilding_ReserveASpot.Selected.'Book in Advance Days'), //The Reservation Date adheres to the Building's Book-in-Advance policy 
+                                         !IsBlank(cmbBuilding_ReserveASpot.Selected.'Book in Advance Days') // if Days in advance is blank
+                                        
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.Disabled
+                                ))
+                            Font: =""
+                            FontItalic: =
+                            FontSize: =0
+                            FontWeight: =""
+                            Height: =32
+                            InputTextPlaceholder: ="Select a level"
+                            Items: |-
+                                =//Dropdown displays Floors that are active AND is filtered by the selected Building//
+                                Sort(
+                                    Filter(
+                                        Floors,
+                                        'Floors (Views)'.'Active Floors',
+                                        'Building Id'.Building = cmbBuilding_ReserveASpot.Selected.Building
+                                    ),
+                                    Level,
+                                    SortOrder.Ascending
+                                )
+                            OnChange: |-
+                                =Reset(cmbParkingSpot_ReserveASpot);
+                                Reset(cmbSpotType_ReserveASpot);
+                            SelectMultiple: =false
+                            ValidationState: =If(varEmptyField_NewReservation && IsBlank(Self.Selected), "Error", "None")
+                            Width: =txtFloor_ReserveASpot.Width
+                            X: =txtFloor_ReserveASpot.X
+                            Y: =txtFloor_ReserveASpot.Height + txtFloor_ReserveASpot.Y +4
+                            ZIndex: =2
+
+                            con_FloorName_ReserveASpot As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn:
+                                FieldDisplayName: ="Name"
+                                FieldName: ="mpa_name"
+                                FieldType: ="s"
+                                FieldVariantName: ="textualColumn"
+                                Order: =1
+                                ZIndex: =13
+
+                    dtcIsAccessible_ReserveASpot As typedDataCard.fluentV9ComboBoxOptionSetSingleEditCard:
+                        BorderColor: =App.Theme.Colors.Darker40
+                        BorderStyle: =BorderStyle.Solid
+                        DataField: ="mpa_requestedaccessiblespot"
+                        Default: =ThisItem.'Requested Accessible Spot'
+                        DisplayMode: =Parent.DisplayMode
+                        DisplayName: =DataSourceInfo([@Reservations],DataSourceInfo.DisplayName,mpa_requestedaccessiblespot)
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =dtcSpotType_ReserveASpot.Height
+                        Required: =false
+                        Update: =If(togIsAccessible_ReserveASpot.Checked, 'Requested Accessible Spot (Reservations)'.Yes, 'Requested Accessible Spot (Reservations)'.No)
+                        Width: =If(App.ActiveScreen.Size <3, dtcSpotType_ReserveASpot.Width, dtcSpotType_ReserveASpot.Width -40)
+                        X: =12
+                        Y: =1
+                        ZIndex: =1
+
+                        txtIsAccessible_ReserveASpot As Text:
+                            DisplayMode: =DisplayMode.Edit
+                            Height: =Self.Size * 2
+                            Text: ="Is accessible"
+                            Weight: ='TextCanvas.Weight'.Semibold
+                            Width: =Parent.Width
+                            Wrap: =false
+                            X: =If(App.ActiveScreen.Size = 2, 36, 0)
+                            Y: =4
+                            ZIndex: =1
+
+                        togIsAccessible_ReserveASpot As Toggle:
+                            AccessibleLabel: ="Is accessible"
+                            BasePaletteColor: =
+                            Checked: =false
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                         cmbSpotType_ReserveASpot.DisplayMode = DisplayMode.Edit,
+                                         !IsBlank(cmbSpotType_ReserveASpot.Selected),
+                                        dteReservationStartDate_ReserveASpot.SelectedDate >= Today()
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.Disabled
+                                )
+                            Font: =""
+                            FontColor: =
+                            FontItalic: =
+                            FontSize: =0
+                            FontWeight: =""
+                            Height: =32
+                            Label: =If(Self.Checked, "Yes", "No")
+                            OnCheck: =
+                            OnUncheck: =
+                            Width: =120
+                            X: =txtIsAccessible_ReserveASpot.X
+                            Y: =txtIsAccessible_ReserveASpot.Height + txtIsAccessible_ReserveASpot.Y +4
+                            ZIndex: =2
+
+                    dtcParkingSpot_ReserveASpot As typedDataCard.fluentV9ComboBoxEditCard:
+                        BorderColor: =App.Theme.Colors.Darker40
+                        BorderStyle: =BorderStyle.Solid
+                        DataField: ="mpa_parkingspot"
+                        Default: =ThisItem.'Parking Spot'
+                        DisplayMode: =Parent.DisplayMode
+                        DisplayName: =DataSourceInfo([@Reservations],DataSourceInfo.DisplayName,mpa_parkingspot)
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =dtcReservationStartDate_ReserveASpot.Height
+                        Required: =true
+                        Update: =cmbParkingSpot_ReserveASpot.Selected
+                        Width: =If(App.ActiveScreen.Size = 2, dtcBuilding_ReserveASpot.Width,dtcReservationStartDate_ReserveASpot.Width + 16)
+                        X: =13
+                        Y: =1
+                        ZIndex: =1
+
+                        txtParkingSpot_ReserveASpot As Text:
+                            DisplayMode: =DisplayMode.Edit
+                            Height: =Self.Size * 2
+                            Text: =Parent.DisplayName
+                            Weight: ='TextCanvas.Weight'.Semibold
+                            Width: =Parent.Width - 32
+                            Wrap: =false
+                            X: =If(App.ActiveScreen.Size <3, 0, 16)
+                            Y: =4
+                            ZIndex: =1
+
+                        cmbParkingSpot_ReserveASpot As Combobox.pcfdataset:
+                            AccessibleLabel: ="Parking Spot"
+                            Appearance: ="FilledDarker"
+                            DisplayMode: |-
+                                =If(
+                                    And(
+                                         cmbSpotType_ReserveASpot.DisplayMode = DisplayMode.Edit,
+                                         !IsBlank(cmbSpotType_ReserveASpot.Selected),
+                                        dteReservationStartDate_ReserveASpot.SelectedDate >= Today()
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.Disabled
+                                )
+                            Font: =""
+                            FontItalic: =
+                            FontSize: =0
+                            FontWeight: =""
+                            Height: =32
+                            InputTextPlaceholder: ="Select a parking spot"
+                            Items: |-
+                                =If(
+                                    togIsAccessible_ReserveASpot.Checked,
+                                    Filter(
+                                        'Parking Spots',
+                                        'Parking Spots (Views)'.'Active Parking Spots',
+                                        'Parking Spot' in colAvailableSpots.'Parking Spot' && 'Is Accessible' = 'Is Accessible (Parking Spots)'.Yes
+                                    ),
+                                    Filter(
+                                        'Parking Spots',
+                                        'Parking Spots (Views)'.'Active Parking Spots',
+                                        'Parking Spot' in colAvailableSpots.'Parking Spot' && 'Is Accessible' = 'Is Accessible (Parking Spots)'.No
+                                    )
+                                )
+                            OnChange: =
+                            SelectMultiple: =false
+                            ValidationState: =If(varEmptyField_NewReservation && IsBlank(Self.Selected), "Error", "None")
+                            Width: =cmbFloor_ReserveASpot.Width
+                            X: =txtParkingSpot_ReserveASpot.X
+                            Y: =txtParkingSpot_ReserveASpot.Height + txtParkingSpot_ReserveASpot.Y +4
+                            ZIndex: =2
+
+                            con_ParkingSpotName_ReserveASpot As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn:
+                                FieldDisplayName: ="Name"
+                                FieldName: ="mpa_name"
+                                FieldType: ="s"
+                                FieldVariantName: ="textualColumn"
+                                Order: =1
+                                ZIndex: =22
+
+                            "'Is Accessible1' As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn":
+                                FieldDisplayName: ="Is Accessible"
+                                FieldName: ="mpa_isaccessible"
+                                FieldType: ="l"
+                                FieldVariantName: ="textualColumn"
+                                Order: =2
+                                ZIndex: =28
+
+                    dtcParkingSpotCount_ReserveASpot As typedDataCard.blankCard:
+                        BorderColor: =App.Theme.Colors.Darker40
+                        BorderStyle: =BorderStyle.Solid
+                        DisplayMode: =DisplayMode.Edit
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =If(App.ActiveScreen.Size = 1, txtParkingSpotCount_ReserveASpot.Height *.5, dtcReservationStartDate_ReserveASpot.Height)
+                        Width: =If(App.ActiveScreen.Size = 3, dtcReservationStartDate_ReserveASpot.Width *.75, dtcReservationStartDate_ReserveASpot.Width)
+                        X: =14
+                        Y: =1
+                        ZIndex: =1
+
+                        txtParkingSpotCount_ReserveASpot As Text:
+                            AutoHeight: =false
+                            DisplayMode: =DisplayMode.Edit
+                            Font: =""
+                            FontColor: =
+                            FontItalic: =
+                            Height: =Self.Size * 2
+                            Size: =14
+                            Text: |-
+                                =If(IsBlank(cmbSpotType_ReserveASpot.Selected), "No data available", CountRows(If(
+                                    togIsAccessible_ReserveASpot.Checked,
+                                    Filter(
+                                        'Parking Spots',
+                                        'Parking Spots (Views)'.'Active Parking Spots',
+                                        'Parking Spot' in colAvailableSpots.'Parking Spot' && 'Is Accessible' = 'Is Accessible (Parking Spots)'.Yes
+                                    ),
+                                    Filter(
+                                        'Parking Spots',
+                                        'Parking Spots (Views)'.'Active Parking Spots',
+                                        'Parking Spot' in colAvailableSpots.'Parking Spot' && 'Is Accessible' = 'Is Accessible (Parking Spots)'.No
+                                    )
+                                )) & " available parking spot(s)")
+                            VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                            Weight: =
+                            Width: =Parent.Width
+                            X: =If(App.ActiveScreen.Size = 2, 36, 0)
+                            Y: =If(App.ActiveScreen.Size = 1, 0, dteReservationStartDate_ReserveASpot.Y)
+                            ZIndex: =1
+
+                    dtcReservationPolicy_ReserveASpot As typedDataCard.blankCard:
+                        BorderColor: =App.Theme.Colors.Darker40
+                        BorderStyle: =BorderStyle.Solid
+                        DisplayMode: =DisplayMode.Edit
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =dtcReservationStartDate_ReserveASpot.Height
+                        Width: =dtcReservationStartDate_ReserveASpot.Width+16
+                        X: =15
+                        Y: =1
+                        ZIndex: =1
+
+                        txtReservationPolicyLabel_ReserveASpot As Text:
+                            DisplayMode: =DisplayMode.Edit
+                            Height: =Self.Size * 2
+                            Text: ="Reservation Policy"
+                            Weight: ='TextCanvas.Weight'.Semibold
+                            Width: =Parent.Width - 16
+                            Wrap: =false
+                            X: =0
+                            Y: =4
+                            ZIndex: =1
+
+                        txtReservationPolicyValue_ReserveASpot As Text:
+                            AutoHeight: =true
+                            DisplayMode: =DisplayMode.Edit
+                            Height: =
+                            Text: =If(IsBlank(cmbBuilding_ReserveASpot.Selected),"No data available","Up to " & cmbBuilding_ReserveASpot.Selected.'Book in Advance Days' & " days ahead of start Date.")
+                            Weight: ='TextCanvas.Weight'.Regular
+                            Width: =txtReservationPolicyLabel_ReserveASpot.Width
+                            Wrap: =false
+                            X: =    txtReservationPolicyLabel_ReserveASpot.X
+                            Y: =txtReservationPolicyLabel_ReserveASpot.Y + txtReservationPolicyLabel_ReserveASpot.Height
+                            ZIndex: =2
+
+                    dtcCancellationPolicy_ReserveASpot As typedDataCard.blankCard:
+                        BorderColor: =App.Theme.Colors.Darker40
+                        BorderStyle: =BorderStyle.Solid
+                        DisplayMode: =DisplayMode.Edit
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =dtcReservationStartDate_ReserveASpot.Height
+                        Width: =dtcReservationStartDate_ReserveASpot.Width +16
+                        X: =16
+                        Y: =1
+                        ZIndex: =1
+
+                        txtCancellationPolicyLabel_ReserveASpot As Text:
+                            DisplayMode: =DisplayMode.Edit
+                            Height: =Self.Size * 2
+                            Text: ="Cancellation Policy"
+                            Weight: ='TextCanvas.Weight'.Semibold
+                            Width: =Parent.Width - 32
+                            Wrap: =false
+                            X: =If(App.ActiveScreen.Size = 1, 0, 16)
+                            Y: =4
+                            ZIndex: =1
+
+                        txtCancellationPolicyValue_ReserveASpot As Text:
+                            AutoHeight: =true
+                            DisplayMode: =DisplayMode.Edit
+                            Height: =
+                            Text: =If(IsBlank(cmbBuilding_ReserveASpot.Selected),"No data available","Up to " & cmbBuilding_ReserveASpot.Selected.'Cancellation Policy Days' & " days before the start Date.")
+                            Weight: ='TextCanvas.Weight'.Regular
+                            Width: =txtCancellationPolicyLabel_ReserveASpot.Width
+                            Wrap: =false
+                            X: =    txtCancellationPolicyLabel_ReserveASpot.X
+                            Y: =txtCancellationPolicyLabel_ReserveASpot.Y + txtCancellationPolicyLabel_ReserveASpot.Height
+                            ZIndex: =2
+
+                    dtcReservationStartDate_ReserveASpot As typedDataCard.fluentV9DateTimeEditCard:
+                        BorderColor: =App.Theme.Colors.Darker40
+                        BorderStyle: =BorderStyle.Solid
+                        DataField: ="mpa_reservationstartdate"
+                        Default: =ThisItem.'Reservation Start Date'
+                        DisplayMode: =Parent.DisplayMode
+                        DisplayName: =DataSourceInfo([@Reservations],DataSourceInfo.DisplayName,mpa_reservationstartdate)
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =dteReservationStartDate_ReserveASpot.Height + txtReservationStartDate_ReserveASpot.Height + 24
+                        Required: =true
+                        Update: =dteReservationStartDate_ReserveASpot.SelectedDate
+                        Width: |-
+                            =Switch(App.ActiveScreen.Size, 
+                            3, (Parent.Width - dtcIsLongTerm_ReserveASpot.Width - dtcArrow_ReserveASpot.Width) *.4,
+                            2, (Parent.Width - dtcArrow_ReserveASpot.Width -20) *.5,
+                            1, Parent.Width - dtcArrow_ReserveASpot.Width -20,
+                            Parent.Width/3.5)
+                        X: =1
+                        Y: =1
+                        ZIndex: =3
+
+                        txtReservationStartDate_ReserveASpot As Text:
+                            DisplayMode: =DisplayMode.Edit
+                            Height: =Self.Size * 2
+                            Text: =Parent.DisplayName
+                            Weight: ='TextCanvas.Weight'.Semibold
+                            Width: =Parent.Width - 16
+                            Wrap: =false
+                            X: =0
+                            Y: =4
+                            ZIndex: =1
+
+                        "dteReservationStartDate_ReserveASpot As 'Date picker'":
+                            AccessibleLabel: ="Reservation start date"
+                            Appearance: ="FilledDarker"
+                            BasePaletteColor: =
+                            DisplayMode: =DisplayMode.Edit
+                            Font: =""
+                            FontColor: =
+                            FontItalic: =
+                            FontSize: =0
+                            Height: =32
+                            OnChange: |
+                                =//Collection of existing Reservations on the same Date//
+                                ClearCollect(
+                                    colReservation_SelectedDate,
+                                    Filter(
+                                        Reservations,
+                                        'Status Reason' = 'Status Reason (Reservations)'.Submitted && 'Reservation Start Date' = Self.SelectedDate
+                                    )
+                                );
+                                
+                                //Collection of existing Reservations on the same Date and by the same user//
+                                ClearCollect(
+                                    colReservation_SelectedDate_Owner,
+                                    Filter(
+                                        Reservations,
+                                        'Owning User'.'Primary Email' = User().Email && 'Reservation Start Date' = Self.SelectedDate && 'Status Reason' = 'Status Reason (Reservations)'.Submitted
+                                    )
+                                );
+                                
+                                //Resets the selected value in the drop down below//
+                                Reset(cmbFloor_ReserveASpot);
+                                Reset(cmbParkingSpot_ReserveASpot);
+                                Reset(cmbSpotType_ReserveASpot);
+                                Reset(dteEndDate_ReserveASpot);
+                                Reset(togIsLongTerm_ReserveASpot);
+                                Set(IsLongterm, false);
+                                
+                                
+                                //If a Date with an existing Reservation is selected by the user, they are prompted to select another date//
+                                If(
+                                    !IsEmpty(colReservation_SelectedDate_Owner),
+                                    Notify(
+                                        "You already have a Reservation on this date. Please select a different date.",
+                                        NotificationType.Error,
+                                        7000
+                                    )
+                                );
+                                
+                                
+                                //If the selected Date is in the past, the user is notified that the reservation must be in the future//
+                                If(
+                                    DateDiff(
+                                        Today(),
+                                        Self.SelectedDate
+                                    ) < 0,
+                                    Notify(
+                                        "Please select a date in the future",
+                                        NotificationType.Error,
+                                        7000
+                                    )
+                                );
+                                
+                                
+                                //User can only make a reservation x days in advanced, based on the booking policy of the building//
+                                If(
+                                    And(
+                                        !IsBlank(cmbBuilding_ReserveASpot.Selected.'Book in Advance Days'),
+                                        DateDiff(
+                                            Today(),
+                                            Self.SelectedDate
+                                        ) > cmbBuilding_ReserveASpot.Selected.'Book in Advance Days'
+                                    ),
+                                    Notify(
+                                        Concatenate(
+                                            "Please select an earlier date within the 'Book-in-Advance Policy' of the selected Building. (",
+                                            cmbBuilding_ReserveASpot.Selected.'Book in Advance Days',
+                                            ")"
+                                        ),
+                                        NotificationType.Error,
+                                        5000
+                                    )
+                                )
+                            Placeholder: ="Select a start date..."
+                            ValidationState: =If(varEmptyField_NewReservation && IsBlank(Self.SelectedDate), "Error", "None")
+                            Width: =txtReservationStartDate_ReserveASpot.Width
+                            X: =txtReservationStartDate_ReserveASpot.X
+                            Y: =txtReservationStartDate_ReserveASpot.Height + txtReservationStartDate_ReserveASpot.Y +4
+                            ZIndex: =2
+
+                    dtcEndDate_ReserveASpot As typedDataCard.fluentV9DateTimeEditCard:
+                        BorderColor: =App.Theme.Colors.Darker40
+                        BorderStyle: =BorderStyle.Solid
+                        DataField: ="mpa_reservationenddate"
+                        Default: =ThisItem.'Reservation End Date'
+                        DisplayMode: =Parent.DisplayMode
+                        DisplayName: =DataSourceInfo([@Reservations],DataSourceInfo.DisplayName,mpa_reservationenddate)
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: |-
+                            =//dteReservationStartDate_ReserveASpot.Height
+                            84
+                        Required: =false
+                        Update: =dteEndDate_ReserveASpot.SelectedDate
+                        Width: =dtcReservationStartDate_ReserveASpot.Width + 16
+                        X: =3
+                        Y: =1
+                        ZIndex: =3
+
+                        txtEndDate_ReserveASpot As Text:
+                            DisplayMode: =DisplayMode.Edit
+                            Height: =Self.Size * 2
+                            Text: =Parent.DisplayName
+                            Weight: ='TextCanvas.Weight'.Semibold
+                            Width: =Parent.Width -32
+                            Wrap: =false
+                            X: =If(App.ActiveScreen.Size = 1, 0, 16)
+                            Y: =4
+                            ZIndex: =1
+
+                        "dteEndDate_ReserveASpot As 'Date picker'":
+                            AccessibleLabel: ="Reservation end date"
+                            Appearance: ="FilledDarker"
+                            BasePaletteColor: =
+                            DisplayMode: =If(togIsLongTerm_ReserveASpot.Checked, DisplayMode.Edit, DisplayMode.Disabled)
+                            Font: =""
+                            FontColor: =
+                            FontItalic: =
+                            FontSize: =0
+                            Height: =32
+                            OnChange: |
+                                =//If the selected Date is before the start date//
+                                If(
+                                    DateDiff(
+                                        dteReservationStartDate_ReserveASpot.SelectedDate,
+                                        Self.SelectedDate
+                                    ) < 1,
+                                    Notify(
+                                        "Please select a date after the start Date.",
+                                        NotificationType.Error,
+                                        7000
+                                    )
+                                );
+                                //Collection of existing Reservations on the same Date//
+                                ClearCollect(
+                                    colLongTerm_SubmittedReservation,
+                                    Filter(
+                                        Reservations,
+                                        'Status Reason' = 'Status Reason (Reservations)'.Submitted && 'Reservation Start Date' >= dteReservationStartDate_ReserveASpot.SelectedDate && 'Reservation Start Date' <= dteEndDate_ReserveASpot.SelectedDate
+                                    )
+                                );
+                                //Collection of existing Reservations on the same Date and by the same user//
+                                ClearCollect(
+                                    colLongTerm_SubmittedReservation_Owner,
+                                    Filter(
+                                        Reservations,
+                                        'Owning User'.'Primary Email' = User().Email && 'Status Reason' = 'Status Reason (Reservations)'.Submitted && 'Reservation Start Date' >= dteReservationStartDate_ReserveASpot.SelectedDate && 'Reservation Start Date' <= dteEndDate_ReserveASpot.SelectedDate
+                                    )
+                                );
+                                // Array of existing Reservation dates on the same Date and by the same user
+                                Clear(colReservationDates);
+                                // Clearing the collection if needed
+                                Collect(
+                                    colReservationDates,
+                                    Distinct(
+                                        Filter(
+                                            Reservations,
+                                            'Owning User'.'Primary Email' = User().Email && 'Status Reason' = 'Status Reason (Reservations)'.Submitted && 'Reservation Start Date' >= dteReservationStartDate_ReserveASpot.SelectedDate && 'Reservation Start Date' <= dteEndDate_ReserveASpot.SelectedDate
+                                        ),
+                                        'Reservation Start Date'
+                                    )
+                                );
+                                //Resets the selected value in the drop down below//
+                                Reset(cmbFloor_ReserveASpot);
+                                Reset(cmbParkingSpot_ReserveASpot);
+                                Reset(cmbSpotType_ReserveASpot);
+                                Reset(cmbBuilding_ReserveASpot);
+                                Reset(cmbVehicle_ReserveASpot);
+                                //If a Date with an existing Reservation is selected by the user, they are prompted to select another date//
+                                If(
+                                    !IsEmpty(colLongTerm_SubmittedReservation_Owner),
+                                    Notify(
+                                        "You already have a Reservation on this date(s) " & 
+                                            Concat(
+                                                colReservationDates,
+                                                Concatenate(
+                                                    Text(
+                                                        Value,
+                                                        "mmm dd, yyyy"
+                                                    ),
+                                                    ", "
+                                                )
+                                            )
+                                         & " please select a different date." ,
+                                        NotificationType.Error,
+                                        7000)
+                                    
+                                );
+                                //User can only make a reservation x days in advanced, based on the booking policy of the building//
+                                If(
+                                    And(
+                                        !IsBlank(cmbBuilding_ReserveASpot.Selected.'Book in Advance Days'),
+                                        DateDiff(
+                                            Today(),
+                                            Self.SelectedDate
+                                        ) > cmbBuilding_ReserveASpot.Selected.'Book in Advance Days'
+                                    ),
+                                    Notify(
+                                        Concatenate(
+                                            "Please select an earlier date within the 'Book-in-Advance Policy' of the selected Building. (",
+                                            cmbBuilding_ReserveASpot.Selected.'Book in Advance Days',
+                                            ")"
+                                        ),
+                                        NotificationType.Error,
+                                        5000
+                                    )
+                                )
+                            Placeholder: ="Select an end date..."
+                            ValidationState: =If(varEmptyField_NewReservation && IsBlank(Self.SelectedDate), "Error", "None") 
+                            Width: =txtEndDate_ReserveASpot.Width
+                            X: =txtEndDate_ReserveASpot.X
+                            Y: =txtEndDate_ReserveASpot.Y + txtEndDate_ReserveASpot.Height + 4
+                            ZIndex: =2
+
+                    dtcSpotType_ReserveASpot As typedDataCard.fluentV9ComboBoxOptionSetSingleEditCard:
+                        BorderColor: =App.Theme.Colors.Darker40
+                        BorderStyle: =BorderStyle.Solid
+                        DataField: ="mpa_spottype"
+                        Default: =ThisItem.'Spot Type'
+                        DisplayMode: =Parent.DisplayMode
+                        DisplayName: =DataSourceInfo([@Reservations],DataSourceInfo.DisplayName,mpa_spottype)
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =dtcReservationStartDate_ReserveASpot.Height
+                        Required: =true
+                        Update: =cmbSpotType_ReserveASpot.Selected.Value
+                        Width: =If(App.ActiveScreen.Size <3, dtcBuilding_ReserveASpot.Width , (dtcReservationStartDate_ReserveASpot.Width /2) +30)
+                        X: =11
+                        Y: =1
+                        ZIndex: =3
+
+                        txtSpotType_ReserveASpot As Text:
+                            DisplayMode: =DisplayMode.Edit
+                            Height: =Self.Size * 2
+                            Text: =Parent.DisplayName
+                            Weight: ='TextCanvas.Weight'.Semibold
+                            Width: =Parent.Width - 16
+                            Wrap: =false
+                            X: =0
+                            Y: =4
+                            ZIndex: =1
+
+                        cmbSpotType_ReserveASpot As Combobox.pcfdataset:
+                            AccessibleLabel: ="Spot Type"
+                            Appearance: ="FilledDarker"
+                            DisplayMode: |+
+                                =If(
+                                    And(
+                                         cmbFloor_ReserveASpot.DisplayMode = DisplayMode.Edit,
+                                        !IsBlank(cmbFloor_ReserveASpot.Selected)
+                                    ),
+                                    DisplayMode.Edit,
+                                    DisplayMode.Disabled
+                                )
+                                
+                            Font: =""
+                            FontItalic: =
+                            FontSize: =0
+                            FontWeight: =""
+                            Height: =32
+                            InputTextPlaceholder: ="Select a spot type"
+                            Items: =Choices('Spot Type')
+                            OnChange: |-
+                                =ClearCollect(
+                                    colAvailableSpots,
+                                    Filter(
+                                        'Parking Spots', 'Parking Spots (Views)'.'Active Parking Spots',
+                                        Building.Building = cmbBuilding_ReserveASpot.Selected.Building,
+                                        'Floor Id'.Floor = cmbFloor_ReserveASpot.Selected.Floor,
+                                        Type = Self.Selected.Value
+                                    )
+                                );
+                                
+                                //Filter Reservations by specified Date, Building, Floor, and Spot Type
+                                ClearCollect(
+                                    colFilteredRes,
+                                    AddColumns(
+                                        Filter(
+                                            Reservations, 'Status Reason' = 'Status Reason (Reservations)'.Submitted,
+                                            'Reservation Start Date' = dteReservationStartDate_ReserveASpot.SelectedDate,
+                                            Building.Building = cmbBuilding_ReserveASpot.Selected.Building,
+                                            Floor.Floor = cmbFloor_ReserveASpot.Selected.Floor
+                                        ),
+                                        ParkingSpotID,
+                                        'Parking Spot'.'Parking Spot'
+                                    )
+                                );
+                                
+                                //Collect all Parking Spots that have Reservations for that date, building, floor, and spot type
+                                ClearCollect(
+                                    colSpotsToRemove,
+                                    Filter(
+                                        'Parking Spots', 'Parking Spots (Views)'.'Active Parking Spots',
+                                        'Parking Spot' in colFilteredRes.ParkingSpotID
+                                    )
+                                );
+                                
+                                //Remove all the Spots from the available parking spots collection that have reservations tied to them
+                                RemoveIf(
+                                    colAvailableSpots,
+                                    ThisRecord.'Parking Spot' in colSpotsToRemove.'Parking Spot'
+                                );
+                                
+                                
+                                
+                                
+                                Reset(cmbParkingSpot_ReserveASpot);
+                            SelectMultiple: =false
+                            ValidationState: =If(varEmptyField_NewReservation && IsBlank(Self.Selected), "Error", "None")
+                            Width: =txtSpotType_ReserveASpot.Width
+                            X: =txtSpotType_ReserveASpot.X
+                            Y: =txtSpotType_ReserveASpot.Height + txtSpotType_ReserveASpot.Y +4
+                            ZIndex: =2
+
+            shpDividerBottom_ReserveASpot As rectangle:
+                AccessibleLabel: =//customize the accesible label based in the shape
+                BorderColor: =App.Theme.Colors.Primary
+                BorderStyle: =BorderStyle.None
+                DisabledFill: =ColorValue(varTheme.neutralBackgroundDisabled)
+                Fill: =ColorValue(varTheme.neutralStroke2)
+                FocusedBorderColor: =App.Theme.Colors.Primary
+                FocusedBorderThickness: =4
+                Height: =1
+                HoverFill: =App.Theme.Colors.Darker20
+                PressedFill: =App.Theme.Colors.Primary
+                Width: =Parent.Width
+                X: =182
+                Y: =50
+                ZIndex: =2
+
+            conLower_ReserveASpot As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                FillPortions: =0
+                Height: =btnReserveSpot.Height + Self.PaddingTop + Self.PaddingBottom
+                LayoutGap: =8
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                PaddingBottom: =16
+                PaddingLeft: =16
+                PaddingRight: =16
+                PaddingTop: =16
+                Width: =Parent.Width
+                ZIndex: =3
+
+                btnReserveSpot As Button:
+                    AccessibleLabel: ="Reserve"
+                    Align: =""
+                    BasePaletteColor: =
+                    DisplayMode: |-
+                        =// Enable/disable the Reserve button based on required fields
+                        If(
+                            Or(
+                                IsBlank(dteReservationStartDate_ReserveASpot.SelectedDate),
+                                If(
+                                    And(
+                                        togIsLongTerm_ReserveASpot.Checked,
+                                        IsBlank(dteEndDate_ReserveASpot.SelectedDate)
+                                    ),
+                                    true,
+                                    false
+                                ),
+                                IsBlank(cmbVehicle_ReserveASpot.Selected),
+                                IsBlank(cmbBuilding_ReserveASpot.Selected),
+                                IsBlank(cmbFloor_ReserveASpot.Selected),
+                                IsBlank(cmbSpotType_ReserveASpot.Selected),
+                                IsBlank(cmbParkingSpot_ReserveASpot.Selected)
+                            ),
+                            DisplayMode.Disabled,
+                            DisplayMode.Edit
+                        )
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =
+                    FontSize: =0
+                    FontWeight: =""
+                    Height: =32
+                    Icon: =""
+                    IconRotation: =0
+                    IconStyle: ="Outline"
+                    Layout: ="Icon before"
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    OnSelect: |
+                        =Set(
+                            VarReserveThisSpot,
+                            true
+                        );
+                        // Reservation is longterm
+                        If(
+                            IsLongterm,
+                            If(
+                                IsBlank(dteReservationStartDate_ReserveASpot.SelectedDate) || IsBlank(cmbBuilding_ReserveASpot.Selected) || IsBlank(cmbFloor_ReserveASpot.Selected) || IsBlank(cmbSpotType_ReserveASpot.Selected) || IsBlank(cmbParkingSpot_ReserveASpot.Selected) || IsBlank(cmbVehicle_ReserveASpot.Selected) || IsBlank(dteEndDate_ReserveASpot.SelectedDate),
+                                Notify(
+                                    "Please fill in all fields.",
+                                    NotificationType.Error,
+                                    3000
+                                );
+                                Set(
+                                    varEmptyField_NewReservation,
+                                    true
+                                ),
+                                Navigate(
+                                    'Confirmation Screen',
+                                    Transition.None,
+                                    {
+                                        varHeader: "Confirm reservation",
+                                        varMessage: If(
+                                            DateAdd(
+                                                dteReservationStartDate_ReserveASpot.SelectedDate,
+                                                -1,
+                                                TimeUnit.Days
+                                            ) < Now(),
+                                            "Are you sure you want to reserve this parking spot? You won't be able to cancel this because it's close to today's date.",
+                                            "Are you sure you want to reserve this parking spot? You are allowed to cancel this reservation until" & " " & Text(
+                                                DateAdd(
+                                                    dteReservationStartDate_ReserveASpot.SelectedDate,
+                                                    -1,
+                                                    TimeUnit.Days
+                                                ),
+                                                "ddd, mmm d, yyyy"
+                                            ) & "."
+                                        ),
+                                        varProc: 'Status Reason (Reservations)'.Submitted
+                                    }
+                                );
+                            ),
+                            // Reservation is NOT longterm
+                            If(
+                                IsBlank(dteReservationStartDate_ReserveASpot.SelectedDate) || IsBlank(cmbBuilding_ReserveASpot.Selected) || IsBlank(cmbFloor_ReserveASpot.Selected) || IsBlank(cmbSpotType_ReserveASpot.Selected) || IsBlank(cmbParkingSpot_ReserveASpot.Selected) || IsBlank(cmbVehicle_ReserveASpot.Selected),
+                                Notify(
+                                    "Please fill in all fields.",
+                                    NotificationType.Error,
+                                    3000
+                                );
+                                Set(
+                                    varEmptyField_NewReservation,
+                                    true
+                                ),
+                                Navigate(
+                                    'Confirmation Screen',
+                                    Transition.None,
+                                    // Policy days equals to 0
+                                    If(
+                                        IsBlank(cmbBuilding_ReserveASpot.Selected.'Cancellation Policy Days') || cmbBuilding_ReserveASpot.Selected.'Cancellation Policy Days' = 0,
+                                        {
+                                            varHeader: "Confirm reservation",
+                                            varMessage: "Are you sure you want to reserve this parking spot? Based on building's cancellation policy you are not allowed to cancel this reservation.",
+                                            varProc: 'Status Reason (Reservations)'.Submitted
+                                        },
+                                    // Policy days is greater than 0
+                                        {
+                                            varHeader: "Confirm reservation",
+                                            varMessage: If(
+                                                DateAdd(
+                                                    dteReservationStartDate_ReserveASpot.SelectedDate,
+                                                    -cmbBuilding_ReserveASpot.Selected.'Cancellation Policy Days',
+                                                    TimeUnit.Days
+                                                ) < Now(),
+                                                "Are you sure you want to reserve this parking spot? You won't be able to cancel this because it's close to today's date.",
+                                                "Are you sure you want to reserve this parking spot? You are allowed to cancel this reservation until" & " " & Text(
+                                                    DateAdd(
+                                                        dteReservationStartDate_ReserveASpot.SelectedDate,
+                                                        -cmbBuilding_ReserveASpot.Selected.'Cancellation Policy Days',
+                                                        TimeUnit.Days
+                                                    ),
+                                                    "ddd, mmm d, yyyy"
+                                                ) & "."
+                                            ),
+                                            varProc: 'Status Reason (Reservations)'.Submitted
+                                        }
+                                    )
+                                );
+                            );
+                            
+                        );
+                    Text: ="Reserve"
+                    VerticalAlign: =""
+                    Width: =74
+                    X: =10
+                    Y: =10
+                    ZIndex: =1
+
+                btnCancelSpot As Button:
+                    AccessibleLabel: ="Cancel"
+                    Align: =""
+                    Appearance: ='ButtonCanvas.Appearance'.Secondary
+                    BasePaletteColor: =
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =
+                    FontSize: =0
+                    FontWeight: =""
+                    Height: =32
+                    Icon: =""
+                    IconRotation: =0
+                    IconStyle: ="Outline"
+                    Layout: ="Icon before"
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    OnSelect: |-
+                        =If(
+                            !IsBlank(dteReservationStartDate_ReserveASpot.SelectedDate) || !IsBlank(cmbBuilding_ReserveASpot.Selected) || !IsBlank(cmbFloor_ReserveASpot.Selected) || !IsBlank(cmbSpotType_ReserveASpot.Selected) || !IsBlank(cmbParkingSpot_ReserveASpot.Selected) || !IsBlank(cmbVehicle_ReserveASpot.Selected),
+                            Navigate(
+                                'Confirmation Screen',
+                                Transition.None,
+                                {
+                                    varHeader: "Confirm cancelation",
+                                    varMessage: "Are you sure you want to cancel this reservation?"
+                                }
+                            );
+                            Set(
+                                varFromCancel_NewReservation,
+                                true
+                            );
+                            ,
+                            Navigate('My Reservations Screen');
+                        )
+                    Text: ="Cancel"
+                    VerticalAlign: =""
+                    Width: =66
+                    X: =btnReserveSpot.Width + btnReserveSpot.X +10
+                    Y: =btnReserveSpot.Y
+                    ZIndex: =2
+
