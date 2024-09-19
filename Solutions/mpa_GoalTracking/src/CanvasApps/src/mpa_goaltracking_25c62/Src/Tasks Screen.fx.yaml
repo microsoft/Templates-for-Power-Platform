@@ -1,0 +1,777 @@
+"'Tasks Screen' As screen":
+    Fill: =Color.White
+    LoadingSpinnerColor: =App.Theme.Colors.Primary
+    OnHidden: =
+    OnVisible: |
+        =//Local layout properties
+        UpdateContext(
+            {
+                var_LayoutProperties : 
+                {
+                    header : {height : 51},
+                    body : {headerHeight: 64, inputContainerHeight: 48, buttonWidth: 140, interactiveControlHeight:32},
+                    outterPadding: {top : 32, right: 16, bottom: 32, left: 16, gap : 16},
+                    gallery: {tilePadding: 16, templateSize: 242, templateWidth: 310, titleHeight: 62, iconSize: 24, statusContainerHeight: 24, progressStatusHeight: 22, ProgressPercentageWidth: 45}
+                }
+            }
+        );
+        
+        //Generate collection based on selected subgoal
+        ClearCollect(
+            colMyTaskList,
+            AddColumns(
+                Filter(Tasks ,
+                Subgoal.'Subgoal Id' = varSelectedSubgoal.'Subgoal Id'
+                ) As Rec
+                ,
+                'Goal ID',
+                LookUp(
+                    Subgoals,
+                    'Subgoal Id' = Rec.Subgoal.'Subgoal Id'
+                ).Goal,
+                User , 
+                Rec.'Owning User'
+            )
+        );
+        
+        //Generate collection for task gallery
+        ClearCollect(
+            colMyTaskListFiscal ,
+            AddColumns(
+                colMyTaskList As Rec,
+                Fiscal,
+                LookUp(Goals , 'Goal Id' = Rec.'Goal ID'.'Goal Id').'Fiscal year',
+                Department,
+                Rec.Subgoal.Department
+            )
+        );
+
+    conBackground_Task As groupContainer.verticalAutoLayoutContainer:
+        Fill: =ColorValue(varTheme.neutralBackground2)
+        Height: =Parent.Height - cmpHeader_Task.Height
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutMode: =LayoutMode.Auto
+        LayoutOverflowY: =LayoutOverflow.Scroll
+        PaddingBottom: =var_LayoutProperties.outterPadding.bottom
+        PaddingLeft: |-
+            =//Responsive condition
+            If(
+                'Tasks Screen'.Size >= ScreenSize.Medium,
+                var_LayoutProperties.outterPadding.left,
+                0
+            )
+        PaddingRight: |-
+            =//Responsive condition
+            If(
+                'Tasks Screen'.Size >= ScreenSize.Medium,
+                var_LayoutProperties.outterPadding.right,
+                0
+            )
+        PaddingTop: |-
+            =//Responsive condition
+            If('Tasks Screen'.Size > ScreenSize.Small,
+                var_LayoutProperties.outterPadding.top,
+                var_LayoutProperties.outterPadding.top / 2
+            )
+        Width: =Parent.Width
+        Y: =cmpHeader_Task.HeaderHeight
+        ZIndex: =1
+
+        conBodyHeader_Task As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            FillPortions: =0
+            Height: |-
+                =//Responsive condition
+                If('Tasks Screen'.Size > ScreenSize.Small,
+                    txtSubGoalDetail_Task.Height + txtTaskTitle_Task.Height,
+                    txtSubGoalDetail_Task.Height + txtTaskTitle_Task.Height + btnCreateSubGoal_Task.Height + (Self.LayoutGap * 2)
+                )
+            LayoutAlignItems: =LayoutAlignItems.Center
+            LayoutGap: |-
+                =//Responsive condition
+                If('Tasks Screen'.Size > ScreenSize.Small,
+                    0,
+                    8
+                )
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            LayoutWrap: =true
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight - var_LayoutProperties.outterPadding.left - var_LayoutProperties.outterPadding.right
+            ZIndex: =1
+
+            txtSubGoalDetail_Task As Text:
+                AutoHeight: =true
+                BorderStyle: =""
+                DisplayMode: =DisplayMode.Edit
+                Font: =""
+                FontColor: =
+                Height: =Self.Size * 1.5
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                Size: =14
+                Text: |
+                    =varSelectedSubgoal.Name
+                VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                Weight: =varThemeFont.H3.weight
+                Width: =Parent.Width -2
+                Wrap: =true
+                X: =0
+                Y: =0
+                ZIndex: =1
+
+            txtTaskTitle_Task As Text:
+                AutoHeight: =true
+                BorderStyle: =""
+                DisplayMode: =DisplayMode.Edit
+                Font: =""
+                FontColor: =
+                Height: =Self.Size * 1.6
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                Size: =varThemeFont.H1.size
+                Text: ="Tasks"
+                VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                Weight: =varThemeFont.H1.weightBold
+                Width: |-
+                    =//Responsive condition
+                    If(
+                        'Tasks Screen'.Size > ScreenSize.Small,
+                        Parent.Width - btnCreateSubGoal_Task.Width,
+                        Parent.Width
+                    )
+                X: =0
+                Y: =0
+                ZIndex: =2
+
+            btnCreateSubGoal_Task As Button:
+                AccessibleLabel: ="Create a task"
+                Align: =""
+                BasePaletteColor: =
+                BorderStyle: =""
+                DisplayMode: =DisplayMode.Edit
+                Font: =""
+                FontColor: =
+                FontItalic: =
+                FontSize: =0
+                FontWeight: =""
+                Height: =var_LayoutProperties.body.interactiveControlHeight
+                Icon: =""
+                IconRotation: =0
+                IconStyle: ="Outline"
+                Layout: ="Icon before"
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                OnSelect: |-
+                    =Navigate('Task Details Screen', Transition.None, {var_Progress : 0, var_TaskActionType: "Create", var_TaskItems: Blank(), var_PreviousScreen: App.ActiveScreen});
+                    
+                    //Reset control
+                    Concurrent(
+                        Reset(cmbFiscalYear_TaskDetails),
+                        Reset(cmbGoal_TaskDetails),
+                        Reset(cmbSubGoal_TaskDetails),
+                        Reset(txiTask_TaskDetails),
+                        Reset(rdoImpact_TaskDetails),
+                        Reset(cmbTaskOwner_TaskDetails),
+                        Reset(dteTargetDate_TaskDetails),
+                        Reset(sldProgress_TaskDetails),
+                        Reset(nmbProgress_TaskDetails),
+                        Reset(txiCompletionSummary_TaskDetails)
+                    )
+                Text: ="Create a task"
+                VerticalAlign: =""
+                Visible: =If(User().Email in Filter(Users, 'Users (Views)'.'Goal Tracking - Admin').'Primary Email', true, false)
+                Width: |-
+                    =//Responsive condition
+                    If(
+                        'Tasks Screen'.Size > ScreenSize.Small,
+                        var_LayoutProperties.body.buttonWidth,
+                        Parent.Width
+                    )
+                X: =0
+                Y: =0
+                ZIndex: =3
+
+        conBodySpacer_Task As groupContainer.manualLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            FillPortions: =0
+            Height: =var_LayoutProperties.outterPadding.gap
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight - var_LayoutProperties.outterPadding.left - var_LayoutProperties.outterPadding.right
+            ZIndex: =2
+
+        conBodyInputs_Task As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            DropShadow: =DropShadow.Semilight
+            Fill: =ColorValue(varTheme.neutralBackground1)
+            FillPortions: =0
+            Height: |-
+                =//Responsive condition
+                If(
+                    'Tasks Screen'.Size >= ScreenSize.Large,
+                    var_LayoutProperties.body.inputContainerHeight,
+                    'Tasks Screen'.Size = ScreenSize.Medium,
+                    (cmbDepartments_Task.Height * 2) + Self.PaddingTop + Self.PaddingBottom + Self.LayoutGap,
+                    (cmbDepartments_Task.Height * 3) + Self.PaddingTop + Self.PaddingBottom + (Self.LayoutGap*2)
+                )
+            LayoutGap: =8
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            LayoutWrap: =true
+            PaddingBottom: =8
+            PaddingLeft: =8
+            PaddingRight: =8
+            PaddingTop: =8
+            RadiusBottomLeft: =8
+            RadiusBottomRight: =8
+            RadiusTopLeft: =8
+            RadiusTopRight: =8
+            Width: |-
+                =//Responsive condition
+                /*
+                If(
+                    'Tasks Screen'.Size = ScreenSize.Small,
+                    Parent.Width - Parent.PaddingLeft - Parent.PaddingRight - var_LayoutProperties.outterPadding.left,
+                
+                    
+                )
+                */
+                Parent.Width - Parent.PaddingLeft - Parent.PaddingRight - var_LayoutProperties.outterPadding.left - var_LayoutProperties.outterPadding.right
+            ZIndex: =3
+
+            cmbDepartments_Task As Combobox.pcfdataset:
+                AccessibleLabel: ="Department filter"
+                Appearance: ="FilledDarker"
+                BorderStyle: =""
+                DefaultSelectedItems: |-
+                    =If(
+                        !varIsAllTasks,
+                        [varSelectedSubgoal.Department]
+                    ) 
+                DisplayMode: |
+                    =If(
+                        !varIsAllTasks,
+                        DisplayMode.View,
+                        DisplayMode.Edit
+                    )
+                Font: =""
+                FontItalic: =
+                FontSize: =0
+                FontWeight: =""
+                Height: =var_LayoutProperties.body.interactiveControlHeight
+                InputTextPlaceholder: ="All departments"
+                Items: =Departments
+                LayoutMinHeight: =32
+                LayoutMinWidth: =320
+                SelectMultiple: =true
+                Width: |-
+                    =If('Tasks Screen'.Size >= ScreenSize.ExtraLarge,
+                        (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight - Parent.LayoutGap) *.2,
+                        'Tasks Screen'.Size = ScreenSize.Large,
+                        (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight - (Parent.LayoutGap * 2)) /3,
+                        'Tasks Screen'.Size = ScreenSize.Medium,
+                        (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight - Parent.LayoutGap) /2,
+                        (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight)
+                    )
+                X: =0
+                Y: =0
+                ZIndex: =1
+
+                DepartmentName_Task As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn:
+                    FieldDisplayName: ="Name"
+                    FieldName: ="mpa_name"
+                    FieldType: ="s"
+                    FieldVariantName: ="textualColumn"
+                    Order: =2
+                    ZIndex: =24
+
+                Department As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn:
+                    FieldDisplayName: ="Department"
+                    FieldName: ="mpa_itpm_departmentid"
+                    FieldType: ="g"
+                    FieldVariantName: ="textualColumn"
+                    Order: =2
+                    ZIndex: =25
+
+            cmbStatus_Task As Combobox.pcfdataset:
+                AccessibleLabel: ="Status filter"
+                Appearance: ="FilledDarker"
+                BorderStyle: =""
+                DisplayMode: =DisplayMode.Edit
+                Font: =""
+                FontItalic: =
+                FontSize: =0
+                FontWeight: =""
+                Height: =var_LayoutProperties.body.interactiveControlHeight
+                InputTextPlaceholder: ="All status"
+                Items: =Choices('Status Reason (Tasks)')
+                LayoutMinHeight: =32
+                LayoutMinWidth: =320
+                SelectMultiple: =true
+                Width: =cmbDepartments_Task.Width
+                X: =0
+                Y: =0
+                ZIndex: =2
+
+                lblTextStatus_Task As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn:
+                    FieldDisplayName: ="Value"
+                    FieldName: ="Value"
+                    FieldType: ="l"
+                    FieldVariantName: ="textualColumn"
+                    Order: =1
+                    ZIndex: =17
+
+            cmbTaskOwners_Task As Combobox.pcfdataset:
+                AccessibleLabel: ="Task owner filter"
+                Appearance: ="FilledDarker"
+                BorderStyle: =""
+                DefaultSelectedItems: =
+                DisplayMode: =DisplayMode.Edit
+                Font: =""
+                FontItalic: =
+                FontSize: =0
+                FontWeight: =""
+                Height: =var_LayoutProperties.body.interactiveControlHeight
+                InputTextPlaceholder: ="All task owners"
+                Items: |-
+                    =Filter(Sort(Users, 'Full Name', SortOrder.Ascending), !StartsWith('Full Name', "#"))
+                LayoutMinHeight: =32
+                LayoutMinWidth: =320
+                SelectMultiple: =true
+                Width: =cmbDepartments_Task.Width
+                X: =0
+                Y: =0
+                ZIndex: =3
+
+                "'Full Name' As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn":
+                    FieldDisplayName: ="Full Name"
+                    FieldName: ="fullname"
+                    FieldType: ="s"
+                    FieldVariantName: ="textualColumn"
+                    Order: =2
+                    ZIndex: =21
+
+                User As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn:
+                    FieldDisplayName: ="User"
+                    FieldName: ="systemuserid"
+                    FieldType: ="g"
+                    FieldVariantName: ="textualColumn"
+                    Order: =3
+                    ZIndex: =22
+
+                "'Primary Email' As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn":
+                    FieldDisplayName: ="Primary Email"
+                    FieldName: ="internalemailaddress"
+                    FieldType: ="s"
+                    FieldVariantName: ="textualColumn"
+                    Order: =4
+                    ZIndex: =23
+
+        "galTasks_Task As gallery.'BrowseLayout_Vertical_TwoTextOneImageVariant_ver5.0'":
+            AccessibleLabel: ="Task list"
+            AlignInContainer: =AlignInContainer.SetByContainer
+            BorderColor: =App.Theme.Colors.Darker40
+            DelayItemLoading: =true
+            FillPortions: =0
+            Height: |-
+                =With(
+                    {
+                        GalleryWrapCount: If(
+                            Self.Width >= (var_LayoutProperties.gallery.templateWidth * 4) + (Self.TemplatePadding * 3), 4,
+                            Self.Width >= var_LayoutProperties.gallery.templateWidth * 3, 3,
+                            Self.Width >= var_LayoutProperties.gallery.templateWidth * 2, 2,
+                            1
+                        )
+                    },
+                
+                ((Self.TemplateHeight) * RoundUp( (Self.AllItemsCount/GalleryWrapCount), 0)) + (Self.TemplatePadding *2) + (Self.TemplatePadding * (RoundUp( (Self.AllItemsCount/GalleryWrapCount), 0)-1 ))
+                )
+            Items: |+
+                =//Filter the tasks based on filter selection
+                Filter(
+                    colMyTaskListFiscal As Lists,
+                    And(
+                        Or(
+                            IsBlank(cmbDepartments_Task.SelectedItems),
+                            IsEmpty(cmbDepartments_Task.SelectedItems),
+                            Lists.Department.Department in cmbDepartments_Task.SelectedItems.Department.Department
+                        ),
+                        Or(
+                            IsBlank(cmbStatus_Task.SelectedItems),
+                            IsEmpty(cmbStatus_Task.SelectedItems),
+                            Lists.'Status Reason' in cmbStatus_Task.SelectedItems
+                        ) 
+                        ,
+                        Or(
+                            
+                            IsBlank(cmbTaskOwners_Task.SelectedItems),
+                            IsEmpty(cmbTaskOwners_Task.SelectedItems),
+                            AsType(
+                                Lists.Owner,
+                                Users
+                            ).User in cmbTaskOwners_Task.SelectedItems.User
+                        )
+                    )
+                    
+                            
+                
+                )
+                
+            Layout: =Layout.Vertical
+            LayoutMinHeight: =287
+            LayoutMinWidth: =320
+            LoadingSpinner: =LoadingSpinner.Data
+            TabIndex: =If(Self.DisplayMode = DisplayMode.Edit, -1, 0)
+            TemplatePadding: =var_LayoutProperties.outterPadding.gap
+            TemplateSize: =var_LayoutProperties.gallery.templateSize
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            WrapCount: |-
+                =If('Tasks Screen'.Size >= ScreenSize.ExtraLarge,
+                    4,
+                    'Tasks Screen'.Size = ScreenSize.Large,
+                    3,
+                    'Tasks Screen'.Size = ScreenSize.Medium,
+                    2,
+                    1
+                )
+            ZIndex: =4
+
+            conGalleryTaskTile_Task As groupContainer.verticalAutoLayoutContainer:
+                DropShadow: =DropShadow.Semilight
+                Fill: =ColorValue(varTheme.neutralBackground1)
+                Height: =Parent.TemplateHeight
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutGap: =6
+                LayoutMode: =LayoutMode.Auto
+                PaddingBottom: =var_LayoutProperties.gallery.tilePadding
+                PaddingLeft: =var_LayoutProperties.gallery.tilePadding
+                PaddingRight: =var_LayoutProperties.gallery.tilePadding
+                PaddingTop: =var_LayoutProperties.gallery.tilePadding
+                RadiusBottomLeft: =8
+                RadiusBottomRight: =8
+                RadiusTopLeft: =8
+                RadiusTopRight: =8
+                Width: =Parent.TemplateWidth
+                ZIndex: =1
+
+                conTitleAndOverdue_Task As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.Start
+                    FillPortions: =0
+                    Height: =txtGalleryTaskDetail_Task.Height
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    ZIndex: =1
+
+                    txtGalleryTaskDetail_Task As Text:
+                        AutoHeight: =false
+                        BorderStyle: =""
+                        DisplayMode: =DisplayMode.Edit
+                        Font: =""
+                        FontColor: =
+                        Height: =var_LayoutProperties.gallery.titleHeight
+                        LayoutMinHeight: =32
+                        LayoutMinWidth: =96
+                        PaddingRight: =5
+                        Size: =14
+                        Text: =ThisItem.Subject
+                        VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                        Weight: ='TextCanvas.Weight'.Semibold
+                        Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight - icoOverdue_Task.Width
+                        Wrap: =true
+                        X: =0
+                        Y: =0
+                        ZIndex: =1
+
+                    "icoOverdue_Task As icon.'3DPrinting'":
+                        AccessibleLabel: =Self.Tooltip
+                        BorderColor: =App.Theme.Colors.Primary
+                        Color: =ColorValue(varTheme.error)
+                        DisabledBorderColor: =ColorValue(varTheme.primaryGray)
+                        DisabledColor: =ColorValue(varTheme.backgroundFillDisabled)
+                        DisabledFill: =RGBA(0,0,0,0)
+                        DisplayMode: =DisplayMode.View
+                        Fill: =RGBA(0,0,0,0)
+                        FocusedBorderColor: =ColorValue(varTheme.info)
+                        Height: =var_LayoutProperties.gallery.iconSize
+                        HoverBorderColor: =App.Theme.Colors.Primary
+                        HoverColor: =App.Theme.Colors.Darker20
+                        HoverFill: =RGBA(0,0,0,0)
+                        Icon: =Icon.Error
+                        PressedBorderColor: =App.Theme.Colors.Primary
+                        PressedColor: =App.Theme.Colors.Primary
+                        PressedFill: =RGBA(0,0,0,0)
+                        Tooltip: ="This task is overdue."
+                        Visible: |-
+                            =//Overdue Icion will appear when the schedule is past target date and Status reason is not completed
+                            If(
+                                DateValue(ThisItem.'Target date') < Today() And ThisItem.'Status Reason' <> 'Status Reason (Tasks)'.Completed,
+                                true,
+                                false
+                            )
+                        Width: =var_LayoutProperties.gallery.iconSize
+                        X: =269
+                        Y: =50
+                        ZIndex: =2
+
+                txtGalleryTaskOwnerDetail_Task As Text:
+                    AutoHeight: =false
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    Height: =Self.Size * 1.5
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =14
+                    Text: =LookUp(Users, User = ThisItem.User.User).'Full Name'
+                    VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                    Weight: =varThemeFont.H3.weight
+                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    Wrap: =false
+                    X: =0
+                    Y: =0
+                    ZIndex: =3
+
+                conGalleryDepartmentDate_Tasks As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    FillPortions: =0
+                    Height: =txtGalleryDepartment_Task.Height
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    ZIndex: =4
+
+                    txtGalleryDepartment_Task As Text:
+                        AutoHeight: =true
+                        BorderStyle: =""
+                        DisplayMode: =DisplayMode.Edit
+                        Font: =""
+                        FontColor: =
+                        Height: =Self.Size * 1.5
+                        LayoutMinHeight: =32
+                        LayoutMinWidth: =96
+                        Size: =14
+                        Text: =ThisItem.Department.Name & "  •  " & Text(ThisItem.'Target date', "ddd, mmm dd, yyyy")
+                        VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                        Weight: =varThemeFont.H3.weight
+                        Width: |-
+                            =
+                            Parent.Width
+                        Wrap: =false
+                        X: =0
+                        Y: =0
+                        ZIndex: =1
+
+                conGalleryStatusAndImpact_Tasks As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    FillPortions: =0
+                    Height: =var_LayoutProperties.gallery.statusContainerHeight
+                    LayoutAlignItems: =LayoutAlignItems.Center
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    ZIndex: =5
+
+                    bdgGalleryStatus_Tasks As Badge:
+                        AccessibleLabel: ="Status"
+                        Align: =""
+                        Appearance: ='BadgeCanvas.Appearance'.Filled
+                        BasePaletteColor: =
+                        Content: |
+                            =ThisItem.'Status Reason'
+                        DisplayMode: =DisplayMode.Edit
+                        FontColor: =
+                        Height: =Parent.Height
+                        LayoutMinHeight: =32
+                        LayoutMinWidth: =32
+                        Shape: ='BadgeCanvas.Shape'.Circular
+                        ThemeColor: |
+                            =
+                            //change the brand color based on its status reason
+                            If(
+                                ThisItem.'Status Reason' = 'Status Reason (Tasks)'.'Not Started',
+                                'BadgeCanvas.ThemeColor'.Informative,
+                                ThisItem.'Status Reason' = 'Status Reason (Tasks)'.'Awaiting Completion Approval' || 
+                                ThisItem.'Status Reason' = 'Status Reason (Tasks)'.'In Progress',
+                                'BadgeCanvas.ThemeColor'.Brand,
+                                ThisItem.'Status Reason' = 'Status Reason (Tasks)'.Rejected ||
+                                ThisItem.'Status Reason' = 'Status Reason (Tasks)'.Canceled,
+                                'BadgeCanvas.ThemeColor'.Danger,
+                                ThisItem.'Status Reason' = 'Status Reason (Tasks)'.Completed,
+                                'BadgeCanvas.ThemeColor'.Success,
+                                'BadgeCanvas.ThemeColor'.Informative
+                            )
+                        VerticalAlign: =""
+                        Width: |-
+                            =//if overdue set width to 80
+                            If(Self.Content = "Overdue",
+                                80,
+                                //change badge width based on status reason
+                                If( 
+                                    ThisItem.'Status Reason' = 'Status Reason (Tasks)'.'Awaiting Completion Approval',
+                                    180,
+                                    80
+                                )
+                            )
+                        X: =0
+                        Y: =0
+                        ZIndex: =1
+
+                    txtGalleryImpact_Task As Text:
+                        Align: ='TextCanvas.Align'.Start
+                        AutoHeight: =true
+                        BorderStyle: =""
+                        DisplayMode: =DisplayMode.Edit
+                        Font: =""
+                        FontColor: =
+                        Height: =Self.Size * 1.7
+                        LayoutMinHeight: =32
+                        LayoutMinWidth: =96
+                        Size: =14
+                        Text: ="    " & ThisItem.Impact
+                        VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                        Weight: ='TextCanvas.Weight'.Semibold
+                        Width: =Parent.Width - bdgGalleryStatus_Tasks.Width
+                        Wrap: =false
+                        X: =0
+                        Y: =0
+                        ZIndex: =2
+
+                conGalleryProgress_Task As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    FillPortions: =0
+                    Height: =var_LayoutProperties.gallery.progressStatusHeight
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    ZIndex: =6
+
+                    "prgGalleryTaskProgresss_Task As 'Progress Bar'":
+                        AccessibleLabel: =$"Task progress at {Text(RoundUp(Self.Value, 2))} %"
+                        BasePaletteColor: =
+                        DisplayMode: =DisplayMode.Edit
+                        Height: =Parent.Height
+                        Indeterminate: =false
+                        LayoutMinHeight: =45
+                        LayoutMinWidth: =450
+                        ProgressColor: |-
+                            =
+                            
+                            
+                            //change the brand color based on its status reason
+                            If(
+                                ThisItem.'Status Reason' = 'Status Reason (Tasks)'.'Not Started',
+                                'BadgeCanvas.ThemeColor'.Informative,
+                                ThisItem.'Status Reason' = 'Status Reason (Tasks)'.'Awaiting Completion Approval' || 
+                                ThisItem.'Status Reason' = 'Status Reason (Tasks)'.'In Progress',
+                                'BadgeCanvas.ThemeColor'.Brand,
+                                ThisItem.'Status Reason' = 'Status Reason (Tasks)'.Rejected ||
+                                ThisItem.'Status Reason' = 'Status Reason (Tasks)'.Canceled,
+                                'Progress.ProgressColor'.Error,
+                                ThisItem.'Status Reason' = 'Status Reason (Tasks)'.Completed,
+                                'BadgeCanvas.ThemeColor'.Success,
+                                'BadgeCanvas.ThemeColor'.Informative
+                            )
+                        Thickness: ='Progress.Thickness'.Large
+                        Value: =Coalesce(ThisItem.Progress, 0)
+                        Width: =Parent.Width - txtGallerySubGoalDetail_Task.Width
+                        X: =0
+                        Y: =0
+                        ZIndex: =1
+
+                    txtGallerySubGoalDetail_Task As Text:
+                        Align: ='TextCanvas.Align'.End
+                        AutoHeight: =true
+                        BorderStyle: =""
+                        DisplayMode: =DisplayMode.Edit
+                        Font: =""
+                        FontColor: =
+                        Height: =Self.Size * 1.7
+                        LayoutMinHeight: =32
+                        LayoutMinWidth: =96
+                        Size: =14
+                        Text: =$"{Coalesce(ThisItem.Progress, 0)} %"
+                        VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                        Weight: ='TextCanvas.Weight'.Regular
+                        Width: =45
+                        Wrap: =false
+                        X: =0
+                        Y: =0
+                        ZIndex: =2
+
+                btnViewTaskDetail_Task As Button:
+                    AccessibleLabel: ="View task detail"
+                    Align: =""
+                    Appearance: ='ButtonCanvas.Appearance'.Secondary
+                    BasePaletteColor: =
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =
+                    FontSize: =0
+                    FontWeight: =""
+                    Height: =32
+                    Icon: =""
+                    IconRotation: =0
+                    IconStyle: ="Outline"
+                    Layout: ="Icon before"
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    OnSelect: |
+                        =Navigate(
+                            'Task Details Screen', 
+                            Transition.None, 
+                            {
+                            //Check if the task is for update or for view vased on Status Reason
+                            var_TaskActionType:
+                                If(
+                                ThisItem.'Status Reason' = 'Status Reason (Tasks)'.'Awaiting Completion Approval' || 
+                                ThisItem.'Status Reason' = 'Status Reason (Tasks)'.Completed || ThisItem.'Status Reason' = 'Status Reason (Tasks)'.Rejected,
+                                    "View",
+                                    "Update"
+                                ),
+                                //Create task Item variable for next screen
+                                var_TaskItems: AddColumns(
+                                    LookUp(
+                                        [@Tasks],
+                                        'Task Id' = ThisItem.'Task Id'
+                                    ),
+                                    Task_Goal,
+                                    LookUp(
+                                        [@Subgoals],
+                                        'Subgoal Id' = ThisItem.Subgoal.'Subgoal Id'
+                                    ).Goal,
+                                    Task_SubGoal,
+                                    ThisItem.Subgoal,
+                                    Department,
+                                    ThisItem.Subgoal.Department
+                                ),
+                                //Create task Id variable for next screen
+                                var_TaskID: ThisItem.'Task Id',
+                                var_Progress : ThisItem.Progress, 
+                                var_PreviousScreen: App.ActiveScreen
+                            }
+                        )
+                    Text: ="View task details"
+                    VerticalAlign: =""
+                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    X: =0
+                    Y: =0
+                    ZIndex: =7
+
+    cmpHeader_Task As compHeaderCompound:
+        HeaderHeight: =var_LayoutProperties.header.height
+        HeaderWidth: =Parent.Width
+        NavigateMenu: ='Sub Goals Screen'
+        Width: =cmpHeader_Task.HeaderWidth
+        ZIndex: =2
+

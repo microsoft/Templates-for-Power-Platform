@@ -1,0 +1,364 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_microsoftpoweracceleratordataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      },
+      "shared_office365_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_microsoftpoweracceleratoroutlook"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      },
+      "shared_approvals_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_microsoftpoweracceleratorapprovals"
+        },
+        "api": {
+          "name": "shared_approvals"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_a_task_is_added_or_modified": {
+          "metadata": {
+            "operationMetadataId": "446567c7-4b8f-4dbe-bf2a-d4335873249d"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "SubscribeWebhookTrigger",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 4,
+              "subscriptionRequest/entityname": "mpa_goaltracking_task",
+              "subscriptionRequest/scope": 4,
+              "subscriptionRequest/filteringattributes": "mpa_progress",
+              "subscriptionRequest/runas": 3
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Run this flow if new or modified tasks progress are updated"
+        }
+      },
+      "actions": {
+        "If_progress_is_gt_or_equal_to_100_percent": {
+          "actions": {
+            "Check_approval_outcome": {
+              "actions": {
+                "Update_Task_status_reason_-_Completed": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "4431d31c-08a2-41c1-8016-435ab9dcf056"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "UpdateRecord",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_goaltracking_tasks",
+                      "recordId": "@triggerOutputs()?['body/activityid']",
+                      "item/statecode": 1,
+                      "item/mpa_approvaldate": "@utcNow()",
+                      "item/mpa_approvernotes": " @{first(outputs('Start_and_wait_for_an_approval')?['body/responses'])?['comments']}",
+                      "item/statuscode": 2
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  },
+                  "description": "If approval outcome is approve set task status reason to Completed"
+                }
+              },
+              "runAfter": {
+                "Start_and_wait_for_an_approval": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Update_Task_status_reason_-_Rejected": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "c0e73571-7d9e-42db-9ab9-2691d9ee5d9b"
+                    },
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_commondataserviceforapps_1",
+                        "operationId": "UpdateRecord",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                      },
+                      "parameters": {
+                        "entityName": "mpa_goaltracking_tasks",
+                        "recordId": "@triggerOutputs()?['body/activityid']",
+                        "item/statecode": 1,
+                        "item/mpa_approvaldate": "@utcNow()",
+                        "item/mpa_approvernotes": " @{first(outputs('Start_and_wait_for_an_approval')?['body/responses'])?['comments']}",
+                        "item/statuscode": 865420004
+                      },
+                      "authentication": "@parameters('$authentication')"
+                    },
+                    "description": "If approval outcome is Rejected set task status reason to Rejected"
+                  }
+                }
+              },
+              "expression": {
+                "equals": [
+                  "@outputs('Start_and_wait_for_an_approval')?['body/outcome']",
+                  "Approve"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "7e135fcc-a312-4c8b-afd4-a07ddf08df9a"
+              },
+              "type": "If"
+            },
+            "Send_email_notification_to_task_owner": {
+              "runAfter": {
+                "Check_approval_outcome": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "f801abb3-f3d7-48be-a57c-2320445ec370"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365_1",
+                  "operationId": "SendEmailV2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                },
+                "parameters": {
+                  "emailMessage/To": "@outputs('Get_Owner_record_from_Users_table')?['body/internalemailaddress']",
+                  "emailMessage/Subject": "Your task completion has been @{if(equals(outputs('Start_and_wait_for_an_approval')?['body/outcome'], 'Approve'), 'Approved', 'Rejected')}",
+                  "emailMessage/Body": "<p><strong>Hi </strong><strong>@{outputs('Get_Owner_record_from_Users_table')?['body/fullname']}</strong><strong></strong>,<br>\n<br>\nYour task completion has been @{if(equals(outputs('Start_and_wait_for_an_approval')?['body/outcome'], 'Approve'), 'approved', 'rejected')} by @{outputs('Get_Approver_record_from_Users_table')?['body/fullname']}. See details below:<br>\n<br>\n<strong>Task title</strong>: @{triggerOutputs()?['body/subject']}<br>\n<strong>Target date</strong>: @{triggerOutputs()?['body/mpa_targetdate']}<br>\n<strong>Impact</strong>: @{triggerOutputs()?['body/_mpa_impact_label']}<br>\n<strong>Comments</strong>: @{first(outputs('Start_and_wait_for_an_approval')?['body/responses'])?['comments']}</p>",
+                  "emailMessage/Importance": "Normal"
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": "Email notification to task owner regarding the approval results"
+            },
+            "Start_and_wait_for_an_approval": {
+              "runAfter": {
+                "Get_Owner_record_from_Users_table": [
+                  "Succeeded"
+                ]
+              },
+              "limit": {
+                "timeout": "P7D"
+              },
+              "metadata": {
+                "operationMetadataId": "21554cae-8b81-4711-966f-67e604dc41cb"
+              },
+              "type": "OpenApiConnectionWebhook",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_approvals_1",
+                  "operationId": "StartAndWaitForAnApproval",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+                },
+                "parameters": {
+                  "approvalType": "Basic",
+                  "WebhookApprovalCreationInput/title": "Task Completed - For Your Approval",
+                  "WebhookApprovalCreationInput/assignedTo": "@{outputs('Get_Approver_record_from_Users_table')?['body/internalemailaddress']};",
+                  "WebhookApprovalCreationInput/details": "Hi @{outputs('Get_Approver_record_from_Users_table')?['body/fullname']},\n\nThe task has been completed and is pending review. You have the option to approve or reject it. See details below:\n\nTask Title: @{triggerOutputs()?['body/subject']}\nOwner: @{outputs('Get_Owner_record_from_Users_table')?['body/fullname']}\nTarget date: @{triggerOutputs()?['body/mpa_targetdate']}\nImpact: @{triggerOutputs()?['body/mpa_impact']}\nCompletion summary: @{triggerOutputs()?['body/mpa_completionsummary']}",
+                  "WebhookApprovalCreationInput/requestor": "@{outputs('Get_Owner_record_from_Users_table')?['body/internalemailaddress']};",
+                  "WebhookApprovalCreationInput/enableNotifications": true,
+                  "WebhookApprovalCreationInput/enableReassignment": false
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": "Start and wait for an approval - wait for approval/rejection for 7 days"
+            },
+            "Get_Owner_record_from_Users_table": {
+              "runAfter": {
+                "Get_Approver_record_from_Users_table": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "5ae760a0-e081-4d95-a2bd-8889206919b4"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "systemusers",
+                  "recordId": "@triggerOutputs()?['body/_ownerid_value']",
+                  "$select": "internalemailaddress, fullname"
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": "Get task owner full name and email address"
+            },
+            "Get_Approver_record_from_Users_table": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "cd9fc471-1782-4e2b-b23b-64db780294a4"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "systemusers",
+                  "recordId": "@triggerOutputs()?['body/_mpa_approver_value']",
+                  "$select": "internalemailaddress, fullname"
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": "Get approver full name and email address"
+            }
+          },
+          "runAfter": {
+            "Update_subgoal_progress": [
+              "Succeeded"
+            ]
+          },
+          "expression": {
+            "greaterOrEquals": [
+              "@triggerOutputs()?['body/mpa_progress']",
+              100
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "92020e72-6331-4fcd-8bad-8fd70211a881"
+          },
+          "type": "If",
+          "description": "Check if progress is greater than or equal to 100 and if status is "
+        },
+        "Initialize_varTotalSubgoalProgress": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "07f26846-cddb-4b96-bab7-62e2d9e818d9"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "varTotalSubgoalProgress",
+                "type": "float",
+                "value": 0
+              }
+            ]
+          },
+          "description": "initialize a variable to store subgoal progress"
+        },
+        "List_all_tasks_from_same_subgoal": {
+          "runAfter": {
+            "Initialize_varTotalSubgoalProgress": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "ee52b338-4940-4d7a-b6c8-b9ce3d27ae0e"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "ListRecords",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "mpa_goaltracking_tasks",
+              "$select": "_mpa_subgoal_value, mpa_progress",
+              "$filter": "_mpa_subgoal_value eq @{triggerOutputs()?['body/_mpa_subgoal_value']}"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Get all tasks from the same subgoal"
+        },
+        "Summate_progress_of_tasks": {
+          "foreach": "@outputs('List_all_tasks_from_same_subgoal')?['body/value']",
+          "actions": {
+            "Increment_varTotalSubgoalProgress": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "cb7418a8-0df5-410e-804b-d66efee3aea2"
+              },
+              "type": "IncrementVariable",
+              "inputs": {
+                "name": "varTotalSubgoalProgress",
+                "value": "@coalesce(items('Summate_progress_of_tasks')?['mpa_progress'], 0)"
+              },
+              "description": "Increment value based on this row's progress."
+            }
+          },
+          "runAfter": {
+            "List_all_tasks_from_same_subgoal": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "4f5afe9d-e32c-4642-a636-8cbf74169186"
+          },
+          "type": "Foreach",
+          "description": "Add all the progress found on the task and store in subgoal progress variable"
+        },
+        "Update_subgoal_progress": {
+          "runAfter": {
+            "Summate_progress_of_tasks": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "e5a46534-cb16-47ac-b744-f08a4bd31766"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "UpdateRecord",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "mpa_goaltracking_subgoals",
+              "recordId": "@triggerOutputs()?['body/_mpa_subgoal_value']",
+              "item/mpa_progress": "@div(variables('varTotalSubgoalProgress'), length(outputs('List_all_tasks_from_same_subgoal')?['body/value']))"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Update the subgoal progress"
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

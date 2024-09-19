@@ -1,0 +1,273 @@
+compHeader As CanvasComponent:
+    CurrentPage: =App.ActiveScreen
+    Fill: =RGBA(0, 0, 0, 0)
+    HeaderHeight: =50
+    HeaderWidth: =1366
+    Height: =compHeader.HeaderHeight
+    IsBackSettingsOn: =true
+    IsNavTopOn: =true
+    MainPageScreen: ='Reports Page'
+    SettingsPageScreen: =Settings
+    varTextColor: ="E2231B"
+    Width: =compHeader.HeaderWidth
+    X: =0
+    Y: =0
+    ZIndex: =3
+
+    conHeader As groupContainer.horizontalAutoLayoutContainer:
+        DropShadow: =DropShadow.None
+        Fill: =ColorValue(varThemeColors.primary)
+        Height: =Parent.Height
+        LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+        LayoutMode: =LayoutMode.Auto
+        PaddingBottom: =5
+        PaddingLeft: =
+        PaddingTop: =5
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =App.Width
+        ZIndex: =3
+
+        conAppLogo As groupContainer.manualLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            DropShadow: =DropShadow.None
+            Height: =Parent.Height - Parent.PaddingTop - Parent.PaddingBottom
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            Width: =Parent.Width
+            ZIndex: =2
+
+            lblAppTitle_Header As label:
+                Align: =Align.Center
+                Color: =ColorValue(varThemeColors.backgroundFill)
+                DisplayMode: =DisplayMode.View
+                FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                Font: =varThemeFont.B1.face
+                FontWeight: =varThemeFont.B1.weight
+                Size: =varThemeFont.B1.size
+                Text: |-
+                    =// Define a variable named "Text" with the value "{value}"
+                    /*With(
+                        {Text: "Checklist App"},
+                        // Check if a localized text exists for "Text" in the user's preferred language
+                        If(
+                            // If the localized text is blank, return the default text
+                            IsBlank(
+                                LookUp(
+                                    colLocalizations,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            ),
+                            Text,
+                            // If a localized text is found, return that instead of the default text
+                            LookUp(
+                                colLocalizations,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        )
+                    )*/
+                    "Checklist App"
+                Width: =Self.Size * Len(Self.Text)
+                X: =shpVertical_Header.Width + shpVertical_Header.X
+                ZIndex: =2
+
+            shpVertical_Header As rectangle:
+                Fill: =ColorValue(varThemeColors.backgroundFill)
+                FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                Height: =23
+                Visible: =If(App.ActiveScreen.Size >= 3 , true, false)
+                Width: =2
+                X: =AppLogo.Width + AppLogo.X + 36
+                Y: =8
+                ZIndex: =3
+
+            AppLogo As image:
+                AccessibleLabel: ="Logo - Navigate Home"
+                BorderColor: =RGBA(0, 0, 0, 0)
+                BorderThickness: =2
+                DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                DisabledFill: =RGBA(0, 0, 0, 0)
+                FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                Height: =Parent.Height - 4
+                HoverBorderColor: =RGBA(0, 0, 0, 0)
+                HoverFill: =RGBA(0, 0, 0, 0)
+                Image: =varThemeColors.iconimg
+                OnSelect: =Navigate(compHeader.MainPageScreen)
+                PressedBorderColor: =RGBA(0, 0, 0, 0)
+                PressedFill: =RGBA(0, 0, 0, 0)
+                TabIndex: =0
+                Tooltip: ="Logo - Navigate Home"
+                Width: =110
+                X: =icoBack.X + icoBack.Width + 5
+                Y: =2
+                ZIndex: =4
+
+            "icoBack As icon.'3DPrinting'":
+                AccessibleLabel: ="Back"
+                BorderColor: =ColorValue(varThemeColors.text)
+                Color: =ColorValue(varThemeColors.backgroundFill)
+                DisabledBorderColor: =ColorValue(varThemeColors.disabledText)
+                DisabledColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                DisabledFill: =RGBA(0,0,0,0)
+                Fill: =RGBA(0,0,0,0)
+                FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                Height: =Parent.Height 
+                HoverBorderColor: =Color.Transparent
+                HoverColor: =Self.Color
+                HoverFill: =RGBA(0,0,0,0)
+                Icon: =Icon.ChevronLeft
+                OnSelect: |
+                    =If(
+                        Or(
+                            compHeader.CurrentPage = 'Report Form Attachment Page',
+                            compHeader.CurrentPage = 'Report Form List Page',
+                            compHeader.CurrentPage = 'Report Form Open Text Page',
+                            compHeader.CurrentPage = 'Report Form Unit Page'
+                        ),
+                        If(
+                            Or(Last(colHistory).ID <= 2),
+                            Navigate('Reports Page'),//Else
+                            Remove(
+                                colHistory,
+                                Last(colHistory)
+                            );
+                            Set(
+                                varCurrentStep,
+                                LookUp(
+                                    colSteps,
+                                    'Step Number' = Last(colHistory).Step.'Step Number'
+                                )
+                            );
+                             Set(
+                            varCurrentSubStep,//Get the 1st step order 
+                            LookUp(
+                                'Template Sub Steps',
+                                And(
+                                    'Template Step'.'Template Step' = varCurrentStep.'Template Step',
+                                    'Sub Step Order' = 1
+                                )
+                            )
+                        );
+                            Set(
+                                varDisabled,
+                                true
+                            );
+                            Set(//variable for checking if has value
+                                varHasReportSteps,
+                                LookUp(
+                                    'Report Steps',
+                                    And(
+                                        Report.Report = varSelectedReport.Report,
+                                        'Template Step'.'Template Step' = varCurrentStep.'Template Step'
+                                    )
+                                )
+                            );
+                            If(
+                                !IsBlank(varHasReportSteps),
+                                Set(
+                                    varCurrentReportStep,
+                                    varHasReportSteps
+                                );
+                            );
+                            
+                    //Current Step
+                    UpdateIf(
+                                colSteps,
+                                'Template Step' <> varCurrentStep.'Template Step',
+                                {isSelectedColumn: false}
+                            );
+                            UpdateIf(
+                                colSteps,
+                                'Template Step' = varCurrentStep.'Template Step',
+                                {isSelectedColumn: true}
+                            );
+                            Switch(
+                                varCurrentSubStep.'Validation Type'.'Validation Type (mpa_validationtype)',
+                                'Validation Type Choices'.'Open Text',
+                                Navigate('Report Form Open Text Page')//Open Text Navigate 
+                    ,
+                                'Validation Type Choices'.Attachment,
+                                Navigate('Report Form Attachment Page')//Attachment
+                    ,
+                                'Validation Type Choices'.Unit,
+                                Navigate('Report Form Unit Page')//Unit
+                    ,
+                                'Validation Type Choices'.List,
+                                Navigate('Report Form List Page')
+                            );
+                            Set(
+                                varDisabled,
+                                false
+                            );
+                        );,
+                        compHeader.CurrentPage = 'Review Steps Screen',
+                        Back();
+                        ,varIsDscardChanges ,
+                        Navigate('Start New Report Page')
+                        , //Else
+                        Navigate('Reports Page');
+                    );
+                PaddingBottom: =10
+                PaddingLeft: =10
+                PaddingRight: =5
+                PaddingTop: =10
+                PressedBorderColor: =Color.Transparent
+                PressedColor: =Self.Color
+                PressedFill: =RGBA(0,0,0,0)
+                TabIndex: =0
+                Tooltip: ="Back"
+                Visible: =compHeader.IsBackSettingsOn
+                Width: =Self.Height
+                X: =5
+                ZIndex: =5
+
+        conRightAlignedSetting As groupContainer.manualLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            DropShadow: =DropShadow.None
+            FillPortions: =0
+            Height: =Parent.Height - Parent.PaddingTop - Parent.PaddingBottom
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            PaddingBottom: =5
+            PaddingLeft: =5
+            PaddingRight: =45
+            PaddingTop: =5
+            Width: =Self.Height + Self.PaddingLeft + Self.PaddingRight
+            ZIndex: =3
+
+            "icoSettings As icon.'3DPrinting'":
+                AccessibleLabel: ="Settings"
+                BorderColor: =ColorValue(varThemeColors.primary)
+                Color: |
+                    =ColorValue(varThemeColors.backgroundFill)
+                DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                DisabledColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                DisabledFill: =RGBA(0,0,0,0)
+                Fill: =RGBA(0,0,0,0)
+                FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                Height: =Parent.Height - 4
+                HoverBorderColor: =
+                HoverColor: =ColorValue(varThemeColors.altText)
+                HoverFill: =RGBA(0,0,0,0)
+                Icon: =Icon.Settings
+                OnSelect: =Navigate(compHeader.SettingsPageScreen)
+                PaddingBottom: =5
+                PaddingRight: =5
+                PaddingTop: =5
+                PressedBorderColor: =RGBA(0, 0, 0, 0)
+                PressedColor: =ColorValue(varThemeColors.altText)
+                PressedFill: =RGBA(0,0,0,0)
+                TabIndex: =0
+                Tooltip: ="Settings"
+                Width: =50
+                X: =5
+                Y: =2
+                ZIndex: =4
+

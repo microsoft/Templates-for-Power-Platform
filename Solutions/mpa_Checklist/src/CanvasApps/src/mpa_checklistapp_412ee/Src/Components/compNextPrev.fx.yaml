@@ -1,0 +1,432 @@
+compNextPrev As CanvasComponent:
+    ActualValue: ="Text"
+    AppHeigth: =100
+    AppWidth: =640
+    Attachment: =SampleImage
+    Comment: ="Text"
+    FileName: ="Text"
+    Fill: =RGBA(0, 0, 0, 0)
+    Height: =compNextPrev.AppHeigth
+    Name: ="Text"
+    ScreenSize: =100
+    StepStatus: =varStatusReason
+    Substep: =LookUp('Template Sub Steps' , ThisRecord.Status = 'Status (Template Sub Steps)'.Active)
+    Width: =compNextPrev.AppWidth
+    X: =0
+    Y: =0
+    ZIndex: =1
+
+    conMainBody As groupContainer.horizontalAutoLayoutContainer:
+        DropShadow: =DropShadow.None
+        Height: =Parent.Height
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutGap: =If(App.ActiveScreen.Size = 1, 10, 20)
+        LayoutMode: =LayoutMode.Auto
+        PaddingBottom: =If(compNextPrev.ScreenSize = 1 , 5 , 20)
+        PaddingTop: =If(compNextPrev.ScreenSize = 1 , 5 , 20)
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =Parent.Width
+        ZIndex: =1
+
+        btnPreviousSubstep As button:
+            BorderColor: =ColorValue(varThemeColors.primary)
+            BorderThickness: =0
+            Color: =ColorValue(varThemeColors.primary)
+            DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+            DisabledColor: =ColorValue(varThemeColors.disabledText)
+            DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+            DisplayMode: =If(varCurrentSubStep.mpa_substeporder = 1 || varDisabled, DisplayMode.Disabled ,  DisplayMode.Edit)
+            Fill: =ColorValue(varThemeColors.backgroundFill)
+            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+            Font: =varThemeFont.CTA.face
+            FontWeight: =varThemeFont.CTA.weightBold
+            Height: =If(App.ActiveScreen.Size = 1, 43, 32)
+            HoverBorderColor: =ColorValue(varThemeColors.primary)
+            HoverColor: =ColorValue(varThemeColors.altText)
+            HoverFill: =ColorValue(varThemeColors.tertiary)
+            Italic: =varThemeFont.CTA.italic
+            OnSelect: |-
+                =Set(varDisabled , true);
+                
+                Set(//variable for checking if has value
+                    varHasReportSteps,
+                    LookUp(
+                        'Report Steps',
+                        And(
+                            Report.Report = varSelectedReport.Report,
+                            'Template Step'.'Template Step' = varCurrentStep.'Template Step'
+                        )
+                    )
+                );
+                Patch( //Update the Status  of Step
+                    colSteps,
+                    LookUp(
+                        colSteps,
+                        'Template Step' = varCurrentStep.'Template Step'
+                    ),
+                    {reportStatus: compNextPrev.StepStatus.Value,
+                    Comment: compNextPrev.Comment}
+                );
+                
+                //Refresh the data of Step
+                Set(varCurrentStep , LookUp(colSteps , 'Template Step' = varCurrentStep.'Template Step'));
+                
+                // Patch of Collection
+                IfError(
+                    Set( 
+                        varCurrentReportStep,
+                        Patch(//Patching of Report steps
+                            'Report Steps',
+                            If(
+                                IsBlank(varHasReportSteps),
+                                Defaults('Report Steps'),//Create new record
+                                LookUp(//patch existing record
+                                    'Report Steps',
+                                    'Report Step' = varHasReportSteps.'Report Step'
+                                )
+                            ),
+                            {
+                                Name: varCurrentStep.Name,
+                                Report: varSelectedReport,
+                                Comment: compNextPrev.Comment,
+                                'Template Step': LookUp(
+                                    'Template Steps',
+                                    'Template Step' = varCurrentStep.'Template Step'
+                                ),
+                                'Status Reason': compNextPrev.StepStatus.Value
+                            }
+                        )
+                    );
+                    ,
+                    Notify( //If error will notify
+                        "Error saving report" & " "  & Concat(Errors('Report Steps'),
+                            Column & ":" & Message
+                        ),
+                        NotificationType.Error,
+                        2000
+                    );
+                    false,
+                //Checking of Variable if Substeps is visible
+                    Set(
+                        varHasReportSubSteps,
+                        LookUp(
+                            'Report Sub Steps',
+                            And(
+                                'Report Step'.'Report Step' = varCurrentReportStep.'Report Step',
+                                'Template Sub Step'.'Template Sub Step' = varCurrentSubStep.'Template Sub Step'
+                            )
+                        )
+                    );
+                    If(
+                        !IsBlank(compNextPrev.Name),
+                        Patch(//Patching of Report Substeps
+                            'Report Sub Steps',
+                            If(
+                                IsBlank(varHasReportSubSteps),
+                                Defaults('Report Sub Steps'),//Create new if null
+                                LookUp(//Patch existing record
+                                    'Report Sub Steps',
+                                    'Report Sub Step' = varHasReportSubSteps.'Report Sub Step'
+                                )
+                            ),
+                            {
+                                'Report Step': varCurrentReportStep,
+                                Attachment: {
+                                    FileName: compNextPrev.FileName,
+                                    Value: compNextPrev.Attachment
+                                },
+                                Name: compNextPrev.Name,
+                                'Actual Value': compNextPrev.ActualValue,
+                                'Template Sub Step': compNextPrev.Substep,
+                                'Value Unit':varValueUnit
+                            }
+                        );
+                    );
+                    ,
+                    Notify(
+                        "Error saving report" & " "  & Concat(Errors('Report Sub Steps'),
+                            Column & ":" & Message
+                        ),
+                        NotificationType.Error,
+                        2000
+                    );
+                    //Notify Error
+                false,
+                //Setting the next Substep
+                    Set(
+                        varCurrentSubStep,
+                        LookUp(
+                            'Template Sub Steps',
+                            And(
+                                'Template Step'.'Template Step' = varCurrentStep.'Template Step',
+                                'Sub Step Order' = varCurrentSubStep.'Sub Step Order' - 1
+                            )
+                        )
+                    );
+                    Switch(
+                        varCurrentSubStep.'Validation Type'.'Validation Type (mpa_validationtype)',
+                        'Validation Type Choices'.'Open Text',
+                        Navigate('Report Form Open Text Page')//Open Text Navigate 
+                ,
+                        'Validation Type Choices'.Attachment,
+                        Navigate('Report Form Attachment Page')//Attachment
+                ,
+                        'Validation Type Choices'.Unit,
+                        Navigate('Report Form Unit Page')//Unit
+                ,
+                        'Validation Type Choices'.List,
+                        Navigate('Report Form List Page'),
+                        Navigate('Report Form Attachment Page')//Attachment
+                    ),
+                    true
+                );
+                
+                //setting the value to blank
+                Set(varValueUnit, Blank());
+                Set(varDisabled , false);
+            PaddingBottom: =0
+            PaddingLeft: =0
+            PaddingRight: =0
+            PaddingTop: =0
+            PressedBorderColor: =ColorValue(varThemeColors.primary)
+            PressedColor: =ColorValue(varThemeColors.altText)
+            PressedFill: =ColorValue(varThemeColors.primary)
+            RadiusBottomLeft: =6
+            RadiusBottomRight: =6
+            RadiusTopLeft: =6
+            RadiusTopRight: =6
+            Size: =varThemeFont.CTA.size
+            Text: |-
+                =/*With(
+                    {Text: "Previous sub step"},
+                     If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colLocalizations,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colLocalizations,
+                            'English Value' = Text
+                        ).'Localized Value'
+                    )
+                )*/
+                "Previous sub step"
+            Underline: =true
+            Width: =If(App.ActiveScreen.Size = 1, (Parent.Width *.5) - (Parent.LayoutGap *.5) - 5, 150)
+            X: =1
+            Y: =
+            ZIndex: =1
+
+        btnNexrSubstep As button:
+            BorderColor: =ColorValue(varThemeColors.primary)
+            BorderThickness: =0
+            Color: =ColorValue(varThemeColors.primary)
+            DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+            DisabledColor: =ColorValue(varThemeColors.disabledText)
+            DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+            DisplayMode: |-
+                =If(varCurrentSubStep.mpa_substeporder =     First(
+                            Sort(
+                                Filter(
+                                    'Template Sub Steps',
+                                    'Template Step'.'Template Step' = varCurrentStep.'Template Step'
+                                ),
+                                'Sub Step Order',
+                                SortOrder.Descending
+                            )
+                        ).'Sub Step Order' || varDisabled
+                    , DisplayMode.Disabled ,  DisplayMode.Edit)
+            Fill: =ColorValue(varThemeColors.backgroundFill)
+            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+            Font: =varThemeFont.CTA.face
+            FontWeight: =varThemeFont.CTA.weightBold
+            Height: =btnPreviousSubstep.Height
+            HoverBorderColor: =ColorValue(varThemeColors.primary)
+            HoverColor: =ColorValue(varThemeColors.altText)
+            HoverFill: =ColorValue(varThemeColors.tertiary)
+            Italic: =varThemeFont.CTA.italic
+            OnSelect: |-
+                =Set(varDisabled , true);
+                
+                Set(//variable for checking if has value
+                    varHasReportSteps,
+                    LookUp(
+                        'Report Steps',
+                        And(
+                            Report.Report = varSelectedReport.Report,
+                            'Template Step'.'Template Step' = varCurrentStep.'Template Step'
+                        )
+                    )
+                );
+                Patch( //Update the Status  of Step
+                    colSteps,
+                    LookUp(
+                        colSteps,
+                        'Template Step' = varCurrentStep.'Template Step'
+                    ),
+                    {reportStatus: compNextPrev.StepStatus.Value,
+                    Comment: compNextPrev.Comment}
+                );
+                
+                //Refresh the data of Step
+                Set(varCurrentStep , LookUp(colSteps , 'Template Step' = varCurrentStep.'Template Step'));
+                
+                // Patch of Collection
+                IfError(
+                    Set( 
+                        varCurrentReportStep,
+                        Patch(//Patching of Report steps
+                            'Report Steps',
+                            If(
+                                IsBlank(varHasReportSteps),
+                                Defaults('Report Steps'),//Create new record
+                                LookUp(//patch existing record
+                                    'Report Steps',
+                                    'Report Step' = varHasReportSteps.'Report Step'
+                                )
+                            ),
+                            {
+                                Name: varCurrentStep.Name,
+                                Report: varSelectedReport,
+                                Comment: compNextPrev.Comment,
+                                'Template Step': LookUp(
+                                    'Template Steps',
+                                    'Template Step' = varCurrentStep.'Template Step'
+                                ),
+                                'Status Reason': compNextPrev.StepStatus.Value
+                            }
+                        )
+                    );
+                    ,
+                    Notify( //If error will notify
+                        "Error saving report" & " "  & Concat(Errors('Report Steps'),
+                            Column & ":" & Message
+                        ),
+                        NotificationType.Error,
+                        2000
+                    );
+                    false,
+                //Checking of Variable if Substeps is visible
+                    Set(
+                        varHasReportSubSteps,
+                        LookUp(
+                            'Report Sub Steps',
+                            And(
+                                'Report Step'.'Report Step' = varCurrentReportStep.'Report Step',
+                                'Template Sub Step'.'Template Sub Step' = varCurrentSubStep.'Template Sub Step'
+                            )
+                        )
+                    );
+                    If(
+                        !IsBlank(compNextPrev.Name),
+                        Patch(//Patching of Report Substeps
+                            'Report Sub Steps',
+                            If(
+                                IsBlank(varHasReportSubSteps),
+                                Defaults('Report Sub Steps'),//Create new if null
+                                LookUp(//Patch existing record
+                                    'Report Sub Steps',
+                                    'Report Sub Step' = varHasReportSubSteps.'Report Sub Step'
+                                )
+                            ),
+                            {
+                                'Report Step': varCurrentReportStep,
+                                Attachment: {
+                                    FileName: compNextPrev.FileName,
+                                    Value: compNextPrev.Attachment
+                                },
+                                Name: compNextPrev.Name,
+                                'Actual Value': compNextPrev.ActualValue,
+                                'Template Sub Step': compNextPrev.Substep,
+                                'Value Unit':varValueUnit
+                            }
+                        );
+                    );
+                    ,
+                    Notify(
+                        "Error saving report" & " "  & Concat(Errors('Report Sub Steps'),
+                            Column & ":" & Message
+                        ),
+                        NotificationType.Error,
+                        2000
+                    );
+                    //Notify Error
+                false,
+                //Setting the next Substep
+                    Set(
+                        varCurrentSubStep,
+                        LookUp(
+                            'Template Sub Steps',
+                            And(
+                                'Template Step'.'Template Step' = varCurrentStep.'Template Step',
+                                'Sub Step Order' = varCurrentSubStep.'Sub Step Order' + 1
+                            )
+                        )
+                    );
+                    Switch(
+                        varCurrentSubStep.'Validation Type'.'Validation Type (mpa_validationtype)',
+                        'Validation Type Choices'.'Open Text',
+                        Navigate('Report Form Open Text Page')//Open Text Navigate 
+                ,
+                        'Validation Type Choices'.Attachment,
+                        Navigate('Report Form Attachment Page')//Attachment
+                ,
+                        'Validation Type Choices'.Unit,
+                        Navigate('Report Form Unit Page')//Unit
+                ,
+                        'Validation Type Choices'.List,
+                        Navigate('Report Form List Page'),
+                        Navigate('Report Form Attachment Page')//Attachment
+                    ),
+                    true
+                );
+                
+                //setting the value to blank
+                Set(varValueUnit, Blank());
+                Set(varDisabled , false);
+            PaddingLeft: =0
+            PaddingRight: =0
+            PressedBorderColor: =ColorValue(varThemeColors.primary)
+            PressedColor: =ColorValue(varThemeColors.altText)
+            PressedFill: =ColorValue(varThemeColors.primary)
+            RadiusBottomLeft: =6
+            RadiusBottomRight: =6
+            RadiusTopLeft: =6
+            RadiusTopRight: =6
+            Size: =varThemeFont.CTA.size
+            Text: |-
+                =/*With(
+                    {Text: "Next sub step"},
+                     If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colLocalizations,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colLocalizations,
+                            'English Value' = Text
+                        ).'Localized Value'
+                    )
+                )*/
+                "Next sub step"
+            Underline: =true
+            Width: =btnPreviousSubstep.Width
+            X: =1
+            Y: =
+            ZIndex: =2
+

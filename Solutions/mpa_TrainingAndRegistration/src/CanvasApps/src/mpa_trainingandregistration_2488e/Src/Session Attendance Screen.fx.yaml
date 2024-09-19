@@ -1,0 +1,838 @@
+"'Session Attendance Screen' As screen":
+    Fill: =Color.White
+    LoadingSpinnerColor: =App.Theme.Colors.Primary
+    OnVisible: |+
+        =UpdateContext(
+        {   
+            var_LayoutProperties:
+            {
+                outerPadding: {top: 32, right: 32, bottom: 32, left: 32, gap: 16},
+                innerPadding: {top: 10, right: 12, bottom: 10, left: 12, gap: 10},
+                filterContainer: {height: 64},
+                gallery: {templateSize: 55, templateSizeSmall : 188},
+                buttonAndComboboxHeight: 32,
+                headerHeight: 50
+            }
+        });
+        
+
+    conMainContainer_Attendance As groupContainer.horizontalAutoLayoutContainer:
+        Fill: =ColorValue(varTheme.background)
+        Height: =Parent.Height - Self.Y
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutMode: =LayoutMode.Auto
+        LayoutOverflowY: =LayoutOverflow.Scroll
+        PaddingBottom: |-
+            =//Responsive condition
+            If('Session Attendance Screen'.Size = ScreenSize.Small,
+            var_LayoutProperties.outerPadding.bottom / 2,
+            var_LayoutProperties.outerPadding.bottom
+            ) 
+        PaddingLeft: |-
+            =//Responsive condition
+            If('Session Attendance Screen'.Size = ScreenSize.Small,
+            var_LayoutProperties.outerPadding.left / 2,
+            var_LayoutProperties.outerPadding.left
+            )
+        PaddingRight: |-
+            =//Responsive condition
+            If('Session Attendance Screen'.Size = ScreenSize.Small,
+                var_LayoutProperties.outerPadding.right / 2,
+                var_LayoutProperties.outerPadding.right
+            )
+        PaddingTop: |-
+            =//Responsive condition
+            If('Session Attendance Screen'.Size = ScreenSize.Small, 
+                var_LayoutProperties.outerPadding.top /4,
+                var_LayoutProperties.outerPadding.top 
+            )
+        Width: =Parent.Width
+        Y: =cmpHeader_Attendance.Y + cmpHeader_Attendance.Height
+        ZIndex: =1
+
+        txtSubHeaderLabel_Attendance As Text:
+            Align: ='TextCanvas.Align'.Start
+            AutoHeight: =false
+            DisplayMode: =DisplayMode.Edit
+            Font: =""
+            FontColor: =
+            FontItalic: =varThemeFont.H1.italic
+            Height: =Self.Size * 1.4 + var_LayoutProperties.outerPadding.gap
+            LayoutMinHeight: =32
+            LayoutMinWidth: =96
+            PaddingTop: =0
+            Size: =varThemeFont.H1.size
+            Text: ="Session attendance"
+            VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+            Weight: =varThemeFont.H1.weightBold
+            Width: =conFilter_Attendance.Width
+            Wrap: =true
+            X: =0
+            Y: =0
+            ZIndex: =1
+
+        conFilter_Attendance As groupContainer.horizontalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            DropShadow: =DropShadow.Semilight
+            Fill: =ColorValue(varTheme.backgroundFill)
+            FillPortions: =0
+            Height: =Self.PaddingTop + cmbTrainings_Attendance.Height + Self.PaddingBottom
+            LayoutAlignItems: =LayoutAlignItems.Center
+            LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            PaddingBottom: =var_LayoutProperties.innerPadding.bottom * 1.6
+            PaddingLeft: =var_LayoutProperties.innerPadding.left
+            PaddingRight: =var_LayoutProperties.innerPadding.right
+            PaddingTop: =var_LayoutProperties.innerPadding.bottom * 1.6
+            RadiusBottomLeft: =8
+            RadiusBottomRight: =8
+            RadiusTopLeft: =8
+            RadiusTopRight: =8
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            Y: =650
+            ZIndex: =2
+
+            cmbTrainings_Attendance As Combobox.pcfdataset:
+                AccessibleLabel: ="Trainings"
+                Appearance: ="FilledDarker"
+                DefaultSelectedItems: =
+                DisplayMode: =DisplayMode.Edit
+                Font: =""
+                FontItalic: =
+                FontSize: =0
+                FontWeight: =""
+                Height: =var_LayoutProperties.buttonAndComboboxHeight
+                InputTextPlaceholder: ="Filter by training"
+                Items: |-
+                    =SortByColumns(
+                        GroupBy(
+                            AddColumns(
+                                Filter(
+                                    'Training Sessions'
+                                    ,
+                                    AsType(
+                                        Trainer,
+                                        Users
+                                    ).'Primary Email' = varCurrentUser.'Primary Email', Status = 'Status (Training Sessions)'.Active
+                                ),
+                                training_id,
+                                Training.'Training Id',
+                                training_name,
+                                Training.Name
+                            ),
+                            training_id,
+                            training_name,
+                            groupedsessions
+                        ),
+                        "training_name"
+                    )
+                LayoutMinHeight: =32
+                LayoutMinWidth: =320
+                SelectMultiple: =false
+                Width: |-
+                    =//Responsive Condition
+                    If('Session Attendance Screen'.Size = ScreenSize.ExtraLarge,
+                        (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight) /3,
+                        'Session Attendance Screen'.Size = ScreenSize.Large Or 'Session Attendance Screen'.Size = ScreenSize.Medium,
+                        (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight) /2,
+                        Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    )
+                X: =0
+                Y: =0
+                ZIndex: =1
+
+                ctlTrainingName_Attendance As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn:
+                    FieldDisplayName: ="Name"
+                    FieldName: ="training_name"
+                    FieldType: ="s"
+                    FieldVariantName: ="textualColumn"
+                    Order: =2
+                    ZIndex: =16
+
+        conFilterAndGalleryGap_Attendance As groupContainer.manualLayoutContainer:
+            FillPortions: =0
+            Height: =var_LayoutProperties.outerPadding.gap
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            ZIndex: =3
+
+        conTrainingSessionsList_Attendance As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            DropShadow: |-
+                =//Responsive condition 
+                If('Session Attendance Screen'.Size <> ScreenSize.Small,
+                    DropShadow.Semilight,
+                    DropShadow.None
+                )
+            Fill: |-
+                =//Responsive condition
+                If('Session Attendance Screen'.Size <> ScreenSize.Small,
+                    ColorValue(varTheme.backgroundFill),
+                    RGBA(0,0,0,0)
+                )
+            FillPortions: =0
+            Height: |-
+                =//Responsive condition
+                Max( galTrainingSessions_Attendance.Height + 
+                If('Session Attendance Screen'.Size <> ScreenSize.Small,
+                shpGalleryFooterSeparator_Attendance.Height + conGalleryCounter_Attendance.Height + conTrainingSessionColumnsHeader_Attendance.Height + shpGalleryHeaderSeparator_Attendance.Height)
+                ,Parent.Height - Self.Y - Parent.PaddingBottom)
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            RadiusBottomLeft: =8
+            RadiusBottomRight: =8
+            RadiusTopLeft: =8
+            RadiusTopRight: =8
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            X: =
+            ZIndex: =4
+
+            conScroll_Attendance As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.Start
+                DropShadow: |-
+                    =//Responsive condition 
+                    If('Session Attendance Screen'.Size <> ScreenSize.Small,
+                        DropShadow.Light,
+                        DropShadow.None
+                    )
+                FillPortions: =0
+                Height: =conTrainingSessionColumnsHeader_Attendance.Height + shpGalleryHeaderSeparator_Attendance.Height + galTrainingSessions_Attendance.Height
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                LayoutOverflowX: =LayoutOverflow.Scroll
+                RadiusBottomLeft: =4
+                RadiusBottomRight: =4
+                RadiusTopLeft: =4
+                RadiusTopRight: =4
+                Width: =Parent.Width
+                ZIndex: =1
+
+                conTrainingSessionColumnsHeader_Attendance As groupContainer.verticalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    BorderColor: =ColorValue(varTheme.neutralStroke2)
+                    Fill: =ColorValue(varTheme.backgroundFill)
+                    FillPortions: =0
+                    Height: =galTrainingSessions_Attendance.TemplateHeight * 0.8
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingBottom: =var_LayoutProperties.innerPadding.bottom
+                    PaddingLeft: =var_LayoutProperties.innerPadding.left
+                    PaddingRight: =var_LayoutProperties.innerPadding.right
+                    PaddingTop: =var_LayoutProperties.innerPadding.top
+                    Visible: ='Session Attendance Screen'.Size <> ScreenSize.Small
+                    Width: |
+                        =Max(Parent.Width, 1250)
+                    X: =
+                    ZIndex: =1
+
+                    txtSkillLevelHeader_Attendance As Text:
+                        AutoHeight: =false
+                        DisplayMode: =DisplayMode.Edit
+                        Font: =""
+                        FontColor: =
+                        FontItalic: =varThemeFont.B2.italic
+                        Height: =Parent.Height - Parent.PaddingTop - Parent.PaddingBottom
+                        LayoutMinHeight: =32
+                        LayoutMinWidth: =96
+                        Size: =varThemeFont.B2.size
+                        Text: ="Skill level"
+                        VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                        Weight: =varThemeFont.B2.weightBold
+                        Width: =Parent.Width * 0.125
+                        X: =0
+                        Y: =0
+                        ZIndex: =1
+
+                    txtDateHeader_Attendance As Text:
+                        AutoHeight: =false
+                        DisplayMode: =DisplayMode.Edit
+                        Font: =""
+                        FontColor: =
+                        FontItalic: =varThemeFont.B2.italic
+                        Height: =Parent.Height - Parent.PaddingTop - Parent.PaddingBottom
+                        LayoutMinHeight: =32
+                        LayoutMinWidth: =96
+                        Size: =varThemeFont.B2.size
+                        Text: ="Date"
+                        VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                        Weight: =varThemeFont.B2.weightBold
+                        Width: =Parent.Width * 0.15
+                        X: =0
+                        Y: =0
+                        ZIndex: =2
+
+                    txtStartTimeHeader_Attendance As Text:
+                        AutoHeight: =false
+                        DisplayMode: =DisplayMode.Edit
+                        Font: =""
+                        FontColor: =
+                        FontItalic: =varThemeFont.B2.italic
+                        Height: =Parent.Height - Parent.PaddingTop - Parent.PaddingBottom
+                        LayoutMinHeight: =32
+                        LayoutMinWidth: =96
+                        Size: =varThemeFont.B2.size
+                        Text: ="Start time"
+                        VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                        Weight: =varThemeFont.B2.weightBold
+                        Width: =Parent.Width * 0.125
+                        X: =0
+                        Y: =0
+                        ZIndex: =3
+
+                    txtEndTimeHeader_Attendance As Text:
+                        AutoHeight: =false
+                        DisplayMode: =DisplayMode.Edit
+                        Font: =""
+                        FontColor: =
+                        FontItalic: =varThemeFont.B2.italic
+                        Height: =Parent.Height - Parent.PaddingTop - Parent.PaddingBottom
+                        LayoutMinHeight: =32
+                        LayoutMinWidth: =96
+                        Size: =varThemeFont.B2.size
+                        Text: ="End time"
+                        VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                        Weight: =varThemeFont.B2.weightBold
+                        Width: =Parent.Width * 0.125
+                        X: =0
+                        Y: =0
+                        ZIndex: =4
+
+                    txtSlotsHeader_Attendance As Text:
+                        AutoHeight: =false
+                        DisplayMode: =DisplayMode.Edit
+                        Font: =""
+                        FontColor: =
+                        FontItalic: =varThemeFont.B2.italic
+                        Height: =Parent.Height - Parent.PaddingTop - Parent.PaddingBottom
+                        LayoutMinHeight: =32
+                        LayoutMinWidth: =96
+                        Size: =varThemeFont.B2.size
+                        Text: ="Slots"
+                        VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                        Weight: =varThemeFont.B2.weightBold
+                        Width: =Parent.Width * 0.225
+                        X: =0
+                        Y: =0
+                        ZIndex: =5
+
+                shpGalleryHeaderSeparator_Attendance As rectangle:
+                    BorderColor: =App.Theme.Colors.Darker40
+                    Fill: =ColorValue(varTheme.neutralStroke2)
+                    Height: =1
+                    Visible: ='Session Attendance Screen'.Size <> ScreenSize.Small
+                    Width: =Max(Parent.Width, 1250)
+                    ZIndex: =2
+
+                "galTrainingSessions_Attendance As gallery.'BrowseLayout_Vertical_TwoTextOneImageVariant_ver5.0'":
+                    '#CopilotOverlayLabel': ="Filtered"
+                    AccessibleLabel: ="Training sessions"
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    BorderColor: =App.Theme.Colors.Darker40
+                    DelayItemLoading: =true
+                    FillPortions: =0
+                    Height: |
+                        =//Responsive condition
+                        Max(
+                            conMainContainer_Attendance.Height - conMainContainer_Attendance.PaddingTop - conMainContainer_Attendance.PaddingBottom - 
+                            txtSubHeaderLabel_Attendance.Height - conFilter_Attendance.Height - conTrainingSessionColumnsHeader_Attendance.Height - shpGalleryHeaderSeparator_Attendance.Height - 
+                            shpGalleryFooterSeparator_Attendance.Height - conGalleryCounter_Attendance.Height - conFilterAndGalleryGap_Attendance.Height
+                            , 
+                            Self.AllItemsCount * Self.TemplateHeight
+                        )
+                    Items: |
+                        =
+                        Filter(
+                            'Training Sessions',
+                            AsType(
+                                Trainer,
+                                Users
+                            ).'Primary Email' =  varCurrentUser.'Primary Email',
+                            Status = 'Status (Training Sessions)'.Active,
+                            Training.'Training Id' = cmbTrainings_Attendance.Selected.training_id || IsBlank(cmbTrainings_Attendance.Selected)
+                        )
+                    Layout: =Layout.Vertical
+                    LayoutMinHeight: =287
+                    LayoutMinWidth: =320
+                    LoadingSpinner: =LoadingSpinner.Data
+                    TabIndex: =0
+                    TemplatePadding: =0
+                    TemplateSize: |
+                        =//Responsive condition
+                        If(
+                            'Session Attendance Screen'.Size <> ScreenSize.Small,
+                            var_LayoutProperties.gallery.templateSize,
+                            var_LayoutProperties.gallery.templateSizeSmall + 30
+                        )
+                    Width: |-
+                        =//Responsive condition
+                        If(
+                            'Session Attendance Screen'.Size <> ScreenSize.Small,
+                            Max(Parent.Width, 1250),
+                            Parent.Width
+                        )
+                    ZIndex: =3
+
+                    shpGallerySeparator_Attendance As rectangle:
+                        BorderColor: =App.Theme.Colors.Darker40
+                        Fill: =ColorValue(varTheme.neutralStroke2)
+                        Height: =1
+                        Visible: |-
+                            =//Responsive condition
+                            'Session Attendance Screen'.Size <> ScreenSize.Small
+                        Width: =Parent.Width
+                        Y: =Parent.TemplateHeight - 1
+                        ZIndex: =2
+
+                    conTrainingSessions_Attendance As groupContainer.horizontalAutoLayoutContainer:
+                        DropShadow: |-
+                            =//Responsive condition 
+                            If(
+                                'Session Attendance Screen'.Size <> ScreenSize.Small,
+                                DropShadow.None,
+                                DropShadow.Semilight
+                            )
+                        Fill: =ColorValue(varTheme.backgroundFill)
+                        Height: |-
+                            =Parent.TemplateHeight 
+                            - 
+                            If('Session Attendance Screen'.Size <> ScreenSize.Small,
+                            1, 20 
+                            )
+                        LayoutAlignItems: =LayoutAlignItems.End
+                        LayoutDirection: |-
+                            =//Responsive condition
+                            If('Session Attendance Screen'.Size <> ScreenSize.Small,
+                                LayoutDirection.Horizontal,
+                                LayoutDirection.Vertical
+                            )
+                        LayoutMode: =LayoutMode.Auto
+                        PaddingBottom: |-
+                            =//Responsive condition
+                            If(
+                                'Session Attendance Screen'.Size <> ScreenSize.Small,
+                                0,
+                                16
+                            )
+                        PaddingLeft: |
+                            =//Responsive condition
+                            If(
+                                'Session Attendance Screen'.Size <> ScreenSize.Small,
+                                conTrainingSessionColumnsHeader_Attendance.PaddingLeft,
+                                16
+                            )
+                        PaddingRight: |-
+                            =//Responsive condition
+                            If(
+                                'Session Attendance Screen'.Size <> ScreenSize.Small,
+                                conTrainingSessionColumnsHeader_Attendance.PaddingRight,
+                                16
+                            )
+                        PaddingTop: |
+                            =//Responsive condition
+                            If(
+                                'Session Attendance Screen'.Size <> ScreenSize.Small,
+                                0,
+                                16
+                            )
+                        RadiusBottomLeft: =16
+                        RadiusBottomRight: =16
+                        RadiusTopLeft: |-
+                            =//Responsive condition
+                            If('Session Attendance Screen'.Size <> ScreenSize.Small,
+                                0,
+                                8
+                            )
+                        RadiusTopRight: =16
+                        Width: |-
+                            =//Responsive condition 
+                            If('Session Attendance Screen'.Size <> ScreenSize.Small,
+                                Parent.TemplateWidth,
+                                Parent.Width - 2
+                            )
+                                
+                        X: =(Parent.TemplateWidth/2) - (Self.Width/2)
+                        ZIndex: =3
+
+                        txtSkillLevel_Attendance As Text:
+                            AutoHeight: =false
+                            DisplayMode: =DisplayMode.Edit
+                            Font: =""
+                            FontColor: =
+                            FontItalic: =varThemeFont.B2.italic
+                            Height: |
+                                =//Responsive condition 
+                                If('Session Attendance Screen'.Size <> ScreenSize.Small,
+                                    Parent.Height - Parent.PaddingTop - Parent.PaddingBottom,
+                                    Self.Size * 1.8 + 8
+                                )
+                            LayoutMinHeight: =32
+                            LayoutMinWidth: =96
+                            Size: =varThemeFont.B2.size
+                            Text: =ThisItem.Training.'Skill Level'.Name
+                            VerticalAlign: |
+                                =//Responsive condition
+                                If('Session Attendance Screen'.Size <> ScreenSize.Small,
+                                    'TextCanvas.VerticalAlign'.Middle,
+                                    'TextCanvas.VerticalAlign'.Top
+                                )
+                            Weight: =varThemeFont.B2.weight
+                            Width: |-
+                                =//Responsive condition
+                                If(
+                                    'Session Attendance Screen'.Size <> ScreenSize.Small,
+                                    txtSkillLevelHeader_Attendance.Width,
+                                    Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                )
+                            X: =0
+                            Y: =0
+                            ZIndex: =1
+
+                        txtDate_Attendance As Text:
+                            AutoHeight: =false
+                            DisplayMode: =DisplayMode.Edit
+                            Font: =""
+                            FontColor: =
+                            FontItalic: =varThemeFont.B2.italic
+                            Height: =txtSkillLevel_Attendance.Height
+                            LayoutMinHeight: =32
+                            LayoutMinWidth: =96
+                            Size: =varThemeFont.B2.size
+                            Text: |-
+                                =Coalesce(
+                                    Concatenate(
+                                        Text(
+                                            ThisItem.'Start Date and Time',
+                                            "ddd"
+                                        ),
+                                        ", ",
+                                        Text(
+                                            ThisItem.'Start Date and Time',
+                                            "mmm"
+                                        ),
+                                        " ",
+                                        Text(
+                                            ThisItem.'Start Date and Time',
+                                            "dd, yyyy"
+                                        )
+                                    ),
+                                    "No data to display"
+                                )
+                            VerticalAlign: |
+                                =//Responsive condition
+                                If('Session Attendance Screen'.Size <> ScreenSize.Small,
+                                    'TextCanvas.VerticalAlign'.Middle,
+                                    'TextCanvas.VerticalAlign'.Top
+                                )
+                            Weight: =varThemeFont.B2.weight
+                            Width: |-
+                                =//Responsive condition
+                                If(
+                                    'Session Attendance Screen'.Size <> ScreenSize.Small,
+                                    txtDateHeader_Attendance.Width,
+                                    Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                )
+                            X: =0
+                            Y: =0
+                            ZIndex: =2
+
+                        txtStartTime_Attendance As Text:
+                            AutoHeight: =false
+                            DisplayMode: =DisplayMode.Edit
+                            Font: =""
+                            FontColor: =
+                            FontItalic: =varThemeFont.B2.italic
+                            Height: =txtSkillLevel_Attendance.Height
+                            LayoutMinHeight: =32
+                            LayoutMinWidth: =96
+                            Size: =varThemeFont.B2.size
+                            Text: |-
+                                =//Responsive condition
+                                If(
+                                    'Session Attendance Screen'.Size <> ScreenSize.Small,
+                                    Text(ThisItem.'Start Date and Time', "h:mm AM/PM"),
+                                    Text(ThisItem.'Start Date and Time', "h:mm AM/PM") & " - "  & Text(ThisItem.'End Date and Time', "h:mm AM/PM")
+                                )
+                            VerticalAlign: |
+                                =//Responsive condition
+                                If('Session Attendance Screen'.Size <> ScreenSize.Small,
+                                    'TextCanvas.VerticalAlign'.Middle,
+                                    'TextCanvas.VerticalAlign'.Top
+                                )
+                            Weight: =varThemeFont.B2.weight
+                            Width: |-
+                                =//Responsive condition
+                                If(
+                                    'Session Attendance Screen'.Size <> ScreenSize.Small,
+                                    txtStartTimeHeader_Attendance.Width,
+                                    Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                )
+                            X: =0
+                            Y: =0
+                            ZIndex: =3
+
+                        txtEndTime_Attendance As Text:
+                            AutoHeight: =false
+                            DisplayMode: =DisplayMode.Edit
+                            Font: =""
+                            FontColor: =
+                            FontItalic: =varThemeFont.B2.italic
+                            Height: =txtSkillLevel_Attendance.Height
+                            LayoutMinHeight: =32
+                            LayoutMinWidth: =96
+                            Size: =varThemeFont.B2.size
+                            Text: |-
+                                =Text(ThisItem.'End Date and Time', "h:mm AM/PM")
+                            VerticalAlign: |
+                                =//Responsive condition
+                                If('Session Attendance Screen'.Size <> ScreenSize.Small,
+                                    'TextCanvas.VerticalAlign'.Middle,
+                                    'TextCanvas.VerticalAlign'.Top
+                                )
+                            Visible: |-
+                                =//Responsive condition
+                                'Session Attendance Screen'.Size <> ScreenSize.Small
+                            Weight: =varThemeFont.B2.weight
+                            Width: =txtEndTimeHeader_Attendance.Width
+                            X: =0
+                            Y: =0
+                            ZIndex: =4
+
+                        txtSlots_Attendance As Text:
+                            AutoHeight: =false
+                            DisplayMode: =DisplayMode.Edit
+                            Font: =""
+                            FontColor: =
+                            FontItalic: =varThemeFont.B2.italic
+                            Height: =txtSkillLevel_Attendance.Height
+                            LayoutMinHeight: =32
+                            LayoutMinWidth: =96
+                            Size: =varThemeFont.B2.size
+                            Text: |-
+                                =Concatenate(
+                                
+                                    //Available slot, if still empty, that means no one registered yet
+                                    Coalesce(
+                                        Text(ThisItem.'Available Slot'),
+                                        ThisItem.Capacity
+                                    ), 
+                                
+                                    " out of ",
+                                
+                                    Text(ThisItem.Capacity), //Total capacity
+                                    " remaining"
+                                    
+                                )
+                            VerticalAlign: |
+                                =//Responsive condition
+                                If('Session Attendance Screen'.Size <> ScreenSize.Small,
+                                    'TextCanvas.VerticalAlign'.Middle,
+                                    'TextCanvas.VerticalAlign'.Top
+                                )
+                            Weight: =varThemeFont.B2.weight
+                            Width: |-
+                                =
+                                //Responsive condition
+                                If(
+                                    'Session Attendance Screen'.Size <> ScreenSize.Small,
+                                    txtSlotsHeader_Attendance.Width,
+                                    Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                )
+                            X: =0
+                            Y: =0
+                            ZIndex: =5
+
+                        conActionButtons_Attendance As groupContainer.verticalAutoLayoutContainer:
+                            AlignInContainer: =AlignInContainer.SetByContainer
+                            Fill: =RGBA(0,0,0,0)
+                            FillPortions: =0
+                            Height: |
+                                =//Responsive condition 
+                                If('Session Attendance Screen'.Size <> ScreenSize.Small,
+                                    Parent.Height - Parent.PaddingTop - Parent.PaddingBottom,
+                                    btnManage_Attendance.Height
+                                )
+                            LayoutAlignItems: =LayoutAlignItems.Center
+                            LayoutGap: =var_LayoutProperties.innerPadding.gap
+                            LayoutJustifyContent: =LayoutJustifyContent.End
+                            LayoutMinHeight: =100
+                            LayoutMinWidth: =250
+                            LayoutMode: =LayoutMode.Auto
+                            PaddingLeft: |-
+                                =
+                                
+                                //Responsive condition
+                                If(
+                                    'Session Attendance Screen'.Size <> ScreenSize.Small,
+                                    var_LayoutProperties.innerPadding.left,
+                                    0
+                                )
+                            PaddingRight: |-
+                                =//Responsive condition
+                                If(
+                                    'Session Attendance Screen'.Size <> ScreenSize.Small,
+                                    var_LayoutProperties.innerPadding.right,
+                                    0
+                                )
+                            PaddingTop: =
+                            Width: |
+                                =
+                                //Responsive condition
+                                If(
+                                    'Session Attendance Screen'.Size <> ScreenSize.Small,
+                                    Parent.Width * 0.24,
+                                    Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                )
+                            X: =
+                            ZIndex: =6
+
+                            btnManage_Attendance As Button:
+                                AcceptsFocus: |-
+                                    =//Tab stop move to next available control if this button is disabled
+                                     If(Self.DisplayMode = DisplayMode.Disabled, false, true)
+                                AccessibleLabel: ="Manage session"
+                                Align: =""
+                                Appearance: ='ButtonCanvas.Appearance'.Secondary
+                                BasePaletteColor: =
+                                DisplayMode: =DisplayMode.Edit
+                                Font: =""
+                                FontColor: =
+                                FontItalic: =
+                                FontSize: =0
+                                FontWeight: =""
+                                Height: =var_LayoutProperties.buttonAndComboboxHeight
+                                Icon: =""
+                                IconRotation: =0
+                                IconStyle: ="Outline"
+                                Layout: ="Icon before"
+                                LayoutMinHeight: =32
+                                LayoutMinWidth: =96
+                                OnSelect: |-
+                                    =//Navigate to Manage Attendance Screen with the selected record in a vanriable
+                                    Navigate('Manage Attendance Screen', Transition.None, {var_Session: ThisItem})
+                                Text: ="Manage"
+                                VerticalAlign: =""
+                                Width: |-
+                                    =//Responsive condition
+                                    If(
+                                        'Session Attendance Screen'.Size <> ScreenSize.Small,
+                                        (Parent.Width * 0.3) - Parent.PaddingLeft,
+                                        (Parent.Width - Parent.LayoutGap) /2
+                                    )
+                                X: =0
+                                Y: =0
+                                ZIndex: =6
+
+                            btnJoinSession_Attendance As Button:
+                                AcceptsFocus: |-
+                                    =//Tab stop move to next available control if this button is disabled
+                                     If(Self.DisplayMode = DisplayMode.Disabled, false, true)
+                                AccessibleLabel: ="Join this session"
+                                Align: =""
+                                BasePaletteColor: =
+                                DisplayMode: =If(And(DateAdd(ThisItem.'Start Date and Time', -15, TimeUnit.Minutes) <= Now(), ThisItem.'End Date and Time' >= Now()), DisplayMode.Edit, DisplayMode.Disabled)
+                                Font: =""
+                                FontColor: =
+                                FontItalic: =
+                                FontSize: =0
+                                FontWeight: =""
+                                Height: =var_LayoutProperties.buttonAndComboboxHeight
+                                Icon: =""
+                                IconRotation: =0
+                                IconStyle: ="Outline"
+                                Layout: ="Icon before"
+                                LayoutMinHeight: =32
+                                LayoutMinWidth: =96
+                                OnSelect: |-
+                                    =If(
+                                        //If there is no link in the training session, prompt the user
+                                        IsBlank(ThisItem.Link) || TrimEnds(ThisItem.Link) = "",
+                                        Notify( "No link available for this meeting. Please inform your trainer and try again."),
+                                     
+                                        //Else, launch the meeting link
+                                        Launch(ThisItem.Link)
+                                    )
+                                PaddingBottom: =0
+                                PaddingLeft: =0
+                                PaddingRight: =0
+                                PaddingTop: =0
+                                Text: ="Join this session"
+                                VerticalAlign: =""
+                                Width: |-
+                                    =//Responsive condition
+                                    If(
+                                        'Session Attendance Screen'.Size <> ScreenSize.Small,
+                                        (Parent.Width * 0.55) - Parent.PaddingRight,
+                                        (Parent.Width - Parent.LayoutGap) /2
+                                    )
+                                X: =0
+                                Y: =0
+                                ZIndex: =7
+
+            shpGalleryFooterSeparator_Attendance As rectangle:
+                BorderColor: =App.Theme.Colors.Darker40
+                Fill: =ColorValue(varTheme.neutralStroke2)
+                Height: =1
+                Visible: ='Session Attendance Screen'.Size <> ScreenSize.Small
+                Width: =Max(Parent.Width, 1250)
+                ZIndex: =5
+
+            conGalleryCounter_Attendance As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                BorderColor: =ColorValue(varTheme.neutralStroke2)
+                Fill: =ColorValue(varTheme.backgroundFill)
+                FillPortions: =0
+                Height: =galTrainingSessions_Attendance.TemplateHeight * 0.8
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                PaddingBottom: =var_LayoutProperties.innerPadding.bottom
+                PaddingLeft: =var_LayoutProperties.innerPadding.left
+                PaddingRight: =var_LayoutProperties.innerPadding.right
+                PaddingTop: =var_LayoutProperties.innerPadding.top
+                Visible: ='Session Attendance Screen'.Size <> ScreenSize.Small
+                Width: =Parent.Width
+                X: =
+                ZIndex: =6
+
+                txtRowCount_Attendance As Text:
+                    AutoHeight: =false
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =varThemeFont.B2.italic
+                    Height: =Parent.Height - Parent.PaddingTop - Parent.PaddingBottom
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =varThemeFont.B2.size
+                    Text: |-
+                        ="Rows: " & galTrainingSessions_Attendance.AllItemsCount
+                    VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                    Weight: =varThemeFont.B2.weight
+                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    X: =0
+                    Y: =0
+                    ZIndex: =1
+
+        conPaddingBottom_Attendance As groupContainer.manualLayoutContainer:
+            FillPortions: =0
+            Height: =Parent.PaddingBottom
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            ZIndex: =5
+
+    cmpHeader_Attendance As compHeaderCompound:
+        BackButtonVisibility: =false
+        HeaderHeight: =varComponenentLayoutProperties.headerheight
+        HeaderWidth: =Parent.Width
+        Height: =cmpHeader_Attendance.HeaderHeight
+        Width: =cmpHeader_Attendance.HeaderWidth
+        ZIndex: =2
+

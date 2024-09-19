@@ -1,0 +1,515 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps_1": {
+        "impersonation": {},
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_microsoftpoweracceleratordataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      },
+      "shared_office365": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_microsoftpoweracceleratoroutlook"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "A_booking_is_cancelled": {
+          "metadata": {
+            "operationMetadataId": "47a29139-ee75-4598-9f83-141c67457eb8"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "SubscribeWebhookTrigger"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 3,
+              "subscriptionRequest/entityname": "mpa_booking",
+              "subscriptionRequest/scope": 4,
+              "subscriptionRequest/filteringattributes": "statecode",
+              "subscriptionRequest/filterexpression": "statecode eq 1",
+              "subscriptionRequest/name": "4a190d2e-0a0c-ef11-9f89-0022482c6025"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "When a booking is cancelled (statecode 1 = Inactive)"
+        }
+      },
+      "actions": {
+        "Get_status_reason": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "228a8101-921c-4a80-8968-2a339a6c7d89"
+          },
+          "type": "Compose",
+          "inputs": "@triggerOutputs()?['body']['_statuscode_label']",
+          "description": "Status reason text instead of numerical value"
+        },
+        "Get_Registered_user's_information": {
+          "runAfter": {
+            "Get_status_reason": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "22d52f0d-d57e-4f29-b622-dd557ac7c477"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "GetItem"
+            },
+            "parameters": {
+              "entityName": "systemusers",
+              "recordId": "@triggerOutputs()?['body/_ownerid_value']"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Get the registered user's information to be used by the email"
+        },
+        "Get_Cancelled_booking_training_session_details": {
+          "runAfter": {
+            "Get_Registered_user's_information": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "cb0d31b7-9f5f-47fc-a8eb-57940766b4e1"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "GetItem"
+            },
+            "parameters": {
+              "entityName": "mpa_trainingsessions",
+              "recordId": "@triggerOutputs()?['body/_mpa_trainingsession_value']"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Get the training session details of the cancelled booking"
+        },
+        "Get_the_details_of_the_person_who_cancelled_the_Booking": {
+          "runAfter": {
+            "Get_Cancelled_booking_training_session_details": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "931a03ac-9027-4ba5-b1cb-5ce2862b3ba5"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "GetItem"
+            },
+            "parameters": {
+              "entityName": "systemusers",
+              "recordId": "@triggerOutputs()?['body/_modifiedby_value']"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Details of the user who cancelled the training"
+        },
+        "Check_Cancellation_Status_reason": {
+          "actions": {
+            "Cancelled_by_line_of_the_email": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "26247480-fdef-4247-8560-d201a6978aaf"
+              },
+              "type": "Compose",
+              "inputs": "Cancelled by: <strong>@{outputs('Get_the_details_of_the_person_who_cancelled_the_Booking')?['body/fullname']} </strong>(<strong>@{outputs('Get_the_details_of_the_person_who_cancelled_the_Booking')?['body/internalemailaddress']}</strong>)"
+            }
+          },
+          "runAfter": {
+            "Get_the_details_of_the_person_who_cancelled_the_Booking": [
+              "Succeeded"
+            ]
+          },
+          "expression": {
+            "not": {
+              "equals": [
+                "@triggerOutputs()?['body/statuscode']",
+                865420001
+              ]
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "c564e33f-f721-437c-83ff-59d642f26a15"
+          },
+          "type": "If",
+          "description": "Check if status reason is not equal to 865420001 ( remove by admin )"
+        },
+        "Bookings_with_pre-requisite": {
+          "runAfter": {
+            "Check_Cancellation_Status_reason": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "d424cfe1-0c8c-4f94-b9b2-4a237a52162a"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "BookingDetails",
+                "type": "array"
+              }
+            ]
+          },
+          "description": "Names of the booking that has the cancelled booking as pre-requisite"
+        },
+        "Get_Cancelled_booking's_related_training_ID": {
+          "runAfter": {
+            "Bookings_with_pre-requisite": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "aaacf013-196d-4be7-9b2b-38f05f344388"
+          },
+          "type": "Compose",
+          "inputs": "@triggerOutputs()?['body/_mpa_training_value']",
+          "description": "Unique ID of the training associated with the cancelled booking"
+        },
+        "Get_all_bookings_where_the_pre-requisite_is_the_cancelled_booking": {
+          "runAfter": {
+            "Get_Cancelled_booking's_related_training_ID": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "77b5f034-0d8d-4a2d-9122-e05d6e769fea"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "ListRecords"
+            },
+            "parameters": {
+              "entityName": "mpa_bookings",
+              "$filter": "(_ownerid_value eq @{triggerOutputs()?['body/_ownerid_value']}) and (statecode eq 0) and (mpa_training/_mpa_prerequisite_value eq @{outputs('Get_Cancelled_booking''s_related_training_ID')})"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Find all bookings that has the cancelled booking as pre requisite"
+        },
+        "Get_the_number_of_bookings_with_pre-requisite": {
+          "runAfter": {
+            "Get_all_bookings_where_the_pre-requisite_is_the_cancelled_booking": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "69255a49-b197-4cad-b77e-ef47e5c0065f"
+          },
+          "type": "Compose",
+          "inputs": "@length(outputs('Get_all_bookings_where_the_pre-requisite_is_the_cancelled_booking')?['body/value'])",
+          "description": "Count of all the bookings that has the cancelled booking as prerequisite"
+        },
+        "Check_the_status_reason_value_of_the_cancelled_booking": {
+          "actions": {
+            "Send_an_email_-_booking_cancelled_notification_to_registered_user": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "f2c287ef-a137-4201-b7d1-e3f983c04a83"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                  "connectionName": "shared_office365",
+                  "operationId": "SendEmailV2"
+                },
+                "parameters": {
+                  "emailMessage/To": "@outputs('Get_Registered_user''s_information')?['body/internalemailaddress']",
+                  "emailMessage/Subject": "Cancelled Booking: @{triggerOutputs()?['body/mpa_name']}",
+                  "emailMessage/Body": "<p>Hi,<br>\n<br>\nYour booking has been cancelled. Here are the details:<br>\n<br>\nName : @{triggerOutputs()?['body/mpa_name']}<br>\nTime : @{concat(formatDateTime(outputs('Get_Cancelled_booking_training_session_details')?['body/mpa_startdateandtime'], 'MMMM dd, yyyy, hh:ss tt'), ' - ', formatDateTime(outputs('Get_Cancelled_booking_training_session_details')?['body/mpa_enddateandtime'], 'hh:ss tt'), ' UTC')}<br>\nReason : @{outputs('Get_status_reason')}<br>\nCancelled by : @{outputs('Get_the_details_of_the_person_who_cancelled_the_Booking')?['body/fullname']} (@{outputs('Get_the_details_of_the_person_who_cancelled_the_Booking')?['body/internalemailaddress']})</p>",
+                  "emailMessage/Importance": "Normal"
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": "Send a confirmation email to cancelled booking's registered user"
+            },
+            "Update_Training_session_booked_slots_for_Updated_Booking": {
+              "runAfter": {
+                "Send_an_email_-_booking_cancelled_notification_to_registered_user": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "bb98689c-3b03-4050-93dc-0395de56d5fd"
+              },
+              "type": "Workflow",
+              "inputs": {
+                "host": {
+                  "workflowReferenceName": "178bbe67-3d0c-ef11-9f89-0022482c6025"
+                },
+                "body": {
+                  "text": "@triggerOutputs()?['body/_mpa_trainingsession_value']"
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Get_the_number_of_bookings_with_pre-requisite": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Verify_if_there_are_Bookings_that_require_pre-requisite": {
+                "actions": {
+                  "Get_All_booking_with_pre_requisite_names_and_store_in_array_variable": {
+                    "foreach": "@outputs('Get_all_bookings_where_the_pre-requisite_is_the_cancelled_booking')?['body/value']",
+                    "actions": {
+                      "Get_Training_Session_Data": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "8c9607c2-c01e-47f2-a0a7-e18384ee37ab"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                            "connectionName": "shared_commondataserviceforapps_1",
+                            "operationId": "GetItem"
+                          },
+                          "parameters": {
+                            "entityName": "mpa_trainingsessions",
+                            "recordId": "@items('Get_All_booking_with_pre_requisite_names_and_store_in_array_variable')?['_mpa_trainingsession_value']"
+                          },
+                          "authentication": "@parameters('$authentication')"
+                        },
+                        "description": "Row information of the Session data associated with each of the Booking details"
+                      },
+                      "Compose_booking_details": {
+                        "runAfter": {
+                          "Get_Training_Session_Data": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "431d3b63-cb0f-4fff-969b-8b36bc4bd80f"
+                        },
+                        "type": "Compose",
+                        "inputs": {
+                          "Booking Name": "@items('Get_All_booking_with_pre_requisite_names_and_store_in_array_variable')?['mpa_name']",
+                          "Booking Time": "@concat(formatDateTime(outputs('Get_Training_Session_Data')?['body/mpa_startdateandtime'], 'MMMM dd, yyyy, hh:ss tt'), ' - ', formatDateTime(outputs('Get_Training_Session_Data')?['body/mpa_enddateandtime'], 'hh:ss tt'), ' UTC')"
+                        },
+                        "description": "Construcition of the array value with Booking name and Booking time"
+                      },
+                      "Set_to_Booking_Details_variable": {
+                        "runAfter": {
+                          "Compose_booking_details": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "2f5b635e-f481-4dea-ba20-83445686a8a2"
+                        },
+                        "type": "AppendToArrayVariable",
+                        "inputs": {
+                          "name": "BookingDetails",
+                          "value": "@outputs('Compose_booking_details')"
+                        },
+                        "description": "Set the constructed array to the BookingDetails Variables"
+                      }
+                    },
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "3431b7ce-deb2-448a-be83-8c5659ebec7b"
+                    },
+                    "type": "Foreach",
+                    "description": "Store the booking with prerequisite details in the initialized array variable BookingDetails"
+                  },
+                  "Send_confirmation_email_with_list_of_bookings_that_require_pre-requisites": {
+                    "runAfter": {
+                      "Get_All_booking_with_pre_requisite_names_and_store_in_array_variable": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "6472e4cc-1ce8-44c8-8391-f4a6c521e6be"
+                    },
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                        "connectionName": "shared_office365",
+                        "operationId": "SendEmailV2"
+                      },
+                      "parameters": {
+                        "emailMessage/To": "@outputs('Get_Registered_user''s_information')?['body/internalemailaddress']",
+                        "emailMessage/Subject": "Cancelled Booking: @{triggerOutputs()?['body/mpa_name']}",
+                        "emailMessage/Body": "<p><br>\nYour booking has been cancelled. Here are the details:<br>\n<br>\nName : @{triggerOutputs()?['body/mpa_name']}<br>\nTime : @{concat(formatDateTime(outputs('Get_Cancelled_booking_training_session_details')?['body/mpa_startdateandtime'], 'MMMM dd, yyyy, hh:ss tt'), ' - ', formatDateTime(outputs('Get_Cancelled_booking_training_session_details')?['body/mpa_enddateandtime'], 'hh:ss tt'), ' UTC')}<br>\nReason : @{outputs('Get_status_reason')}<br>\n@{outputs('Cancelled_by_line_of_the_email')}</p>",
+                        "emailMessage/Importance": "Normal"
+                      },
+                      "authentication": "@parameters('$authentication')"
+                    },
+                    "description": "Send a confirmation email to cancelled booking's registered user"
+                  },
+                  "Get_subsequent_bookings_and_perform_auto_cancellation": {
+                    "foreach": "@outputs('Get_all_bookings_where_the_pre-requisite_is_the_cancelled_booking')?['body/value']",
+                    "actions": {
+                      "Process_Auto_Cancellation": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "3daead55-7cdc-46a7-9491-98541def301c"
+                        },
+                        "type": "Workflow",
+                        "inputs": {
+                          "host": {
+                            "workflowReferenceName": "24f4b20c-4c0c-ef11-9f89-0022482c6025"
+                          },
+                          "body": {
+                            "text": "@items('Get_subsequent_bookings_and_perform_auto_cancellation')?['mpa_bookingid']"
+                          }
+                        }
+                      }
+                    },
+                    "runAfter": {
+                      "Update_Training_Session_Book_Slot_of_the_cancelled_booking": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "088bc85a-e659-44d5-899f-2ecf15ccd9df"
+                    },
+                    "type": "Foreach",
+                    "description": "Select all the subsequent bookings found for the cancelled booking"
+                  },
+                  "Update_Training_Session_Book_Slot_of_the_cancelled_booking": {
+                    "runAfter": {
+                      "Send_confirmation_email_with_list_of_bookings_that_require_pre-requisites": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "3d3aeaa2-d3d7-44a7-acae-3e41cb42ad5d"
+                    },
+                    "type": "Workflow",
+                    "inputs": {
+                      "host": {
+                        "workflowReferenceName": "178bbe67-3d0c-ef11-9f89-0022482c6025"
+                      },
+                      "body": {
+                        "text": "@triggerOutputs()?['body/_mpa_trainingsession_value']"
+                      }
+                    },
+                    "description": "Update training session booked slots for cancelled trainings with pre requisite"
+                  }
+                },
+                "runAfter": {},
+                "else": {
+                  "actions": {
+                    "Send_confirmation_email_without_pre-requisite_list": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "d09833ed-fc79-4521-a56c-d937fb828429"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                          "connectionName": "shared_office365",
+                          "operationId": "SendEmailV2"
+                        },
+                        "parameters": {
+                          "emailMessage/To": "@outputs('Get_Registered_user''s_information')?['body/internalemailaddress']",
+                          "emailMessage/Subject": "Cancelled Booking: @{triggerOutputs()?['body/mpa_name']}",
+                          "emailMessage/Body": "<p>Hi,<br>\n<br>\nYour booking has been cancelled. Here are the details:<br>\n<br>\nName : @{triggerOutputs()?['body/mpa_name']}<br>\nTime : @{concat(formatDateTime(outputs('Get_Cancelled_booking_training_session_details')?['body/mpa_startdateandtime'], 'MMMM dd, yyyy, hh:ss tt'), ' - ', formatDateTime(outputs('Get_Cancelled_booking_training_session_details')?['body/mpa_enddateandtime'], 'hh:ss tt'), ' UTC')}<br>\nReason : @{outputs('Get_status_reason')}<br>\n@{outputs('Cancelled_by_line_of_the_email')}</p>",
+                          "emailMessage/Importance": "Normal"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      },
+                      "description": "Send a confirmation email to cancelled booking's registered user"
+                    },
+                    "Update_Training_session_booked_slots": {
+                      "runAfter": {
+                        "Send_confirmation_email_without_pre-requisite_list": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "95448320-aa99-4b9c-8cc5-3e0020ea2d61"
+                      },
+                      "type": "Workflow",
+                      "inputs": {
+                        "host": {
+                          "workflowReferenceName": "178bbe67-3d0c-ef11-9f89-0022482c6025"
+                        },
+                        "body": {
+                          "text": "@triggerOutputs()?['body/_mpa_trainingsession_value']"
+                        }
+                      },
+                      "description": "Update training session booked slots for cancelled trainings without pre requisite"
+                    }
+                  }
+                },
+                "expression": {
+                  "greater": [
+                    "@outputs('Get_the_number_of_bookings_with_pre-requisite')",
+                    0
+                  ]
+                },
+                "metadata": {
+                  "operationMetadataId": "0142e838-b8f6-4e75-b87d-403fe84215b0"
+                },
+                "type": "If",
+                "description": "Checking if there are values for the bookings that need prerequisite"
+              }
+            }
+          },
+          "expression": {
+            "equals": [
+              "@triggerOutputs()?['body/statuscode']",
+              865420002
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "e224378b-4960-494c-aa10-7e922d9ec810"
+          },
+          "type": "If",
+          "description": "If status reason matches value for Booking Updated, send only email notification, otherwise auto cancel subsequent training bookings (Status Reason 865420002 = Booking updated)"
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

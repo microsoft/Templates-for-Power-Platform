@@ -1,0 +1,156 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "impersonation": {},
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_PowerAppsInnovationCenterDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "67d2e7f1-571a-47d7-acc6-414f87f7cea6"
+          },
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "UserID",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Get_the_user_details": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "a2853654-0c53-40d6-8fa1-982e74f25556"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "GetItem"
+            },
+            "parameters": {
+              "entityName": "usersettingscollection",
+              "recordId": "@triggerBody()['text']"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Get the user details"
+        },
+        "Set_a_user_timezone_Code": {
+          "runAfter": {
+            "Get_the_user_details": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "d5c377bc-719b-4dba-a22e-e0a7de37c90c"
+          },
+          "type": "Compose",
+          "inputs": "@outputs('Get_the_user_details')?['body/timezonecode']",
+          "description": "Timezone of the user"
+        },
+        "List_Time_Zone_Definitions": {
+          "runAfter": {
+            "Set_a_user_timezone_Code": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "980e7f81-2631-48df-9e9b-fcf53005fb6b"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "ListRecords"
+            },
+            "parameters": {
+              "entityName": "timezonedefinitions",
+              "$filter": "timezonecode eq @{outputs('Set_a_user_timezone_Code')}"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Time_Zone_Name": {
+          "runAfter": {
+            "List_Time_Zone_Definitions": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3e98273b-a596-4073-959e-c47ece21fd8a"
+          },
+          "type": "Compose",
+          "inputs": "@first(body('List_Time_Zone_Definitions')?['value'])?['standardname']"
+        },
+        "Respond_to_a_PowerApp_or_flow": {
+          "runAfter": {
+            "Time_Zone_Name": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "70313f17-b51f-4eeb-995b-8480064efec0"
+          },
+          "type": "Response",
+          "kind": "PowerApp",
+          "inputs": {
+            "statusCode": 200,
+            "body": {
+              "time_zone_name": "@{outputs('Time_Zone_Name')}"
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "time_zone_name": {
+                  "title": "Time Zone Name",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

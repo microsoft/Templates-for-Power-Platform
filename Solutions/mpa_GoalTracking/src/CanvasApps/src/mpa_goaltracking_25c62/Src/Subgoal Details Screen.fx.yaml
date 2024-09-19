@@ -1,0 +1,522 @@
+"'Subgoal Details Screen' As screen":
+    Fill: =Color.White
+    LoadingSpinnerColor: =App.Theme.Colors.Primary
+    OnHidden: =
+    OnVisible: |-
+        =//Repeatable values for UI
+        UpdateContext(
+            {
+                var_LayoutProperties: {
+                    marginLarge: 32,
+                    marginMedium: 16,
+                    marginSmall: 8,
+                    gapSmall: 8,
+                    gapMedium: 16
+                }
+            }
+        );
+        
+        ResetForm(frmSubgoal)
+
+    conSubgoalDetailBackground As groupContainer.verticalAutoLayoutContainer:
+        DropShadow: =DropShadow.Light
+        Fill: =ColorValue(varTheme.neutralBackground2)
+        Height: =Parent.Height - Self.Y
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutGap: =var_LayoutProperties.gapMedium
+        LayoutMode: =LayoutMode.Auto
+        PaddingBottom: =var_LayoutProperties.marginLarge
+        PaddingLeft: =Self.PaddingTop + 38 
+        PaddingRight: =Self.PaddingLeft
+        PaddingTop: =var_LayoutProperties.marginLarge
+        RadiusBottomLeft: =4
+        RadiusBottomRight: =4
+        RadiusTopLeft: =4
+        RadiusTopRight: =4
+        Width: =Parent.Width
+        Y: =cmpHeader_SubGoalDetails.Height
+        ZIndex: =1
+
+        conBodyHeading_SubgoalDetails As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            FillPortions: =0
+            Height: =txtGoal_SubgoalDetails.Height + txtSubGoalTitleLarge_SubgoalDetails.Height
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            ZIndex: =1
+
+            txtGoal_SubgoalDetails As Text:
+                AutoHeight: =true
+                BorderStyle: =""
+                DisplayMode: =DisplayMode.Edit
+                Font: =""
+                FontColor: =
+                FontItalic: =varThemeFont.H3.italic
+                Height: =Self.Size * 1.8
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                Size: =14
+                Text: =var_AssociatedGoal.Name
+                VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                Weight: ='TextCanvas.Weight'.Regular
+                Width: =Parent.Width
+                X: =0
+                Y: =0
+                ZIndex: =1
+
+            txtSubGoalTitleLarge_SubgoalDetails As Text:
+                AutoHeight: =false
+                BorderStyle: =""
+                DisplayMode: =DisplayMode.Edit
+                FillPortions: =1
+                Font: =""
+                FontColor: =
+                FontItalic: =varThemeFont.H3.italic
+                Height: =Self.Size * 1.5
+                LayoutMinHeight: =Self.Size * 2
+                LayoutMinWidth: =96
+                Size: =varThemeFont.H1.size
+                Text: =If(IsBlank(var_SubgoalItem), "Create a sub-goal", "Update sub-goal")
+                VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                Weight: =varThemeFont.H3.weightBold
+                Width: =Parent.Width
+                X: =0
+                Y: =0
+                ZIndex: =2
+
+        conForm_SubgoalDetails As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            DropShadow: =DropShadow.Semilight
+            Fill: =ColorValue(varTheme.neutralBackground1)
+            FillPortions: =0
+            Height: =Parent.Height - Self.Y - Parent.PaddingBottom
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            PaddingBottom: =
+            PaddingLeft: =
+            PaddingRight: =
+            PaddingTop: =
+            RadiusBottomLeft: =8
+            RadiusBottomRight: =8
+            RadiusTopLeft: =8
+            RadiusTopRight: =8
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            ZIndex: =2
+
+            frmSubgoal As form.PowerApps_CoreControls_Form:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                BorderColor: =App.Theme.Colors.Darker40
+                DataSource: =Subgoals
+                DefaultMode: =If(IsBlank(var_SubgoalItem), FormMode.New, FormMode.Edit) 
+                Item: =var_SubgoalItem
+                LayoutMinHeight: =250
+                LayoutMinWidth: =400
+                NumberOfColumns: =1
+                OnFailure: |-
+                    =//if validation error show first error message, next are for non validation errors on form submission failure
+                    
+                    If(
+                        Self.ErrorKind = ErrorKind.Validation,
+                        Notify(
+                            "Please fill out the highlighted fields.",
+                            NotificationType.Error
+                        ),
+                        Notify(
+                            $"An error has occured, please contact administrator - {Self.Error}",
+                            NotificationType.Error
+                        )
+                    )
+                OnSuccess: |-
+                    =Notify(
+                        If(
+                            Lower(var_ScreenMode) = "update",
+                            "Sub-goal Updated Sucessfully",
+                            "Sub-goal Created Sucessfully"
+                        ),
+                        NotificationType.Success
+                    );
+                    ResetForm(Self);
+                    Navigate('Sub Goals Screen')
+                UseFluentV9Cards: =true
+                Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                ZIndex: =1
+
+                dtcSubgoalDetails_Title As typedDataCard.fluentV9TextualEditCard:
+                    BorderColor: =App.Theme.Colors.Darker40
+                    BorderStyle: =BorderStyle.Solid
+                    DataField: ="mpa_name"
+                    Default: =ThisItem.Name
+                    DisplayMode: =Parent.DisplayMode
+                    DisplayName: ="Sub-goal title"
+                    Fill: =RGBA(0, 0, 0, 0)
+                    Height: =txiSubgoalTitle_Input.Height + txtSubgoalDetail_Title.Height + 14
+                    MaxLength: =DataSourceInfo([@Subgoals], DataSourceInfo.MaxLength, Name)
+                    Required: =true
+                    Update: =txiSubgoalTitle_Input.Value
+                    Width: =Parent.Width / 1.5
+                    WidthFit: =false
+                    X: =0
+                    Y: =0
+                    ZIndex: =1
+
+                    "txiSubgoalTitle_Input As 'Text input'":
+                        AccessibleLabel: =Parent.DisplayName & If(Parent.Required, " (required)")
+                        Appearance: ="FilledDarker"
+                        BasePaletteColor: =
+                        BorderStyle: =""
+                        DisplayMode: =Parent.DisplayMode
+                        FontColor: =
+                        Height: =32
+                        MaxLength: =Parent.MaxLength
+                        Mode: ='TextInputCanvas.Mode'.SingleLine
+                        OnChange: =If(Len(Self.Value) > Parent.MaxLength, Notify($"You have exceeded the maximum allowable lenght of {Parent.MaxLength}", NotificationType.Warning))
+                        Placeholder: ="Enter sub-goal title"
+                        Required: =Parent.Required
+                        TriggerOutput: ="FocusOut"
+                        ValidationState: =If(IsBlank(Parent.Error), "None", "Error")
+                        Value: =Parent.Default
+                        Width: =Parent.Width - 48
+                        X: =var_LayoutProperties.gapMedium
+                        Y: =txtSubgoalDetail_Title.Y + txtSubgoalDetail_Title.Height + 4
+                        ZIndex: =1
+
+                    txtSubgoalDetail_Title As Text:
+                        BorderStyle: =""
+                        DisplayMode: =DisplayMode.Edit
+                        FontColor: =
+                        Height: =22
+                        Size: =14
+                        Text: =Parent.DisplayName
+                        Weight: ='TextCanvas.Weight'.Regular
+                        Width: =Parent.Width - 48
+                        Wrap: =false
+                        X: =var_LayoutProperties.gapMedium
+                        Y: =var_LayoutProperties.gapMedium
+                        ZIndex: =2
+
+                dtcSubgoal_Department As typedDataCard.fluentV9ComboBoxEditCard:
+                    BorderColor: =App.Theme.Colors.Darker40
+                    BorderStyle: =BorderStyle.Solid
+                    DataField: ="mpa_department"
+                    Default: =ThisItem.Department
+                    DisplayMode: =Parent.DisplayMode
+                    DisplayName: =DataSourceInfo([@Subgoals],DataSourceInfo.DisplayName,Department)
+                    Fill: =RGBA(0, 0, 0, 0)
+                    Height: =dtcSubgoalDetails_Title.Height
+                    Required: =true
+                    Update: =cmbSubgoalDetails_Department.Selected
+                    Width: =Parent.Width / 1.5
+                    X: =0
+                    Y: =1
+                    ZIndex: =1
+
+                    cmbSubgoalDetails_Department As Combobox.pcfdataset:
+                        AccessibleLabel: =If(Parent.Required, Substitute("{0}. Required.", "{0}", Parent.DisplayName), Parent.DisplayName)
+                        Appearance: ="FilledDarker"
+                        BorderStyle: =""
+                        DefaultSelectedItems: =[Parent.Default]
+                        DisplayMode: =Parent.DisplayMode
+                        Height: =32
+                        InputTextPlaceholder: ="Search for a department"
+                        Items: =Choices([@Subgoals].Department)
+                        ValidationState: =If(IsBlank(Parent.Error), "None", "Error")
+                        Width: =Parent.Width - 48
+                        X: =var_LayoutProperties.gapMedium
+                        Y: =txtDepartmentTitle.Y + txtDepartmentTitle.Height + 4
+                        ZIndex: =1
+
+                        lblName As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn:
+                            FieldDisplayName: ="Name"
+                            FieldName: ="mpa_name"
+                            FieldType: ="s"
+                            FieldVariantName: ="textualColumn"
+                            Order: =1
+                            ZIndex: =3
+
+                    txtDepartmentTitle As Text:
+                        BorderStyle: =""
+                        DisplayMode: =DisplayMode.Edit
+                        FontColor: =
+                        Height: =22
+                        Size: =14
+                        Text: =Parent.DisplayName
+                        Weight: =
+                        Width: =Parent.Width - 48
+                        Wrap: =false
+                        X: =var_LayoutProperties.gapMedium
+                        Y: =var_LayoutProperties.gapMedium
+                        ZIndex: =2
+
+                dtcSubgoalDetails_Owner As typedDataCard.blankPolymorphicEditCard:
+                    BorderColor: =App.Theme.Colors.Darker40
+                    BorderStyle: =BorderStyle.Solid
+                    DataField: ="_ownerid_value"
+                    Default: =ThisItem.Owner
+                    DisplayMode: =Parent.DisplayMode
+                    DisplayName: =DataSourceInfo([@Subgoals],DataSourceInfo.DisplayName,Owner)
+                    Fill: =RGBA(0, 0, 0, 0)
+                    Height: =dtcSubgoal_Department.Height
+                    Required: =true
+                    Update: =cmbOwner.Selected
+                    Width: =Parent.Width / 2.5
+                    X: =0
+                    Y: =2
+                    ZIndex: =1
+
+                    cmbOwner As Combobox.pcfdataset:
+                        AccessibleLabel: =If(Parent.Required, Substitute("{0}. Required.", "{0}", Parent.DisplayName), Parent.DisplayName)
+                        Appearance: ="FilledDarker"
+                        BorderStyle: =""
+                        DefaultSelectedItems: = AsType(Parent.Default, Users)
+                        DisplayMode: =Parent.DisplayMode
+                        Height: =32
+                        InputTextPlaceholder: ="Search for owner name"
+                        Items: |-
+                            =Filter(Sort(Users, 'Full Name', SortOrder.Ascending), !StartsWith('Full Name', "#"))
+                        ValidationState: =If(IsBlank(Parent.Error), "None", "Error")
+                        Width: =Parent.Width - 48
+                        X: =var_LayoutProperties.gapMedium
+                        Y: =txtOwnerTitle.Height + txtOwnerTitle.Y + 4
+                        ZIndex: =1
+
+                        lblOwnerFullname As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn:
+                            FieldDisplayName: ="Full Name"
+                            FieldName: ="fullname"
+                            FieldType: ="s"
+                            FieldVariantName: ="textualColumn"
+                            Order: =1
+                            ZIndex: =4
+
+                        lblOwnerID As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn:
+                            FieldDisplayName: ="User"
+                            FieldName: ="systemuserid"
+                            FieldType: ="g"
+                            FieldVariantName: ="textualColumn"
+                            Order: =2
+                            ZIndex: =5
+
+                        lblOwnerEmail As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn:
+                            FieldDisplayName: ="Primary Email"
+                            FieldName: ="internalemailaddress"
+                            FieldType: ="s"
+                            FieldVariantName: ="textualColumn"
+                            Order: =3
+                            ZIndex: =6
+
+                    txtOwnerTitle As Text:
+                        BorderStyle: =""
+                        DisplayMode: =DisplayMode.Edit
+                        FontColor: =
+                        Height: =22
+                        Size: =14
+                        Text: =Parent.DisplayName
+                        Weight: ='TextCanvas.Weight'.Regular
+                        Width: =Parent.Width - 48
+                        Wrap: =false
+                        X: =var_LayoutProperties.gapMedium
+                        Y: =var_LayoutProperties.gapMedium
+                        ZIndex: =2
+
+                dtcSubogalDetails_Goal As typedDataCard.fluentV9ComboBoxEditCard:
+                    BorderColor: =App.Theme.Colors.Darker40
+                    BorderStyle: =BorderStyle.Solid
+                    DataField: ="mpa_goal"
+                    Default: =Coalesce(var_AssociatedGoal, ThisItem.Goal)
+                    DisplayMode: =DisplayMode.Disabled
+                    DisplayName: =DataSourceInfo([@Subgoals],DataSourceInfo.DisplayName,mpa_goal)
+                    Fill: =RGBA(0, 0, 0, 0)
+                    Height: =70
+                    Required: =true
+                    Update: =cmbSubgoalDetails_Goal.Selected
+                    Visible: =false
+                    Width: =Parent.Width / 2.5
+                    X: =0
+                    Y: =2
+                    ZIndex: =1
+
+                    cmbSubgoalDetails_Goal As Combobox.pcfdataset:
+                        AccessibleLabel: =If(Parent.Required, Substitute("{0}. Required.", "{0}", Parent.DisplayName), Parent.DisplayName)
+                        Appearance: ="FilledDarker"
+                        BorderStyle: =""
+                        DefaultSelectedItems: =[Parent.Default]
+                        DisplayMode: =Parent.DisplayMode
+                        Height: =32
+                        InputTextPlaceholder: ="Search for a goal"
+                        Items: =Goals
+                        ValidationState: =If(IsBlank(Parent.Error), "None", "Error")
+                        Visible: =Parent.Visible
+                        Width: =Parent.Width - 48
+                        X: =24
+                        Y: =txtForm_Goal.Y + txtForm_Goal.Height + 4
+                        ZIndex: =1
+
+                        lblSubgoalDetails_Goal_Name As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn:
+                            FieldDisplayName: ="Name"
+                            FieldName: ="mpa_name"
+                            FieldType: ="s"
+                            FieldVariantName: ="textualColumn"
+                            Order: =1
+                            ZIndex: =7
+
+                        lblSubgoalDetails_Goal_FY As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField:
+                            FieldDisplayName: ="Fiscal year"
+                            FieldName: ="mpa_fiscalyear"
+                            FieldType: ="E"
+                            FieldVariantName: ="complexTypeColumn"
+                            Order: =2
+                            ZIndex: =8
+
+                    txtForm_Goal As Text:
+                        BorderStyle: =""
+                        DisplayMode: =DisplayMode.Edit
+                        FontColor: =
+                        Height: =22
+                        Text: =Parent.DisplayName
+                        Weight: ='TextCanvas.Weight'.Semibold
+                        Width: =Parent.Width - 48
+                        Wrap: =false
+                        X: =24
+                        Y: =10
+                        ZIndex: =2
+
+                dtcSubgoalDetails_Progress As typedDataCard.fluentV9NumberEditCard:
+                    BorderColor: =App.Theme.Colors.Darker40
+                    BorderStyle: =BorderStyle.Solid
+                    DataField: ="mpa_progress"
+                    Default: =ThisItem.Progress
+                    DisplayMode: =Parent.DisplayMode
+                    DisplayName: =DataSourceInfo([@Subgoals],DataSourceInfo.DisplayName,mpa_progress)
+                    Fill: =RGBA(0, 0, 0, 0)
+                    Height: =70
+                    Required: =false
+                    Update: =Value(txiProgress_SubgoalDetails.Value)
+                    Visible: =false
+                    Width: =1226
+                    X: =1
+                    Y: =2
+                    ZIndex: =1
+
+                    "txiProgress_SubgoalDetails As 'Text input'":
+                        AccessibleLabel: =If(Parent.Required, Substitute("{0}. Required.", "{0}", Parent.DisplayName), Parent.DisplayName)
+                        Appearance: ="FilledDarker"
+                        BasePaletteColor: =
+                        BorderStyle: =""
+                        DisplayMode: =Parent.DisplayMode
+                        FontColor: =
+                        Height: =32
+                        TriggerOutput: ="FocusOut"
+                        ValidationState: =If(IsBlank(Parent.Error), "None", "Error")
+                        Value: =If(IsBlank(Parent.Default), 0 , Parent.Default)
+                        Width: =Parent.Width - 48
+                        X: =24
+                        Y: =txtProgressLabel_SubgoalDetails.Y + txtProgressLabel_SubgoalDetails.Height + 4
+                        ZIndex: =1
+
+                    txtProgressLabel_SubgoalDetails As Text:
+                        BorderStyle: =""
+                        DisplayMode: =DisplayMode.Edit
+                        FontColor: =
+                        Height: =22
+                        Text: =Parent.DisplayName
+                        Weight: ='TextCanvas.Weight'.Semibold
+                        Width: =Parent.Width - 48
+                        Wrap: =false
+                        X: =24
+                        Y: =10
+                        ZIndex: =2
+
+            shpListFooterSeparator_SubgoalDetails As rectangle:
+                BorderColor: =App.Theme.Colors.Darker40
+                Fill: =ColorValue(varTheme.neutralStroke2)
+                Height: =1
+                Visible: |-
+                    =If(Lower(var_ScreenMode) = "view", false, true
+                    )
+                Width: =Parent.Width
+                Y: =frmSubgoal.Height
+                ZIndex: =2
+
+            conSubgoalListFooter_SubgoalDetails As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                FillPortions: =0
+                Height: =var_LayoutProperties.marginLarge * 2
+                LayoutGap: =var_LayoutProperties.gapSmall
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                PaddingBottom: =var_LayoutProperties.gapMedium
+                PaddingLeft: =var_LayoutProperties.gapMedium
+                PaddingRight: =var_LayoutProperties.gapMedium
+                PaddingTop: =var_LayoutProperties.gapMedium
+                Visible: |-
+                    =If(Lower(var_ScreenMode) = "view", false, true
+                    )
+                Width: =Parent.Width
+                ZIndex: =3
+
+                btnCreate_SubgoalDetails As Button:
+                    AccessibleLabel: ="Submit Subgoal Form"
+                    Align: =""
+                    BasePaletteColor: =
+                    BorderStyle: =""
+                    DisplayMode: |-
+                        =If(
+                            frmSubgoal.Valid,
+                            DisplayMode.Edit,
+                            DisplayMode.Disabled
+                        )
+                    FontColor: =
+                    Height: =32
+                    Icon: =""
+                    IconRotation: =0
+                    IconStyle: ="Outline"
+                    Layout: ="Icon before"
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    OnSelect: =SubmitForm(frmSubgoal)
+                    Text: =If(IsBlank(var_SubgoalItem), "Create", "Update")
+                    VerticalAlign: =""
+                    Width: =65
+                    X: =88
+                    Y: =688
+                    ZIndex: =1
+
+                btnDiscard_SubgoalDetails As Button:
+                    AccessibleLabel: ="Discard Subgoal Form"
+                    Align: =""
+                    Appearance: ='ButtonCanvas.Appearance'.Secondary
+                    BasePaletteColor: =
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =
+                    FontSize: =0
+                    FontWeight: =""
+                    Height: =32
+                    Icon: =""
+                    IconRotation: =0
+                    IconStyle: ="Outline"
+                    Layout: ="Icon before"
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    OnSelect: |
+                        =ResetForm(frmSubgoal);
+                        Navigate('Sub Goals Screen')
+                    Text: ="Discard"
+                    VerticalAlign: =""
+                    Width: =72
+                    X: =0
+                    Y: =0
+                    ZIndex: =2
+
+    cmpHeader_SubGoalDetails As compHeaderCompound:
+        HeaderWidth: =Parent.Width
+        Width: =cmpHeader_SubGoalDetails.HeaderWidth
+        ZIndex: =2
+

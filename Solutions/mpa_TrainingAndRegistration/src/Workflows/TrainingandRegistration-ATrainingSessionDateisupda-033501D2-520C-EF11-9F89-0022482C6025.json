@@ -1,0 +1,240 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps_1": {
+        "impersonation": {},
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_microsoftpoweracceleratordataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_a_training_session_date_is_updated_or_cancelled": {
+          "metadata": {
+            "operationMetadataId": "fb1982c0-4374-453c-82d2-bededd010947"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "SubscribeWebhookTrigger"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 3,
+              "subscriptionRequest/entityname": "mpa_trainingsession",
+              "subscriptionRequest/scope": 4,
+              "subscriptionRequest/filteringattributes": "mpa_startdateandtime,mpa_enddateandtime,statuscode",
+              "subscriptionRequest/name": "033501d2-520c-ef11-9f89-0022482c6025"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "When a training session dates is updated, or the session is cancelled"
+        }
+      },
+      "actions": {
+        "Training_Session_is_Cancelled": {
+          "actions": {
+            "Get_Active_Bookings": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "1ffea607-9e4a-4f73-8581-c009b73ce909"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "ListRecords"
+                },
+                "parameters": {
+                  "entityName": "mpa_bookings",
+                  "$select": "mpa_bookingid,_ownerid_value,statecode",
+                  "$filter": "(_mpa_trainingsession_value eq @{triggerOutputs()?['body/mpa_trainingsessionid']} and statecode eq 0)"
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": "Get all the active bookings for this training session"
+            },
+            "Each_Booking": {
+              "foreach": "@outputs('Get_Active_Bookings')?['body/value']",
+              "actions": {
+                "Cancel_the_booking": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "cb506308-27a5-44d1-b5e7-841afaefc8a3"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "UpdateRecord"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_bookings",
+                      "recordId": "@items('Each_Booking')?['mpa_bookingid']",
+                      "item/statecode": 1,
+                      "item/statuscode": 865420002
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  },
+                  "description": "Cancel the booking by deactivating it as Session Cancelled"
+                }
+              },
+              "runAfter": {
+                "Get_Active_Bookings": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "f5e8ff89-cf38-4f36-adc6-f8a107b09f0c"
+              },
+              "type": "Foreach",
+              "description": "Iterate all active bookings to cancel them"
+            },
+            "Cancel_Event": {
+              "runAfter": {
+                "Each_Booking": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "0435a303-4480-4d54-8b56-962f557e1040"
+              },
+              "type": "Workflow",
+              "inputs": {
+                "host": {
+                  "workflowReferenceName": "e749f87e-790b-ef11-9f89-0022482c6025"
+                },
+                "body": {
+                  "boolean": false,
+                  "boolean_1": false,
+                  "text": "@triggerOutputs()?['body/mpa_trainingsessionid']",
+                  "boolean_4": false,
+                  "boolean_2": false,
+                  "boolean_5": false,
+                  "boolean_6": true
+                }
+              },
+              "description": "Call the child flow to cancel the placeholder invites"
+            }
+          },
+          "runAfter": {},
+          "else": {
+            "actions": {
+              "Events_exists": {
+                "actions": {
+                  "Update_Events": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "6b5ec5d5-7877-4468-b3a4-d74f56fc5a64"
+                    },
+                    "type": "Workflow",
+                    "inputs": {
+                      "host": {
+                        "workflowReferenceName": "e749f87e-790b-ef11-9f89-0022482c6025"
+                      },
+                      "body": {
+                        "boolean": false,
+                        "boolean_1": false,
+                        "text": "@triggerOutputs()?['body/mpa_trainingsessionid']",
+                        "boolean_4": false,
+                        "boolean_2": true,
+                        "boolean_5": true,
+                        "boolean_6": false
+                      }
+                    },
+                    "description": "Call the child flow to update the trainer and attendees events"
+                  }
+                },
+                "runAfter": {},
+                "else": {
+                  "actions": {
+                    "Create_Events": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "01807c69-f4c0-4c43-9342-bd1f2380c3f6"
+                      },
+                      "type": "Workflow",
+                      "inputs": {
+                        "host": {
+                          "workflowReferenceName": "e749f87e-790b-ef11-9f89-0022482c6025"
+                        },
+                        "body": {
+                          "boolean": true,
+                          "boolean_1": true,
+                          "text": "@triggerOutputs()?['body/mpa_trainingsessionid']",
+                          "boolean_4": true,
+                          "boolean_2": false,
+                          "boolean_5": false,
+                          "boolean_6": false
+                        }
+                      },
+                      "description": "Call the child flow to create the trainer and attendees event"
+                    }
+                  }
+                },
+                "expression": {
+                  "and": [
+                    {
+                      "not": {
+                        "equals": [
+                          "@triggerOutputs()?['body/mpa_trainereventid']",
+                          "@null"
+                        ]
+                      }
+                    },
+                    {
+                      "not": {
+                        "equals": [
+                          "@triggerOutputs()?['body/mpa_calendarid']",
+                          "@null"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                "metadata": {
+                  "operationMetadataId": "db224885-98b0-4375-af00-b56752f4ed1b"
+                },
+                "type": "If",
+                "description": "Verify if the events exist already so we can update them, or if they have to be created."
+              }
+            }
+          },
+          "expression": {
+            "equals": [
+              "@triggerOutputs()?['body/statuscode']",
+              865420001
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "01a36de7-abe0-4ec5-9c6f-4e14baae1dd5"
+          },
+          "type": "If",
+          "description": "Check if the session was cancelled or updated. If cancelled, the Status Reason for Cancelled = 865,420,001"
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}
