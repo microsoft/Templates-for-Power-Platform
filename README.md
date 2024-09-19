@@ -28,6 +28,9 @@ The Hardware Request and Management template contains the building blocks necess
 
 The Appointment Booking template contains the building blocks necessary to deploy Microsoft Power Apps that can be used by any organization that wants to improve experiences and operational efficiencies related to booking appointments. The template is designed to streamline the coordination, communication, and time management involved in creating, booking, and managing appointments. 
 
+### SAP Setup Assistant
+
+The SAP Setup Assistant walks you through a checklist of manual and automated steps to help you get your Power Platform + SAP Procurement installation up and running as quickly as possible.
 
 ## Access on AppSource
 
@@ -43,6 +46,8 @@ The Appointment Booking template contains the building blocks necessary to deplo
 
 #### [SAP Procurement template](https://aka.ms/AccessSAPProcurementTemplate)
 
+#### [SAP Setup Assistant](https://aka.ms/AccessSAPSetupAssistantTemplate)
+
 ## Microsoft Learn Documentation
 
 #### [Appointment Booking](https://aka.ms/LearnAppointmentBookingTemplate)
@@ -56,6 +61,8 @@ The Appointment Booking template contains the building blocks necessary to deplo
 #### [Onboarding Buddy template](https://aka.ms/LearnOnboardingBuddyTemplate)
 
 #### [SAP Procurement template](https://aka.ms/LearnSAPProcurementTemplate)
+
+#### [SAP Setup Assistant](https://aka.ms/LearnSAPSetupAssistantTemplate)
 
 #### [General Documenatation](https://aka.ms/LearnTemplatesForPowerPlatform)
 
