@@ -1,0 +1,913 @@
+"'Landing Page' As screen":
+    Fill: =Color.White
+    LoadingSpinnerColor: =App.Theme.Colors.Primary
+    OnVisible: |
+        =Reset(txiSearch_LandingPage);
+        Refresh('Visitor Registrations');
+        
+        Set(
+            varCurrentUser,
+            LookUp(
+                Users,
+                'Primary Email' = User().Email
+            )
+        );
+        Set(
+            varCurrentUserHost,
+            Office365Users.MyProfileV2().id
+        );
+        
+        
+        // Filter Registrations to those that are active and where the current user is the Owner or Host
+        ClearCollect(
+            colVisitorRegistration,
+            AddColumns(
+            Filter(
+                'Visitor Registrations',
+                'Visitor Registrations (Views)'.'All Visitor Registrations',
+                Owner = varCurrentUser || 'Host Id'.Id = GUID(varCurrentUserHost)
+            ) , LocName , Location.Name , VFullName  , Visitor.'Full Name' , HName , 'Host Id'.'Display Name' , VisitType , Text('Visit Type') , StatusReason , Text('Status Reason') , AppointmentStartDate , Text('Appointment Start Date',"ddd, mmm dd, yyyy"))
+        );
+        
+        //Refresh the data
+        ClearCollect(colVisitorRegistrations ,colVisitorRegistration);
+
+    conMain_LandingPage As groupContainer.verticalAutoLayoutContainer:
+        Fill: =ColorValue(varTheme.neutralBackground2)
+        Height: =Parent.Height - compHeaderCompound_LandingPage.HeaderHeight
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutGap: =16
+        LayoutMode: =LayoutMode.Auto
+        PaddingBottom: =Self.PaddingTop
+        PaddingLeft: =Self.PaddingTop
+        PaddingRight: =Self.PaddingTop
+        PaddingTop: =32
+        RadiusBottomLeft: =4
+        RadiusBottomRight: =4
+        RadiusTopLeft: =4
+        RadiusTopRight: =4
+        Width: =Parent.Width
+        Y: =compHeaderCompound_LandingPage.HeaderHeight
+        ZIndex: =1
+
+        conTitle_LandingPage As groupContainer.horizontalAutoLayoutContainer:
+            FillPortions: =0
+            Height: |-
+                =If(
+                    App.ActiveScreen.Size = ScreenSize.Small,txtTitle_LandingPage.Height *2,60)
+            LayoutAlignItems: =LayoutAlignItems.Center
+            LayoutDirection: =Switch(App.ActiveScreen.Size,ScreenSize.Small,LayoutDirection.Vertical, LayoutDirection.Horizontal)
+            LayoutJustifyContent: =LayoutJustifyContent.Center
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            RadiusBottomLeft: =4
+            RadiusBottomRight: =4
+            RadiusTopLeft: =4
+            RadiusTopRight: =4
+            Width: =Parent.Width  - Parent.PaddingRight - Parent.PaddingLeft
+            ZIndex: =1
+
+            txtTitle_LandingPage As Text:
+                Align: ='TextCanvas.Align'.Start
+                AutoHeight: =false
+                BorderStyle: =""
+                DisplayMode: =DisplayMode.Edit
+                FontColor: =ColorValue(varTheme.neutralForeground1)
+                Height: =(Self.Size * 1.5)
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                Size: =varThemeFont.H1.size
+                Text: ="Visitor registrations"
+                VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                Weight: =varThemeFont.H1.weightBold
+                Width: =If(App.ActiveScreen.Size = ScreenSize.Small,Parent.Width,Parent.Width - btnCreateRegistration_LandingPage.Width -2)
+                X: =0
+                Y: =0
+                ZIndex: =1
+
+            btnCreateRegistration_LandingPage As Button:
+                AccessibleLabel: ="Create registration"
+                Align: =""
+                BasePaletteColor: =
+                BorderStyle: =""
+                DisplayMode: =DisplayMode.Edit
+                Font: =""
+                FontColor: =
+                FontItalic: =
+                FontSize: =0
+                FontWeight: =""
+                Height: =32
+                Icon: =""
+                IconRotation: =0
+                IconStyle: ="Outline"
+                Layout: ="Icon before"
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                OnSelect: |-
+                    =Set(varFormProcess , FormMode.New);
+                    Set(varSelectedVisitor , Blank());
+                    Set(varVisitor , Blank());
+                    ResetForm(frmVisitorInformation_Registration);
+                    ResetForm(frmVisitType_Registration);
+                    Navigate('Registration Page');
+                Text: ="Create registration"
+                VerticalAlign: =""
+                Width: =If(App.ActiveScreen.Size = ScreenSize.Small,Parent.Width-Parent.PaddingLeft - Parent.PaddingRight,150)
+                X: =0
+                Y: =0
+                ZIndex: =2
+
+        conSearch_LandingPage As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.Start
+            DropShadow: =DropShadow.Semilight
+            Fill: =ColorValue(varTheme.neutralBackground1)
+            FillPortions: =0
+            Height: =If(App.ActiveScreen.Size = ScreenSize.Small,120,48)
+            LayoutDirection: =Switch(App.ActiveScreen.Size,ScreenSize.Small,LayoutDirection.Vertical, LayoutDirection.Horizontal)
+            LayoutGap: =8
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            PaddingBottom: =Self.PaddingTop
+            PaddingLeft: =Self.PaddingTop
+            PaddingRight: =Self.PaddingTop
+            PaddingTop: =8
+            RadiusBottomLeft: =8
+            RadiusBottomRight: =8
+            RadiusTopLeft: =8
+            RadiusTopRight: =8
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            ZIndex: =2
+
+            "txiSearch_LandingPage As 'Text input'":
+                AccessibleLabel: ="Search registrations"
+                AlignInContainer: =AlignInContainer.Center
+                Appearance: ="FilledDarker"
+                BasePaletteColor: =
+                BorderStyle: =""
+                DisplayMode: =DisplayMode.Edit
+                FontColor: =
+                Height: =38
+                LayoutMinHeight: =32
+                LayoutMinWidth: =320
+                MaxLength: =255
+                OnChange: =
+                Placeholder: ="Search registrations"
+                TriggerOutput: ="FocusOut"
+                Width: =If(App.ActiveScreen.Size = ScreenSize.Small,Parent.Width,320)
+                X: =0
+                Y: =0
+                ZIndex: =1
+
+            btnSearch_LandingPage As Button:
+                AccessibleLabel: ="Search"
+                Align: =""
+                AlignInContainer: =AlignInContainer.Center
+                Appearance: ='ButtonCanvas.Appearance'.Secondary
+                BasePaletteColor: =
+                BorderStyle: =""
+                DisplayMode: =DisplayMode.Edit
+                Font: =""
+                FontColor: =
+                FontItalic: =
+                FontSize: =0
+                FontWeight: =""
+                Height: =txiSearch_LandingPage.Height
+                Icon: =""
+                IconRotation: =0
+                IconStyle: ="Outline"
+                Layout: ="Icon before"
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                OnSelect: |-
+                    =Refresh('Visitor Registrations');
+                    
+                    // Filter Registrations to those that are active and where the current user is the Owner or Host
+                    ClearCollect(
+                        colVisitorRegistration,
+                        AddColumns(
+                        Filter(
+                            'Visitor Registrations',
+                            'Visitor Registrations (Views)'.'All Visitor Registrations',
+                            Owner = varCurrentUser || 'Host Id'.Id = GUID(varCurrentUserHost)
+                        ) , LocName , Location.Name , VFullName  , Visitor.'Full Name' , HName , 'Host Id'.'Display Name' , VisitType , Text('Visit Type') , StatusReason , Text('Status Reason') , AppointmentStartDate , Text('Appointment Start Date',"ddd, mmm dd, yyyy"))
+                    );
+                    
+                    ClearCollect(
+                        colVisitorRegistrations,
+                        Search(
+                            colVisitorRegistration,
+                            txiSearch_LandingPage.Value,
+                            'Registration Id',
+                            LocName,
+                            VFullName,
+                            HName,
+                            StatusReason,
+                            VisitType,
+                            AppointmentStartDate
+                        )
+                    )
+                Text: ="Search"
+                VerticalAlign: =""
+                Width: =If(App.ActiveScreen.Size = ScreenSize.Small,Parent.Width, txiSearch_LandingPage.Width *.3)
+                X: =0
+                Y: =0
+                ZIndex: =2
+
+        conGallery_LandingPage As groupContainer.verticalAutoLayoutContainer:
+            DropShadow: =DropShadow.Semilight
+            Fill: =ColorValue(varTheme.neutralBackground1)
+            FillPortions: =0
+            Height: =Parent.Height - conSearch_LandingPage.Height - conTitle_LandingPage.Height - Parent.PaddingBottom - Parent.PaddingTop - Parent.LayoutGap
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            RadiusBottomLeft: =8
+            RadiusBottomRight: =8
+            RadiusTopLeft: =8
+            RadiusTopRight: =8
+            ZIndex: =3
+
+            conGalleryTitle_LandingPage As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                FillPortions: =0
+                Height: =36
+                LayoutGap: =24
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                PaddingLeft: =36
+                PaddingRight: =12
+                RadiusBottomLeft: =4
+                RadiusBottomRight: =4
+                RadiusTopLeft: =4
+                RadiusTopRight: =4
+                Visible: =Switch(App.ActiveScreen.Size,ScreenSize.Small,false, true)
+                Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                ZIndex: =1
+
+                txtRegistrationID_GalleryTitle_LandingPage As Text:
+                    Align: ='TextCanvas.Align'.Start
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    FillPortions: =1
+                    FontColor: =ColorValue(varTheme.neutralForeground1)
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =14
+                    Text: ="Registration ID"
+                    Weight: ='TextCanvas.Weight'.Semibold
+                    Width: =120
+                    X: =0
+                    Y: =0
+                    ZIndex: =1
+
+                txtIcon_GalleryTitle_LandingPage As Text:
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    FontColor: =ColorValue(varTheme.neutralForeground1)
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =14
+                    Text: =""
+                    Weight: ='TextCanvas.Weight'.Semibold
+                    Width: =32
+                    X: =0
+                    Y: =0
+                    ZIndex: =2
+
+                txtVisitorName_GalleryTitle_LandingPage As Text:
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    FillPortions: =1.5
+                    FontColor: =ColorValue(varTheme.neutralForeground1)
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =14
+                    Text: ="Visitor name"
+                    Visible: |
+                        =true
+                    Weight: ='TextCanvas.Weight'.Semibold
+                    Width: =txtRegistrationID_GalleryTitle_LandingPage.Width
+                    X: =0
+                    Y: =0
+                    ZIndex: =3
+
+                txtLocation_GalleryTitle_LandingPage As Text:
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    FillPortions: =1
+                    FontColor: =ColorValue(varTheme.neutralForeground1)
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =14
+                    Text: |-
+                        ="Address: Name"
+                    Weight: ='TextCanvas.Weight'.Semibold
+                    Width: |-
+                        =//Parent.Width *.15
+                        txtRegistrationID_GalleryTitle_LandingPage.Width
+                    X: =0
+                    Y: =0
+                    ZIndex: =4
+
+                txtVisitType_GalleryTitle_LandingPage As Text:
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    FillPortions: =1
+                    FontColor: =ColorValue(varTheme.neutralForeground1)
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =14
+                    Text: ="Visit type"
+                    Weight: ='TextCanvas.Weight'.Semibold
+                    Width: =txtRegistrationID_GalleryTitle_LandingPage.Width
+                    X: =0
+                    Y: =0
+                    ZIndex: =5
+
+                txtHost_GalleryTitle_LandingPage As Text:
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    FillPortions: =1
+                    FontColor: =ColorValue(varTheme.neutralForeground1)
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =14
+                    Text: ="Host"
+                    Weight: ='TextCanvas.Weight'.Semibold
+                    Width: =txtRegistrationID_GalleryTitle_LandingPage.Width
+                    X: =0
+                    Y: =0
+                    ZIndex: =6
+
+                txtVisitStarDate_GalleryTitle_LandingPage As Text:
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    FillPortions: =1
+                    FontColor: =ColorValue(varTheme.neutralForeground1)
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =14
+                    Text: ="Visit start date"
+                    Weight: ='TextCanvas.Weight'.Semibold
+                    Width: =txtRegistrationID_GalleryTitle_LandingPage.Width +5
+                    X: =0
+                    Y: =0
+                    ZIndex: =7
+
+                txtVisitEndDate_GalleryTitle_LandingPage As Text:
+                    AlignInContainer: =AlignInContainer.Start
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    FillPortions: =1
+                    FontColor: =ColorValue(varTheme.neutralForeground1)
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =14
+                    Text: ="Visit end date"
+                    Weight: ='TextCanvas.Weight'.Semibold
+                    Width: =txtRegistrationID_GalleryTitle_LandingPage.Width +5
+                    X: =0
+                    Y: =0
+                    ZIndex: =8
+
+                txtStatus_GalleryTitle_LandingPage As Text:
+                    AlignInContainer: =AlignInContainer.Start
+                    AutoHeight: =false
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    FillPortions: =1
+                    FontColor: =ColorValue(varTheme.neutralForeground1)
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =14
+                    Text: ="Status"
+                    VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                    Weight: ='TextCanvas.Weight'.Semibold
+                    Width: =txtRegistrationID_GalleryTitle_LandingPage.Width -10
+                    X: =0
+                    Y: =0
+                    ZIndex: =9
+
+            shpGalleryTitle_landingPage As rectangle:
+                AccessibleLabel: =
+                BorderColor: =App.Theme.Colors.Primary
+                DisabledFill: =ColorValue(varTheme.neutralBackgroundDisabled)
+                Fill: =ColorValue(varTheme.neutralStroke2)
+                FocusedBorderColor: =ColorValue(varTheme.info)
+                Height: =2
+                HoverFill: =App.Theme.Colors.Darker20
+                PressedFill: =App.Theme.Colors.Primary
+                Width: =Parent.Width
+                Y: =conBack_Landing.Height - 1
+                ZIndex: =2
+
+            conGalleryValue_LandingPage As groupContainer.verticalAutoLayoutContainer:
+                FillPortions: =0
+                Height: =Parent.Height - conGalleryTitle_LandingPage.Height - conGalleryTotalCount_LandingPage.Height
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                PaddingLeft: =
+                ZIndex: =3
+
+                galVisitorRegistrations_LandingPage As gallery.galleryVertical:
+                    AccessibleLabel: ="List of registration"
+                    BorderColor: =App.Theme.Colors.Darker40
+                    DelayItemLoading: =true
+                    FillPortions: =0
+                    Height: |-
+                        =//Parent.Height
+                        
+                        Self.AllItemsCount * (conVisitorRegistrationValue_LandingPage.Height - If(
+                            App.ActiveScreen.Size = 1,
+                            -11.5 , -1
+                        ))
+                    Items: =Sort(colVisitorRegistrations, SortOrder.Ascending)
+                    Layout: =Layout.Vertical
+                    LayoutMinHeight: =287
+                    LayoutMinWidth: =320
+                    LoadingSpinner: =LoadingSpinner.Data
+                    TabIndex: =0
+                    TemplatePadding: =0
+                    TemplateSize: |
+                        =44
+                    Visible: =If (Self.AllItemsCount > 0 , true, false)
+                    Width: |-
+                        =//Parent.Width
+                        Switch(
+                            App.ActiveScreen.Size,
+                            ScreenSize.Small,
+                            Parent.Width - Parent.PaddingLeft - Parent.PaddingRight,
+                            conGalleryTitle_LandingPage.Width
+                        )
+                    ZIndex: =1
+
+                    conVisitorRegistrationValue_LandingPage As groupContainer.horizontalAutoLayoutContainer:
+                        Height: |-
+                            =//44
+                            
+                            If(App.ActiveScreen.Size = ScreenSize.Small, 250, 44)
+                        LayoutDirection: |-
+                            =Switch(
+                                App.ActiveScreen.Size,
+                                ScreenSize.Small,
+                                LayoutDirection.Vertical,
+                                LayoutDirection.Horizontal
+                            )
+                        LayoutGap: |-
+                            =If(
+                                App.ActiveScreen.Size = ScreenSize.Small,
+                                0,
+                                24
+                            )
+                        LayoutMode: =LayoutMode.Auto
+                        PaddingLeft: =conGalleryTitle_LandingPage.PaddingLeft
+                        PaddingRight: =conGalleryTitle_LandingPage.PaddingRight
+                        Width: =galVisitorRegistrations_LandingPage.Width
+                        ZIndex: =2
+
+                        txtRegistrationID_GalleryValue_LandingPage As Text:
+                            Align: ='TextCanvas.Align'.Start
+                            BorderStyle: =""
+                            DisplayMode: =DisplayMode.Edit
+                            FontColor: =ColorValue(varTheme.neutralForeground1)
+                            Height: =Parent.Height - 12
+                            LayoutMinHeight: =32
+                            LayoutMinWidth: =96
+                            Size: =14
+                            Text: =ThisItem.'Registration Id'
+                            VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                            Weight: ='TextCanvas.Weight'.Regular
+                            Width: |-
+                                =Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.Small,
+                                    (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight)* .75,
+                                    txtRegistrationID_GalleryTitle_LandingPage.Width
+                                )
+                            Wrap: =false
+                            X: =0
+                            Y: =0
+                            ZIndex: =1
+
+                        ico_EditOrView_GalleryValue_LandingPage As icon.Edit:
+                            AccessibleLabel: |-
+                                =Switch(ThisItem.'Status Reason',
+                                'Status Reason (Visitor Registrations)'.Scheduled, "Edit",
+                                "View")
+                            BorderColor: =App.Theme.Colors.Darker40
+                            Color: =App.Theme.Colors.Primary
+                            DisabledBorderColor: =RGBA(166, 166, 166, 1)
+                            DisabledColor: =RGBA(244, 244, 244, 1)
+                            Height: =Self.Width -7
+                            Icon: |-
+                                =Switch(ThisItem.'Status Reason',
+                                'Status Reason (Visitor Registrations)'.Scheduled, Icon.Edit,
+                                Icon.View)
+                            OnSelect: |
+                                =Set(
+                                    varFormProcess,
+                                    FormMode.Edit
+                                );
+                                Set(
+                                    varSelectedVisitor,
+                                    LookUp(
+                                        'Visitor Registrations',
+                                        'Visitor Registration' = ThisItem.'Visitor Registration'
+                                    )
+                                );
+                                Set(
+                                    varSelectedVisit,
+                                    LookUp(
+                                        Contacts,
+                                        Contact = varSelectedVisitor.Visitor.Contact
+                                    )
+                                );
+                                Navigate('View Registration Page');
+                            TabIndex: =0
+                            Visible: |
+                                =//If(App.ActiveScreen.Size = ScreenSize.Small,false,true)
+                                true
+                            Width: |-
+                                =//txtIcon_GalleryTitle_LandingPage.Width
+                                
+                                Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.Small,
+                                    (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight)* .25,
+                                    txtIcon_GalleryTitle_LandingPage.Width
+                                )
+                            ZIndex: =3
+
+                        txtVisitorName_GalleryValue_LandingPage As Text:
+                            Align: ='TextCanvas.Align'.Start
+                            BorderStyle: =""
+                            DisplayMode: =DisplayMode.Edit
+                            FontColor: =ColorValue(varTheme.neutralForeground1)
+                            Height: =txtRegistrationID_GalleryValue_LandingPage.Height
+                            LayoutMinHeight: =32
+                            LayoutMinWidth: =96
+                            Size: =14
+                            Text: |-
+                                =ThisItem.Visitor.'Full Name'
+                                //"Testin"
+                            VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                            Visible: |
+                                =true
+                            Weight: ='TextCanvas.Weight'.Regular
+                            Width: |-
+                                =//txtVisitorName_GalleryTitle_LandingPage.Width
+                                Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.Small,
+                                    (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight),    
+                                txtVisitorName_GalleryTitle_LandingPage.Width
+                                )
+                            Wrap: =false
+                            X: =0
+                            Y: =0
+                            ZIndex: =4
+
+                        txtLocation_GalleryValue_LandingPage As Text:
+                            BorderStyle: =""
+                            DisplayMode: =DisplayMode.Edit
+                            FontColor: =ColorValue(varTheme.neutralForeground1)
+                            Height: =txtRegistrationID_GalleryValue_LandingPage.Height
+                            LayoutMinHeight: =32
+                            LayoutMinWidth: =96
+                            Size: =14
+                            Text: =ThisItem.Location.Name
+                            Weight: ='TextCanvas.Weight'.Regular
+                            Width: |+
+                                =//Parent.Width *.15
+                                
+                                Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.Small,
+                                    (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight),  txtRegistrationID_GalleryTitle_LandingPage.Width  
+                                //Parent.Width *.15
+                                )
+                                
+                            Wrap: =false
+                            X: =0
+                            Y: =0
+                            ZIndex: =5
+
+                        txtVisitType_GalleryValue_LandingPage As Text:
+                            BorderStyle: =""
+                            DisplayMode: =DisplayMode.Edit
+                            FontColor: =ColorValue(varTheme.neutralForeground1)
+                            Height: =txtRegistrationID_GalleryValue_LandingPage.Height
+                            LayoutMinHeight: =32
+                            LayoutMinWidth: =96
+                            Size: =14
+                            Text: =ThisItem.'Visit Type'
+                            VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                            Weight: ='TextCanvas.Weight'.Regular
+                            Width: |-
+                                =//txtVisitType_GalleryTitle_LandingPage.Width
+                                
+                                Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.Small,
+                                    (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight),    
+                                txtVisitType_GalleryTitle_LandingPage.Width
+                                )
+                            Wrap: =false
+                            X: =0
+                            Y: =0
+                            ZIndex: =6
+
+                        txtHost_GalleryValue_LandingPage As Text:
+                            BorderStyle: =""
+                            DisplayMode: =DisplayMode.Edit
+                            FontColor: =ColorValue(varTheme.neutralForeground1)
+                            Height: =txtRegistrationID_GalleryValue_LandingPage.Height
+                            LayoutMinHeight: =32
+                            LayoutMinWidth: =96
+                            Size: =14
+                            Text: =ThisItem.'Host Id'.'Display Name'
+                            Weight: ='TextCanvas.Weight'.Regular
+                            Width: |-
+                                =//txtHost_GalleryTitle_LandingPage.Width
+                                
+                                Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.Small,
+                                    (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight),    
+                                txtHost_GalleryTitle_LandingPage.Width
+                                )
+                            Wrap: =false
+                            X: =0
+                            Y: =0
+                            ZIndex: =7
+
+                        txtVisitStarDate_GalleryValue_LandingPage As Text:
+                            BorderStyle: =""
+                            DisplayMode: =DisplayMode.Edit
+                            FontColor: =ColorValue(varTheme.neutralForeground1)
+                            Height: =txtRegistrationID_GalleryValue_LandingPage.Height
+                            LayoutMinHeight: =32
+                            LayoutMinWidth: =96
+                            Size: =14
+                            Text: =Text(ThisItem.'Appointment Start Date',"ddd, mmm dd, yyyy")
+                            Weight: ='TextCanvas.Weight'.Regular
+                            Width: |-
+                                =//txtVisitStarDate_GalleryTitle_LandingPage.Width
+                                Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.Small,
+                                    (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight),    
+                                txtVisitStarDate_GalleryTitle_LandingPage.Width
+                                )
+                            Wrap: =false
+                            X: =0
+                            Y: =0
+                            ZIndex: =8
+
+                        txtVisitEndDate_GalleryValue_LandingPage As Text:
+                            BorderStyle: =""
+                            DisplayMode: =DisplayMode.Edit
+                            FontColor: =ColorValue(varTheme.neutralForeground1)
+                            Height: =txtRegistrationID_GalleryValue_LandingPage.Height
+                            LayoutMinHeight: =32
+                            LayoutMinWidth: =96
+                            Size: =14
+                            Text: =Text(ThisItem.'Appointment End Date',"ddd, mmm dd, yyyy")
+                            Weight: ='TextCanvas.Weight'.Regular
+                            Width: |-
+                                =//txtVisitEndDate_GalleryTitle_LandingPage.Width
+                                
+                                Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.Small,
+                                    (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight),    
+                                txtVisitEndDate_GalleryTitle_LandingPage.Width
+                                )
+                            Wrap: =false
+                            X: =0
+                            Y: =0
+                            ZIndex: =9
+
+                        conStatus_LandingPage As groupContainer.verticalAutoLayoutContainer:
+                            AlignInContainer: =AlignInContainer.SetByContainer
+                            FillPortions: =0
+                            Height: =txtRegistrationID_GalleryValue_LandingPage.Height
+                            LayoutDirection: =LayoutDirection.Vertical
+                            LayoutJustifyContent: =LayoutJustifyContent.Center
+                            LayoutMinHeight: =0
+                            LayoutMinWidth: =250
+                            LayoutMode: =LayoutMode.Auto
+                            Width: |-
+                                =/*Switch(ThisItem.'Status Reason',
+                                'Status Reason (Visitor Registrations)'.Scheduled, 80,
+                                'Status Reason (Visitor Registrations)'.'Checked In', 90,
+                                'Status Reason (Visitor Registrations)'.'Checked Out', 100,
+                                txtRegistrationID_GalleryValue_LandingPage.Width -22 ) */
+                                
+                                
+                                Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.Small,
+                                   galVisitorRegistrations_LandingPage.Width,    
+                                Switch(ThisItem.'Status Reason',
+                                'Status Reason (Visitor Registrations)'.Scheduled, 80,
+                                'Status Reason (Visitor Registrations)'.'Checked In', 90,
+                                'Status Reason (Visitor Registrations)'.'Checked Out', 100,
+                                txtRegistrationID_GalleryValue_LandingPage.Width -22 )
+                                )
+                            ZIndex: =10
+
+                            bdgStatusReason_LandingPage As Badge:
+                                AccessibleLabel: ="Status"
+                                Align: =""
+                                AlignInContainer: =AlignInContainer.Start
+                                Appearance: ='BadgeCanvas.Appearance'.Filled
+                                BasePaletteColor: =
+                                Content: =ThisItem.'Status Reason'
+                                DisplayMode: =DisplayMode.Edit
+                                FontColor: =
+                                FontSize: =0
+                                FontWeight: =""
+                                Height: =txtRegistrationID_GalleryValue_LandingPage.Height
+                                LayoutMinHeight: =32
+                                LayoutMinWidth: =32
+                                Shape: ='BadgeCanvas.Shape'.Circular
+                                ThemeColor: |-
+                                    =Switch(ThisItem.'Status Reason',
+                                    'Status Reason (Visitor Registrations)'.Scheduled, 'BadgeCanvas.ThemeColor'.Brand,
+                                    'Status Reason (Visitor Registrations)'.'Checked In', 'BadgeCanvas.ThemeColor'.Success,
+                                    'Status Reason (Visitor Registrations)'.'Checked Out','BadgeCanvas.ThemeColor'.Warning,
+                                    'BadgeCanvas.ThemeColor'.Warning)
+                                VerticalAlign: =""
+                                Width: |-
+                                    =/*Switch(ThisItem.'Status Reason',
+                                    'Status Reason (Visitor Registrations)'.Scheduled, 80,
+                                    'Status Reason (Visitor Registrations)'.'Checked In', 90,
+                                    'Status Reason (Visitor Registrations)'.'Checked Out', 100,
+                                    txtRegistrationID_GalleryValue_LandingPage.Width -22 ) */
+                                    
+                                    
+                                    /*Switch(
+                                        App.ActiveScreen.Size,
+                                        ScreenSize.Small,
+                                       galVisitorRegistrations_LandingPage.Width,    
+                                    Switch(ThisItem.'Status Reason',
+                                    'Status Reason (Visitor Registrations)'.Scheduled, 80,
+                                    'Status Reason (Visitor Registrations)'.'Checked In', 90,
+                                    'Status Reason (Visitor Registrations)'.'Checked Out', 100,
+                                    txtRegistrationID_GalleryValue_LandingPage.Width -22 )
+                                    )*/ Parent.Width
+                                X: =0
+                                Y: =0
+                                ZIndex: =1
+
+                    shp_GalleryDivider_LandingPage As rectangle:
+                        AccessibleLabel: =
+                        BorderColor: =App.Theme.Colors.Primary
+                        DisabledFill: =ColorValue(varTheme.neutralBackgroundDisabled)
+                        DisplayMode: =DisplayMode.Disabled
+                        Fill: =App.Theme.Colors.Primary
+                        FocusedBorderColor: =ColorValue(varTheme.info)
+                        Height: =2
+                        PressedFill: =App.Theme.Colors.Primary
+                        Width: =conVisitorRegistrationValue_LandingPage.Width
+                        Y: =42
+                        ZIndex: =3
+
+                conNoRecordsFound_LandingPage As groupContainer.manualLayoutContainer:
+                    AlignInContainer: =AlignInContainer.Center
+                    FillPortions: =0
+                    Height: =Parent.Height
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    Visible: =If(galVisitorRegistrations_LandingPage.AllItemsCount = 0 , true, false)
+                    Width: =Parent.Width - Parent.PaddingLeft
+                    ZIndex: =2
+
+                    txtNoRecordsFound_LandingPage As Text:
+                        Align: ='TextCanvas.Align'.Center
+                        BorderStyle: =""
+                        DisplayMode: =DisplayMode.Edit
+                        FontColor: =
+                        Height: =Parent.Height *.1
+                        Text: ="There are no visitor registrations yet"
+                        VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                        Width: =Parent.Width
+                        Wrap: =false
+                        X: =0
+                        Y: =Parent.Height /2
+                        ZIndex: =1
+
+            shp_Divider_LandingPage As rectangle:
+                AccessibleLabel: =
+                BorderColor: =App.Theme.Colors.Primary
+                DisabledFill: =ColorValue(varTheme.neutralBackgroundDisabled)
+                DisplayMode: =DisplayMode.Disabled
+                Fill: =App.Theme.Colors.Primary
+                FocusedBorderColor: =ColorValue(varTheme.info)
+                Height: =3
+                PressedFill: =App.Theme.Colors.Primary
+                Width: =Parent.Width
+                Y: =42
+                ZIndex: =4
+
+            conGalleryTotalCount_LandingPage As groupContainer.verticalAutoLayoutContainer:
+                FillPortions: =0
+                Height: =52
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                PaddingLeft: =36
+                PaddingRight: =12
+                ZIndex: =5
+
+                txtRows_LandingPage As Text:
+                    AlignInContainer: =AlignInContainer.Center
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    FontColor: =ColorValue(varTheme.neutralForeground1)
+                    Height: =32
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =14
+                    Text: |-
+                        ="Rows: " & galVisitorRegistrations_LandingPage.AllItemsCount
+                    Visible: =true
+                    Weight: ='TextCanvas.Weight'.Regular
+                    Width: =Parent.Width *.2
+                    X: =0
+                    Y: =0
+                    ZIndex: =1
+
+    shpHeaderLine_Landing As rectangle:
+        AccessibleLabel: =
+        BorderColor: =App.Theme.Colors.Primary
+        DisabledFill: =ColorValue(varTheme.neutralBackgroundDisabled)
+        Fill: =App.Theme.Colors.Primary
+        FocusedBorderColor: =ColorValue(varTheme.info)
+        Height: =2
+        HoverFill: =App.Theme.Colors.Darker20
+        PressedFill: =App.Theme.Colors.Primary
+        Width: =Parent.Width
+        Y: =conBack_Landing.Height
+        ZIndex: =2
+
+    conBack_Landing As groupContainer.verticalAutoLayoutContainer:
+        Height: =compHeaderCompound_LandingPage.HeaderHeight
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutJustifyContent: =LayoutJustifyContent.Center
+        LayoutMode: =LayoutMode.Auto
+        Width: =Parent.Width
+        ZIndex: =3
+
+        con_Header_Landing As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            FillPortions: =0
+            Height: =compHeaderCompound_LandingPage.HeaderHeight
+            LayoutAlignItems: =LayoutAlignItems.Center
+            LayoutJustifyContent: =LayoutJustifyContent.Center
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            PaddingBottom: =20
+            PaddingLeft: =20
+            PaddingRight: =20
+            PaddingTop: =20
+            Width: =Parent.Width
+            ZIndex: =2
+
+            conIconBack_Landing As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                FillPortions: =0
+                Height: =Parent.Height
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                Width: =Parent.Width * .04
+                ZIndex: =1
+
+            compHeaderCompound_LandingPage As compHeaderCompound:
+                HeaderHeight: =49
+                HeaderWidth: =Parent.Width - conIconBack_Landing.Width
+                Height: =compHeaderCompound_LandingPage.HeaderHeight
+                LayoutMinHeight: =640
+                LayoutMinWidth: =640
+                NavigateMenu: ='Landing Page'
+                Width: =compHeaderCompound_LandingPage.HeaderWidth
+                ZIndex: =3
+

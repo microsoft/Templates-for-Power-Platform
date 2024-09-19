@@ -1,0 +1,1598 @@
+"'Reports Page' As screen":
+    Fill: =ColorValue(varThemeColors.background)
+    OnVisible: |
+        =Set(varResetForm,FormMode.Edit);
+        UpdateContext(
+            {
+                _LayoutProperties:
+                {
+                    outerPadding: {top: 40, right: 40, bottom: 40, left: 40},
+                    innerPadding: {top: 20, right: 20, bottom: 20, left: 20},
+                    labelPadding: {top: 5, right: 5, bottom: 5, left: 5}
+                }
+            }
+        );
+        //Other screen layout-related constants
+        UpdateContext(
+            {
+                _DatacardLayoutProperties:
+                {
+                    Height: 80,
+                    PaddingLeft: 15,
+                    PaddingRight: 15,
+                    PaddingTop: 10,
+                    PaddingBottom: 10
+                }
+                
+            }
+        );
+        
+        Refresh(Reports);
+        
+        //Collect transaction reports upon onload
+        ClearCollect(
+            colReports,
+            Filter(
+                Reports,
+                Name <> Blank() && Status <> 'Status (Reports)'.Inactive
+            )
+        );
+        //Clear colTechs collection
+        Clear(colTechs);
+        //Collect users with existing reports
+        ForAll(
+            colReports,
+            Collect(
+                colTechs,
+                ThisRecord.'Created By'.'Full Name'
+            )
+        );
+        Set(
+            varTechs,
+            Distinct(
+                colTechs,
+                ThisRecord.Value
+            )
+        );
+        
+        Reset(txtSearch_ReportsPage);
+        Reset(cmbAssemblyTechnician_ReportsPage);
+        Reset(cmbSortBy_ReportsPage);
+
+    mainContainer_ReportsPage As groupContainer.verticalAutoLayoutContainer:
+        DropShadow: =DropShadow.None
+        Fill: =ColorValue(varThemeColors.background)
+        Height: |
+            =Parent.Height - compHeader_ReportsPage.HeaderHeight
+        LayoutAlignItems: =LayoutAlignItems.Stretch
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutMode: =LayoutMode.Auto
+        LayoutOverflowX: =LayoutOverflow.Scroll
+        LayoutOverflowY: =LayoutOverflow.Scroll
+        PaddingLeft: =
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =Parent.Width
+        Y: =compHeader_ReportsPage.HeaderHeight
+        ZIndex: =1
+
+        conInsideMain_ReportsPage As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            DropShadow: =DropShadow.None
+            FillPortions: =0
+            Height: |
+                =
+                    conReportBody_ReportsPage.Height + conHead_ReportsPage.Height + conFilter_ReportsPage.Height +Parent.LayoutGap + Self.PaddingBottom + Self.PaddingTop
+            LayoutAlignItems: =LayoutAlignItems.Stretch
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            PaddingBottom: |-
+                =If(
+                    App.ActiveScreen.Size < 4,
+                    _LayoutProperties.outerPadding.top / 5,
+                    _LayoutProperties.outerPadding.top / 2
+                )
+            PaddingLeft: |-
+                =If(
+                    App.ActiveScreen.Size < 4,
+                    _LayoutProperties.outerPadding.top / 5,
+                    _LayoutProperties.outerPadding.top 
+                )
+            PaddingRight: |-
+                =If(
+                    App.ActiveScreen.Size < 4,
+                    _LayoutProperties.outerPadding.top / 5,
+                    _LayoutProperties.outerPadding.top 
+                )
+            PaddingTop: |-
+                =If(
+                    App.ActiveScreen.Size < 4,
+                    _LayoutProperties.outerPadding.top / 5,
+                    _LayoutProperties.outerPadding.top / 2
+                )
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            ZIndex: =1
+
+            conHead_ReportsPage As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                DropShadow: =DropShadow.None
+                FillPortions: =0
+                Height: |-
+                    =conTitle_ReportsPage.Height * Switch(
+                        App.ActiveScreen.Size,
+                        ScreenSize.Small,
+                        2,
+                        1
+                    )
+                LayoutDirection: =Switch(App.ActiveScreen.Size,ScreenSize.Small,LayoutDirection.Vertical, LayoutDirection.Horizontal)
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Width: =Parent.Width - Parent.PaddingRight - Parent.PaddingLeft
+                ZIndex: =1
+
+                conTitle_ReportsPage As groupContainer.verticalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    DropShadow: =DropShadow.None
+                    FillPortions: =0
+                    Height: =lblTitle_ReportsPage.Height + Self.PaddingBottom + Self.PaddingTop
+                    LayoutJustifyContent: =LayoutJustifyContent.Center
+                    LayoutMinHeight: =30
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingBottom: =If('Reports Page'.Size <= 1 ,20,15)
+                    PaddingLeft: =2
+                    PaddingRight: =2
+                    PaddingTop: =If('Reports Page'.Size <= 1 ,0, 15 )
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Width: =If('Reports Page'.Size <=1,Parent.Width /2, Parent.Width *.6)
+                    ZIndex: =1
+
+                    lblTitle_ReportsPage As label:
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.text)
+                        FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                        Font: =varThemeFont.B1.face
+                        FontWeight: =varThemeFont.H3.weight
+                        LayoutMinWidth: =180
+                        PaddingBottom: =0
+                        PaddingLeft: =
+                        PaddingRight: =0
+                        PaddingTop: =0
+                        Size: =varThemeFont.H1.size
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            /*With(
+                                {Text: "Reports"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colLocalizations,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colLocalizations,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )*/
+                            "Reports"
+                        Width: =If(App.ActiveScreen.Size = 1,Parent.Width - Parent.PaddingLeft,Parent.Width)
+                        Wrap: =false
+                        X: =40
+                        Y: =40
+                        ZIndex: =1
+
+                conNewReport_ReportsPage As groupContainer.verticalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    DropShadow: =DropShadow.None
+                    FillPortions: =0
+                    Height: =If('Reports Page'.Size <=1, btnNewReport_ReportsPage.Height + Self.PaddingBottom + Self.PaddingTop ,Parent.Height)
+                    LayoutAlignItems: =LayoutAlignItems.End
+                    LayoutDirection: =LayoutDirection.Vertical
+                    LayoutJustifyContent: =LayoutJustifyContent.Center
+                    LayoutMinHeight: =30
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingBottom: =If('Reports Page'.Size <=1, 1,1)
+                    PaddingLeft: =2
+                    PaddingRight: =2
+                    PaddingTop: =If('Reports Page'.Size <=1,1,0)
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Width: =Switch(App.ActiveScreen.Size,ScreenSize.Small ,Parent.Width, Parent.Width *.4 -5)
+                    ZIndex: =2
+
+                    btnNewReport_ReportsPage As button:
+                        BorderColor: =ColorValue(varThemeColors.primary)
+                        BorderThickness: =1
+                        Color: =ColorValue(varThemeColors.altText)
+                        DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        DisabledColor: =ColorValue(varThemeColors.disabledText)
+                        DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        Fill: =ColorValue(varThemeColors.primary)
+                        FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                        FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                        Font: =varThemeFont.CTA.face
+                        FontWeight: =varThemeFont.CTA.weightBold
+                        Height: |
+                            =32
+                        HoverBorderColor: =ColorValue(varThemeColors.primary)
+                        HoverColor: =ColorValue(varThemeColors.altText)
+                        HoverFill: =ColorValue(varThemeColors.tertiary)
+                        Italic: =varThemeFont.CTA.italic
+                        OnSelect: |-
+                            =Set(varSelectedReport,Blank());
+                            Set(varResetForm,FormMode.New);
+                            ResetForm(frmReport_StartNewReport);
+                            Reset(btnUploadFile_ReportFormAttachment);
+                            ClearCollect(colHistory , {ID : 1 , Step: Blank() , Screen: 'Reports Page'});
+                            Navigate('Start New Report Page')
+                        PressedBorderColor: =ColorValue(varThemeColors.primary)
+                        PressedColor: =ColorValue(varThemeColors.altText)
+                        PressedFill: =ColorValue(varThemeColors.primary)
+                        RadiusBottomLeft: =6
+                        RadiusBottomRight: =6
+                        RadiusTopLeft: =6
+                        RadiusTopRight: =6
+                        Size: =varThemeFont.CTA.size
+                        Text: |-
+                            =// Define a variable named "Text" with the value "{value}"
+                            /*With(
+                                {Text: "Start new report"},
+                                // Check if a localized text exists for "Text" in the user's preferred language
+                                If(
+                                    // If the localized text is blank, return the default text
+                                    IsBlank(
+                                        LookUp(
+                                            colLocalizations,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    ),
+                                    Text,
+                                    // If a localized text is found, return that instead of the default text
+                                    LookUp(
+                                        colLocalizations,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                )
+                            )*/
+                            "Start new report"
+                        Tooltip: =Self.Text
+                        Width: =Switch(App.ActiveScreen.Size,ScreenSize.Small,Parent.Width - Parent.PaddingLeft - Parent.PaddingRight, 160)
+                        ZIndex: =1
+
+            conFilter_ReportsPage As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                Fill: =ColorValue(varThemeColors.backgroundFill)
+                FillPortions: =0
+                Height: |-
+                    =conSearchSubmitter_ReportPage.Height * Switch(
+                        App.ActiveScreen.Size,
+                        ScreenSize.Small,
+                        2,
+                        ScreenSize.Medium,
+                        2,
+                        1.2
+                    ) + Self.PaddingBottom + Self.PaddingTop + Self.LayoutGap
+                LayoutDirection: |-
+                    =Switch(
+                        App.ActiveScreen.Size,
+                        ScreenSize.Small,
+                        LayoutDirection.Vertical,
+                        ScreenSize.Medium,
+                        LayoutDirection.Vertical,
+                        ScreenSize.Large,
+                       LayoutDirection.Horizontal,
+                        LayoutDirection.Horizontal
+                    )
+                LayoutGap: =10
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                PaddingRight: =1
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                ZIndex: =2
+
+                conSearchSubmitter_ReportPage As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    DropShadow: =DropShadow.None
+                    FillPortions: =0
+                    Height: =If(Self.LayoutDirection = LayoutDirection.Vertical, conSearch_ReportsPage.Height * 2, conSearch_ReportsPage.Height)
+                    LayoutDirection: |-
+                        =Switch(
+                            App.ActiveScreen.Size,
+                            ScreenSize.Small,
+                            LayoutDirection.Vertical,
+                            ScreenSize.Medium,
+                            LayoutDirection.Horizontal,
+                            ScreenSize.Large,
+                           LayoutDirection.Horizontal,
+                            LayoutDirection.Horizontal
+                        )
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Width: =If(App.ActiveScreen.Size < 3, Parent.Width, Parent.Width *.6)
+                    ZIndex: =1
+
+                    conSearch_ReportsPage As groupContainer.horizontalAutoLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        DropShadow: =DropShadow.None
+                        FillPortions: =0
+                        Height: =lblSearch_ReportsPage.Height + txtSearch_ReportsPage.Height + Self.PaddingBottom + Self.PaddingTop + Self.LayoutGap
+                        LayoutDirection: =LayoutDirection.Vertical
+                        LayoutGap: =10
+                        LayoutMinHeight: =50
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        PaddingBottom: =cmbSortBy_ReportsPage.FocusedBorderThickness
+                        PaddingLeft: =_DatacardLayoutProperties.PaddingLeft
+                        PaddingTop: |-
+                            =If(
+                                'Reports Page'.Size < 3, 0,10
+                            )
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Width: |-
+                            =Switch(
+                                App.ActiveScreen.Size,
+                                ScreenSize.Small,
+                                Parent.Width,
+                                ScreenSize.Medium,
+                                Parent.Width * .5,
+                                ScreenSize.Large,
+                                Parent.Width * .6,
+                                Parent.Width * .6
+                            )
+                        ZIndex: =1
+
+                        lblSearch_ReportsPage As label:
+                            BorderColor: =RGBA(0, 0, 0, 1)
+                            Color: =ColorValue(varThemeColors.text)
+                            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weightBold
+                            Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                            Italic: =varThemeFont.B2.italic
+                            PaddingLeft: =0
+                            Size: =varThemeFont.B2.size
+                            Text: |-
+                                ="Search"
+                                // Define a variable named "Text" with the value "{value}"
+                                /*With(
+                                    {Text: "Search"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colLocalizations,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colLocalizations,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )*/
+                            Tooltip: =Self.Text
+                            Width: =If(App.ActiveScreen.Size < 3,Parent.Width -30,Parent.Width - 20)
+                            X: =_DatacardLayoutProperties.PaddingLeft
+                            Y: |-
+                                =If(
+                                    'Reports Page'.Size < 3, 0,10
+                                )
+                            ZIndex: =1
+
+                        txtSearch_ReportsPage As text:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                /*With(
+                                    {Text: "Search report"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colLocalizations,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colLocalizations,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )*/
+                                "Search report"
+                            BorderColor: =ColorValue(varThemeColors.primaryGray)
+                            Color: =ColorValue(varThemeColors.text)
+                            Default: =
+                            DelayOutput: =true
+                            DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+                            DisabledColor: =ColorValue(varThemeColors.primaryGray)
+                            DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                            DisplayMode: =Parent.DisplayMode
+                            Fill: =ColorValue(varThemeColors.backgroundFill)
+                            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                            Font: =varThemeFont.B1.face
+                            FontWeight: =varThemeFont.B1.weight
+                            Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                            HintText: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                /*With(
+                                    {Text: "Enter keywords"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colLocalizations,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colLocalizations,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )*/
+                                "Enter keywords"
+                            HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                            HoverColor: =ColorValue(varThemeColors.text)
+                            HoverFill: =ColorValue(varThemeColors.backgroundFill)
+                            PaddingLeft: =5
+                            PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                            PressedColor: =ColorValue(varThemeColors.text)
+                            PressedFill: =ColorValue(varThemeColors.backgroundFill)
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Size: =varThemeFont.B1.size
+                            TabIndex: =If(Self.DisplayMode = DisplayMode.View, -1, 0)
+                            Tooltip: =
+                            Width: =lblSearch_ReportsPage.Width
+                            X: =_DatacardLayoutProperties.PaddingLeft
+                            Y: =If(App.ActiveScreen.Size < 3, 30, lblSearch_ReportsPage.Y + lblSearch_ReportsPage.Height + 10)
+                            ZIndex: =2
+
+                    conAssemblyTechnician_ReportsPage As groupContainer.horizontalAutoLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        DropShadow: =DropShadow.None
+                        FillPortions: =0
+                        Height: =lblAssemblyTech_ReportsPage.Height + cmbAssemblyTechnician_ReportsPage.Height + Self.PaddingBottom + Self.PaddingTop + Self.LayoutGap
+                        LayoutDirection: =LayoutDirection.Vertical
+                        LayoutGap: =10
+                        LayoutMinHeight: =50
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        PaddingBottom: =cmbSortBy_ReportsPage.FocusedBorderThickness
+                        PaddingLeft: =_DatacardLayoutProperties.PaddingLeft
+                        PaddingTop: |-
+                            =If(
+                                'Reports Page'.Size < 3, 0,10
+                            )
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Width: |-
+                            =Switch(
+                                App.ActiveScreen.Size,
+                                ScreenSize.Small,
+                                Parent.Width,
+                                ScreenSize.Medium,
+                                Parent.Width * .5,
+                                ScreenSize.Large,
+                                Parent.Width * .4,
+                                Parent.Width * .4
+                            )
+                        ZIndex: =2
+
+                        lblAssemblyTech_ReportsPage As label:
+                            BorderColor: =RGBA(0, 0, 0, 1)
+                            Color: =ColorValue(varThemeColors.text)
+                            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weightBold
+                            Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                            Italic: =varThemeFont.B2.italic
+                            PaddingLeft: =0
+                            Size: =varThemeFont.B2.size
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                /*With(
+                                    {Text: "Submitter"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colLocalizations,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colLocalizations,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )*/
+                                
+                                "Submitter"
+                            Tooltip: =Self.Text
+                            Width: =If(App.ActiveScreen.Size < 3,Parent.Width -30,Parent.Width - 20)
+                            X: =_DatacardLayoutProperties.PaddingLeft
+                            Y: |-
+                                =If(
+                                    'Reports Page'.Size < 3, 0,10
+                                )
+                            ZIndex: =1
+
+                        cmbAssemblyTechnician_ReportsPage As combobox:
+                            AccessibleLabel: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                /*With(
+                                    {Text: "Submitter"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colLocalizations,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colLocalizations,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )*/
+                                "Submitter"
+                            BorderColor: =ColorValue(varThemeColors.primaryGray)
+                            ChevronBackground: =ColorValue(varThemeColors.backgroundFill)
+                            ChevronDisabledBackground: =ColorValue(varThemeColors.backgroundFillDisabled)
+                            ChevronDisabledFill: =ColorValue(varThemeColors.text)
+                            ChevronFill: =ColorValue(varThemeColors.text)
+                            ChevronHoverBackground: =ColorFade(ColorValue(varThemeColors.secondaryGray), -20%)
+                            ChevronHoverFill: =ColorValue(varThemeColors.text)
+                            Color: =ColorValue(varThemeColors.text)
+                            DefaultSelectedItems: =
+                            DisabledColor: =ColorValue(varThemeColors.disabledText)
+                            DisplayFields: =["Value"]
+                            DisplayMode: =Parent.DisplayMode
+                            Fill: =ColorValue(varThemeColors.backgroundFill)
+                            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                            Font: =varThemeFont.B1.face
+                            FontWeight: =varThemeFont.B1.weight
+                            Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                            HoverColor: =ColorValue(varThemeColors.text)
+                            InputTextPlaceholder: ="Select"
+                            IsSearchable: =false
+                            Italic: =varThemeFont.B1.italic
+                            Items: =Sort(varTechs,Value,SortOrder.Descending)
+                            NoSelectionText: ="Select"
+                            OnChange: =
+                            PaddingLeft: =If(Self.DisplayMode = DisplayMode.Edit, 5, 0)
+                            PressedColor: =ColorValue(varThemeColors.text)
+                            Reset: =
+                            SearchFields: =["Value"]
+                            SearchItems: =[]
+                            SelectionColor: =ColorValue(varThemeColors.text)
+                            SelectionFill: =ColorValue(varThemeColors.secondaryGray)
+                            SelectionTagColor: =ColorValue(varThemeColors.altText)
+                            SelectionTagFill: =ColorValue(varThemeColors.primary)
+                            SelectMultiple: =false
+                            Size: =varThemeFont.B1.size
+                            Tooltip: ="Sort by"
+                            Width: =lblAssemblyTech_ReportsPage.Width
+                            X: =lblAssemblyTech_ReportsPage.X
+                            Y: =If(App.ActiveScreen.Size < 3, 30, lblAssemblyTech_ReportsPage.Y + lblAssemblyTech_ReportsPage.Height + 10)
+                            ZIndex: =2
+
+                conSortAndNumberOfRecords_ReportPage As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    DropShadow: =DropShadow.None
+                    FillPortions: =0
+                    Height: =If(Self.LayoutDirection = LayoutDirection.Vertical, conSortBy_ReportsPage.Height * 2, conSortBy_ReportsPage.Height)
+                    LayoutDirection: =Switch(App.ActiveScreen.Size,ScreenSize.Small,LayoutDirection.Vertical, LayoutDirection.Horizontal)
+                    LayoutMinHeight: =40
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Width: =If(App.ActiveScreen.Size < 3, Parent.Width, Parent.Width *.4)
+                    ZIndex: =4
+
+                    conSortBy_ReportsPage As groupContainer.horizontalAutoLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        DropShadow: =DropShadow.None
+                        FillPortions: =0
+                        Height: =lblSortBy_ReportsPage.Height + cmbSortBy_ReportsPage.Height + Self.PaddingBottom + Self.PaddingTop + Self.LayoutGap
+                        LayoutDirection: =LayoutDirection.Vertical
+                        LayoutGap: =10
+                        LayoutMinHeight: =50
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        PaddingBottom: =cmbSortBy_ReportsPage.FocusedBorderThickness
+                        PaddingLeft: =_DatacardLayoutProperties.PaddingLeft
+                        PaddingTop: |-
+                            =If(
+                                'Reports Page'.Size < 3, 0,10
+                            )
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Width: |-
+                            =Switch(
+                                App.ActiveScreen.Size,
+                                ScreenSize.Small,
+                                Parent.Width,
+                                ScreenSize.Medium,
+                                conAssemblyTechnician_ReportsPage.Width,
+                                ScreenSize.Large,
+                                conAssemblyTechnician_ReportsPage.Width,
+                                conAssemblyTechnician_ReportsPage.Width
+                            )
+                        ZIndex: =1
+
+                        lblSortBy_ReportsPage As label:
+                            BorderColor: =RGBA(0, 0, 0, 1)
+                            Color: =ColorValue(varThemeColors.text)
+                            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weightBold
+                            Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                            Italic: =varThemeFont.B2.italic
+                            PaddingLeft: =0
+                            Size: =varThemeFont.B2.size
+                            Text: |-
+                                =// Define a variable named "Text" with the value "{value}"
+                                /*With(
+                                    {Text: "Sort by"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colLocalizations,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colLocalizations,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )*/
+                                "Sort by"
+                            Tooltip: =Self.Text
+                            Width: =If(App.ActiveScreen.Size < 3,Parent.Width -30,Parent.Width - 20)
+                            X: =_DatacardLayoutProperties.PaddingLeft
+                            Y: |-
+                                =If(
+                                    'Reports Page'.Size < 3, 0,10
+                                )
+                            ZIndex: =1
+
+                        cmbSortBy_ReportsPage As combobox:
+                            AccessibleLabel: ="Sort by"
+                            BorderColor: =ColorValue(varThemeColors.primaryGray)
+                            ChevronBackground: =ColorValue(varThemeColors.backgroundFill)
+                            ChevronDisabledBackground: =ColorValue(varThemeColors.backgroundFillDisabled)
+                            ChevronDisabledFill: =ColorValue(varThemeColors.text)
+                            ChevronFill: =ColorValue(varThemeColors.text)
+                            ChevronHoverBackground: =ColorFade(ColorValue(varThemeColors.secondaryGray), -20%)
+                            ChevronHoverFill: =ColorValue(varThemeColors.text)
+                            Color: =ColorValue(varThemeColors.text)
+                            DefaultSelectedItems: =
+                            DisabledColor: =ColorValue(varThemeColors.disabledText)
+                            DisplayFields: =["Value"]
+                            DisplayMode: =Parent.DisplayMode
+                            Fill: =ColorValue(varThemeColors.backgroundFill)
+                            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                            Font: =varThemeFont.B1.face
+                            FontWeight: =varThemeFont.B1.weight
+                            Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                            HoverColor: =ColorValue(varThemeColors.text)
+                            InputTextPlaceholder: ="Select"
+                            IsSearchable: =false
+                            Italic: =varThemeFont.B1.italic
+                            Items: =["Report Title", "Status", "Created Date", "Report Number"]
+                            NoSelectionText: ="Select"
+                            OnChange: =
+                            PaddingLeft: =If(Self.DisplayMode = DisplayMode.Edit, 5, 0)
+                            PressedColor: =ColorValue(varThemeColors.text)
+                            Reset: =
+                            SearchFields: =["Value"]
+                            SearchItems: =[]
+                            SelectionColor: =ColorValue(varThemeColors.text)
+                            SelectionFill: =ColorValue(varThemeColors.secondaryGray)
+                            SelectionTagColor: =ColorValue(varThemeColors.altText)
+                            SelectionTagFill: =ColorValue(varThemeColors.primary)
+                            SelectMultiple: =false
+                            Size: =varThemeFont.B1.size
+                            Tooltip: ="Sort by"
+                            Width: =lblSortBy_ReportsPage.Width
+                            X: =lblSortBy_ReportsPage.X
+                            Y: |-
+                                =
+                                If(App.ActiveScreen.Size < 3, lblSortBy_ReportsPage.Y + lblSortBy_ReportsPage.Height + 5, lblSortBy_ReportsPage.Y + lblSortBy_ReportsPage.Height + 10)
+                            ZIndex: =2
+
+                    conNumberOfRecords As groupContainer.horizontalAutoLayoutContainer:
+                        AlignInContainer: =AlignInContainer.Start
+                        DropShadow: =DropShadow.None
+                        FillPortions: =0
+                        Height: =If(Parent.LayoutDirection = LayoutDirection.Vertical, conSortBy_ReportsPage.Height/2, conSortBy_ReportsPage.Height)
+                        LayoutDirection: =LayoutDirection.Vertical
+                        LayoutGap: =10
+                        LayoutJustifyContent: =LayoutJustifyContent.End
+                        LayoutMinHeight: =50
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        PaddingBottom: =cmbSortBy_ReportsPage.FocusedBorderThickness
+                        PaddingLeft: =15
+                        PaddingTop: |-
+                            =If(
+                                'Reports Page'.Size < 3, 0,10
+                            )
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Width: |-
+                            =
+                            Switch(
+                                App.ActiveScreen.Size,
+                                ScreenSize.Small,
+                                Parent.Width * 1,
+                                ScreenSize.Medium,
+                                conAssemblyTechnician_ReportsPage.Width,
+                                ScreenSize.Large,
+                                Parent.Width *.39,
+                                Parent.Width *.39
+                            )
+                        ZIndex: =2
+
+                        lblNumberOfRecords_ReportsPage As label:
+                            Align: =Switch(App.ActiveScreen.Size,ScreenSize.Small,Align.Left,ScreenSize.Medium,Align.Left, Align.Right)
+                            Color: =ColorValue(varThemeColors.tertiaryGray)
+                            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weight
+                            Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                            OnSelect: =
+                            PaddingLeft: =0
+                            PaddingRight: =20
+                            Size: =varThemeFont.B2.size
+                            Text: |-
+                                =Concatenate("Showing " & galReport_ReportsPage.AllItemsCount & " record(s)")
+                                
+                                /*Concatenate(// Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: "Showing "},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colLocalizations,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colLocalizations,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                ) & galReport_ReportsPage.AllItemsCount & // Define a variable named "Text" with the value "{value}"
+                                With(
+                                    {Text: " record(s)"},
+                                    // Check if a localized text exists for "Text" in the user's preferred language
+                                    If(
+                                        // If the localized text is blank, return the default text
+                                        IsBlank(
+                                            LookUp(
+                                                colLocalizations,
+                                                'English Value' = Text
+                                            ).'Localized Value'
+                                        ),
+                                        Text,
+                                        // If a localized text is found, return that instead of the default text
+                                        LookUp(
+                                            colLocalizations,
+                                            'English Value' = Text
+                                        ).'Localized Value'
+                                    )
+                                )) */
+                            VerticalAlign: =If(App.ActiveScreen.Size < 3, VerticalAlign.Middle, VerticalAlign.Bottom)
+                            Width: =Parent.Width - Parent.PaddingLeft
+                            Wrap: =false
+                            X: =
+                            Y: =cmbAssemblyTechnician_ReportsPage.Y
+                            ZIndex: =1
+
+            congalHeader_ReportsPage As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                DropShadow: =DropShadow.None
+                Fill: =ColorValue(varThemeColors.backgroundFill)
+                FillPortions: =0
+                Height: =43
+                LayoutGap: =15
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                Visible: |-
+                    =Switch(App.ActiveScreen.Size,ScreenSize.Small,false, true)
+                    //true
+                Width: |
+                    =Switch(App.ActiveScreen.Size,
+                    ScreenSize.Small,
+                    320,
+                    ScreenSize.ExtraLarge,
+                    Parent.Width,
+                    1200)
+                ZIndex: =3
+
+                lblReportTitle_ReportsPage As label:
+                    Color: =ColorValue(varThemeColors.text)
+                    FillPortions: =3
+                    FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                    Font: =varThemeFont.B1.face
+                    FontWeight: =varThemeFont.B1.weightBold
+                    PaddingBottom: =_LayoutProperties.labelPadding.bottom * 2
+                    PaddingLeft: =_LayoutProperties.innerPadding.left
+                    PaddingRight: =0
+                    PaddingTop: =_LayoutProperties.labelPadding.top * 2
+                    Size: =varThemeFont.B1.size
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        /*With(
+                            {Text: "Report title"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colLocalizations,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colLocalizations,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )*/
+                        "Report title"
+                    Tooltip: =Self.Text
+                    Width: |-
+                        =
+                        If(
+                           'Reports Page'.Size <= 3,
+                            ((Parent.Width - Parent.PaddingLeft - Parent.PaddingRight) /7) * .8,
+                            (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight) /7
+                        )
+                    Wrap: =false
+                    X: =
+                    Y: =40
+                    ZIndex: =1
+
+                lblStatusTitle_ReportsPage As label:
+                    Color: =ColorValue(varThemeColors.text)
+                    FillPortions: =1
+                    FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                    Font: =varThemeFont.B1.face
+                    FontWeight: =varThemeFont.B1.weightBold
+                    PaddingBottom: =_LayoutProperties.labelPadding.bottom * 2
+                    PaddingLeft: =_LayoutProperties.labelPadding.left
+                    PaddingRight: =0
+                    PaddingTop: =_LayoutProperties.labelPadding.top * 2
+                    Size: =varThemeFont.B1.size
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        /*With(
+                            {Text: "Status"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colLocalizations,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colLocalizations,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )*/
+                        "Status"
+                    Tooltip: =Self.Text
+                    Width: |-
+                        =
+                        If(
+                           'Reports Page'.Size <= 3,
+                            ((Parent.Width - Parent.PaddingLeft - Parent.PaddingRight) /7) * .8,
+                            (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight) /7
+                        )
+                    Wrap: =false
+                    X: =40
+                    Y: =40
+                    ZIndex: =2
+
+                lblCreatedDateTitle_ReportsPage As label:
+                    Color: =ColorValue(varThemeColors.text)
+                    FillPortions: =1
+                    FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                    Font: =varThemeFont.B1.face
+                    FontWeight: =varThemeFont.B1.weightBold
+                    PaddingBottom: =_LayoutProperties.labelPadding.bottom * 2
+                    PaddingLeft: =_LayoutProperties.labelPadding.left
+                    PaddingRight: =0
+                    PaddingTop: =_LayoutProperties.labelPadding.top * 2
+                    Size: =varThemeFont.B1.size
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        /*With(
+                            {Text: "Created date"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colLocalizations,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colLocalizations,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )*/
+                        "Created date"
+                    Tooltip: =Self.Text
+                    Width: |-
+                        =
+                        If(
+                           'Reports Page'.Size <= 3,
+                            ((Parent.Width - Parent.PaddingLeft - Parent.PaddingRight) /7) * .8,
+                            (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight) /7
+                        )
+                    Wrap: =false
+                    X: =lblReportTitle_ReportsPage.X + Self.Width
+                    Y: =40
+                    ZIndex: =3
+
+                lblReportNumberTitle_ReportsPage As label:
+                    Color: =ColorValue(varThemeColors.text)
+                    FillPortions: =1
+                    FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                    Font: =varThemeFont.B1.face
+                    FontWeight: =varThemeFont.B1.weightBold
+                    PaddingBottom: =_LayoutProperties.labelPadding.bottom * 2
+                    PaddingLeft: =_LayoutProperties.labelPadding.left
+                    PaddingRight: =0
+                    PaddingTop: =_LayoutProperties.labelPadding.top * 2
+                    Size: =varThemeFont.B1.size
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        /*With(
+                            {Text: "Report number"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colLocalizations,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colLocalizations,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )*/
+                        "Report number"
+                    Tooltip: =Self.Text
+                    Width: |-
+                        =
+                        If(
+                           'Reports Page'.Size <= 3,
+                            ((Parent.Width - Parent.PaddingLeft - Parent.PaddingRight) /7) * .8,
+                            (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight) /7
+                        )
+                    Wrap: =false
+                    X: =40
+                    Y: =40
+                    ZIndex: =4
+
+                lblAssemblyTechnicianTitle_ReportsPage As label:
+                    Color: =ColorValue(varThemeColors.text)
+                    FillPortions: =1
+                    FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                    Font: =varThemeFont.B1.face
+                    FontWeight: =varThemeFont.B1.weightBold
+                    PaddingBottom: =_LayoutProperties.labelPadding.bottom * 2
+                    PaddingLeft: =_LayoutProperties.labelPadding.left
+                    PaddingRight: =0
+                    PaddingTop: =_LayoutProperties.labelPadding.top * 2
+                    Size: =varThemeFont.B1.size
+                    Text: |-
+                        =// Define a variable named "Text" with the value "{value}"
+                        /*With(
+                            {Text: "Submitter"},
+                            // Check if a localized text exists for "Text" in the user's preferred language
+                            If(
+                                // If the localized text is blank, return the default text
+                                IsBlank(
+                                    LookUp(
+                                        colLocalizations,
+                                        'English Value' = Text
+                                    ).'Localized Value'
+                                ),
+                                Text,
+                                // If a localized text is found, return that instead of the default text
+                                LookUp(
+                                    colLocalizations,
+                                    'English Value' = Text
+                                ).'Localized Value'
+                            )
+                        )*/
+                        "Submitter"
+                    Tooltip: =Self.Text
+                    Width: |-
+                        =
+                        If(
+                           'Reports Page'.Size <= 3,
+                            ((Parent.Width - Parent.PaddingLeft - Parent.PaddingRight) /7) * .8,
+                            (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight) /7
+                        )
+                    Wrap: =false
+                    X: =40
+                    Y: =40
+                    ZIndex: =6
+
+            conReportBody_ReportsPage As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                Fill: =ColorValue(varThemeColors.backgroundFill)
+                FillPortions: =0
+                Height: |-
+                    =If(
+                        'Reports Page'.Size < 2,
+                        galReport_ReportsPage.Height + 20,
+                        App.ActiveScreen.Height - compHeader_ReportsPage.Height - conHead_ReportsPage.Height - Parent.PaddingBottom - Parent.PaddingTop - conFilter_ReportsPage.Height - congalHeader_ReportsPage.Height + 20
+                    )
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                LayoutOverflowX: |-
+                    =If(
+                       App.ActiveScreen.Size <= 3 && App.ActiveScreen.Size <> 1,
+                       LayoutOverflow.Scroll,
+                       LayoutOverflow.Hide
+                    )
+                LayoutOverflowY: =LayoutOverflow.Scroll
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                Width: |
+                    =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                ZIndex: =4
+
+                shpgalReportDivider_ReportsPage As rectangle:
+                    AccessibleLabel: =
+                    BorderColor: =ColorValue(varThemeColors.primary)
+                    BorderStyle: =BorderStyle.None
+                    Fill: =ColorValue(varThemeColors.primary)
+                    FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                    Height: =2
+                    Width: |-
+                        =If(
+                           'Reports Page'.Size <= 3,
+                            1200,
+                            Parent.Width
+                        )
+                    ZIndex: =2
+
+                galReport_ReportsPage As gallery.galleryVertical:
+                    '#CopilotOverlayLabel': ="Filtered"
+                    AccessibleLabel: ="Reports"
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    BorderColor: =RGBA(166, 166, 166, 1)
+                    DelayItemLoading: =true
+                    Fill: =ColorValue(varThemeColors.backgroundFill)
+                    FillPortions: =0
+                    FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                    FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                    Height: |-
+                        =Self.AllItemsCount * (conGalReport_ReportsPage.Height - If(
+                            App.ActiveScreen.Size = 1,
+                            -11.5 , -1
+                        ))
+                    ItemAccessibleLabel: ="Reports"
+                    Items: |-
+                        =//Gallery sort and filter
+                        Sort(
+                            Sort(
+                                Sort(
+                                    Sort(
+                                        If(
+                                            IsBlank(cmbAssemblyTechnician_ReportsPage.Selected.Value) && IsBlank(txtSearch_ReportsPage.Text),
+                                            colReports,
+                                            IsBlank(cmbAssemblyTechnician_ReportsPage.Selected.Value) && !IsBlank(txtSearch_ReportsPage.Text),
+                                            Filter(
+                                                colReports,
+                                                txtSearch_ReportsPage.Text in Name || txtSearch_ReportsPage.Text in 'Status Reason' || txtSearch_ReportsPage.Text in 'Created On' || txtSearch_ReportsPage.Text in 'Report Number' || txtSearch_ReportsPage.Text in 'Created By'.'Full Name'
+                                            ),
+                                            !IsBlank(cmbAssemblyTechnician_ReportsPage.Selected.Value) && IsBlank(txtSearch_ReportsPage.Text),
+                                            Filter(
+                                                colReports,
+                                                cmbAssemblyTechnician_ReportsPage.Selected.Value in 'Created By'.'Full Name'
+                                            ),
+                                            Filter(
+                                                colReports,
+                                                cmbAssemblyTechnician_ReportsPage.Selected.Value in 'Created By'.'Full Name' && (txtSearch_ReportsPage.Text in Name || txtSearch_ReportsPage.Text in 'Status Reason' || txtSearch_ReportsPage.Text in 'Created On' || txtSearch_ReportsPage.Text in 'Report Number' || txtSearch_ReportsPage.Text in 'Created By'.'Full Name')
+                                            )
+                                        ),
+                                        If(
+                                            cmbSortBy_ReportsPage.Selected.Value = "Report Title",
+                                            Name,
+                                            If(
+                                                cmbSortBy_ReportsPage.Selected.Value = "Status",
+                                                'Status Reason'
+                                            )
+                                        ),
+                                        SortOrder.Descending
+                                    ),
+                                    If(
+                                        cmbSortBy_ReportsPage.Selected.Value = "Created Date",
+                                        'Created On'
+                                    ),
+                                    SortOrder.Descending
+                                ),
+                                If(
+                                    cmbSortBy_ReportsPage.Selected.Value = "Report Number",
+                                    'Report Number'
+                                ),
+                                SortOrder.Descending
+                            ),
+                            If(
+                                IsBlank(cmbSortBy_ReportsPage.Selected.Value),
+                                'Created On'
+                            ),
+                            SortOrder.Descending
+                        )
+                    Layout: =Layout.Vertical
+                    LayoutMinHeight: =287
+                    LayoutMinWidth: =320
+                    LoadingSpinner: =LoadingSpinner.Data
+                    OnSelect: |
+                        =
+                    ShowScrollbar: |-
+                        =If(
+                           'Reports Page'.Size < 2,
+                            false,
+                            true 
+                        )
+                    TabIndex: =0
+                    TemplateFill: =ColorValue(varThemeColors.backgroundFill)
+                    TemplatePadding: |-
+                        =If(
+                            App.ActiveScreen.Size = ScreenSize.Small,
+                            5,
+                            0
+                        )
+                    TemplateSize: =conGalReport_ReportsPage.Height + Self.TemplatePadding + shpGalLine_Home.Height
+                    Visible: =If (Self.AllItemsCount > 0 , true, false)
+                    Width: |-
+                        =Switch(
+                            App.ActiveScreen.Size,
+                            ScreenSize.Small,
+                            Parent.Width - Parent.PaddingLeft - Parent.PaddingRight,
+                            congalHeader_ReportsPage.Width
+                        )
+                    Y: =160
+                    ZIndex: =3
+
+                    shpGalLine_Home As rectangle:
+                        AccessibleLabel: =
+                        BorderColor: =ColorValue(varThemeColors.primary)
+                        BorderStyle: =BorderStyle.None
+                        DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                        DisplayMode: =DisplayMode.View
+                        Fill: =ColorValue(varThemeColors.secondaryGray)
+                        FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                        FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                        Height: =1
+                        HoverFill: =ColorValue(varThemeColors.tertiary)
+                        PressedFill: =ColorValue(varThemeColors.primary)
+                        Width: |-
+                            =If(
+                                App.ActiveScreen.Size = ScreenSize.Small,
+                                Parent.Width ,
+                                Parent.TemplateWidth
+                            )
+                        Y: =conGalReport_ReportsPage.Height
+                        ZIndex: =8
+
+                    conGalReport_ReportsPage As groupContainer.verticalAutoLayoutContainer:
+                        DropShadow: |-
+                            =If(
+                                App.ActiveScreen.Size = ScreenSize.Small,
+                                DropShadow.Semilight,
+                                DropShadow.None
+                            )
+                        Height: |-
+                            =If(
+                                App.ActiveScreen.Size = ScreenSize.Small,
+                                (btnReportTitle_ReportsPage.Height + lblStatus_ReportsPage.Height + lblCreatedDate_ReportsPage.Height + lblReportNumber_ReportsPage.Height + lblAssemblyTech_ReportsPage.Height) + Self.PaddingBottom + Self.PaddingTop + Self.LayoutGap + 10,
+                                btnReportTitle_ReportsPage.Height + Self.PaddingBottom + Self.PaddingTop + 10
+                            )
+                        LayoutDirection: |-
+                            =Switch(
+                                App.ActiveScreen.Size,
+                                ScreenSize.Small,
+                                LayoutDirection.Vertical,
+                                LayoutDirection.Horizontal
+                            )
+                        LayoutGap: |-
+                            =If(
+                                App.ActiveScreen.Size = ScreenSize.Small,
+                                0,
+                                10
+                            )
+                        LayoutMode: =LayoutMode.Auto
+                        PaddingBottom: =2
+                        PaddingLeft: =20
+                        PaddingRight: =20
+                        PaddingTop: =2
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Width: |-
+                            =If(
+                                App.ActiveScreen.Size = ScreenSize.Small,
+                                Parent.Width  - (Parent.TemplatePadding *2 ),
+                                Parent.TemplateWidth
+                            )
+                        ZIndex: =9
+
+                        btnReportTitle_ReportsPage As button:
+                            Align: =Align.Left
+                            BorderThickness: =0
+                            Color: =ColorValue(varThemeColors.primary)
+                            Fill: =RGBA(0, 0, 0, 0)
+                            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                            Font: =varThemeFont.CTA.face
+                            FontWeight: =varThemeFont.CTA.weight
+                            Height: =50
+                            HoverBorderColor: =Self.Fill
+                            HoverColor: =ColorValue(varThemeColors.text)
+                            HoverFill: =Self.Fill
+                            Italic: =varThemeFont.CTA.italic
+                            OnSelect: |
+                                =Set(varSelectedReport,ThisItem);
+                                Reset(btnUploadFile_ReportFormAttachment);
+                                
+                                Set(//List of Templates per checklist
+                                    varTemplate,
+                                    LookUp(
+                                        Templates,
+                                        'Checklist Item'.Item = varSelectedReport.'Checklist Item'.Item
+                                    )
+                                );
+                                ClearCollect(colReportSteps ,  Filter('Report Steps' , Report.Report = ThisItem.Report));
+                                ClearCollect(//Adding of Column
+                                    colSteps,
+                                    AddColumns(
+                                        Filter(
+                                            'Template Steps',
+                                            Template.Template = varTemplate.Template
+                                        ) As Tsteps,
+                                        isSelectedColumn,
+                                        false,
+                                        reportID,
+                                         LookUp(colReportSteps , 'Template Step'.'Template Step' = Tsteps.'Template Step').'Report Step',
+                                         reportStatus,
+                                         LookUp(colReportSteps , 'Template Step'.'Template Step' = Tsteps.'Template Step').'Status Reason',
+                                         Comment,
+                                         LookUp(colReportSteps , 'Template Step'.'Template Step' = Tsteps.'Template Step').Comment
+                                    )
+                                );
+                                Set(
+                                    varDefaultStep,
+                                    First(
+                                        SortByColumns(
+                                            colSteps,
+                                            "mpa_stepnumber",
+                                            SortOrder.Ascending
+                                        )
+                                    )
+                                );
+                                UpdateIf(
+                                    colSteps,
+                                    'Template Step' = varDefaultStep.'Template Step',
+                                    {isSelectedColumn: true}
+                                );
+                                
+                                UpdateIf(colSteps , IsBlank(reportStatus) , {reportStatus: 'Status Reason (Report Steps)'.'Not Started'});
+                                
+                                Set(varCurrentStep , varDefaultStep); //Assign the current step to default step
+                                
+                                Set(//variable for checking if has value
+                                    varHasReportSteps,
+                                    LookUp(
+                                        'Report Steps',
+                                        And(
+                                            Report.Report = varSelectedReport.Report,
+                                            'Template Step'.'Template Step' = varCurrentStep.'Template Step'
+                                        )
+                                    )
+                                );
+                                If(
+                                    !IsBlank(varHasReportSteps),
+                                    Set(
+                                        varCurrentReportStep,
+                                        varHasReportSteps
+                                    );
+                                    
+                                );
+                                
+                                Set(
+                                    varCurrentSubStep, //Get the 1st substep order 
+                                        LookUp(
+                                            'Template Sub Steps',
+                                            And('Template Step'.'Template Step' = varDefaultStep.'Template Step' ,
+                                            'Sub Step Order' = 1)
+                                        )
+                                );
+                                
+                                Set(varValidation , LookUp('Validation Types' ,'Validation Type (mpa_checklist_validationtypeid)' =  varCurrentSubStep.'Validation Type'.'Validation Type (mpa_checklist_validationtypeid)'));
+                                
+                                //for History on back
+                                ClearCollect(colHistory , {ID : 1 , Step: Blank() , Screen: 'Reports Page'});
+                                Collect(colHistory , {ID: 2 , Step: varCurrentStep });
+                                
+                                Switch(varValidation.'Validation Type (mpa_validationtype)' ,
+                                    'Validation Type Choices'.'Open Text' , Navigate('Report Form Open Text Page')  //Open Text Navigate 
+                                    ,'Validation Type Choices'.Attachment , Navigate('Report Form Attachment Page') //Attachment
+                                    ,'Validation Type Choices'.Unit , Navigate('Report Form Unit Page') //Unit
+                                    ,'Validation Type Choices'.List , Navigate('Report Form List Page'),Navigate('Report Form Attachment Page');
+                                    );
+                            PaddingBottom: =0
+                            PaddingTop: =10
+                            PressedColor: =ColorValue(varThemeColors.altText)
+                            PressedFill: =Self.Fill
+                            Size: =varThemeFont.CTA.size
+                            Text: =ThisItem.Name
+                            Tooltip: =Self.Text
+                            Underline: =true
+                            Width: |-
+                                =Switch(
+                                    App.ActiveScreen.Size,
+                                    ScreenSize.Small,
+                                    Parent.Width - Parent.PaddingLeft - Parent.PaddingRight,
+                                    lblReportTitle_ReportsPage.Width - lblReportTitle_ReportsPage.PaddingLeft
+                                )
+                            ZIndex: =1
+
+                        lblStatus_ReportsPage As label:
+                            BorderColor: =RGBA(0, 0, 0, 0)
+                            BorderStyle: =BorderStyle.None
+                            BorderThickness: =2
+                            Color: =ColorValue(varThemeColors.text)
+                            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                            Font: =varThemeFont.B1.face
+                            FontWeight: =varThemeFont.B1.weight
+                            Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                            Italic: =varThemeFont.B2.italic
+                            OnSelect: =
+                            PaddingBottom: =0
+                            PaddingLeft: =10
+                            PaddingTop: =15
+                            Role: =TextRole.Heading2
+                            Size: =varThemeFont.B1.size
+                            Text: =ThisItem.'Status Reason'
+                            Tooltip: =Self.Text
+                            VerticalAlign: =VerticalAlign.Top
+                            Width: =Switch(App.ActiveScreen.Size,ScreenSize.Small,Parent.Width - Parent.PaddingLeft - Parent.PaddingRight,  lblStatusTitle_ReportsPage.Width + Self.PaddingLeft)
+                            X: =lblStatusTitle_ReportsPage.X
+                            ZIndex: =2
+
+                        lblCreatedDate_ReportsPage As label:
+                            BorderColor: =RGBA(0, 0, 0, 0)
+                            BorderStyle: =BorderStyle.None
+                            BorderThickness: =2
+                            Color: =ColorValue(varThemeColors.text)
+                            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                            Font: =varThemeFont.B1.face
+                            FontWeight: =varThemeFont.B1.weight
+                            Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                            Italic: =varThemeFont.B2.italic
+                            OnSelect: =
+                            PaddingBottom: =0
+                            PaddingLeft: =10
+                            PaddingTop: =15
+                            Role: =TextRole.Heading2
+                            Size: =varThemeFont.B1.size
+                            Text: =Switch(App.ActiveScreen.Size, ScreenSize.Small,"Created on " & Text(ThisItem.'Created On',"mm/dd/yyyy"), Text(ThisItem.'Created On',"mm/dd/yyyy"))
+                            Tooltip: =Self.Text
+                            VerticalAlign: =VerticalAlign.Top
+                            Width: =Switch(App.ActiveScreen.Size,ScreenSize.Small,Parent.Width - Parent.PaddingLeft - Parent.PaddingRight, lblCreatedDateTitle_ReportsPage.Width)
+                            X: =lblCreatedDateTitle_ReportsPage.X
+                            ZIndex: =3
+
+                        lblReportNumber_ReportsPage As label:
+                            BorderColor: =RGBA(0, 0, 0, 0)
+                            BorderStyle: =BorderStyle.None
+                            BorderThickness: =2
+                            Color: =ColorValue(varThemeColors.text)
+                            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                            Font: =varThemeFont.B1.face
+                            FontWeight: =varThemeFont.B1.weight
+                            Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                            Italic: =varThemeFont.B2.italic
+                            OnSelect: =
+                            PaddingBottom: =0
+                            PaddingLeft: =10
+                            PaddingTop: =15
+                            Role: =TextRole.Heading2
+                            Size: =varThemeFont.B1.size
+                            Text: =Switch(App.ActiveScreen.Size, ScreenSize.Small,"Report no. " & ThisItem.'Report Number',ThisItem.'Report Number')
+                            Tooltip: =Self.Text
+                            VerticalAlign: =VerticalAlign.Top
+                            Width: =Switch(App.ActiveScreen.Size,ScreenSize.Small,Parent.Width - Parent.PaddingLeft - Parent.PaddingRight, lblReportNumberTitle_ReportsPage.Width)
+                            X: =lblReportNumberTitle_ReportsPage.X
+                            ZIndex: =4
+
+                        lblAssemblyTechnician_ReportsPage As label:
+                            BorderColor: =RGBA(0, 0, 0, 0)
+                            BorderStyle: =BorderStyle.None
+                            BorderThickness: =2
+                            Color: =ColorValue(varThemeColors.text)
+                            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                            Font: =varThemeFont.B1.face
+                            FontWeight: =varThemeFont.B1.weight
+                            Height: =(Self.Size * 1.8) + Self.PaddingTop + Self.PaddingBottom
+                            Italic: =varThemeFont.B2.italic
+                            OnSelect: =
+                            PaddingBottom: =0
+                            PaddingLeft: =10
+                            PaddingTop: =15
+                            Role: =TextRole.Heading2
+                            Size: =varThemeFont.B1.size
+                            Text: =Switch(App.ActiveScreen.Size, ScreenSize.Small,"Submitted by " & ThisItem.'Created By'.'Full Name',ThisItem.'Created By'.'Full Name')
+                            Tooltip: =Self.Text
+                            VerticalAlign: =VerticalAlign.Top
+                            Width: =Switch(App.ActiveScreen.Size,ScreenSize.Small,Parent.Width - Parent.PaddingLeft - Parent.PaddingRight, lblAssemblyTechnicianTitle_ReportsPage.Width + 30)
+                            X: =lblAssemblyTechnicianTitle_ReportsPage.X
+                            ZIndex: =5
+
+                conNoRecordsfound_ReportsPage As groupContainer.manualLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    BorderColor: =ColorValue(varThemeColors.backgroundFill)
+                    DropShadow: =DropShadow.None
+                    Fill: =ColorValue(varThemeColors.backgroundFill)
+                    FillPortions: =0
+                    Height: =506
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    RadiusBottomLeft: =6
+                    RadiusBottomRight: =6
+                    RadiusTopLeft: =6
+                    RadiusTopRight: =6
+                    Visible: =If(galReport_ReportsPage.AllItemsCount = 0 , true, false)
+                    Width: =Parent.Width
+                    ZIndex: =4
+
+                    lblNoRecordsFound_ReportsPage As label:
+                        Align: =Align.Center
+                        AutoHeight: =true
+                        Color: =ColorValue(varThemeColors.tertiaryGray)
+                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                        FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                        Font: =varThemeFont.B1.face
+                        FontWeight: =varThemeFont.B1.weight
+                        Height: =Parent.Height
+                        OnSelect: =
+                        PaddingBottom: =10
+                        PaddingLeft: =37
+                        PaddingRight: =8
+                        PaddingTop: =10
+                        Size: =varThemeFont.B1.size
+                        Text: ="There are no records found."
+                        Width: =Parent.Width
+                        Wrap: =false
+                        X: =
+                        ZIndex: =1
+
+    compHeader_ReportsPage As compHeader:
+        HeaderWidth: =Parent.Width
+        Height: =compHeader_ReportsPage.HeaderHeight
+        IsBackSettingsOn: =false
+        Width: =compHeader_ReportsPage.HeaderWidth
+        ZIndex: =2
+

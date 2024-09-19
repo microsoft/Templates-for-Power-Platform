@@ -1,0 +1,845 @@
+"'Manage Attendance Screen' As screen":
+    Fill: =Color.White
+    LoadingSpinnerColor: =App.Theme.Colors.Primary
+    OnVisible: |+
+        =//Screen Layout properties
+        UpdateContext(
+            {   
+                var_LayoutProperties:
+                {
+                    outerPadding: {
+                        top: {extraLarge: 32, large: 32, medium: 32, small: 16}, 
+                        right: {extraLarge: 231, large: 32, medium: 32, small: 16}, 
+                        bottom: {extraLarge: 32, large: 32, medium: 32, small: 16}, 
+                        left: {extraLarge: 231, large: 32, medium: 32, small: 16}
+                    },
+                    innerPadding: 16,
+                    shadowPadding: 2,
+                    header: {height: 50},
+                    container: {detailsWidth: 350, participantHeaderHeight: 94},
+                    inputControlHeight: 32,
+                    dropDown : {width : 180},
+                    updateButton: {wideWidth: 150, shortWidth : 115},
+                    badgeProfilePictureSize: 32
+                }
+            }
+        );
+        //Store bookings in a collection
+        ClearCollect(
+            colBookings,
+            Filter(
+                Bookings, 'Bookings (Views)'.'Active Bookings',
+                'Training Session'.'Training Session Id' = var_Session.'Training Session Id'
+            )
+        );
+        
+        
+        //Reset Control
+        UpdateContext({var_EnableUpdateAttendance: false});
+        
+
+    conBackground_ManageAttendance As groupContainer.horizontalAutoLayoutContainer:
+        DropShadow: =DropShadow.Light
+        Fill: =ColorValue(varTheme.neutralBackground2)
+        Height: =Parent.Height - cmpHeader_ManageAttendance.Height
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutMode: =LayoutMode.Auto
+        LayoutOverflowY: =LayoutOverflow.Scroll
+        PaddingBottom: |-
+            =//Responsive condition
+            If(
+                'Manage Attendance Screen'.Size = ScreenSize.ExtraLarge,
+                var_LayoutProperties.outerPadding.bottom.extraLarge,
+                'Manage Attendance Screen'.Size = ScreenSize.Large,
+                var_LayoutProperties.outerPadding.bottom.large,
+                'Manage Attendance Screen'.Size = ScreenSize.Medium,
+                var_LayoutProperties.outerPadding.bottom.medium,
+                var_LayoutProperties.outerPadding.bottom.small
+            )
+                
+        PaddingLeft: |-
+            =//Responsive condition
+            If(
+                'Manage Attendance Screen'.Size = ScreenSize.ExtraLarge,
+                var_LayoutProperties.outerPadding.left.extraLarge,
+                'Manage Attendance Screen'.Size = ScreenSize.Large,
+                var_LayoutProperties.outerPadding.left.large,
+                'Manage Attendance Screen'.Size = ScreenSize.Medium,
+                var_LayoutProperties.outerPadding.left.medium,
+                var_LayoutProperties.outerPadding.left.small
+            )
+        PaddingRight: |-
+            =//Responsive condition
+            If(
+                'Manage Attendance Screen'.Size = ScreenSize.ExtraLarge,
+                var_LayoutProperties.outerPadding.right.extraLarge,
+                'Manage Attendance Screen'.Size = ScreenSize.Large,
+                var_LayoutProperties.outerPadding.right.large,
+                'Manage Attendance Screen'.Size = ScreenSize.Medium,
+                var_LayoutProperties.outerPadding.right.medium,
+                var_LayoutProperties.outerPadding.right.small
+            )
+        PaddingTop: |-
+            =//Responsive condition
+            If(
+                'Manage Attendance Screen'.Size = ScreenSize.ExtraLarge,
+                var_LayoutProperties.outerPadding.top.extraLarge,
+                'Manage Attendance Screen'.Size = ScreenSize.Large,
+                var_LayoutProperties.outerPadding.top.large,
+                'Manage Attendance Screen'.Size = ScreenSize.Medium,
+                var_LayoutProperties.outerPadding.top.medium,
+                var_LayoutProperties.outerPadding.top.small
+            ) / 2
+                
+        RadiusBottomLeft: =4
+        RadiusBottomRight: =4
+        RadiusTopLeft: =4
+        RadiusTopRight: =4
+        Width: =Parent.Width
+        Y: =cmpHeader_ManageAttendance.Height
+        ZIndex: =1
+
+        txtTextControlExample_ManageAttendance As Text:
+            AutoHeight: =true
+            DisplayMode: =DisplayMode.Edit
+            Font: =""
+            FontColor: =
+            FontItalic: =varThemeFont.H3.italic
+            Height: =(Self.Size * 1.8)
+            LayoutMinHeight: =Self.Size * 1.8
+            LayoutMinWidth: =96
+            Size: =varThemeFont.H1.size
+            Text: =var_Session.Name
+            VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+            Weight: =varThemeFont.H3.weightBold
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            X: =0
+            Y: =0
+            ZIndex: =1
+
+        conGap_ManageAttendance As groupContainer.manualLayoutContainer:
+            FillPortions: =0
+            Height: =var_LayoutProperties.innerPadding / 2
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            ZIndex: =2
+
+        conBody_ManageAttendance As groupContainer.horizontalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            FillPortions: =0
+            Height: |-
+                =//Responsive condition
+                If('Manage Attendance Screen'.Size >= ScreenSize.Large,
+                    conAttendance_ManageAttendance.Height + 4,
+                    conAttendance_ManageAttendance.Height + conSessionDetails_ManageAttendance.Height + Self.LayoutGap + Self.PaddingTop + Self.PaddingBottom
+                ) 
+            LayoutDirection: |-
+                =//Responsive condition
+                If(
+                    'Manage Attendance Screen'.Size >= ScreenSize.Large,
+                    LayoutDirection.Horizontal,
+                    LayoutDirection.Vertical
+                )
+            LayoutGap: =16
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            PaddingBottom: =var_LayoutProperties.shadowPadding
+            PaddingLeft: =var_LayoutProperties.shadowPadding
+            PaddingRight: =var_LayoutProperties.shadowPadding
+            PaddingTop: =var_LayoutProperties.shadowPadding
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            ZIndex: =3
+
+            conSessionDetails_ManageAttendance As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                DropShadow: =DropShadow.Semilight
+                Fill: =ColorValue(varTheme.neutralBackground1)
+                FillPortions: =0
+                Height: =btnJoinSession_ManageAttendance.Y + btnJoinSession_ManageAttendance.Height + Self.PaddingBottom
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                PaddingBottom: =var_LayoutProperties.innerPadding
+                PaddingLeft: =var_LayoutProperties.innerPadding
+                PaddingRight: =var_LayoutProperties.innerPadding
+                PaddingTop: =var_LayoutProperties.innerPadding
+                RadiusBottomLeft: =8
+                RadiusBottomRight: =8
+                RadiusTopLeft: =8
+                RadiusTopRight: =8
+                Width: |-
+                    =//Responsive condition
+                    If(
+                        'Manage Attendance Screen'.Size >= ScreenSize.Large,
+                        var_LayoutProperties.container.detailsWidth,
+                        Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    )
+                ZIndex: =1
+
+                txtSkillLevelLabel_ManageAttendance As Text:
+                    AutoHeight: =false
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =varThemeFont.H3.italic
+                    Height: =(Self.Size * 1.4) + 10
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =varThemeFont.B2.size
+                    Text: ="Skill level"
+                    VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                    Weight: =varThemeFont.B2.weightBold
+                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    X: =0
+                    Y: =0
+                    ZIndex: =1
+
+                txtSkillLevelDetail_ManageAttendance As Text:
+                    AutoHeight: =false
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =varThemeFont.H3.italic
+                    Height: =(Self.Size * 1.4) + 18
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =varThemeFont.B2.size
+                    Text: =var_Session.Training.'Skill Level'.Name
+                    VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                    Weight: =varThemeFont.B2.weight
+                    Width: =txtSkillLevelLabel_ManageAttendance.Width
+                    X: =0
+                    Y: =0
+                    ZIndex: =2
+
+                txtPlatformLabel_ManageAttendance As Text:
+                    AutoHeight: =false
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =varThemeFont.H3.italic
+                    Height: =txtSkillLevelLabel_ManageAttendance.Height
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =varThemeFont.B2.size
+                    Text: ="Platform"
+                    VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                    Weight: =varThemeFont.B2.weightBold
+                    Width: =txtSkillLevelLabel_ManageAttendance.Width
+                    X: =0
+                    Y: =0
+                    ZIndex: =3
+
+                txtPlatformDetail_ManageAttendance As Text:
+                    AutoHeight: =false
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =varThemeFont.H3.italic
+                    Height: =txtSkillLevelDetail_ManageAttendance.Height
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =varThemeFont.B2.size
+                    Text: |+
+                        =Coalesce(Text(var_Session.Platform), "No data to display")
+                        
+                    VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                    Weight: =varThemeFont.B2.weight
+                    Width: =txtSkillLevelLabel_ManageAttendance.Width
+                    X: =0
+                    Y: =0
+                    ZIndex: =4
+
+                txtDateLabel_ManageAttendance As Text:
+                    AutoHeight: =false
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =varThemeFont.H3.italic
+                    Height: =txtSkillLevelLabel_ManageAttendance.Height
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =varThemeFont.B2.size
+                    Text: ="Date"
+                    VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                    Weight: =varThemeFont.B2.weightBold
+                    Width: =txtSkillLevelLabel_ManageAttendance.Width
+                    X: =0
+                    Y: =0
+                    ZIndex: =5
+
+                txtDateDetail_ManageAttendance As Text:
+                    AutoHeight: =false
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =varThemeFont.H3.italic
+                    Height: =txtSkillLevelDetail_ManageAttendance.Height
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =varThemeFont.B2.size
+                    Text: |-
+                        =Coalesce(
+                            Text(
+                                var_Session.'Start Date and Time',
+                                "ddd mmm dd, yyyy"
+                            )
+                            ,
+                            "No data to display"
+                        )
+                    VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                    Weight: =varThemeFont.B2.weight
+                    Width: =txtSkillLevelLabel_ManageAttendance.Width
+                    X: =0
+                    Y: =0
+                    ZIndex: =6
+
+                txtTimeLabel_ManageAttendance As Text:
+                    AutoHeight: =false
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =varThemeFont.H3.italic
+                    Height: =txtSkillLevelLabel_ManageAttendance.Height
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =varThemeFont.B2.size
+                    Text: ="Time"
+                    VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                    Weight: =varThemeFont.B2.weightBold
+                    Width: =txtSkillLevelLabel_ManageAttendance.Width
+                    X: =0
+                    Y: =0
+                    ZIndex: =7
+
+                txtTimeDetail_ManageAttendance As Text:
+                    AutoHeight: =false
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =varThemeFont.H3.italic
+                    Height: =txtSkillLevelDetail_ManageAttendance.Height
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =varThemeFont.B2.size
+                    Text: |-
+                        =$"{Text(var_Session.'Start Date and Time', "h:mm AM/PM")} - {Text(var_Session.'End Date and Time', "h:mm AM/PM")}"
+                    VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                    Weight: =varThemeFont.B2.weight
+                    Width: =txtSkillLevelLabel_ManageAttendance.Width
+                    X: =0
+                    Y: =0
+                    ZIndex: =8
+
+                txtSlotLabel_ManageAttendance As Text:
+                    Align: ="Start"
+                    AutoHeight: =false
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =varThemeFont.H3.italic
+                    Height: =txtSkillLevelLabel_ManageAttendance.Height
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =varThemeFont.B2.size
+                    Text: ="Slots"
+                    VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                    Weight: =varThemeFont.B2.weightBold
+                    Width: =txtSkillLevelLabel_ManageAttendance.Width
+                    X: =0
+                    Y: =0
+                    ZIndex: =9
+
+                txtSlotDetail_ManageAttendance As Text:
+                    AutoHeight: =false
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =varThemeFont.H3.italic
+                    Height: =txtSkillLevelDetail_ManageAttendance.Height
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =varThemeFont.B2.size
+                    Text: |-
+                        =Coalesce(Text(var_Session.'Available Slot'), var_Session.Capacity ) & " " &
+                        "out of " & Text(var_Session.Capacity) & " remaining"
+                    VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                    Weight: =varThemeFont.B2.weight
+                    Width: =txtSkillLevelLabel_ManageAttendance.Width
+                    X: =0
+                    Y: =0
+                    ZIndex: =10
+
+                btnJoinSession_ManageAttendance As Button:
+                    AcceptsFocus: |-
+                        =//Tab stop move to next available control if this button is disabled
+                         If(Self.DisplayMode = DisplayMode.Disabled, false, true)
+                    AccessibleLabel: ="Join this session"
+                    Align: =""
+                    BasePaletteColor: =
+                    DisplayMode: |
+                        =//Enable if Start date and time minus 15mins equals date and time now and end date is greater than equals date and time now.
+                        If(
+                            And(
+                                DateAdd(
+                                    var_Session.'Start Date and Time',
+                                    -15,
+                                    TimeUnit.Minutes
+                                ) <= Now(),
+                                var_Session.'End Date and Time' >= Now()
+                            ),
+                            DisplayMode.Edit,
+                            DisplayMode.Disabled
+                        )
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =
+                    FontSize: =0
+                    FontWeight: =""
+                    Height: =var_LayoutProperties.inputControlHeight
+                    Icon: =""
+                    IconRotation: =0
+                    IconStyle: ="Outline"
+                    Layout: ="Icon before"
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Text: ="Join this session"
+                    VerticalAlign: =""
+                    Visible: =true
+                    Width: =txtSkillLevelLabel_ManageAttendance.Width
+                    X: =0
+                    Y: =0
+                    ZIndex: =12
+
+            conAttendance_ManageAttendance As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                DropShadow: =DropShadow.Semilight
+                Fill: =ColorValue(varTheme.neutralBackground1)
+                FillPortions: =0
+                Height: =conAttendanceHead_ManageAttendance.Height + shpAttendanceSeparator_ManageAttendance.Height + conAttendanceBody_ManageAttendance.Height
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                RadiusBottomLeft: =8
+                RadiusBottomRight: =8
+                RadiusTopLeft: =8
+                RadiusTopRight: =8
+                Width: |-
+                    =//Responsive condition
+                    If(
+                        'Manage Attendance Screen'.Size >= ScreenSize.Large,
+                        Parent.Width - Parent.LayoutGap - Parent.PaddingLeft - Parent.PaddingRight - conSessionDetails_ManageAttendance.Width,
+                        Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    )
+                ZIndex: =2
+
+                conAttendanceHead_ManageAttendance As groupContainer.verticalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    Fill: =Parent.Fill
+                    FillPortions: =0
+                    Height: |-
+                        =//Responsive condition
+                        If(
+                            'Manage Attendance Screen'.Size >= ScreenSize.Large,
+                            var_LayoutProperties.container.participantHeaderHeight,
+                            txtParticipants_ManageAttendance.Height + txiSearch_ManageAttendance.Height + btnUpdateAttendance_ManageAttendance.Height + 16 + Self.PaddingTop + Self.PaddingBottom
+                        )
+                    LayoutDirection: |
+                        =LayoutDirection.Vertical
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingBottom: =var_LayoutProperties.innerPadding
+                    PaddingLeft: =var_LayoutProperties.innerPadding
+                    PaddingRight: =var_LayoutProperties.innerPadding
+                    PaddingTop: =var_LayoutProperties.innerPadding
+                    Width: =Parent.Width
+                    ZIndex: =1
+
+                    txtParticipants_ManageAttendance As Text:
+                        AutoHeight: =false
+                        DisplayMode: =DisplayMode.Edit
+                        Font: =""
+                        FontColor: =
+                        FontItalic: =varThemeFont.H3.italic
+                        Height: =(Self.Size * 1.3) + 8
+                        LayoutMinHeight: =32
+                        LayoutMinWidth: =96
+                        Size: =varThemeFont.B2.size
+                        Text: ="Participants"
+                        VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                        Weight: =varThemeFont.B2.weightBold
+                        Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                        X: =0
+                        Y: =0
+                        ZIndex: =1
+
+                    conSearchAndUpdate_ManageAttendance As groupContainer.horizontalAutoLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        FillPortions: =0
+                        Height: |-
+                            =
+                            
+                            //Responsive condition
+                            If(
+                                'Manage Attendance Screen'.Size >= ScreenSize.Large,
+                                txiSearch_ManageAttendance.Height,
+                                txtParticipants_ManageAttendance.Height + txiSearch_ManageAttendance.Height + btnUpdateAttendance_ManageAttendance.Height + 16
+                            )
+                        LayoutAlignItems: =LayoutAlignItems.Center
+                        LayoutDirection: |-
+                            =//Responsive condition
+                            If(
+                                'Manage Attendance Screen'.Size >= ScreenSize.Large,
+                                LayoutDirection.Horizontal,
+                                LayoutDirection.Vertical
+                            )
+                        LayoutGap: =8
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                        ZIndex: =2
+
+                        "txiSearch_ManageAttendance As 'Text input'":
+                            AccessibleLabel: ="Search participant"
+                            Appearance: ="FilledDarker"
+                            BasePaletteColor: =
+                            DisplayMode: =DisplayMode.Edit
+                            Font: =""
+                            FontColor: =
+                            FontItalic: =
+                            FontSize: =0
+                            FontWeight: =""
+                            Height: =var_LayoutProperties.inputControlHeight
+                            LayoutMinHeight: =32
+                            LayoutMinWidth: =320
+                            Mode: ='TextInputCanvas.Mode'.SingleLine
+                            Placeholder: ="Search participant name"
+                            Type: ='TextInputCanvas.Type'.Text
+                            Width: |-
+                                =
+                                
+                                //Responsive condition
+                                If(
+                                    'Manage Attendance Screen'.Size >= ScreenSize.Large,
+                                    Parent.Width - Parent.LayoutGap - btnUpdateAttendance_ManageAttendance.Width - Parent.PaddingLeft - Parent.PaddingRight,
+                                    Parent.Width
+                                )
+                            X: =536
+                            Y: =425
+                            ZIndex: =1
+
+                        btnUpdateAttendance_ManageAttendance As Button:
+                            AcceptsFocus: |-
+                                =//Tab stop move to next available control if this button is disabled
+                                 If(Self.DisplayMode = DisplayMode.Disabled, false, true)
+                            AccessibleLabel: =Self.Text
+                            Align: =""
+                            Appearance: ='ButtonCanvas.Appearance'.Secondary
+                            BasePaletteColor: =
+                            DisplayMode: |-
+                                =//Disable if there is no attendee available or the if the session is not yet started.
+                                If(CountRows(colBookings) > 0, 
+                                    If(DateAdd(var_Session.'Start Date and Time', -15, TimeUnit.Minutes) <= Now(), DisplayMode.Edit, DisplayMode.Disabled),
+                                    DisplayMode.Disabled
+                                )
+                            Font: =""
+                            FontColor: =
+                            FontItalic: =
+                            FontSize: =varThemeFont.B2.size
+                            FontWeight: =varThemeFont.B2.weight
+                            Height: =var_LayoutProperties.inputControlHeight
+                            Icon: =""
+                            IconRotation: =0
+                            IconStyle: ="Outline"
+                            Layout: ="Icon before"
+                            LayoutMinHeight: =32
+                            LayoutMinWidth: =96
+                            OnSelect: |-
+                                =//Patch New Updated Values to dataverse
+                                If(
+                                    And(
+                                        var_EnableUpdateAttendance,
+                                        CountRows(colBookings) > 0
+                                    ),
+                                    IfError(
+                                        ForAll(
+                                            colBookings As UpdatedBooking,
+                                            Patch(
+                                                Bookings,
+                                                LookUp(
+                                                    Bookings,
+                                                    'Booking Id' = UpdatedBooking.'Booking Id'
+                                                ),
+                                                {Attendance: UpdatedBooking.Attendance}
+                                            )
+                                        ),
+                                        
+                                        Notify(
+                                            "Error on column(s): " & Concat(
+                                                Errors(Bookings),
+                                                Column & ": " & Message,
+                                                "; "
+                                            ),
+                                            NotificationType.Error
+                                        ),
+                                
+                                        UpdateContext({var_IsSuccess: true});
+                                        Notify(
+                                            "The attendance for this session has been updated!",
+                                            NotificationType.Success
+                                        )
+                                    )
+                                );
+                                //Updated local variable as trigger to switch button text
+                                UpdateContext({var_EnableUpdateAttendance: true});
+                                Patch(
+                                    colBookings,
+                                    LookUp(colBookings, IsBlank(Attendance)),
+                                    {
+                                        Attendance: Attendance.Attended
+                                    }
+                                );
+                                
+                                If(
+                                    var_IsSuccess,
+                                    UpdateContext({var_IsSuccess: false});
+                                    UpdateContext({var_EnableUpdateAttendance: false})
+                                )
+                            Text: =If(var_EnableUpdateAttendance, "Save updates", "Update attendance")
+                            VerticalAlign: =""
+                            Width: |+
+                                =//Responsive condition
+                                If(
+                                    'Manage Attendance Screen'.Size >= ScreenSize.Large,
+                                    If(Self.Text = "Update attendance", var_LayoutProperties.updateButton.wideWidth, var_LayoutProperties.updateButton.shortWidth),
+                                    Parent.Width
+                                )
+                                
+                            X: =0
+                            Y: =0
+                            ZIndex: =2
+
+                shpAttendanceSeparator_ManageAttendance As rectangle:
+                    AccessibleLabel: =
+                    BorderColor: =App.Theme.Colors.Darker40
+                    Fill: =ColorValue(varTheme.neutralStroke2)
+                    Height: =1
+                    Width: =Parent.Width
+                    ZIndex: =2
+
+                conAttendanceBody_ManageAttendance As groupContainer.verticalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.Start
+                    Fill: =Parent.Fill
+                    FillPortions: =0
+                    Height: |+
+                        =//Responsive condition
+                        If('Manage Attendance Screen'.Size >= ScreenSize.Large,
+                            Max(galAttendanceGallery_ManageAttendance.Height,
+                                conBackground_ManageAttendance.Height - conBackground_ManageAttendance.PaddingTop - conBackground_ManageAttendance.PaddingBottom - txtTextControlExample_ManageAttendance.Height - conAttendanceHead_ManageAttendance.Height - shpAttendanceSeparator_ManageAttendance.Height - conGap_ManageAttendance.Height
+                            ),
+                            Max(galAttendanceGallery_ManageAttendance.Height,
+                                conBackground_ManageAttendance.Height - conBackground_ManageAttendance.PaddingTop - conBackground_ManageAttendance.PaddingBottom - txtTextControlExample_ManageAttendance.Height - conAttendanceHead_ManageAttendance.Height - shpAttendanceSeparator_ManageAttendance.Height - conGap_ManageAttendance.Height - conSessionDetails_ManageAttendance.Height - 16
+                            )
+                        )
+                         
+                        
+                    LayoutDirection: =LayoutDirection.Vertical
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    Width: =Parent.Width
+                    ZIndex: =3
+
+                    "galAttendanceGallery_ManageAttendance As gallery.'BrowseLayout_Vertical_TwoTextOneImageVariant_ver5.0'":
+                        '#CopilotOverlayLabel': ="Filtered"
+                        AccessibleLabel: ="Attendees"
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =App.Theme.Colors.Darker40
+                        DelayItemLoading: =true
+                        FillPortions: =0
+                        FocusedBorderColor: =ColorValue(varTheme.text)
+                        FocusedBorderThickness: =2
+                        Height: =Self.TemplateHeight * Self.AllItemsCount + 10
+                        ItemAccessibleLabel: =
+                        Items: |-
+                            =//Filter Bookings collect
+                            Filter(colBookings, txiSearch_ManageAttendance.Value in 'Owning User'.'Full Name' || IsBlank(txiSearch_ManageAttendance.Value))
+                        Layout: =Layout.Vertical
+                        LayoutMinHeight: =287
+                        LayoutMinWidth: =320
+                        LoadingSpinner: =LoadingSpinner.Data
+                        TabIndex: =0
+                        TemplatePadding: =0
+                        TemplateSize: |-
+                            =
+                            //Responsive condition
+                            If('Manage Attendance Screen'.Size >= ScreenSize.Medium,
+                                56,
+                                100
+                            )
+                        Width: =Parent.Width
+                        ZIndex: =1
+
+                        drpAttendanceStatus_ManageAttendance As Dropdown.pcfdataset:
+                            AccessibleLabel: ="Attendance status"
+                            Appearance: ="FilledDarker"
+                            DefaultSelectedItems: |+
+                                =
+                                If(
+                                    Or(!IsBlank(ThisItem.Attendance), var_EnableUpdateAttendance), 
+                                    {Value: If(IsBlank(ThisItem.Attendance), Attendance.Attended, ThisItem.Attendance)}
+                                    ,{Value: "---"}
+                                )
+                                
+                                
+                            DisplayMode: =If(var_EnableUpdateAttendance, DisplayMode.Edit, DisplayMode.Disabled)
+                            FontSize: =0
+                            Height: =var_LayoutProperties.inputControlHeight
+                            Items: =Choices(Attendance)
+                            OnChange: |+
+                                =//Patch the value of the selected status on dropdown change
+                                If(
+                                    Self.DisplayMode = DisplayMode.Edit,
+                                    UpdateIf(
+                                        colBookings,
+                                        'Booking Id' = ThisItem.'Booking Id',
+                                        {Attendance: LookUp(Choices(Attendance), Value = Self.Selected.Value).Value}
+                                    )
+                                );
+                                
+                            Required: =false
+                            Width: |-
+                                =//Responsive condition
+                                If('Manage Attendance Screen'.Size >= ScreenSize.Medium,
+                                    var_LayoutProperties.dropDown.width,
+                                    Parent.Width - (var_LayoutProperties.innerPadding * 2)
+                                )
+                            X: |-
+                                =
+                                //Responsive condition
+                                If('Manage Attendance Screen'.Size >= ScreenSize.Medium,
+                                    Parent.TemplateWidth -Self.Width - var_LayoutProperties.innerPadding,
+                                    var_LayoutProperties.innerPadding
+                                )
+                            Y: |-
+                                =//Responsive condition
+                                If('Manage Attendance Screen'.Size >= ScreenSize.Medium,
+                                    (Parent.TemplateHeight /2) - (Self.Height/2),
+                                    conProfilePicture_ManageAttendance.Height + conProfilePicture_ManageAttendance.Y + var_LayoutProperties.innerPadding
+                                )
+                                    
+                            ZIndex: =1
+
+                            Value As PowerApps_CoreControls_DropdownCanvasTemplate_dataField.textualColumn:
+                                FieldDisplayName: ="Value"
+                                FieldName: ="Value"
+                                FieldType: ="l"
+                                FieldVariantName: ="textualColumn"
+                                Order: =2
+                                ZIndex: =18
+
+                        txtParticipantName_ManageAttendance As Text:
+                            AutoHeight: =false
+                            DisplayMode: =DisplayMode.Edit
+                            Font: =""
+                            FontColor: =
+                            FontItalic: =varThemeFont.H3.italic
+                            Height: =Self.Size * 1.6
+                            Size: =varThemeFont.B2.size
+                            Text: =ThisItem.'Owning User'.'Full Name'
+                            VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                            Weight: =varThemeFont.B2.weight
+                            Width: |-
+                                =//Responsive condition
+                                If('Manage Attendance Screen'.Size >= ScreenSize.Medium,
+                                    drpAttendanceStatus_ManageAttendance.X - Self.X - 8,
+                                    Parent.TemplateWidth - Self.X - var_LayoutProperties.innerPadding
+                                )
+                            Wrap: =false
+                            X: =conProfilePicture_ManageAttendance.Width + conProfilePicture_ManageAttendance.X + 8 
+                            Y: =(conProfilePicture_ManageAttendance.Height /2) - (Self.Height/2) + conProfilePicture_ManageAttendance.Y
+                            ZIndex: =5
+
+                        conProfilePicture_ManageAttendance As groupContainer.horizontalAutoLayoutContainer:
+                            Height: =var_LayoutProperties.badgeProfilePictureSize
+                            LayoutMode: =LayoutMode.Auto
+                            Width: =var_LayoutProperties.badgeProfilePictureSize
+                            X: =var_LayoutProperties.innerPadding
+                            Y: |-
+                                =//Responsive condition
+                                If('Manage Attendance Screen'.Size >= ScreenSize.Medium,
+                                    (Parent.TemplateHeight /2) - (Self.Height/2),
+                                    12
+                                )
+                            ZIndex: =6
+
+                            imgProfilePicture_ManageAttendance As image:
+                                AccessibleLabel: =
+                                BorderColor: =App.Theme.Colors.Darker40
+                                DisabledBorderColor: =RGBA(166, 166, 166, 1)
+                                DisabledFill: =RGBA(244, 244, 244, 1)
+                                DisplayMode: =DisplayMode.Disabled
+                                Height: =Parent.Height
+                                Image: =If(!IsBlank(ThisItem.'Owning User'.'Primary Email')&& Office365Users.UserPhotoMetadata(ThisItem.'Owning User'.'Primary Email').HasPhoto, Office365Users.UserPhotoV2(ThisItem.'Owning User'.'Primary Email'))
+                                ImagePosition: =ImagePosition.Stretch
+                                RadiusBottomLeft: =Self.Height
+                                RadiusBottomRight: =Self.Height
+                                RadiusTopLeft: =Self.Height
+                                RadiusTopRight: =Self.Height
+                                Visible: =!IsBlank(Self.Image)
+                                Width: =Parent.Width
+                                X: =var_LayoutProperties.innerPadding
+                                Y: =
+                                ZIndex: =1
+
+                            bdgInitials_ManageAttendance As Badge:
+                                AccessibleLabel: ="Registered user initials"
+                                Align: =""
+                                Appearance: ='BadgeCanvas.Appearance'.Filled
+                                BasePaletteColor: =
+                                Content: |-
+                                    =With(
+                                       {
+                                          wName: 
+                                          Split(
+                                             ThisItem.'Owning User'.'Full Name',
+                                             " "
+                                          )
+                                       },
+                                       Left(First(wName).Value, 1) & Left(Last(wName).Value, 1)
+                                    )
+                                DisplayMode: =DisplayMode.Edit
+                                FontColor: =
+                                Height: =Parent.Height
+                                LayoutMinHeight: =32
+                                LayoutMinWidth: =32
+                                Shape: ='BadgeCanvas.Shape'.Circular
+                                ThemeColor: ='BadgeCanvas.ThemeColor'.Brand
+                                VerticalAlign: =""
+                                Visible: =!imgProfilePicture_ManageAttendance.Visible
+                                Width: =Parent.Width
+                                X: =0
+                                Y: =0
+                                ZIndex: =2
+
+        conPaddingBottom_ManageAttendance As groupContainer.manualLayoutContainer:
+            FillPortions: =0
+            Height: =Parent.PaddingBottom - 4
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            ZIndex: =4
+
+    cmpHeader_ManageAttendance As compHeaderCompound:
+        HeaderHeight: =varComponenentLayoutProperties.headerheight
+        HeaderWidth: =Parent.Width
+        Height: =cmpHeader_ManageAttendance.HeaderHeight
+        NavigateMenu: ='Session Attendance Screen'
+        Width: =cmpHeader_ManageAttendance.HeaderWidth
+        ZIndex: =2
+

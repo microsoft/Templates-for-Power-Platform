@@ -1,0 +1,599 @@
+"'Goals Screen' As screen":
+    Fill: =Color.White
+    LoadingSpinnerColor: =App.Theme.Colors.Primary
+    OnVisible: |-
+        =//Repeatable values for UI
+        UpdateContext(
+            {
+                var_LayoutProperties: {
+                    Padding: {
+                        top: 32,
+                        bottom: 32,
+                        left: 32,
+                        right: 32,
+                        gapSmall: 8,
+                        gapMedium: 16,
+                        innerpadding1: 8,
+                        innerpadding2: 16
+                    },
+                    Profile: {
+                        profileheight: 32,
+                        shapeseparator: 1,
+                        templateHeight: 130,
+                        progressBar: {
+                            height: 20,
+                            width: 250
+                        }
+                    }
+                }
+            }
+        )
+
+    conBackgroundScreen_Goals As groupContainer.verticalAutoLayoutContainer:
+        Fill: =ColorValue(varTheme.neutralBackground2)
+        Height: =Parent.Height - Self.Y 
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutGap: =var_LayoutProperties.Padding.gapMedium
+        LayoutMode: =LayoutMode.Auto
+        LayoutOverflowY: =LayoutOverflow.Scroll
+        PaddingBottom: =Self.PaddingTop
+        PaddingLeft: =Self.PaddingTop
+        PaddingRight: =Self.PaddingTop
+        PaddingTop: |-
+            =//Responsive condition - Text Objective
+            If ('Goals Screen'.Size >= ScreenSize.Large,
+                var_LayoutProperties.Padding.top,
+                var_LayoutProperties.Padding.top / 2
+            )
+        Width: =Parent.Width
+        Y: =cmpHeaderCompound_Goals.Height + cmpHeaderCompound_Goals.Y
+        ZIndex: =1
+
+        conScreentitle_Goals As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            FillPortions: =0
+            Height: |-
+                =//Responsive condition - Screen title
+                If ('Goals Screen'.Size = ScreenSize.Small,
+                txtHeaderGoals.Height + btnCreateGoals.Height,
+                txtHeaderGoals.Height
+                )
+            LayoutDirection: |-
+                =//Responsive condition - Screen title layout direction
+                If ('Goals Screen'.Size = ScreenSize.Small,
+                LayoutDirection.Vertical,
+                LayoutDirection.Horizontal
+                )
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            PaddingLeft: =
+            PaddingRight: =
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            ZIndex: =1
+
+            txtHeaderGoals As Text:
+                AutoHeight: =false
+                BorderStyle: =""
+                DisplayMode: =DisplayMode.Edit
+                Font: =""
+                FontColor: =ColorValue(varTheme.neutralForeground1)
+                FontItalic: =varThemeFont.H3.italic
+                Height: =Self.Size * 1.5
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                Size: =varThemeFont.H1.size
+                Text: ="Goals"
+                VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                Weight: =varThemeFont.H3.weightBold
+                Width: |-
+                    =//Responsive condition - Header Goals
+                    If ('Goals Screen'.Size = ScreenSize.Small,
+                    Parent.Width - Parent.PaddingLeft - Parent.PaddingRight,
+                    Parent.Width - btnCreateGoals.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    )
+                X: =0
+                Y: =0
+                ZIndex: =4
+
+            btnCreateGoals As Button:
+                AccessibleLabel: ="Create a goal"
+                Align: =""
+                AlignInContainer: =AlignInContainer.Center
+                BasePaletteColor: =
+                BorderStyle: =""
+                DisplayMode: =If(User().Email in Filter(Users, 'Users (Views)'.'Goal Tracking - Admin').'Primary Email', DisplayMode.Edit, DisplayMode.Disabled)
+                Font: =""
+                FontColor: =
+                FontItalic: =
+                FontSize: =0
+                FontWeight: =""
+                Height: =var_LayoutProperties.Profile.profileheight
+                Icon: =""
+                IconRotation: =0
+                IconStyle: ="Outline"
+                Layout: ="Icon before"
+                LayoutMinHeight: =32
+                LayoutMinWidth: =96
+                OnSelect: |-
+                    =Navigate(
+                        'Create Goal Screen',
+                        Transition.None,
+                        {
+                            var_SelectedGoal: Blank(),
+                            var_FiscalPeriod: cmbFiscalYearGoals.Selected
+                        }
+                    )
+                Text: ="Create a goal"
+                VerticalAlign: =""
+                Visible: =If(User().Email in Filter(Users, 'Users (Views)'.'Goal Tracking - Admin').'Primary Email', true, false)
+                Width: |-
+                    =//Responsive condition - Create Goal button
+                    If ('Goals Screen'.Size = ScreenSize.Small,
+                    Parent.Width - Parent.PaddingLeft - Parent.PaddingRight,
+                    122
+                    )
+                X: =0
+                Y: =0
+                ZIndex: =5
+
+        conFiscalYearGoals As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            DropShadow: =DropShadow.Semilight
+            Fill: =ColorValue(varTheme.neutralBackground1)
+            FillPortions: =0
+            Height: =cmbFiscalYearGoals.Height + 15
+            LayoutGap: =var_LayoutProperties.Padding.gapSmall
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            PaddingBottom: =Self.PaddingTop
+            PaddingLeft: =Self.PaddingTop
+            PaddingRight: =Self.PaddingTop
+            PaddingTop: =var_LayoutProperties.Padding.innerpadding1
+            RadiusBottomLeft: =8
+            RadiusBottomRight: =8
+            RadiusTopLeft: =8
+            RadiusTopRight: =8
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            ZIndex: =2
+
+            cmbFiscalYearGoals As Combobox.pcfdataset:
+                AccessibleLabel: ="Fiscal year filter"
+                Appearance: ="FilledDarker"
+                BorderStyle: =""
+                DefaultSelectedItems: |-
+                    =//To get around the Delegation use DateValue Function for the start date and end date and add it as new columns
+                    Filter(
+                        AddColumns(
+                            'Fiscal Periods',
+                            StartDateValue,
+                            DateValue(ThisRecord.'Start Date'),
+                            EndDateValue,
+                            DateValue(ThisRecord.'End Date')
+                        ),
+                        DateValue(Now()) > StartDateValue,
+                        DateValue(Now()) < EndDateValue
+                    )
+                DisplayMode: =DisplayMode.Edit
+                Font: =""
+                FontItalic: =
+                FontSize: =0
+                FontWeight: =""
+                Height: =var_LayoutProperties.Profile.profileheight
+                InputTextPlaceholder: ="Select fiscal year"
+                Items: =Sort('Fiscal Periods', Name, SortOrder.Ascending)
+                LayoutMinHeight: =32
+                LayoutMinWidth: =320
+                SelectMultiple: =false
+                Width: |-
+                    =//Responsive condition - Fiscal year
+                    If ('Goals Screen'.Size <= ScreenSize.Small,
+                    Parent.Width * .40,
+                    Parent.Width * .10
+                    )
+                X: =0
+                Y: =0
+                ZIndex: =1
+
+                lblGoalName As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn:
+                    FieldDisplayName: ="Name"
+                    FieldName: ="mpa_name"
+                    FieldType: ="s"
+                    FieldVariantName: ="textualColumn"
+                    Order: =1
+                    ZIndex: =16
+
+                lblGoalScreen_FY As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn:
+                    FieldDisplayName: ="Fiscal Period Id"
+                    FieldName: ="mpa_itpm_fiscalperiodid"
+                    FieldType: ="g"
+                    FieldVariantName: ="textualColumn"
+                    Order: =2
+                    ZIndex: =17
+
+                lblGoalFY_StartDate As PowerApps_CoreControls_ComboboxCanvasTemplate_dataField.textualColumn:
+                    FieldDisplayName: ="Start Date"
+                    FieldName: ="mpa_startdate"
+                    FieldType: ="d"
+                    FieldVariantName: ="textualColumn"
+                    Order: =3
+                    ZIndex: =18
+
+        conHomescreen_Goals As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.Start
+            DropShadow: =DropShadow.Semilight
+            Fill: =ColorValue(varTheme.neutralBackground1)
+            FillPortions: =0
+            Height: |-
+                =Max(
+                    Parent.Height - Self.Y - Parent.PaddingBottom, 
+                    If(galHomescreenGoals.AllItemsCount > 0, galHomescreenGoals.Height + conCountFooterRows.Height, conNodataGoals.Height)
+                )
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            RadiusBottomLeft: =8
+            RadiusBottomRight: =8
+            RadiusTopLeft: =8
+            RadiusTopRight: =8
+            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+            ZIndex: =4
+
+            galHomescreenGoals As gallery.variableTemplateHeightGallery:
+                AccessibleLabel: ="Goals"
+                AlignInContainer: =AlignInContainer.SetByContainer
+                BorderColor: =App.Theme.Colors.Darker40
+                DelayItemLoading: =true
+                DisplayMode: =If(Self.Visible, DisplayMode.Edit, DisplayMode.Disabled)
+                Fill: =ColorValue(varTheme.neutralBackground1)
+                FillPortions: =0
+                Height: |-
+                    =Max(Self.AllItemsCount * Self.TemplateHeight, 
+                        conBackgroundScreen_Goals.Height - 
+                        conBackgroundScreen_Goals.PaddingTop - 
+                        conBackgroundScreen_Goals.PaddingBottom - 
+                        (conBackgroundScreen_Goals.LayoutGap * 2) -  
+                        conScreentitle_Goals.Height -
+                        conFiscalYearGoals.Height -
+                        conCountFooterRows.Height
+                    )
+                Items: |+
+                    =Filter(
+                        Goals,
+                        IsBlank(cmbFiscalYearGoals.SelectedItems) || 'Fiscal year'.'Fiscal Period Id' in cmbFiscalYearGoals.SelectedItems.'Fiscal Period Id'
+                    )
+                    
+                Layout: =Layout.Vertical
+                LayoutMinHeight: =Parent.Height - conCountFooterRows.Height
+                LayoutMinWidth: =320
+                LoadingSpinner: =LoadingSpinner.Data
+                TabIndex: =If(Self.DisplayMode = DisplayMode.Edit, -1 , 0)
+                TemplatePadding: =1
+                TemplateSize: |-
+                    =//Responsive condition - Text Objective
+                    If ('Goals Screen'.Size >= ScreenSize.Large,
+                        129,
+                        'Goals Screen'.Size = ScreenSize.Medium,
+                        213,
+                        215
+                    )
+                Visible: =If(Self.AllItemsCount > 0, true, false)
+                Width: =Parent.Width
+                ZIndex: =1
+
+                shpGallerySeparatorGoal As rectangle:
+                    BorderColor: =App.Theme.Colors.Darker40
+                    Fill: =ColorValue(varTheme.neutralStroke2)
+                    Height: =var_LayoutProperties.Profile.shapeseparator
+                    Width: =Parent.Width
+                    Y: =btnViewGoal.Height + btnViewGoal.Y + var_LayoutProperties.Padding.innerpadding2 - 1
+                    ZIndex: =1
+
+                btnUpdateGoal As Button:
+                    AccessibleLabel: =$"Update {ThisItem.Name}"
+                    Align: =""
+                    Appearance: ='ButtonCanvas.Appearance'.Secondary
+                    BasePaletteColor: =
+                    BorderStyle: =""
+                    DisplayMode: =If(User().Email in Filter(Users, 'Users (Views)'.'Goal Tracking - Admin').'Primary Email', DisplayMode.Edit, DisplayMode.Disabled)
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =
+                    FontSize: =0
+                    FontWeight: =""
+                    Height: =var_LayoutProperties.Profile.profileheight
+                    Icon: =""
+                    IconRotation: =0
+                    IconStyle: ="Outline"
+                    Layout: ="Icon before"
+                    OnSelect: |-
+                        =Navigate('Create Goal Screen', Transition.None, { var_SelectedGoal : ThisItem})
+                    Text: ="Update"
+                    VerticalAlign: =""
+                    Visible: =If(User().Email in Filter(Users, 'Users (Views)'.'Goal Tracking - Admin').'Primary Email', true, false)
+                    Width: |
+                        =//Responsive condition button update
+                        If ('Goals Screen'.Size = ScreenSize.Small,
+                        (Parent.Width - (var_LayoutProperties.Padding.innerpadding2 * 2) - var_LayoutProperties.Padding.innerpadding1) /2,
+                        var_LayoutProperties.Profile.progressBar.width - 195
+                        )
+                    X: =btnViewGoal.X + btnViewGoal.Width + var_LayoutProperties.Padding.innerpadding1
+                    Y: =btnViewGoal.Y
+                    ZIndex: =2
+
+                btnViewGoal As Button:
+                    AccessibleLabel: =$"View subgoals under {ThisItem.Name} goal"
+                    Align: =""
+                    Appearance: ='ButtonCanvas.Appearance'.Secondary
+                    BasePaletteColor: =
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =
+                    FontSize: =0
+                    FontWeight: =""
+                    Height: =var_LayoutProperties.Profile.profileheight
+                    Icon: =""
+                    IconRotation: =0
+                    IconStyle: ="Outline"
+                    Layout: ="Icon before"
+                    OnSelect: |-
+                        =Navigate('Sub Goals Screen', Transition.None, {var_GoalRecord : ThisItem})
+                    Text: ="View"
+                    VerticalAlign: =""
+                    Width: |+
+                        =//Responsive condition button view
+                        If ('Goals Screen'.Size = ScreenSize.Small,
+                        (Parent.Width - (var_LayoutProperties.Padding.innerpadding2 * 2) - var_LayoutProperties.Padding.innerpadding1) /2,
+                        var_LayoutProperties.Profile.progressBar.width - 195
+                        )
+                        
+                    X: =var_LayoutProperties.Padding.innerpadding2
+                    Y: |-
+                        =//Responsive condition - 
+                        If ('Goals Screen'.Size >= ScreenSize.Large,
+                        txtObjective.Height + txtObjective.Y + var_LayoutProperties.Padding.innerpadding2,
+                        txtPercentageGoal.Height + txtPercentageGoal.Y + var_LayoutProperties.Padding.innerpadding2
+                        )
+                    ZIndex: =3
+
+                txtPercentageGoal As Text:
+                    AutoHeight: =true
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =varThemeFont.H3.italic
+                    Height: =Parent.Height
+                    Size: =14
+                    Text: =$"{Text(RoundUp(prgLineGoal.Value, 2))} %"
+                    VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                    Weight: ='TextCanvas.Weight'.Regular
+                    Width: =prgLineGoal.Width
+                    Wrap: =false
+                    X: =prgLineGoal.X
+                    Y: |-
+                        =//Responsive condition - 
+                        If ('Goals Screen'.Size >= ScreenSize.Large,
+                        prgLineGoal.Y + prgLineGoal.Height + var_LayoutProperties.Padding.innerpadding1,
+                        prgLineGoal.Height + prgLineGoal.Y + var_LayoutProperties.Padding.innerpadding1
+                        )
+                    ZIndex: =4
+
+                txtObjective As Text:
+                    AutoHeight: =true
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =varThemeFont.H3.italic
+                    Height: =Len(Self.Text) * Self.Size * Self.Width
+                    Size: =14
+                    Text: |
+                        =Concat(ThisItem.'Corporate Objectives', Name, ", ")
+                    VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                    Weight: ='TextCanvas.Weight'.Regular
+                    Width: |-
+                        =//Responsive condition - 
+                        If ('Goals Screen'.Size >= ScreenSize.Large,
+                        Parent.Width - Self.X - txtPercentageGoal.Width - var_LayoutProperties.Padding.innerpadding2,
+                        Parent.Width - Self.X - var_LayoutProperties.Padding.innerpadding2
+                        
+                        )
+                    Wrap: =true
+                    X: |
+                        =//Responsive condition - Text Objective
+                        If ('Goals Screen'.Size >= ScreenSize.Large,
+                        txtSubgoalcount.X + txtSubgoalcount.Width,
+                        var_LayoutProperties.Padding.innerpadding2
+                        )
+                    Y: |-
+                        =//Responsive condition - Text Objective
+                        If ('Goals Screen'.Size >= ScreenSize.Large,
+                        txtSubgoalcount.Y,
+                        txtSubgoalcount.Y + txtSubgoalcount.Height + var_LayoutProperties.Padding.innerpadding1
+                        )
+                    ZIndex: =5
+
+                txtSubgoalcount As Text:
+                    AutoHeight: =true
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =ColorValue(varTheme.neutralForeground3)
+                    FontItalic: =varThemeFont.H3.italic
+                    Height: =txtObjective.Height
+                    Size: =14
+                    Text: |-
+                        =$"{CountRows(
+                            Filter(
+                                Subgoals,
+                                Goal.'Goal Id' = ThisItem.'Goal Id'
+                            ).Name
+                        )} sub-goals"
+                    VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                    Weight: ='TextCanvas.Weight'.Regular
+                    Width: =150
+                    X: =15
+                    Y: =txtNameGoal.Y + txtNameGoal.Height + var_LayoutProperties.Padding.innerpadding1
+                    ZIndex: =6
+
+                "prgLineGoal As 'Progress Bar'":
+                    AccessibleLabel: =$"Goal {ThisItem.Name} progress at {Text(RoundUp(Self.Value, 2))} %"
+                    BasePaletteColor: =
+                    DisplayMode: =DisplayMode.Edit
+                    Height: =20
+                    Indeterminate: =false
+                    ProgressColor: |-
+                        =If(Self.Value < Self.Max,
+                        'Progress.ProgressColor'.Brand,
+                        'Progress.ProgressColor'.Success)
+                    Thickness: ='Progress.Thickness'.Large
+                    Value: =Coalesce(Average(Filter(Subgoals, Goal.'Goal Id' = ThisItem.'Goal Id'), Progress), 0)
+                    Width: |
+                        =//Responsive condition - 
+                        If ('Goals Screen'.Size >= ScreenSize.Large,
+                        var_LayoutProperties.Profile.progressBar.width,
+                        Parent.Width - (var_LayoutProperties.Padding.innerpadding2 * 2)
+                        )
+                    X: =Parent.Width - Self.Width - var_LayoutProperties.Padding.innerpadding2
+                    Y: |-
+                        =//Responsive condition - progress
+                        If ('Goals Screen'.Size >= ScreenSize.Large,
+                        var_LayoutProperties.Padding.innerpadding2,
+                        txtObjective.Height + txtObjective.Y + var_LayoutProperties.Padding.innerpadding1
+                        )
+                    ZIndex: =7
+
+                txtNameGoal As Text:
+                    AutoHeight: =true
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =ColorValue(varTheme.neutralForeground1)
+                    FontItalic: =varThemeFont.H3.italic
+                    Height: =Len(Self.Text) * Self.Size * Self.Width
+                    Size: =14
+                    Text: |
+                        =ThisItem.Name
+                    VerticalAlign: ='TextCanvas.VerticalAlign'.Top
+                    Weight: ='TextCanvas.Weight'.Semibold
+                    Width: |+
+                        =//Responsive condition - 
+                        If ('Goals Screen'.Size >= ScreenSize.Large,
+                        Parent.Width - Self.X - prgLineGoal.Width - var_LayoutProperties.Padding.innerpadding2,
+                        Parent.Width - Self.X - var_LayoutProperties.Padding.innerpadding2
+                        )
+                        
+                    Wrap: =true
+                    X: =var_LayoutProperties.Padding.innerpadding2
+                    Y: =var_LayoutProperties.Padding.innerpadding2
+                    ZIndex: =8
+
+            conNodataGoals As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                FillPortions: =0
+                Height: |-
+                    =If(Self.Visible, Max(    conBackgroundScreen_Goals.Height - 
+                        conBackgroundScreen_Goals.PaddingTop - 
+                        conBackgroundScreen_Goals.PaddingBottom - 
+                        (conBackgroundScreen_Goals.LayoutGap * 2) -  
+                        conScreentitle_Goals.Height -
+                        conFiscalYearGoals.Height -
+                        conCountFooterRows.Height, 166), 0)
+                LayoutAlignItems: =LayoutAlignItems.Center
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                RadiusBottomLeft: =9
+                RadiusBottomRight: =9
+                RadiusTopLeft: =9
+                RadiusTopRight: =9
+                Visible: =If(galHomescreenGoals.AllItemsCount > 0, false, true)
+                Width: =Parent.Width
+                ZIndex: =2
+
+                txtNodataGoals As Text:
+                    Align: ='TextCanvas.Align'.Center
+                    AutoHeight: =false
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =varThemeFont.H3.italic
+                    Height: =Parent.Height
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    Size: =14
+                    Text: ="There are no goals yet." & Self.Height
+                    VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                    Visible: =Parent.Visible
+                    Weight: ='TextCanvas.Weight'.Regular
+                    Width: =Parent.Width
+                    X: =0
+                    Y: =0
+                    ZIndex: =1
+
+            conCountFooterRows As groupContainer.horizontalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                FillPortions: =0
+                Height: =var_LayoutProperties.Profile.profileheight + 8
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutGap: =10
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                PaddingLeft: =
+                PaddingRight: =
+                Width: =Parent.Width
+                ZIndex: =4
+
+                shpFooterSeparatorGoals As rectangle:
+                    BorderColor: =App.Theme.Colors.Darker40
+                    Fill: =ColorValue(varTheme.neutralStroke2)
+                    Height: =var_LayoutProperties.Profile.shapeseparator
+                    Visible: |-
+                        =
+                        If(conBackgroundScreen_Goals.Height - conBackgroundScreen_Goals.Y - conBackgroundScreen_Goals.PaddingBottom > galHomescreenGoals.Height + shpFooterSeparatorGoals.Height + conCountFooterRows.Height, true, false)
+                    Width: =Parent.Width
+                    Y: =
+                    ZIndex: =1
+
+                txtFooterRowCountGoals As Text:
+                    AutoHeight: =true
+                    BorderStyle: =""
+                    DisplayMode: =DisplayMode.Edit
+                    Font: =""
+                    FontColor: =
+                    FontItalic: =varThemeFont.H3.italic
+                    Height: =Self.Size * 1.8
+                    LayoutMinHeight: =32
+                    LayoutMinWidth: =96
+                    PaddingLeft: =var_LayoutProperties.Padding.innerpadding1
+                    Size: =14
+                    Text: |-
+                        =$"Rows: {galHomescreenGoals.AllItemsCount}"
+                    VerticalAlign: ='TextCanvas.VerticalAlign'.Middle
+                    Weight: ='TextCanvas.Weight'.Regular
+                    Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                    X: =0
+                    Y: =0
+                    ZIndex: =2
+
+        conPaddingGap As groupContainer.manualLayoutContainer:
+            FillPortions: =0
+            Height: =Max(Parent.PaddingBottom - Parent.LayoutGap, 1)
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            ZIndex: =5
+
+    cmpHeaderCompound_Goals As compHeaderCompound:
+        HeaderWidth: =Parent.Width
+        ShowBackButton: =false
+        Width: =cmpHeaderCompound_Goals.HeaderWidth
+        ZIndex: =2
+

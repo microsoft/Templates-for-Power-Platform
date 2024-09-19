@@ -1,0 +1,352 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_microsoftpoweracceleratordataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      },
+      "shared_office365_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_microsoftpoweracceleratoroutlook"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_attendance_is_modified": {
+          "metadata": {
+            "operationMetadataId": "033876d5-a742-4fb4-85c1-dc1ae6752a25"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "SubscribeWebhookTrigger",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 3,
+              "subscriptionRequest/entityname": "mpa_booking",
+              "subscriptionRequest/scope": 4,
+              "subscriptionRequest/filteringattributes": "mpa_attendance"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Runs when a booking's attendance column has been modified"
+        }
+      },
+      "actions": {
+        "Initialize_email_subject_variable": {
+          "runAfter": {
+            "Get_Number_of_Subsequent_bookings": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "58c66bd6-fd9d-464a-b78e-cb2edd489ec3"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "emailSubject",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_email_body_variable": {
+          "runAfter": {
+            "Initialize_email_subject_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "abbc4bd3-d4ba-41a9-8b9f-c48fbf4faf83"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "emailBody",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Check_attendance_value": {
+          "actions": {
+            "Set_email_subject_for_attended": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "5eda0eb8-8d91-4410-a4f2-2a8d371bc1b3"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "emailSubject",
+                "value": "Attended - @{outputs('Get_booking_training_session_information')?['body/mpa_name']}"
+              },
+              "description": "Email subject if registered user attended the session"
+            },
+            "Set_Email_body_for_attended_session": {
+              "runAfter": {
+                "Set_email_subject_for_attended": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "747d29ca-66e3-4fe7-9ec2-448798c6b231"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "emailBody",
+                "value": "Congatulations @{outputs('Get_user_full_information')?['body/fullname']},\n<br>\nYou have successfully completed and attended @{outputs('Get_booking_training_session_information')?['body/mpa_name']}.\n<br>\n<strong>No Futher Action is required.</strong>\n"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_email_body_variable": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Set_subject_for_no_show": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "c2e23521-b571-4b77-94aa-3a39911bd1a1"
+                },
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "emailSubject",
+                  "value": "No Show - @{outputs('Get_booking_training_session_information')?['body/mpa_name']}"
+                }
+              },
+              "Set_email_body_for_no_show_sessions": {
+                "runAfter": {
+                  "Set_subject_for_no_show": [
+                    "Succeeded"
+                  ]
+                },
+                "metadata": {
+                  "operationMetadataId": "d14862a2-048f-403f-8c29-0e8f5f979c77"
+                },
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "emailBody",
+                  "value": "Hi @{outputs('Get_user_full_information')?['body/fullname']},\n<br>\nThis email is to inform you that you are tagged as <strong>No show</strong> for <strong>@{outputs('Get_booking_training_session_information')?['body/mpa_name']}</strong>\n<br>\nYou will receive a cancellation email of all subsequent training session bookings should there be any.\n<br>\n<br>\n<strong>Action Required:</strong>\n<strong>Please, rebook any cancelled subsequent bookings.</strong>\n\n"
+                }
+              }
+            }
+          },
+          "expression": {
+            "equals": [
+              "@triggerOutputs()?['body/mpa_attendance']",
+              865420000
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "14db0cd8-acfa-487a-8081-157b52bfec0d"
+          },
+          "type": "If",
+          "description": "Check if value is attended or no show - attended choice value is 865420000"
+        },
+        "Get_booking_training_session_information": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "6448aeec-ea00-4cdd-bc83-dc583b49ad81"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "GetItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "mpa_trainingsessions",
+              "recordId": "@triggerOutputs()?['body/_mpa_trainingsession_value']"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Get full information of the related training of the modified booking"
+        },
+        "Get_Subsequent_Bookings": {
+          "runAfter": {
+            "Get_booking_training_session_information": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "1d9f11bf-4002-4c96-9f1d-83c262c3af7b"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "mpa_bookings",
+              "$filter": "(_ownerid_value eq @{triggerOutputs()?['body/_ownerid_value']}) and (statecode eq 0) and (mpa_training/_mpa_prerequisite_value eq @{triggerOutputs()?['body/_mpa_training_value']})"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Send_an_email_to_registered_user": {
+          "runAfter": {
+            "Check_attendance_value": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "1d7e654f-990e-4053-ba6c-5ad414d4cd12"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365_1",
+              "operationId": "SendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "emailMessage/To": "@coalesce(outputs('Get_user_full_information')?['body/internalemailaddress'],outputs('Get_user_full_information')?['body/personalemailaddress'])",
+              "emailMessage/Subject": "@variables('emailSubject')",
+              "emailMessage/Body": "<p>@{variables('emailBody')}</p>",
+              "emailMessage/Importance": "Normal"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Send attended session or no show session email notification"
+        },
+        "Get_Number_of_Subsequent_bookings": {
+          "runAfter": {
+            "Get_user_full_information": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "abf7caf4-6582-40f7-a73f-1866e9d770c5"
+          },
+          "type": "Compose",
+          "inputs": "@length(outputs('Get_Subsequent_Bookings')?['body/value'])"
+        },
+        "Get_user_full_information": {
+          "runAfter": {
+            "Get_Subsequent_Bookings": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "392839c5-99e8-41ff-a10c-572e897c517d"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "GetItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "systemusers",
+              "recordId": "@triggerOutputs()?['body/_ownerid_value']"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Gets full user information"
+        },
+        "Apply_to_each": {
+          "foreach": "@outputs('Get_Subsequent_Bookings')?['body/value']",
+          "actions": {
+            "Check_if_modified_booking_has_subsequent_bookings": {
+              "actions": {
+                "Cancel_subsequent_bookings": {
+                  "foreach": "@outputs('Get_Subsequent_Bookings')?['body/value']",
+                  "actions": {
+                    "Process_Auto_Cancellation": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "d048252c-a210-4cbf-bd9f-af9318edcd7e"
+                      },
+                      "type": "Workflow",
+                      "inputs": {
+                        "host": {
+                          "workflowReferenceName": "24f4b20c-4c0c-ef11-9f89-0022482c6025"
+                        },
+                        "body": {
+                          "text": "@items('Cancel_subsequent_bookings')?['mpa_bookingid']"
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "250de5e3-b281-4437-b2e1-cef48aa1fd7f"
+                  },
+                  "type": "Foreach"
+                }
+              },
+              "runAfter": {},
+              "expression": {
+                "and": [
+                  {
+                    "greater": [
+                      "@outputs('Get_Number_of_Subsequent_bookings')",
+                      0
+                    ]
+                  },
+                  {
+                    "not": {
+                      "equals": [
+                        "@triggerOutputs()?['body/mpa_attendance']",
+                        865420000
+                      ]
+                    }
+                  }
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "718700ba-224c-4727-bc04-d9b7a69e5afe"
+              },
+              "type": "If"
+            }
+          },
+          "runAfter": {
+            "Send_an_email_to_registered_user": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "e01b0cf0-35d2-4e40-be06-881e7f1e4eb9"
+          },
+          "type": "Foreach",
+          "description": "Process all subsequent bookings and cancel them, the registered user will need to book them again along with the session that they are tagged as No-show"
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

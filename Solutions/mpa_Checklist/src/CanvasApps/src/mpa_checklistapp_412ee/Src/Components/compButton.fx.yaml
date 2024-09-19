@@ -1,0 +1,350 @@
+compButton As CanvasComponent:
+    ActualValue: ="Text"
+    AppHeight: =100
+    AppWidth: =1064
+    Attachment: =SampleImage
+    Comment: ="Text"
+    FileName: ="Text"
+    Fill: =RGBA(0, 0, 0, 0)
+    Height: =compButton.AppHeight
+    Name: ="Text"
+    ScreenSize: =100
+    StepStatus: =varStatusReason
+    Substep: =LookUp('Template Sub Steps' , ThisRecord.Status = 'Status (Template Sub Steps)'.Active)
+    Width: =compButton.AppWidth
+    X: =0
+    Y: =0
+    ZIndex: =1
+
+    conButton As groupContainer.horizontalAutoLayoutContainer:
+        Fill: =ColorValue(varThemeColors.backgroundFill)
+        Height: =Parent.AppHeight
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutDirection: =If(compButton.ScreenSize <3 ,LayoutDirection.Vertical ,LayoutDirection.Horizontal)
+        LayoutGap: =20
+        LayoutMode: =LayoutMode.Auto
+        PaddingBottom: =20
+        PaddingLeft: =If(App.ActiveScreen.Size = 1, 20, 40)
+        PaddingRight: =If(App.ActiveScreen.Size = 1, 20, 40)
+        PaddingTop: =20
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =Parent.Width
+        ZIndex: =1
+
+        btnSaveDraft As button:
+            BorderColor: =ColorValue(varThemeColors.primary)
+            BorderThickness: =1
+            Color: =ColorValue(varThemeColors.primary)
+            DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+            DisabledColor: =ColorValue(varThemeColors.disabledText)
+            DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+            DisplayMode: =If(varSelectedReport.'Status Reason' = 'Status Reason (Reports)'.'Ready for Review'  || varDisabled, DisplayMode.Disabled , DisplayMode.Edit)
+            Fill: =ColorValue(varThemeColors.backgroundFill)
+            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+            Font: =varThemeFont.CTA.face
+            FontWeight: =varThemeFont.CTA.weightBold
+            Height: =32
+            HoverBorderColor: =ColorValue(varThemeColors.primary)
+            HoverColor: =ColorValue(varThemeColors.altText)
+            HoverFill: =ColorValue(varThemeColors.tertiary)
+            Italic: =varThemeFont.CTA.italic
+            OnSelect: |-
+                =Set(//variable for checking if has value
+                    varHasReportSteps,
+                    LookUp(
+                        'Report Steps',
+                        And(
+                            Report.Report = varSelectedReport.Report,
+                            'Template Step'.'Template Step' = varCurrentStep.'Template Step'
+                        )
+                    )
+                );
+                Patch(
+                    colSteps,
+                    LookUp(
+                        colSteps,
+                        'Template Step' = varCurrentStep.'Template Step'
+                    ),
+                    {reportStatus: compButton.StepStatus.Value,
+                    Comment: compButton.Comment}
+                );
+                // Patch of Collection
+                IfError(
+                    Set(
+                        varCurrentReportStep,
+                        Patch(//Patching of Report steps
+                            'Report Steps',
+                            If(
+                                IsBlank(varHasReportSteps),
+                                Defaults('Report Steps'),//Create new record
+                                LookUp(//patch existing record
+                                    'Report Steps',
+                                    'Report Step' = varHasReportSteps.'Report Step'
+                                )
+                            ),
+                            {
+                                Name: varCurrentStep.Name,
+                                Report: varSelectedReport,
+                                Comment: compButton.Comment,
+                                'Template Step': LookUp(
+                                    'Template Steps',
+                                    'Template Step' = varCurrentStep.'Template Step'
+                                ),
+                                'Status Reason': compButton.StepStatus.Value
+                            }
+                        )
+                    );
+                    ,
+                    Notify( //Will notify if encounter an error
+                        "Error saving report" & " "  & Concat(Errors('Report Steps'),
+                            Column & ":" & Message
+                        ),
+                        NotificationType.Error,
+                        2000
+                    );
+                    false,
+                //Checking of Variable if Substeps is visible
+                    Set(
+                        varHasReportSubSteps,
+                        LookUp(
+                            'Report Sub Steps',
+                            And(
+                                'Report Step'.'Report Step' = varCurrentReportStep.'Report Step',
+                                'Template Sub Step'.'Template Sub Step' = varCurrentSubStep.'Template Sub Step'
+                            )
+                        )
+                    );
+                    If(
+                        !IsBlank(compButton.Name),
+                        Patch(//Patching of Report Substeps
+                            'Report Sub Steps',
+                            If(
+                                IsBlank(varHasReportSubSteps),
+                                Defaults('Report Sub Steps'),//Create new if null
+                                LookUp(//Patch existing record
+                                    'Report Sub Steps',
+                                    'Report Sub Step' = varHasReportSubSteps.'Report Sub Step'
+                                )
+                            ),
+                            {
+                                Name: compButton.Name,
+                                'Report Step': varCurrentReportStep,
+                                Attachment: {
+                                    FileName: compButton.FileName,
+                                    Value: compButton.Attachment
+                                },
+                                'Actual Value': compButton.ActualValue,
+                                'Template Sub Step': compButton.Substep,
+                                'Value Unit':varValueUnit
+                            }
+                        );
+                    );
+                    ,
+                    Notify( //Will notify if encounter an error
+                        "Error saving report" & " "  & Concat(Errors('Report Sub Steps'),
+                            Column & ":" & Message
+                        ),
+                        NotificationType.Error,
+                        2000
+                    );
+                    false,
+                    //Refresh the current Step data
+                    Set(varCurrentStep , LookUp(colSteps , 'Template Step' = varCurrentStep.'Template Step'));
+                    Navigate('Reports Page');
+                    true
+                );
+                
+                //setting the value to blank
+                Set(varValueUnit, Blank())
+            PressedBorderColor: =ColorValue(varThemeColors.primary)
+            PressedColor: =ColorValue(varThemeColors.altText)
+            PressedFill: =ColorValue(varThemeColors.primary)
+            RadiusBottomLeft: =6
+            RadiusBottomRight: =6
+            RadiusTopLeft: =6
+            RadiusTopRight: =6
+            Size: =varThemeFont.CTA.size
+            Text: |-
+                =/*With(
+                    {Text: "Save draft"},
+                     If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colLocalizations,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colLocalizations,
+                            'English Value' = Text
+                        ).'Localized Value'
+                    )
+                )*/
+                "Save draft"
+            Width: =If(compButton.ScreenSize <3 ,Parent.Width  - Parent.PaddingLeft * 2,150)
+            X: =1
+            Y: =
+            ZIndex: =1
+
+        btnReviewSteps As button:
+            BorderColor: =ColorValue(varThemeColors.primary)
+            BorderThickness: =1
+            Color: =ColorValue(varThemeColors.altText)
+            DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+            DisabledColor: =ColorValue(varThemeColors.disabledText)
+            DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+            DisplayMode: =If(varSelectedReport.'Status Reason' = 'Status Reason (Reports)'.'Ready for Review' || varDisabled, DisplayMode.Disabled , DisplayMode.Edit)
+            Fill: =ColorValue(varThemeColors.primary)
+            FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+            FocusedBorderThickness: =varThemeColors.focusBorderThickness
+            Font: =varThemeFont.CTA.face
+            FontWeight: =varThemeFont.CTA.weightBold
+            Height: =32
+            HoverBorderColor: =ColorValue(varThemeColors.primary)
+            HoverColor: =ColorValue(varThemeColors.altText)
+            HoverFill: =ColorValue(varThemeColors.tertiary)
+            Italic: =varThemeFont.CTA.italic
+            OnSelect: |
+                =Set(//variable for checking if has value
+                    varHasReportSteps,
+                    LookUp(
+                        'Report Steps',
+                        And(
+                            Report.Report = varSelectedReport.Report,
+                            'Template Step'.'Template Step' = varCurrentStep.'Template Step'
+                        )
+                    )
+                );
+                Patch(
+                    colSteps,
+                    LookUp(
+                        colSteps,
+                        'Template Step' = varCurrentStep.'Template Step'
+                    ),
+                    {reportStatus: compButton.StepStatus.Value}
+                );
+                // Patch of Collection
+                IfError(
+                    Set(
+                        varCurrentReportStep,
+                        Patch(//Patching of Report steps
+                            'Report Steps',
+                            If(
+                                IsBlank(varHasReportSteps),
+                                Defaults('Report Steps'),//Create new record
+                                LookUp(//patch existing record
+                                    'Report Steps',
+                                    'Report Step' = varHasReportSteps.'Report Step'
+                                )
+                            ),
+                            {
+                                Name: varCurrentStep.Name,
+                                Report: varSelectedReport,
+                                Comment: compButton.Comment,
+                                'Template Step': LookUp(
+                                    'Template Steps',
+                                    'Template Step' = varCurrentStep.'Template Step'
+                                ),
+                                'Status Reason': compButton.StepStatus.Value
+                            }
+                        )
+                    );
+                    ,
+                    Notify(
+                        "Error saving report",
+                        NotificationType.Error,
+                        2000
+                    );
+                    false,
+                //Checking of Variable if Substeps is visible
+                    Set(
+                        varHasReportSubSteps,
+                        LookUp(
+                            'Report Sub Steps',
+                            And(
+                                'Report Step'.'Report Step' = varCurrentReportStep.'Report Step',
+                                'Template Sub Step'.'Template Sub Step' = varCurrentSubStep.'Template Sub Step'
+                            )
+                        )
+                    );
+                    If(
+                        !IsBlank(compButton.Name),
+                        Patch(//Patching of Report Substeps
+                            'Report Sub Steps',
+                            If(
+                                IsBlank(varHasReportSubSteps),
+                                Defaults('Report Sub Steps'),//Create new if null
+                                LookUp(//Patch existing record
+                                    'Report Sub Steps',
+                                    'Report Sub Step' = varHasReportSubSteps.'Report Sub Step'
+                                )
+                            ),
+                            {
+                                Name: compButton.Name,
+                                'Report Step': varCurrentReportStep,
+                                Attachment: {
+                                    FileName: compButton.FileName,
+                                    Value: compButton.Attachment
+                                },
+                                'Actual Value': compButton.ActualValue,
+                                'Template Sub Step': compButton.Substep,
+                                'Value Unit':varValueUnit
+                            }
+                        );
+                    );
+                    ,
+                    Notify(
+                        "Error saving report",
+                        NotificationType.Error,
+                        2000
+                    );
+                    false,
+                    //Refresh the current Step data
+                    Set(varCurrentStep , LookUp(colSteps , 'Template Step' = varCurrentStep.'Template Step'));
+                    Navigate('Review Steps Screen');
+                    true
+                );
+                
+                
+                //setting the value to blank
+                Set(varValueUnit, Blank())
+            PressedBorderColor: =ColorValue(varThemeColors.primary)
+            PressedColor: =ColorValue(varThemeColors.altText)
+            PressedFill: =ColorValue(varThemeColors.primary)
+            RadiusBottomLeft: =6
+            RadiusBottomRight: =6
+            RadiusTopLeft: =6
+            RadiusTopRight: =6
+            Size: =varThemeFont.CTA.size
+            Text: |-
+                =/*With(
+                    {Text: "Review steps"},
+                     If(
+                        // If the localized text is blank, return the default text
+                        IsBlank(
+                            LookUp(
+                                colLocalizations,
+                                'English Value' = Text
+                            ).'Localized Value'
+                        ),
+                        Text,
+                        // If a localized text is found, return that instead of the default text
+                        LookUp(
+                            colLocalizations,
+                            'English Value' = Text
+                        ).'Localized Value'
+                    )
+                )*/
+                "Review steps"
+            Width: =If(compButton.ScreenSize <3 ,Parent.Width  - Parent.PaddingLeft * 2,150)
+            X: =1
+            Y: =
+            ZIndex: =3
+

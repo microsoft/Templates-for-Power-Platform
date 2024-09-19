@@ -1,0 +1,325 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps_1": {
+        "impersonation": {},
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_PowerAppsInnovationCenterDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      },
+      "shared_office365_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_PowerAppsInnovationCenterOutlook"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_a_row_is_added,_modified_or_deleted": {
+          "metadata": {
+            "operationMetadataId": "0e367bf3-a124-4585-a886-1757fcecb3c6"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "SubscribeWebhookTrigger"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 1,
+              "subscriptionRequest/entityname": "mpa_visitormgt_visitorregistrationid",
+              "subscriptionRequest/scope": 4,
+              "subscriptionRequest/name": "25cca5d1-0c1d-ef11-840a-7c1e5201c0e0"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      },
+      "actions": {
+        "Get_Location": {
+          "runAfter": {
+            "Do_until": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "ac944324-ed97-48a6-9212-2f4383653fe6"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "GetItem"
+            },
+            "parameters": {
+              "entityName": "mpa_visitormgt_locationids",
+              "recordId": "@outputs('Get_the_updated_visitor_registration_record')?['body/_mpa_location_value']",
+              "$select": "mpa_name"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Get the location of the appointment."
+        },
+        "Check_if_it_is_a_Multi-day_Visit": {
+          "actions": {
+            "Send_an_email_to_Visitor_-_Multi-day_visit": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "bfc2f250-b002-458c-843e-4c7d8f72d91e"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                  "connectionName": "shared_office365_1",
+                  "operationId": "SendEmailV2"
+                },
+                "parameters": {
+                  "emailMessage/To": "@outputs('Get_Visitor')?['body/emailaddress1']",
+                  "emailMessage/Subject": "Visitor Registration@{if(equals(triggerOutputs()?['body/mpa_company'], null), '', concat(' for ', triggerOutputs()?['body/mpa_company']))\r\n} from @{convertFromUtc(triggerOutputs()?['body/mpa_appointmentstartdate'],outputs('Get_User_Timezone')?['Body']?['time_zone_name'],'g')} to@{convertFromUtc(triggerOutputs()?['body/mpa_appointmentenddate'],outputs('Get_User_Timezone')?['Body']?['time_zone_name'],'g')} at @{outputs('Get_Location')?['body/mpa_name']}",
+                  "emailMessage/Body": "<p>Hi @{outputs('Get_Visitor')?['body/firstname']},<br>\n<br>\nYou have a multi-day visit with @{outputs('Get_the_updated_visitor_registration_record')?['body/mpa_hostname']} scheduled from @{convertFromUtc(triggerOutputs()?['body/mpa_appointmentstartdate'],outputs('Get_User_Timezone')?['Body']?['time_zone_name'],'g')} to @{convertFromUtc(triggerOutputs()?['body/mpa_appointmentenddate'],outputs('Get_User_Timezone')?['Body']?['time_zone_name'],'g')} at @{outputs('Get_Location')?['body/mpa_name']}.<br>\n<br>\nTo gain entrance and alert your host that you have arrived, please see the front kiosk and enter your PIN: @{outputs('Get_the_updated_visitor_registration_record')?['body/mpa_pincode']}.<br>\n<br>\n<em>This is an automated message, please do not respond.&nbsp;</em></p>",
+                  "emailMessage/Importance": "Normal"
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": "Send a Multi-day Confirmation Email to the Visitor"
+            },
+            "Send_an_email_to_Host_-_Multi-day_visit": {
+              "runAfter": {
+                "Send_an_email_to_Visitor_-_Multi-day_visit": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "7cad4fe7-6cd4-47c2-a9c0-0368fee77a06"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                  "connectionName": "shared_office365_1",
+                  "operationId": "SendEmailV2"
+                },
+                "parameters": {
+                  "emailMessage/To": "@outputs('Get_the_updated_visitor_registration_record')?['body/mpa_hostemail']",
+                  "emailMessage/Subject": "Visitor Registration from @{convertFromUtc(triggerOutputs()?['body/mpa_appointmentstartdate'],outputs('Get_User_Timezone')?['Body']?['time_zone_name'],'g')} to  @{convertFromUtc(triggerOutputs()?['body/mpa_appointmentenddate'],outputs('Get_User_Timezone')?['Body']?['time_zone_name'],'g')} at @{outputs('Get_Location')?['body/mpa_name']}",
+                  "emailMessage/Body": "<p>Hi @{outputs('Get_the_updated_visitor_registration_record')?['body/mpa_hostname']},<br>\n<br>\nYou have been selected as a host for a visit with @{outputs('Get_Visitor')?['body/fullname']} scheduled from @{convertFromUtc(triggerOutputs()?['body/mpa_appointmentstartdate'],outputs('Get_User_Timezone')?['Body']?['time_zone_name'],'g')} to @{convertFromUtc(triggerOutputs()?['body/mpa_appointmentenddate'],outputs('Get_User_Timezone')?['Body']?['time_zone_name'],'g')} at @{outputs('Get_Location')?['body/mpa_name']}.<br>\n<br>\n<em>This is an automated message, please do not respond.&nbsp;</em></p>",
+                  "emailMessage/Importance": "Normal"
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": "Send a Multi-day Confirmation Email to the Host"
+            }
+          },
+          "runAfter": {
+            "Get_Visitor": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Send_an_email_to_Visitor_-_Single-day_visit": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "b6aefe18-b61a-41ec-a2f5-49b50600b4fe"
+                },
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                    "connectionName": "shared_office365_1",
+                    "operationId": "SendEmailV2"
+                  },
+                  "parameters": {
+                    "emailMessage/To": "@outputs('Get_Visitor')?['body/emailaddress1']",
+                    "emailMessage/Subject": "Visitor Registration@{if(equals(triggerOutputs()?['body/mpa_company'], null), '', concat(' for ', triggerOutputs()?['body/mpa_company']))\r\n} on @{convertFromUtc(triggerOutputs()?['body/mpa_appointmentstartdate'],outputs('Get_User_Timezone')?['Body']?['time_zone_name'],'g')} at @{outputs('Get_Location')?['body/mpa_name']}",
+                    "emailMessage/Body": "<p>Hi @{outputs('Get_Visitor')?['body/firstname']},<br>\n<br>\nYou have a visit with @{outputs('Get_the_updated_visitor_registration_record')?['body/mpa_hostname']} scheduled on @{convertFromUtc(triggerOutputs()?['body/mpa_appointmentstartdate'],outputs('Get_User_Timezone')?['Body']?['time_zone_name'],'g')} at @{outputs('Get_Location')?['body/mpa_name']}.<br>\n<br>\nTo gain entrance and alert your host that you have arrived, please see the front kiosk and enter your PIN: <strong></strong><strong>@{outputs('Get_the_updated_visitor_registration_record')?['body/mpa_pincode']}</strong><strong></strong>.<br>\n<br>\n<em>This is an automated message, please do not respond.&nbsp;</em></p>",
+                    "emailMessage/Importance": "Normal"
+                  },
+                  "authentication": "@parameters('$authentication')"
+                },
+                "description": "Send a Singe-day Confirmation Email to the Visitor"
+              },
+              "Send_an_email_to_Host_-_Single-day_visit": {
+                "runAfter": {
+                  "Send_an_email_to_Visitor_-_Single-day_visit": [
+                    "Succeeded"
+                  ]
+                },
+                "metadata": {
+                  "operationMetadataId": "a3905337-3572-4d19-8261-57063beb67cb"
+                },
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                    "connectionName": "shared_office365_1",
+                    "operationId": "SendEmailV2"
+                  },
+                  "parameters": {
+                    "emailMessage/To": "@outputs('Get_the_updated_visitor_registration_record')?['body/mpa_hostemail']",
+                    "emailMessage/Subject": "Visitor Registration on @{convertFromUtc(triggerOutputs()?['body/mpa_appointmentstartdate'],outputs('Get_User_Timezone')?['Body']?['time_zone_name'],'g')} at @{outputs('Get_Location')?['body/mpa_name']}",
+                    "emailMessage/Body": "<p>Hi @{outputs('Get_the_updated_visitor_registration_record')?['body/mpa_hostname']},<br>\n<br>\nYou have been selected as a host for a visit with @{outputs('Get_Visitor')?['body/fullname']} scheduled on @{convertFromUtc(triggerOutputs()?['body/mpa_appointmentstartdate'],outputs('Get_User_Timezone')?['Body']?['time_zone_name'],'g')} at @{outputs('Get_Location')?['body/mpa_name']}.<br>\n<br>\n<em>This is an automated message, please do not respond.&nbsp;</em></p>",
+                    "emailMessage/Importance": "Normal"
+                  },
+                  "authentication": "@parameters('$authentication')"
+                },
+                "description": "Send a Single-day Confirmation Email to the Host"
+              }
+            }
+          },
+          "expression": {
+            "equals": [
+              "@outputs('Get_the_updated_visitor_registration_record')?['body/mpa_ismultidayvisit']",
+              "@true"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "36f11c9b-e776-4bde-9130-6d9809a21664"
+          },
+          "type": "If",
+          "description": "Check the the appointment if it is multi-day visit."
+        },
+        "Get_Visitor": {
+          "runAfter": {
+            "Get_Location": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "501a7096-9f55-43f6-bc96-8d1edc16678f"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "GetItem"
+            },
+            "parameters": {
+              "entityName": "contacts",
+              "recordId": "@variables('varVisitor')",
+              "$select": "emailaddress1, firstname, fullname"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Get the details of the visitor."
+        },
+        "Initialize_variable_-_varVisitor": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "dae4dc5b-531b-4795-ba9b-ccf61507f877"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "varVisitor",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Do_until": {
+          "actions": {
+            "Get_the_updated_visitor_registration_record": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "8b7e70ab-16c9-4ee0-919d-5848c26f2a1d"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "GetItem"
+                },
+                "parameters": {
+                  "entityName": "mpa_visitormgt_visitorregistrationids",
+                  "recordId": "@triggerOutputs()?['body/mpa_visitormgt_visitorregistrationidid']"
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": "Get the updated visitor registration record"
+            },
+            "Set_varVisitor_value": {
+              "runAfter": {
+                "Get_the_updated_visitor_registration_record": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "c90c69d5-1dd6-43b4-8a21-568641f73d74"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varVisitor",
+                "value": "@outputs('Get_the_updated_visitor_registration_record')?['body/_mpa_visitor_value']"
+              }
+            }
+          },
+          "runAfter": {
+            "Get_User_Timezone": [
+              "Succeeded"
+            ]
+          },
+          "expression": "@equals(variables('varVisitor'), null)",
+          "limit": {
+            "count": 5,
+            "timeout": "PT1H"
+          },
+          "metadata": {
+            "operationMetadataId": "bf800f58-e2a1-411e-8447-e11b39e811ec"
+          },
+          "type": "Until",
+          "description": "Do until visitor is created on the regsitration record"
+        },
+        "Get_User_Timezone": {
+          "runAfter": {
+            "Initialize_variable_-_varVisitor": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "285a1697-f1d0-41f8-92de-682f176d97d9"
+          },
+          "type": "Workflow",
+          "inputs": {
+            "host": {
+              "workflowReferenceName": "f7510d21-b098-ee11-be37-00224808dec6"
+            },
+            "body": {
+              "text": "@triggerOutputs()?['body/_ownerid_value']"
+            }
+          },
+          "description": "Get the timezone for the user"
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

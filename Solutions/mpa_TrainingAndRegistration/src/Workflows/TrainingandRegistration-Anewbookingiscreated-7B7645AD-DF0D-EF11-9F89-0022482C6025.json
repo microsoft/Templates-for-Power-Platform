@@ -1,0 +1,211 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_microsoftpoweracceleratordataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "A_new_booking_is_created": {
+          "metadata": {
+            "operationMetadataId": "aa6bee73-206f-4525-aac2-552a4cdd633a"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "SubscribeWebhookTrigger",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 1,
+              "subscriptionRequest/entityname": "mpa_booking",
+              "subscriptionRequest/scope": 4,
+              "subscriptionRequest/filterexpression": "_mpa_training_value ne null"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "When a user creates a new booking"
+        }
+      },
+      "actions": {
+        "Initialize_CalendarId_variable": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "244eafa0-b10c-47d6-9b6b-ccee0d7f4a51"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "CalendarId",
+                "type": "string",
+                "value": "@{null}"
+              }
+            ]
+          },
+          "description": "Stores the outlook's calendar id variable"
+        },
+        "Unbound_Action_-_Share_with_trainer": {
+          "runAfter": {
+            "Access_to_share": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3f1567c8-9083-4d40-a755-433614e8d3dc"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "PerformUnboundAction",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "actionName": "GrantAccess",
+              "item/Target": "/mpa_bookings(@{triggerOutputs()?['body/mpa_bookingid']})",
+              "item/PrincipalAccess": "@outputs('Access_to_share')"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Share the booking with the trainer so they can update attendance"
+        },
+        "Access_to_share": {
+          "runAfter": {
+            "Get_Training_Session_Info": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "77f165d0-49b9-4999-9284-cd7e0b52ddc1"
+          },
+          "type": "Compose",
+          "inputs": {
+            "Principal": {
+              "systemuserid": "@{outputs('Get_Training_Session_Info')?['body/_ownerid_value']}",
+              "@@odata.type": "Microsoft.Dynamics.CRM.systemuser"
+            },
+            "AccessMask": "ReadAccess,WriteAccess,AppendAccess,AppendToAccess,ShareAccess"
+          },
+          "description": "Privilege that will be shared with the trainer"
+        },
+        "Get_Training_Session_Info": {
+          "runAfter": {
+            "Initialize_CalendarId_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "688cde65-3f08-42ba-91b4-86ba0d3e47f1"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "GetItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "mpa_trainingsessions",
+              "recordId": "@triggerOutputs()?['body/_mpa_trainingsession_value']",
+              "$select": "mpa_enddateandtime,mpa_startdateandtime,mpa_trainingsessionid,_ownerid_value,mpa_calendarid,mpa_trainereventid,statecode"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Get Trainings Session info, to use it in the email"
+        },
+        "Invite_exists_already": {
+          "actions": {
+            "Run_child_flow_-_Manage_Outlook_Events_to_update_attendees": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "dfbed0c4-0188-4892-a019-02a2dbc2347c"
+              },
+              "type": "Workflow",
+              "inputs": {
+                "host": {
+                  "workflowReferenceName": "e749f87e-790b-ef11-9f89-0022482c6025"
+                },
+                "body": {
+                  "boolean": false,
+                  "boolean_1": false,
+                  "text": "@outputs('Get_Training_Session_Info')?['body/mpa_trainingsessionid']",
+                  "boolean_4": true,
+                  "boolean_2": true,
+                  "boolean_5": false,
+                  "boolean_6": false
+                }
+              },
+              "description": "Call the child flow to update the Attendee invite and add more recipients"
+            }
+          },
+          "runAfter": {
+            "Get_Training_Session_Info": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Run_child_flow_-_Manage_Outlook_Events_to_create_and_add_attendees": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "bd88fcd6-3a3c-428c-b928-d64950119d1d"
+                },
+                "type": "Workflow",
+                "inputs": {
+                  "host": {
+                    "workflowReferenceName": "e749f87e-790b-ef11-9f89-0022482c6025"
+                  },
+                  "body": {
+                    "boolean": false,
+                    "boolean_1": true,
+                    "text": "@outputs('Get_Training_Session_Info')?['body/mpa_trainingsessionid']",
+                    "boolean_4": true,
+                    "boolean_2": true,
+                    "boolean_5": false,
+                    "boolean_6": false
+                  }
+                },
+                "description": "Call the child flow to create the attendee event and add the existing recipients"
+              }
+            }
+          },
+          "expression": {
+            "not": {
+              "equals": [
+                "@outputs('Get_Training_Session_Info')?['body/mpa_calendarid']",
+                "@null"
+              ]
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "c2274904-c931-4551-999f-3a9ebf84cf62"
+          },
+          "type": "If"
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}
