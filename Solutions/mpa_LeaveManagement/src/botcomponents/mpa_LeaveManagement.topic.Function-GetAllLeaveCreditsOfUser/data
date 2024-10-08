@@ -1,0 +1,151 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRedirect
+  id: main
+  actions:
+    - kind: ParseValue
+      id: cxa7lQ
+      variable: Topic.ParsedCredits
+      valueType:
+        kind: Table
+        properties:
+          mpa_lm_leavecreditid: String
+          mpa_name: String
+          mpa_sickhoursremaining: Number
+          mpa_unpaidleavehoursremaining: Number
+          mpa_vacationhoursremaining: Number
+
+      value: "=\"[]\""
+
+    - kind: SetVariable
+      id: setVariable_4iHz0w
+      variable: Topic.XML
+      value: |-
+        =$"<?xml version=""1.0"" encoding=""utf-16""?>
+        <fetch top=""50"">
+          <entity name=""mpa_lm_leavecredit"">
+            <attribute name=""mpa_lm_leavecreditid"" />
+            <attribute name=""mpa_name"" />
+            <attribute name=""mpa_hoursremaining"" />
+            <attribute name=""mpa_sickhoursremaining"" />
+            <attribute name=""mpa_unpaidleavehoursremaining"" />
+            <attribute name=""mpa_vacationhoursremaining"" />
+            <filter>
+              <condition entityname=""owner"" attribute=""domainname"" operator=""eq"" value=""{Topic.UserPrincipalName}"" />
+            </filter>
+            <link-entity name=""systemuser"" from=""systemuserid"" to=""owninguser"" link-type=""inner"" alias=""owner"" />
+          </entity>
+        </fetch>"
+
+    - kind: InvokeConnectorAction
+      id: invokeConnectorAction_gSjTxU
+      input:
+        binding:
+          entityName: "=\"mpa_lm_leavecredits\""
+          fetchXml: =Topic.XML
+          organization: current
+
+      output:
+        binding:
+          value: Topic.ParsedCredits
+
+      connectionReference: mpa_LeaveManagementDataverse
+      connectionProperties:
+        mode: Invoker
+
+      operationId: ListRecordsWithOrganization
+      dynamicOutputSchema:
+        kind: Record
+        properties:
+          @odata.nextLink:
+            displayName: Next link
+            description: The url to fetch next page data.
+            visibility: Advanced
+            order: 1
+            type: String
+
+          value:
+            order: 0
+            type:
+              kind: Table
+              properties:
+                dynamicProperties:
+                  order: 0
+                  type: Any
+
+    - kind: ConditionGroup
+      id: DvXXaZ
+      conditions:
+        - id: Z04b65
+          condition: =Topic.IsGetOwnCredits = true
+          actions:
+            - kind: SetVariable
+              id: se3Z9P
+              variable: Global.LeaveCreditsFlat
+              value: |-
+                =[
+                    {
+                      name: "Vacation Leave",
+                      hours: Decimal(If(IsBlank(First(Topic.ParsedCredits).mpa_vacationhoursremaining),0,First(Topic.ParsedCredits).mpa_vacationhoursremaining)),
+                      id: "865420000"
+                    },
+                    {
+                      name: "Sick Leave",
+                      hours: Decimal(If(IsBlank(First(Topic.ParsedCredits).mpa_sickhoursremaining),0,First(Topic.ParsedCredits).mpa_sickhoursremaining)),
+                      id: "865420001"
+                    },
+                    {
+                      name: "Unpaid Leave",
+                      hours: Decimal(If(IsBlank(First(Topic.ParsedCredits).mpa_unpaidleavehoursremaining),0,First(Topic.ParsedCredits).mpa_unpaidleavehoursremaining)),
+                      id: "865420002"
+                    }
+                ]
+
+      elseActions:
+        - kind: SetVariable
+          id: UTwWjf
+          variable: Global.LeaveCreditsFlat
+          value: |-
+            =[
+                {
+                  name: "Vacation Leave",
+                  hours: Decimal(If(IsBlank(First(Topic.ParsedCredits).mpa_vacationhoursremaining),0,First(Topic.ParsedCredits).mpa_vacationhoursremaining)),
+                  id: "865420000"
+                },
+                {
+                  name: "Sick Leave",
+                  hours: Decimal(If(IsBlank(First(Topic.ParsedCredits).mpa_sickhoursremaining),0,First(Topic.ParsedCredits).mpa_sickhoursremaining)),
+                  id: "865420001"
+                },
+                {
+                  name: "Unpaid Leave",
+                  hours: Decimal(If(IsBlank(First(Topic.ParsedCredits).mpa_unpaidleavehoursremaining),0,First(Topic.ParsedCredits).mpa_unpaidleavehoursremaining)),
+                  id: "865420002"
+                }
+            ]
+
+    - kind: SetVariable
+      id: wGrtFK
+      variable: Topic.LeaveCredits
+      value: =Global.LeaveCreditsFlat
+
+inputType:
+  properties:
+    IsGetOwnCredits:
+      displayName: IsGetOwnCredits
+      type: Boolean
+
+    UserPrincipalName:
+      displayName: UserPrincipalName
+      type: String
+
+outputType:
+  properties:
+    LeaveCredits:
+      displayName: LeaveCredits
+      type:
+        kind: Table
+        properties:
+          hours: Number
+          id: String
+          name: String

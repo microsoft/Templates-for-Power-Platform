@@ -1,0 +1,96 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRedirect
+  id: main
+  actions:
+    - kind: InvokeConnectorAction
+      id: PNQL8C
+      input:
+        binding:
+          id: =Topic.UserPrincipalName
+
+      output:
+        binding:
+          value: Topic.Reportees
+
+      connectionReference: mpa_LeaveManagementO365Users
+      connectionProperties:
+        mode: Invoker
+
+      operationId: DirectReports_V2
+
+    - kind: ParseValue
+      id: ORh5R4
+      variable: Topic.ParsedReportees
+      valueType:
+        kind: Table
+        properties:
+          @odata.type: String
+          accountEnabled: Boolean
+          businessPhones:
+            type:
+              kind: Table
+
+          city: String
+          companyName: String
+          country: String
+          department: String
+          displayName: String
+          givenName: String
+          id: String
+          jobTitle: String
+          mail: String
+          mailNickname: String
+          mobilePhone: String
+          officeLocation: String
+          postalCode: String
+          preferredLanguage: String
+          state: String
+          streetAddress: String
+          surname: String
+          userPrincipalName: String
+          userType: String
+
+      value: "=\"[]\""
+
+    - kind: SetVariable
+      id: DGBscu
+      variable: Topic.ParsedReportees
+      value: =Topic.Reportees
+
+    - kind: SetVariable
+      id: eFJlDF
+      variable: Topic.DirectReports
+      value: |-
+        =ForAll(Topic.ParsedReportees,
+            {
+                DisplayName: ThisRecord.displayName,
+                GivenName: ThisRecord.givenName,
+                Id: ThisRecord.id,
+                MailNickname: ThisRecord.mailNickname,
+                Surname: ThisRecord.surname,
+                UserPrincipalName: ThisRecord.userPrincipalName,
+                UserType: ThisRecord.userType
+            }
+        )
+
+inputType:
+  properties:
+    UserPrincipalName:
+      displayName: UserPrincipalName
+      type: String
+
+outputType:
+  properties:
+    DirectReports:
+      displayName: DirectReports
+      type:
+        kind: Table
+        properties:
+          DisplayName: String
+          GivenName: String
+          Id: String
+          MailNickname: String
+          Surname: String
+          UserPrincipalName: String
+          UserType: String

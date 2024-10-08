@@ -1,0 +1,82 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRecognizedIntent
+  id: main
+  intent:
+    triggerQueries:
+      - view faqs
+      - show faqs
+      - view policy
+      - question
+      - faqs
+      - Ask policy questions
+      - Policy
+      - Review policy
+
+  actions:
+    - kind: Question
+      id: oKVQhQ
+      interruptionPolicy:
+        allowInterruption: false
+
+      alwaysPrompt: true
+      variable: init:Topic.Question
+      prompt: What would you like to know about the Leave Policy or the FAQs?
+      entity: StringPrebuiltEntity
+
+    - kind: SearchAndSummarizeContent
+      id: ElMpxM
+      userInput: =Topic.Question
+      variable: Topic.Answer
+      additionalInstructions: |-
+        Use the knowledge sources supplied.
+        For numbered steps, format the content as a numbered list. Always end answers with proper punctuation.
+
+    - kind: ConditionGroup
+      id: Zwi2Yk
+      conditions:
+        - id: ASksAv
+          condition: =!IsBlank(Topic.Answer)
+          actions:
+            - kind: BeginDialog
+              id: 0ruClL
+              dialog: mpa_LeaveManagement.topic.AnythingElse
+
+      elseActions:
+        - kind: Question
+          id: G6jh8G
+          interruptionPolicy:
+            allowInterruption: true
+
+          variable: init:Topic.RetryOrCancel
+          prompt: I'm sorry, I'm not sure how to help with that. Can you try rephrasing?
+          entity:
+            kind: EmbeddedEntity
+            definition:
+              kind: ClosedListEntity
+              items:
+                - id: Retry
+                  displayName: Retry
+
+                - id: Cancel
+                  displayName: Cancel
+
+        - kind: ConditionGroup
+          id: conditionGroup_iBHeZl
+          conditions:
+            - id: conditionItem_yFi8JV
+              condition: =Topic.RetryOrCancel = 'mpa_LeaveManagement.topic.ViewFAQs.main.G6jh8G'.Retry
+              actions:
+                - kind: GotoAction
+                  id: epvO9k
+                  actionId: oKVQhQ
+
+            - id: conditionItem_Z0lOEF
+              condition: =Topic.RetryOrCancel = 'mpa_LeaveManagement.topic.ViewFAQs.main.G6jh8G'.Cancel
+
+        - kind: BeginDialog
+          id: ycOgsl
+          dialog: mpa_LeaveManagement.topic.AnythingElse
+
+    - kind: EndDialog
+      id: 2Ipncw

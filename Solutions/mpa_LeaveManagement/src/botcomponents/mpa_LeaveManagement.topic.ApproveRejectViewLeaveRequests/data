@@ -1,0 +1,499 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRecognizedIntent
+  id: main
+  intent:
+    triggerQueries:
+      - approve requests
+      - reject requests
+
+  actions:
+    - kind: SetVariable
+      id: xjUSsk
+      variable: Topic.ApprovalStatusNames
+      value: |-
+        =[
+            "Pending",
+            "Approved",
+            "Rejected",
+            "Cancelled"
+        ]
+
+    - kind: ConditionGroup
+      id: dF15b1
+      conditions:
+        - id: SNIXxO
+          condition: =Global.IsManager = true
+          actions:
+            - kind: SendActivity
+              id: DdUynF
+              activity: I can help approve leave requests!
+
+            - kind: BeginDialog
+              id: DmqMGk
+              input:
+                binding:
+                  LeaveStatus: "=\"0\""
+                  UserPrincipalName: =System.User.PrincipalName
+
+              dialog: mpa_LeaveManagement.topic.Function-GetAllLeaveRequestsofManager
+              output:
+                binding:
+                  FilteredRequests: Topic.FilteredRequests
+                  RequestsCount: Topic.RequestsCount
+
+            - kind: ConditionGroup
+              id: 6ntiR4
+              conditions:
+                - id: p6uvLw
+                  condition: =Topic.RequestsCount > 0
+                  actions:
+                    - kind: AdaptiveCardPrompt
+                      id: addWI4
+                      card: |-
+                        ={
+                          type: "AdaptiveCard",
+                          '$schema': "http://adaptivecards.io/schemas/adaptive-card.json",
+                          version: "1.5",
+                          body: [
+                            {
+                              type: "Container",
+                              items: [
+                                {
+                                  type: "TextBlock",
+                                  text: "Here are your pending leave requests.",
+                                  wrap: true
+                                },
+                                {
+                                  type: "TextBlock",
+                                  text: "Please note that I can only show a maximum of 40 items from the list.",
+                                  wrap: true
+                                },
+                                {
+                                  type: "Input.ChoiceSet",
+                                  choices: ForAll(Topic.FilteredRequests,
+                                  {
+                                    title: ThisRecord.RequestorName & " - " &
+                                      Index(
+                                        Topic.ApprovalStatusNames, 
+                                        ThisRecord.ApprovalStatus + 1
+                                      ).Value & " - " & 
+                                      First(
+                                        Filter(
+                                          Global.LeaveTypes, 
+                                          ThisRecord.Id = LeaveType)
+                                        ).Name &" - "& 
+                                      Text(ThisRecord.LeaveStartDateUTC, "mmmm dd, yyyy"),
+                                    value: ThisRecord.LeaveRequestId
+                                  }),
+                                  placeholder: "Please select a leave request.",
+                                  id: "selectedLeaveRequestId",
+                                  label: "You can select a request to view more details.",
+                                  style: "expanded",
+                                  isRequired: true,
+                                  errorMessage: "Leave request is required."
+                                },
+                                {
+                                  type: "ActionSet",
+                                  actions: [
+                                    {
+                                      type: "Action.Submit",
+                                      title: "View request details"
+                                    },
+                                    {
+                                      type: "Action.Submit",
+                                      title: "Cancel",
+                                      associatedInputs: "none",
+                                      data: {
+                                        selectedAction: "cancel"
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      output:
+                        binding:
+                          actionSubmitId: Topic.actionSubmitId
+                          selectedLeaveRequestId: Topic.selectedLeaveRequestId
+
+                      outputType:
+                        properties:
+                          actionSubmitId: String
+                          selectedLeaveRequestId: String
+
+                    - kind: ConditionGroup
+                      id: RBy5me
+                      conditions:
+                        - id: hI3lm3
+                          condition: =Topic.actionSubmitId = "View request details"
+                          actions:
+                            - kind: SetVariable
+                              id: o4xf2M
+                              variable: Topic.SelectedLeaveDetails
+                              value: |-
+                                =First(Filter(
+                                    Topic.FilteredRequests, 
+                                    ThisRecord.LeaveRequestId = Topic.selectedLeaveRequestId
+                                ))
+
+                            - kind: BeginDialog
+                              id: 3Tcqxp
+                              input:
+                                binding:
+                                  UserPrincipalName: =Topic.SelectedLeaveDetails.RequestorEmail
+
+                              dialog: mpa_LeaveManagement.topic.Function-GetAllLeaveCreditsOfUser
+                              output:
+                                binding:
+                                  LeaveCredits: Topic.LeaveCredits
+
+                            - kind: AdaptiveCardPrompt
+                              id: x80rEn
+                              card: |-
+                                ={
+                                  type: "AdaptiveCard",
+                                  '$schema': "http://adaptivecards.io/schemas/adaptive-card.json",
+                                  version: "1.5",
+                                  body: [
+                                    {
+                                      type: "TextBlock",
+                                      text: "Leave Request Details",
+                                      size: "ExtraLarge",
+                                      weight: "Bolder",
+                                      style: "default"
+                                    },
+                                    {
+                                      type: "TextBlock",
+                                      text: "Here are the details of the leave request submitted by " & Topic.SelectedLeaveDetails.RequestorName & ".",
+                                      wrap: true,
+                                      spacing: "Medium"
+                                    },
+                                    {
+                                      type: "TextBlock",
+                                      text: "Available hours balance",
+                                      wrap: true,
+                                      size: "Large",
+                                      weight: "Bolder",
+                                      spacing: "Medium"
+                                    },
+                                    If(CountRows(Topic.LeaveCredits) > 0,
+                                      {
+                                        type: "FactSet",
+                                        facts: ForAll(Topic.LeaveCredits, 
+                                          {
+                                            title: ThisRecord.name & ":",
+                                            value: Text(ThisRecord.hours)
+                                          }
+                                        ),
+                                        separator: true,
+                                        spacing: "Medium"
+                                      },
+                                      {
+                                        type: "TextBlock",
+                                        text: "No leave credits are currently plotted for this employee",
+                                        wrap: true,
+                                        separator: true,
+                                        spacing: "Medium"
+                                      }
+                                    ),
+                                    {
+                                      type: "RichTextBlock",
+                                      inlines: [
+                                        {
+                                          type: "TextRun",
+                                          text: "Leave Status: ",
+                                          size: "Large",
+                                          weight: "Bolder"
+                                        },
+                                        {
+                                          type: "TextRun",
+                                          text: Index(
+                                              Topic.ApprovalStatusNames, 
+                                              Topic.SelectedLeaveDetails.ApprovalStatus + 1
+                                            ).Value,
+                                          color: Switch(
+                                            Topic.SelectedLeaveDetails.ApprovalStatus + 1,
+                                            1, "warning",
+                                            2, "good",
+                                            3, "attention",
+                                            4, "light"
+                                          ),
+                                          size: "Large",
+                                          weight: "Bolder"
+                                        }
+                                      ],
+                                      spacing: "Medium"
+                                    },
+                                    {
+                                      type: "RichTextBlock",
+                                      inlines: [
+                                        {
+                                          type: "TextRun",
+                                          text: "Leave Type: ",
+                                          weight: "Bolder"
+                                        },
+                                        {
+                                          type: "TextRun",
+                                          text: First(
+                                            Filter(
+                                              Global.LeaveTypes,
+                                              ThisRecord.Id = Topic.SelectedLeaveDetails.LeaveType
+                                            )
+                                          ).Name
+                                        }
+                                      ],
+                                      separator: true,
+                                      spacing: "Medium"
+                                    },
+                                    {
+                                      type: "ColumnSet",
+                                      columns: [
+                                        {
+                                          type: "Column",
+                                          width: "stretch",
+                                          items: [
+                                            {
+                                              type: "RichTextBlock",
+                                              inlines: [
+                                                {
+                                                  type: "TextRun",
+                                                  text: "Start date: ",
+                                                  weight: "Bolder"
+                                                },
+                                                {
+                                                  type: "TextRun",
+                                                  text: Text(
+                                                    Topic.SelectedLeaveDetails.LeaveStartDateUTC,
+                                                    "mm/dd/yyyy"
+                                                  )
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          type: "Column",
+                                          width: "stretch",
+                                          items: [
+                                            {
+                                              type: "RichTextBlock",
+                                              inlines: [
+                                                {
+                                                  type: "TextRun",
+                                                  text: "End date: ",
+                                                  weight: "Bolder"
+                                                },
+                                                {
+                                                  type: "TextRun",
+                                                  text: Text(
+                                                    Topic.SelectedLeaveDetails.LeaveEndDateUTC,
+                                                    "mm/dd/yyyy"
+                                                  )
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      type: "RichTextBlock",
+                                      inlines: [
+                                        {
+                                          type: "TextRun",
+                                          text: "Balance hours used: ",
+                                          weight: "Bolder"
+                                        },
+                                        {
+                                          type: "TextRun",
+                                          text: Topic.SelectedLeaveDetails.HoursRequested
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      type: "TextBlock",
+                                      text: "Comments",
+                                      wrap: true,
+                                      spacing: "Medium",
+                                      size: "Large",
+                                      weight: "Bolder"
+                                    },
+                                    {
+                                      type: "TextBlock",
+                                      text: "Employee:",
+                                      wrap: true,
+                                      separator: true,
+                                      spacing: "Medium"
+                                    },
+                                    {
+                                      type: "TextBlock",
+                                      text: Topic.SelectedLeaveDetails.RequestorComments,
+                                      wrap: true
+                                    },
+                                    {
+                                      type: "Input.Text",
+                                      id: "ipTextManagerComments",
+                                      isMultiline: true,
+                                      label: "Manager:",
+                                      value: ""
+                                    }
+                                  ],
+                                  actions: [
+                                    {
+                                      type: "Action.Submit",
+                                      title: "Approve Request",
+                                      data: {
+                                        managerResponse: "Approved"
+                                      }
+                                    },
+                                    {
+                                      type: "Action.Submit",
+                                      title: "Reject Request",
+                                      data: {
+                                        managerResponse: "Rejected"
+                                      }
+                                    },
+                                    {
+                                      type: "Action.Submit",
+                                      title: "Cancel",
+                                      associatedInputs: "none",
+                                      data: {
+                                        selectedAction: "cancel"
+                                      }
+                                    }
+                                  ]
+                                }
+                              output:
+                                binding:
+                                  actionSubmitId: Topic.actionSubmitId
+                                  ipTextManagerComments: Topic.ipTextManagerComments
+                                  managerResponse: Topic.managerResponse
+
+                              outputType:
+                                properties:
+                                  actionSubmitId: String
+                                  ipTextManagerComments: String
+                                  managerResponse: String
+
+                            - kind: ConditionGroup
+                              id: 6LUkXq
+                              conditions:
+                                - id: 9uRwod
+                                  condition: =Topic.actionSubmitId <> "Cancel"
+
+                              elseActions:
+                                - kind: BeginDialog
+                                  id: dEEesK
+                                  input:
+                                    binding:
+                                      ActionIn: =Topic.actionSubmitId
+
+                                  dialog: mpa_LeaveManagement.topic.ConfirmorCancel
+                                  output:
+                                    binding:
+                                      ActionOut: Topic.ActionOut
+
+                                - kind: ConditionGroup
+                                  id: eW0vcb
+                                  conditions:
+                                    - id: PWkQgO
+                                      condition: =Topic.ActionOut = "Redirect"
+                                      actions:
+                                        - kind: GotoAction
+                                          id: gggkXc
+                                          actionId: x80rEn
+
+                                  elseActions:
+                                    - kind: EndDialog
+                                      id: ulttXz
+
+                            - kind: InvokeFlowAction
+                              id: FVuwiz
+                              input:
+                                binding:
+                                  text: RESPOND_TO_REQUEST
+                                  text_1: |-
+                                    =JSON({
+                                        RequestId: Topic.SelectedLeaveDetails.LeaveRequestId,
+                                        ManagerResponse: Topic.managerResponse,
+                                        ApprovalComments: Topic.ipTextManagerComments,
+                                        UnitsApproved: If(Topic.managerResponse = "Rejected", 
+                                            0,
+                                            Topic.SelectedLeaveDetails.HoursRequested
+                                        ),
+                                        ResponseDate: Text(
+                                            Now(),
+                                            DateTimeFormat.ShortDateTime
+                                        ),
+                                        RequestorId: Topic.SelectedLeaveDetails.OwnerId,
+                                        LeaveTypeId: Topic.SelectedLeaveDetails.LeaveType
+                                    })
+
+                              output:
+                                binding:
+                                  result: Topic.Result
+
+                              flowId: b5c91074-c727-ef11-840a-7c1e520251fa
+
+                            - kind: SendActivity
+                              id: sOBnRr
+                              activity: |-
+                                {Concatenate(
+                                    "I have ", 
+                                    Lower(Topic.managerResponse), 
+                                    " ", 
+                                    "this leave request for ", Topic.SelectedLeaveDetails.RequestorName, "."
+                                )}
+
+                            - kind: SendActivity
+                              id: PfMefR
+                              activity: I sent an email regarding the leave request details to you and your direct report.
+
+                      elseActions:
+                        - kind: BeginDialog
+                          id: gNhQSh
+                          input:
+                            binding:
+                              ActionIn: =Topic.actionSubmitId
+
+                          dialog: mpa_LeaveManagement.topic.ConfirmorCancel
+                          output:
+                            binding:
+                              ActionOut: Topic.ActionOut
+
+                        - kind: ConditionGroup
+                          id: 90iq4K
+                          conditions:
+                            - id: 95RGSv
+                              condition: =Topic.ActionOut = "Redirect"
+                              actions:
+                                - kind: GotoAction
+                                  id: LaY8CA
+                                  actionId: addWI4
+
+                          elseActions:
+                            - kind: EndDialog
+                              id: NuOfSS
+
+              elseActions:
+                - kind: SendActivity
+                  id: y9hqVD
+                  activity: You don't have any leave requests to approve.
+
+      elseActions:
+        - kind: SendActivity
+          id: Ah0e94
+          activity: You are not a manager and cannot perform this action.
+
+    - kind: BeginDialog
+      id: beY5S8
+      dialog: mpa_LeaveManagement.topic.AnythingElse
+
+inputType:
+  properties:
+    actionSubmitId:
+      displayName: actionSubmitId
+      type: String

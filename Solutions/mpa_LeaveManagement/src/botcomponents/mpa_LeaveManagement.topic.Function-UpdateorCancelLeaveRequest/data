@@ -1,0 +1,114 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRedirect
+  id: main
+  actions:
+    - kind: ConditionGroup
+      id: BCMJTT
+      conditions:
+        - id: HAI08f
+          condition: =Topic.RequestCommand = "UPDATE_REQUEST"
+          actions:
+            - kind: InvokeFlowAction
+              id: F7U10S
+              input:
+                binding:
+                  text: "=\"UPDATE_REQUEST\""
+                  text_1: |-
+                    =JSON
+                    (
+                        {
+                            LeaveRequestId: Topic.RequestData.LeaveRequestId,
+                            LeaveTypeId : Topic.RequestData.LeaveTypeId, 
+                            HoursRequested : Topic.RequestData.HoursRequested, 
+                            StartDateUtc : Text(
+                                Topic.RequestData.StartDate,
+                                DateTimeFormat.ShortDateTime
+                            ), 
+                            EndDateUtc : Text(
+                                Topic.RequestData.EndDate,
+                                DateTimeFormat.ShortDateTime
+                            ), 
+                            EmployeeComments : Topic.RequestData.EmployeeComments,
+                            ApprovalStatus: Topic.RequestData.ApprovalStatus
+                        }
+                        , JSONFormat.Compact
+                    )
+
+              output:
+                binding:
+                  result: Topic.JsonString
+
+              flowId: b5c91074-c727-ef11-840a-7c1e520251fa
+
+      elseActions:
+        - kind: InvokeFlowAction
+          id: XeOrjW
+          input:
+            binding:
+              text: "=\"CANCEL_REQUEST\""
+              text_1: |-
+                =JSON
+                (
+                    {
+                        LeaveRequestId: Topic.RequestData.LeaveRequestId,
+                        ApprovalStatus: Topic.RequestData.ApprovalStatus
+                    }
+                    , JSONFormat.Compact
+                )
+
+          output:
+            binding:
+              result: Topic.JsonString
+
+          flowId: b5c91074-c727-ef11-840a-7c1e520251fa
+
+    - kind: ParseValue
+      id: Y5Kk3Z
+      variable: Topic.ParsedNewRecord
+      valueType:
+        kind: Record
+        properties:
+          Id: String
+          RecordNumber: String
+
+      value: =Topic.JsonString
+
+    - kind: SetVariable
+      id: ubOj9Q
+      variable: Topic.Result
+      value: |-
+        ={
+            Id : Topic.ParsedNewRecord.Id,
+            RecordNumber : Topic.ParsedNewRecord.RecordNumber
+        }
+
+inputType:
+  properties:
+    RequestCommand:
+      displayName: RequestCommand
+      type: String
+
+    RequestData:
+      displayName: RequestData
+      type:
+        kind: Record
+        properties:
+          ApprovalStatus: Number
+          EmployeeComments: String
+          EndDate: DateTime
+          HoursRequested: Number
+          LeaveRequestId: String
+          LeaveTypeId: String
+          StartDate: DateTime
+          TimezoneOffset: Time
+
+outputType:
+  properties:
+    Result:
+      displayName: Result
+      type:
+        kind: Record
+        properties:
+          Id: String
+          RecordNumber: String

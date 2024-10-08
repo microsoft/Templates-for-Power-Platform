@@ -1,0 +1,1874 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_LeaveManagementDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      },
+      "shared_teams_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_LeaveManagementMicrosoftTeams"
+        },
+        "api": {
+          "name": "shared_teams"
+        }
+      },
+      "shared_office365_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_LeaveManagementO365Outlook"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "b8f61c18-7224-4f8a-9c5f-72fbce5df764"
+          },
+          "type": "Request",
+          "kind": "Skills",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "Command",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "text_1": {
+                  "title": "CommandParameterJson",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text",
+                "text_1"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Respond_to_Copilot": {
+          "runAfter": {
+            "Check_if_employee_has_credits": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "81c94f73-dd52-465c-ad3b-a4686da63cc3"
+          },
+          "type": "Response",
+          "kind": "Skills",
+          "inputs": {
+            "statusCode": 200,
+            "body": {
+              "result": "@{outputs('Compose_-_convert_to_string_value')}"
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "Switch_-_Action_to_perform": {
+          "runAfter": {
+            "Initialize_LeaveStatus": [
+              "Succeeded"
+            ]
+          },
+          "cases": {
+            "Submit_Request": {
+              "case": "SUBMIT_REQUEST",
+              "actions": {
+                "Parse_request_values": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "2319b0a3-4c1d-4ecd-a3b3-bae72e56fd77"
+                  },
+                  "type": "ParseJson",
+                  "inputs": {
+                    "content": "@triggerBody()['text_1']",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "ApproverId": {
+                          "type": "string"
+                        },
+                        "EmployeeComments": {
+                          "type": "string"
+                        },
+                        "EndDateUtc": {
+                          "type": "string"
+                        },
+                        "LeaveCreditRequested": {
+                          "type": "number"
+                        },
+                        "LeaveTypeId": {
+                          "type": "string"
+                        },
+                        "RequestorId": {
+                          "type": "string"
+                        },
+                        "StartDateUtc": {
+                          "type": "string"
+                        },
+                        "TimezoneOffset": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "Compose_JSON_response": {
+                  "runAfter": {
+                    "Add_New_Leave_Request": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "ca2459f4-57d5-47bf-b485-47672aa30eb9"
+                  },
+                  "type": "Compose",
+                  "inputs": {
+                    "Id": "@{outputs('Add_New_Leave_Request')?['body/mpa_lm_leaverequestid']}",
+                    "RecordNumber": "@{outputs('Add_New_Leave_Request')?['body/mpa_leaveid']}"
+                  }
+                },
+                "Set_Result_variable_value": {
+                  "runAfter": {
+                    "Compose_JSON_response": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "9b6bdea2-d06a-4705-b1b2-0aeb66aeddb2"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "Result",
+                    "value": "@outputs('Compose_JSON_response')"
+                  }
+                },
+                "Add_New_Leave_Request": {
+                  "runAfter": {
+                    "Parse_request_values": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "3e5354e2-5e67-4b7b-b527-f00bdaf4ff7e"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "CreateRecord",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_lm_leaverequests",
+                      "item/mpa_approveruserid@odata.bind": "/systemusers(@{body('Parse_request_values')?['ApproverId']})",
+                      "item/mpa_leaveenddateutc": "@body('Parse_request_values')?['EndDateUtc']",
+                      "item/mpa_hoursrequested": "@body('Parse_request_values')?['LeaveCreditRequested']",
+                      "item/mpa_leavetype": "@body('Parse_request_values')?['LeaveTypeId']",
+                      "item/mpa_leavestartdateutc": "@body('Parse_request_values')?['StartDateUtc']",
+                      "item/mpa_hoursapproved": "@0",
+                      "item/ownerid@odata.bind": "/systemusers(@{body('Parse_request_values')?['RequestorId']})",
+                      "item/mpa_requestorcomments": "@body('Parse_request_values')?['EmployeeComments']",
+                      "item/statuscode": 1,
+                      "item/mpa_timezoneoffset": "@body('Parse_request_values')?['TimezoneOffset']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              }
+            },
+            "Update_Request": {
+              "case": "UPDATE_REQUEST",
+              "actions": {
+                "Parse_request_values_for_update": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "1c019b5a-3df5-4b11-94f5-0a000423d2f4"
+                  },
+                  "type": "ParseJson",
+                  "inputs": {
+                    "content": "@triggerBody()['text_1']",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "LeaveRequestId": {
+                          "type": "string"
+                        },
+                        "LeaveTypeId": {
+                          "type": "string"
+                        },
+                        "HoursRequested": {
+                          "type": "number"
+                        },
+                        "ApprovalStatus": {
+                          "type": "number"
+                        },
+                        "StartDateUtc": {
+                          "type": "string"
+                        },
+                        "EndDateUtc": {
+                          "type": "string"
+                        },
+                        "EmployeeComments": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                "Check_if_leave_request_is_not_approved": {
+                  "actions": {
+                    "Update_a_leave_request_record_in_Leave_Request_Table": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "e811cd49-13e5-4e82-9cff-35a866866e95"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps_1",
+                          "operationId": "UpdateRecord",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "mpa_lm_leaverequests",
+                          "recordId": "@body('Parse_request_values_for_update')?['LeaveRequestId']",
+                          "item/mpa_leaveenddateutc": "@body('Parse_request_values_for_update')?['EndDateUtc']",
+                          "item/mpa_hoursrequested": "@body('Parse_request_values_for_update')?['HoursRequested']",
+                          "item/mpa_leavetype": "@body('Parse_request_values_for_update')?['LeaveTypeId']",
+                          "item/mpa_leavestartdateutc": "@body('Parse_request_values_for_update')?['StartDateUtc']",
+                          "item/mpa_requestorcomments": "@body('Parse_request_values_for_update')?['EmployeeComments']",
+                          "item/statecode": 0,
+                          "item/statuscode": 1
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Compose_JSON_response_from_update": {
+                      "runAfter": {
+                        "Update_a_leave_request_record_in_Leave_Request_Table": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "ae8b4383-ab1f-43db-8a1a-5fd235985f23"
+                      },
+                      "type": "Compose",
+                      "inputs": {
+                        "Id": "@{outputs('Update_a_leave_request_record_in_Leave_Request_Table')?['body/mpa_lm_leaverequestid']}",
+                        "RecordNumber": "@{outputs('Update_a_leave_request_record_in_Leave_Request_Table')?['body/mpa_leaveid']}"
+                      }
+                    },
+                    "Set_Result_variable_value_on_update": {
+                      "runAfter": {
+                        "Compose_JSON_response_from_update": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "3b7690a8-5255-48a2-90e4-2f0ebfe9cddb"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "Result",
+                        "value": "@outputs('Compose_JSON_response_from_update')"
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Parse_request_values_for_update": [
+                      "Succeeded"
+                    ]
+                  },
+                  "else": {
+                    "actions": {
+                      "Update_a_leave_request_approval_status_to_Cancelled": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "bd8bd571-2bd8-4b07-86ed-66c5f56ee06b"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_commondataserviceforapps_1",
+                            "operationId": "UpdateRecord",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                          },
+                          "parameters": {
+                            "entityName": "mpa_lm_leaverequests",
+                            "recordId": "@body('Parse_request_values_for_update')?['LeaveRequestId']",
+                            "item/statecode": 1,
+                            "item/statuscode": 865420001
+                          },
+                          "authentication": "@parameters('$authentication')"
+                        }
+                      },
+                      "Compose": {
+                        "runAfter": {
+                          "Add_a_new_leave_request_based_on_cancelled_request": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "f65c4117-2b21-472f-b6d0-bd7e51b90fe9"
+                        },
+                        "type": "Compose",
+                        "inputs": {
+                          "Id": "@{outputs('Add_a_new_leave_request_based_on_cancelled_request')?['body/mpa_lm_leaverequestid']}",
+                          "RecordNumber": "@{outputs('Add_a_new_leave_request_based_on_cancelled_request')?['body/mpa_leaveid']}"
+                        }
+                      },
+                      "Add_a_new_leave_request_based_on_cancelled_request": {
+                        "runAfter": {
+                          "Update_Hours_Balance": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "86798871-b784-41df-a8d7-296358ecfee8"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_commondataserviceforapps_1",
+                            "operationId": "CreateRecord",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                          },
+                          "parameters": {
+                            "entityName": "mpa_lm_leaverequests",
+                            "item/mpa_approveruserid@odata.bind": "/systemusers(@{outputs('Update_a_leave_request_approval_status_to_Cancelled')?['body/_mpa_approveruserid_value']})",
+                            "item/mpa_leaveenddateutc": "@body('Parse_request_values_for_update')?['EndDateUtc']",
+                            "item/mpa_hoursrequested": "@body('Parse_request_values_for_update')?['HoursRequested']",
+                            "item/mpa_leavetype": "@body('Parse_request_values_for_update')?['LeaveTypeId']",
+                            "item/mpa_leavestartdateutc": "@body('Parse_request_values_for_update')?['StartDateUtc']",
+                            "item/mpa_hoursapproved": "@0",
+                            "item/ownerid@odata.bind": "/systemusers(@{outputs('Update_a_leave_request_approval_status_to_Cancelled')?['body/_ownerid_value']})",
+                            "item/mpa_requestorcomments": "@body('Parse_request_values_for_update')?['EmployeeComments']",
+                            "item/statuscode": 1
+                          },
+                          "authentication": "@parameters('$authentication')"
+                        }
+                      },
+                      "Revert_Vacation_Leave_Hours": {
+                        "runAfter": {
+                          "Hours_Balance_Record": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "0edec0ef-9ee8-4b7a-b6d1-f7b06be2e9b0"
+                        },
+                        "type": "Compose",
+                        "inputs": "@add(outputs('Hours_Balance_Record')?['mpa_vacationhoursremaining'], outputs('Update_a_leave_request_approval_status_to_Cancelled')?['body']?['mpa_hoursapproved'])"
+                      },
+                      "Hours_Balance_Record": {
+                        "runAfter": {
+                          "Get_Hours_Balance": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "9d9b37d7-9e42-481d-9763-f30243738739"
+                        },
+                        "type": "Compose",
+                        "inputs": "@first(outputs('Get_Hours_Balance')?['body/value'])"
+                      },
+                      "Get_Hours_Balance": {
+                        "runAfter": {
+                          "Update_a_leave_request_approval_status_to_Cancelled": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "1a745622-d74d-46e7-8f42-6d0648a051c3"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_commondataserviceforapps_1",
+                            "operationId": "ListRecords",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                          },
+                          "parameters": {
+                            "entityName": "mpa_lm_leavecredits",
+                            "fetchXml": "<?xml version=\"1.0\" encoding=\"utf-16\"?>\n<fetch>\n  <entity name=\"mpa_lm_leavecredit\">\n    <attribute name=\"mpa_lm_leavecreditid\" />\n    <attribute name=\"mpa_name\" />\n    <attribute name=\"mpa_vacationhoursremaining\" />\n    <attribute name=\"mpa_sickhoursremaining\" />\n    <attribute name=\"mpa_unpaidleavehoursremaining\" />\n    <filter>\n      <condition entityname=\"mpa_lm_leavecredit\" attribute=\"ownerid\" operator=\"eq\" value=\"@{outputs('Update_a_leave_request_approval_status_to_Cancelled')?['body/_ownerid_value']}\" />\n    </filter>\n  </entity>\n</fetch>"
+                          },
+                          "authentication": "@parameters('$authentication')"
+                        }
+                      },
+                      "Update_Hours_Balance": {
+                        "runAfter": {
+                          "Revert_Unpaid_Leave_Hours": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "91c0e8ed-20ee-4e5e-9b31-2bae45886faa"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_commondataserviceforapps_1",
+                            "operationId": "UpdateRecord",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                          },
+                          "parameters": {
+                            "entityName": "mpa_lm_leavecredits",
+                            "recordId": "@first(outputs('Get_Hours_Balance')?['body/value'])?['mpa_lm_leavecreditid']",
+                            "item/mpa_sickhoursremaining": "@if(equals(body('Parse_request_values_for_update')?['LeaveTypeId'], '865420001'), outputs('Revert_Sick_Leave_Hours'), outputs('Hours_Balance_Record')?['mpa_sickhoursremaining'])",
+                            "item/mpa_unpaidleavehoursremaining": "@if(equals(body('Parse_request_values_for_update')?['LeaveTypeId'], '865420002'), outputs('Revert_Unpaid_Leave_Hours'), outputs('Hours_Balance_Record')?['mpa_unpaidleavehoursremaining'])",
+                            "item/mpa_vacationhoursremaining": "@if(equals(body('Parse_request_values_for_update')?['LeaveTypeId'], '865420000'), outputs('Revert_Vacation_Leave_Hours'), outputs('Hours_Balance_Record')?['mpa_vacationhoursremaining'])"
+                          },
+                          "authentication": "@parameters('$authentication')"
+                        }
+                      },
+                      "Revert_Sick_Leave_Hours": {
+                        "runAfter": {
+                          "Revert_Vacation_Leave_Hours": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "0edec0ef-9ee8-4b7a-b6d1-f7b06be2e9b0"
+                        },
+                        "type": "Compose",
+                        "inputs": "@add(outputs('Hours_Balance_Record')?['mpa_sickhoursremaining'], outputs('Update_a_leave_request_approval_status_to_Cancelled')?['body']?['mpa_hoursapproved'])"
+                      },
+                      "Revert_Unpaid_Leave_Hours": {
+                        "runAfter": {
+                          "Revert_Sick_Leave_Hours": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "0edec0ef-9ee8-4b7a-b6d1-f7b06be2e9b0"
+                        },
+                        "type": "Compose",
+                        "inputs": "@add(outputs('Hours_Balance_Record')?['mpa_unpaidleavehoursremaining'], outputs('Update_a_leave_request_approval_status_to_Cancelled')?['body']?['mpa_hoursapproved'])"
+                      }
+                    }
+                  },
+                  "expression": {
+                    "not": {
+                      "equals": [
+                        "@body('Parse_request_values_for_update')?['ApprovalStatus']",
+                        865420001
+                      ]
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "37621522-9fe1-47aa-8c09-b692b8648afa"
+                  },
+                  "type": "If"
+                }
+              }
+            },
+            "Respond_to_Request": {
+              "case": "RESPOND_TO_REQUEST",
+              "actions": {
+                "Parse_approval_details": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "5d63a519-d04e-4a5d-91fa-d39074248b33"
+                  },
+                  "type": "ParseJson",
+                  "inputs": {
+                    "content": "@triggerBody()['text_1']",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "ApprovalComments": {},
+                        "LeaveTypeId": {
+                          "type": "string"
+                        },
+                        "ManagerResponse": {
+                          "type": "string"
+                        },
+                        "RequestId": {
+                          "type": "string"
+                        },
+                        "RequestorId": {
+                          "type": "string"
+                        },
+                        "ResponseDate": {
+                          "type": "string"
+                        },
+                        "UnitsApproved": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                },
+                "Update_Approval_Status": {
+                  "runAfter": {
+                    "Parse_approval_details": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "14fdf2a7-f11d-4814-af9a-439f773ef611"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "UpdateRecord",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_lm_leaverequests",
+                      "recordId": "@body('Parse_approval_details')?['RequestId']",
+                      "item/mpa_approvaldate": "@body('Parse_approval_details')?['ResponseDate']",
+                      "item/mpa_approvalcomments": "@body('Parse_approval_details')?['ApprovalComments']",
+                      "item/mpa_hoursapproved": "@body('Parse_approval_details')?['UnitsApproved']",
+                      "item/statecode": 1,
+                      "item/statuscode": "@if(equals(body('Parse_approval_details')?['ManagerResponse'], 'Approved'), 865420001, 865420002)",
+                      "item/mpa_utctimezoneoffset": "@body('Parse_approval_details')?['TimezoneOffset']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Get_Leave_Credit_Id": {
+                  "runAfter": {
+                    "Update_Approval_Status": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "1a745622-d74d-46e7-8f42-6d0648a051c3"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "ListRecords",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_lm_leavecredits",
+                      "fetchXml": "<?xml version=\"1.0\" encoding=\"utf-16\"?>\n<fetch>\n  <entity name=\"mpa_lm_leavecredit\">\n    <attribute name=\"mpa_lm_leavecreditid\" />\n    <attribute name=\"mpa_name\" />\n    <attribute name=\"mpa_vacationhoursremaining\" />\n    <attribute name=\"mpa_sickhoursremaining\" />\n    <attribute name=\"mpa_unpaidleavehoursremaining\" />\n    <filter>\n      <condition entityname=\"mpa_lm_leavecredit\" attribute=\"ownerid\" operator=\"eq\" value=\"@{body('Parse_approval_details')?['RequestorId']}\" />\n    </filter>\n  </entity>\n</fetch>"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Update_Remaining_Credits": {
+                  "runAfter": {
+                    "Compose_Unpaid_Hours": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "91c0e8ed-20ee-4e5e-9b31-2bae45886faa"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "UpdateRecord",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_lm_leavecredits",
+                      "recordId": "@first(outputs('Get_Leave_Credit_Id')?['body/value'])?['mpa_lm_leavecreditid']",
+                      "item/mpa_sickhoursremaining": "@if(equals(body('Parse_approval_details')?['LeaveTypeId'], '865420001'), outputs('Compose_Sick_Hours'), outputs('Compose_Hours_Balance_Record')?['mpa_sickhoursremaining'])",
+                      "item/mpa_unpaidleavehoursremaining": "@if(equals(body('Parse_approval_details')?['LeaveTypeId'], '865420002'), outputs('Compose_Unpaid_Hours'), outputs('Compose_Hours_Balance_Record')?['mpa_unpaidleavehoursremaining'])",
+                      "item/mpa_vacationhoursremaining": "@if(equals(body('Parse_approval_details')?['LeaveTypeId'], '865420000'), outputs('Compose_Vacation_Hours'), outputs('Compose_Hours_Balance_Record')?['mpa_vacationhoursremaining'])"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Compose_Hours_Balance_Record": {
+                  "runAfter": {
+                    "Get_Leave_Credit_Id": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "9d9b37d7-9e42-481d-9763-f30243738739"
+                  },
+                  "type": "Compose",
+                  "inputs": "@first(outputs('Get_Leave_Credit_Id')?['body/value'])"
+                },
+                "Compose_Vacation_Hours": {
+                  "runAfter": {
+                    "Compose_Hours_Balance_Record": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "83a3f888-8b2c-456a-a3fd-1108b010cb43"
+                  },
+                  "type": "Compose",
+                  "inputs": "@sub(float(outputs('Compose_Hours_Balance_Record')?['mpa_vacationhoursremaining']), float(body('Parse_approval_details')['UnitsApproved']))"
+                },
+                "Compose_Sick_Hours": {
+                  "runAfter": {
+                    "Compose_Vacation_Hours": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "9f303644-00b8-4874-8e4f-4d51ca562ef3"
+                  },
+                  "type": "Compose",
+                  "inputs": "@sub(float(outputs('Compose_Hours_Balance_Record')?['mpa_sickhoursremaining']), float(body('Parse_approval_details')['UnitsApproved']))"
+                },
+                "Compose_Unpaid_Hours": {
+                  "runAfter": {
+                    "Compose_Sick_Hours": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "d6eb49bb-3260-4cd4-8804-850e21cbc286"
+                  },
+                  "type": "Compose",
+                  "inputs": "@sub(float(outputs('Compose_Hours_Balance_Record')?['mpa_unpaidleavehoursremaining']), float(body('Parse_approval_details')['UnitsApproved']))"
+                },
+                "Set_Result_for_Request": {
+                  "runAfter": {
+                    "Update_Remaining_Credits": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "5ebc49e9-d08f-4dba-938c-8df6d4de64c6"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "Result",
+                    "value": {
+                      "Id": "@{body('Parse_approval_details')?['RequestId']}"
+                    }
+                  }
+                }
+              }
+            },
+            "Cancel_Request": {
+              "case": "CANCEL_REQUEST",
+              "actions": {
+                "Parse_request_values_for_cancel": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "1c019b5a-3df5-4b11-94f5-0a000423d2f4"
+                  },
+                  "type": "ParseJson",
+                  "inputs": {
+                    "content": "@triggerBody()['text_1']",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "LeaveRequestId": {
+                          "type": "string"
+                        },
+                        "ApprovalStatus": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                },
+                "Compose_JSON_response_from_cancel": {
+                  "runAfter": {
+                    "Check_if_leave_request_is_approved": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "ae8b4383-ab1f-43db-8a1a-5fd235985f23"
+                  },
+                  "type": "Compose",
+                  "inputs": {
+                    "Id": "@{outputs('Cancel_a_leave_request_record_in_Leave_Request_table')?['body/mpa_lm_leaverequestid']}",
+                    "RecordNumber": "@{outputs('Cancel_a_leave_request_record_in_Leave_Request_table')?['body/mpa_leaveid']}"
+                  }
+                },
+                "Set_Result_variable_value_on_cancel": {
+                  "runAfter": {
+                    "Compose_JSON_response_from_cancel": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "3b7690a8-5255-48a2-90e4-2f0ebfe9cddb"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "Result",
+                    "value": "@outputs('Compose_JSON_response_from_cancel')"
+                  }
+                },
+                "Cancel_a_leave_request_record_in_Leave_Request_table": {
+                  "runAfter": {
+                    "Parse_request_values_for_cancel": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "5276dd8c-06c3-4bef-9984-c058c5a39f19"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "UpdateRecord",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_lm_leaverequests",
+                      "recordId": "@body('Parse_request_values_for_cancel')?['LeaveRequestId']",
+                      "item/statecode": 1,
+                      "item/statuscode": 2
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Check_if_leave_request_is_approved": {
+                  "actions": {
+                    "Get_Hours_Balance_Id": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "79dcf39e-4e77-477c-b905-619f55e93a2f"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps_1",
+                          "operationId": "ListRecords",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "mpa_lm_leavecredits",
+                          "fetchXml": "<?xml version=\"1.0\" encoding=\"utf-16\"?>\n<fetch top=\"1\">\n  <entity name=\"mpa_lm_leavecredit\" alias=\"lc\">\n    <attribute name=\"mpa_lm_leavecreditid\" />\n    <attribute name=\"mpa_name\" />\n    <attribute name=\"mpa_vacationhoursremaining\" />\n    <attribute name=\"mpa_sickhoursremaining\" />\n    <attribute name=\"mpa_unpaidleavehoursremaining\" />\n    <filter>\n      <condition entityname=\"mpa_lm_leavecredit\" attribute=\"ownerid\" operator=\"eq\" value=\"@{outputs('Cancel_a_leave_request_record_in_Leave_Request_table')?['body/_ownerid_value']}\" />\n    </filter>\n    <link-entity name=\"mpa_lm_leavetype\" from=\"mpa_lm_leavetypeid\" to=\"mpa_leavetypeid\" link-type=\"inner\" alias=\"leavetype\" visible=\"true\">\n      <attribute name=\"mpa_lm_leavetypeid\" />\n      <attribute name=\"mpa_leavetypename\" />\n    </link-entity>\n  </entity>\n</fetch>"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Update_a_row_in_Balance_Hours_table": {
+                      "runAfter": {
+                        "Compose_Hours_Record": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "11caab57-0202-4e75-a2bc-ffaf1a4b004b"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps_1",
+                          "operationId": "UpdateRecord",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "mpa_lm_leavecredits",
+                          "recordId": "@first(outputs('Get_Hours_Balance_Id')?['body/value'])?['mpa_lm_leavecreditid']",
+                          "item/mpa_sickhoursremaining": "@if(equals(body('Parse_request_values_for_cancel')?['LeaveTypeId'], '865420001'), add(int(first(outputs('Get_Hours_Balance_Id')?['body/value'])?['mpa_sickhoursremaining']), outputs('Cancel_a_leave_request_record_in_Leave_Request_table')?['body/mpa_hoursapproved']), outputs('Compose_Hours_Record')?['mpa_sickhoursremaining'])\r\n",
+                          "item/mpa_unpaidleavehoursremaining": "@if(equals(body('Parse_request_values_for_cancel')?['LeaveTypeId'], '865420002'), add(int(first(outputs('Get_Hours_Balance_Id')?['body/value'])?['mpa_unpaidleavehoursremaining']), outputs('Cancel_a_leave_request_record_in_Leave_Request_table')?['body/mpa_hoursapproved']), outputs('Compose_Hours_Record')?['mpa_unpaidleavehoursremaining'])\r\n",
+                          "item/mpa_vacationhoursremaining": "@if(equals(body('Parse_request_values_for_cancel')?['LeaveTypeId'], '865420000'), add(int(first(outputs('Get_Hours_Balance_Id')?['body/value'])?['mpa_vacationhoursremaining']), outputs('Cancel_a_leave_request_record_in_Leave_Request_table')?['body/mpa_hoursapproved']), outputs('Compose_Hours_Record')?['mpa_vacationhoursremaining'])\r\n"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Compose_Hours_Record": {
+                      "runAfter": {
+                        "Get_Hours_Balance_Id": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "0bcabd49-b787-43b4-8ca4-998a4c67ce9b"
+                      },
+                      "type": "Compose",
+                      "inputs": "@first(outputs('Get_Hours_Balance_Id')?['body/value'])"
+                    }
+                  },
+                  "runAfter": {
+                    "Cancel_a_leave_request_record_in_Leave_Request_table": [
+                      "Succeeded"
+                    ]
+                  },
+                  "expression": {
+                    "equals": [
+                      "",
+                      865420001
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "ee612cec-850a-48aa-9d75-c0c2c13c433b"
+                  },
+                  "type": "If"
+                }
+              }
+            }
+          },
+          "default": {
+            "actions": {}
+          },
+          "expression": "@triggerBody()['text']",
+          "metadata": {
+            "operationMetadataId": "100dee7e-4f46-4dde-8190-d49440632b11"
+          },
+          "type": "Switch"
+        },
+        "Initialize_Result_-_output_variable": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "72c02775-1d77-4130-b5fc-111af6c8eacb"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Result",
+                "type": "object"
+              }
+            ]
+          }
+        },
+        "Compose_-_convert_to_string_value": {
+          "runAfter": {
+            "Switch_-_Action_to_perform": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "5ecee231-52b6-4ae8-abfd-5c646aa63727"
+          },
+          "type": "Compose",
+          "inputs": "@variables('Result')"
+        },
+        "Initialize_LeaveStatus": {
+          "runAfter": {
+            "Initialize_Result_-_output_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "32c67f2f-ea1b-41a2-bdbf-575aaea8b318"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "LeaveStatus",
+                "type": "object",
+                "value": {
+                  "Pending": 0,
+                  "Approved": 1,
+                  "Rejected": 2,
+                  "Cancelled": 3
+                }
+              }
+            ]
+          }
+        },
+        "Get_Manager_by_Id_in_Users_table": {
+          "runAfter": {
+            "Get_Leave_Request": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "9431471e-5eae-46bf-ac4a-d3e76636dda2"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "GetItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "systemusers",
+              "recordId": "@outputs('Get_Leave_Request')?['body/_mpa_approveruserid_value']",
+              "$select": "domainname, fullname, systemuserid,firstname"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Get_Employee_by_Id_in_Users_table": {
+          "runAfter": {
+            "Get_Manager_by_Id_in_Users_table": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "9431471e-5eae-46bf-ac4a-d3e76636dda2"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "GetItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "systemusers",
+              "recordId": "@outputs('Get_Leave_Request')?['body/_ownerid_value']",
+              "$select": "domainname, fullname, systemuserid,firstname"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Get_Leave_Credits": {
+          "runAfter": {
+            "Get_Employee_by_Id_in_Users_table": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b0093ca7-66c9-4aa8-8aed-30d060e802cd"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "ListRecords",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "mpa_lm_leavecredits",
+              "$select": "_ownerid_value, mpa_unpaidleavehoursremaining,mpa_sickhoursremaining,mpa_vacationhoursremaining",
+              "$filter": "_ownerid_value eq '@{outputs('Get_Employee_by_Id_in_Users_table')?['body/systemuserid']}'",
+              "$top": 1
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Initialize__Subject_for_employee": {
+          "runAfter": {
+            "Perform_an_unbound_action": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "76891fb2-d991-4839-b8df-f7bad0186963"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "SubjectEmployee",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_Message_for_employee": {
+          "runAfter": {
+            "Initialize__Subject_for_employee": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "7286dca4-a11f-4f89-9e50-18e98c8c8861"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "MessageEmployee",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize__Subject_for_Manager": {
+          "runAfter": {
+            "Initialize_Message_for_employee": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "76891fb2-d991-4839-b8df-f7bad0186963"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "SubjectManager",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_Message_for_Manager": {
+          "runAfter": {
+            "Initialize__Subject_for_Manager": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "7286dca4-a11f-4f89-9e50-18e98c8c8861"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "MessageManager",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Check_if_employee_has_credits": {
+          "actions": {
+            "Leave_Credit_Value": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "e09faa11-8e2b-4246-b954-4d81fdced3ee"
+              },
+              "type": "Compose",
+              "inputs": "@first(outputs('Get_Leave_Credits')?['body/value'])",
+              "description": "first(outputs('Get_Leave_Credits_by_Leave_Type_Id_and_Employee_User_Id')?['body/value'])"
+            },
+            "Switch_(Approval_Status)": {
+              "runAfter": {
+                "Compose_Hours_Available": [
+                  "Succeeded"
+                ]
+              },
+              "cases": {
+                "Pending": {
+                  "case": 1,
+                  "actions": {
+                    "Format_Created_On": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "91c4e805-e302-402a-a86a-81ca91ef8f26"
+                      },
+                      "type": "Compose",
+                      "inputs": "@formatDateTime(outputs('Get_Leave_Request')?['body/createdon'], 'yyyy-MM-dd HH:mm')",
+                      "description": "formatDateTime(triggerOutputs()?['body/createdon'], 'yyyy-MM-dd HH:mm')"
+                    },
+                    "Format_Modified_On": {
+                      "runAfter": {
+                        "Format_Created_On": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "816b40d6-1c6b-4078-90c7-bfcae5e2e5d6"
+                      },
+                      "type": "Compose",
+                      "inputs": "@formatDateTime(outputs('Get_Leave_Request')?['body/modifiedon'], 'yyyy-MM-dd HH:mm')",
+                      "description": "formatDateTime(triggerOutputs()?['body/modifiedon'], 'yyyy-MM-dd HH:mm')"
+                    },
+                    "Condition_Pending_or_Update": {
+                      "actions": {
+                        "Post_Card_Notification__in_Teams_for_Manager_(Pending)": {
+                          "runAfter": {
+                            "Set_variable_MessageManager_(Pending)": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "1eab9f3d-ece2-48cf-8082-0cd984d6ada7"
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_teams_1",
+                              "operationId": "PostCardToConversation",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams"
+                            },
+                            "parameters": {
+                              "poster": "Power Virtual Agents",
+                              "location": "powerva",
+                              "body/bot": "mpa_LeaveManagement",
+                              "body/recipient": "@{outputs('Get_Manager_by_Id_in_Users_table')?['body/domainname']};",
+                              "body/messageBody": "{\n    \"type\": \"AdaptiveCard\",\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"version\": \"1.5\",\n    \"body\": [\n        {\n            \"type\": \"TextBlock\",\n            \"text\": \"Hi @{outputs('Get_Manager_by_Id_in_Users_table')?['body/firstname']},\",\n            \"wrap\": true\n        },\n\n        {\n            \"type\": \"TextBlock\",\n            \"text\": \"@{outputs('Get_Employee_by_Id_in_Users_table')?['body/fullname']} has submitted a new request.\",\n            \"wrap\": true\n        },\n        {\n            \"type\": \"FactSet\",\n            \"facts\": [\n                {\n                    \"title\": \"Type\",\n                    \"value\": \"@{outputs('Get_Leave_Request')?['body/_mpa_leavetype_label']}\"\n                },\n                {\n                    \"title\": \"Comments\",\n                    \"value\": \"@{coalesce(outputs('Get_Leave_Request')?['body']?['mpa_requestorcomments'], 'none')}\"\n                },\n                {\n                    \"title\": \"Start Date\",\n                    \"value\": \"@{outputs('Get_Leave_Request')?['body/mpa_leavestartdateutc']}\"\n                },\n                {\n                    \"title\": \"End Date\",\n                    \"value\": \"@{outputs('Get_Leave_Request')?['body/mpa_leaveenddateutc']}\"\n                },\n                {\n                    \"title\": \"Hour(s) Requested\",\n                    \"value\": \"@{outputs('Get_Leave_Request')?['body/mpa_hoursrequested']}\"\n                },\n                {\n                    \"title\": \"Hour(s) Remaining\",\n                    \"value\": \"@{outputs('Compose_Hours_Available')}\"\n                }\n            ],\n            \"spacing\": \"Medium\"\n        },\n        {\n            \"type\": \"TextBlock\",\n            \"text\": \"If you would like to view this or other requests, simply type approve requests in the chat.\",\n            \"wrap\": true,\n            \"spacing\": \"Medium\"\n        },\n    ]\n}",
+                              "body/attribution": true,
+                              "body/activeChat": "Send",
+                              "body/installedError": "Fail"
+                            },
+                            "authentication": "@parameters('$authentication')"
+                          }
+                        },
+                        "Set_variable_SubjectEmployee_(Pending)": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "c5f06f75-588f-4f3c-ad23-1f87a8812857"
+                          },
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "SubjectEmployee",
+                            "value": "Your new leave request has been submitted"
+                          }
+                        },
+                        "Set_variable_MessageEmployee_(Pending)": {
+                          "runAfter": {
+                            "Set_variable_SubjectEmployee_(Pending)": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "50dfa842-59bb-4a47-818b-b6e6f56c3a72"
+                          },
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "MessageEmployee",
+                            "value": "I have notified your approver of the new leave request you submitted. "
+                          }
+                        },
+                        "Set_variable_MessageManager_(Pending)": {
+                          "runAfter": {
+                            "Set_variable_SubjectManager_(Pending)": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "50dfa842-59bb-4a47-818b-b6e6f56c3a72"
+                          },
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "MessageManager",
+                            "value": "@{outputs('Get_Employee_by_Id_in_Users_table')?['body/fullname']} has submitted a new leave request."
+                          }
+                        },
+                        "Set_variable_SubjectManager_(Pending)": {
+                          "runAfter": {
+                            "Set_variable_MessageEmployee_(Pending)": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "c5f06f75-588f-4f3c-ad23-1f87a8812857"
+                          },
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "SubjectManager",
+                            "value": "New leave request has been submitted"
+                          }
+                        },
+                        "Continue_if__chatbot_is_not_installed_(Pending)": {
+                          "actions": {},
+                          "runAfter": {
+                            "Post_Card_Notification__in_Teams_for_Manager_(Pending)": [
+                              "Failed"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "0191b5a9-d0d5-46bd-9ecf-884a59666da8"
+                          },
+                          "type": "Scope"
+                        }
+                      },
+                      "runAfter": {
+                        "Format_Modified_On": [
+                          "Succeeded"
+                        ]
+                      },
+                      "else": {
+                        "actions": {
+                          "Post_Card_Notification__in_Teams_for_Manager_(Updated)": {
+                            "runAfter": {
+                              "Set_variable_MessageManager_(Updated)": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "1eab9f3d-ece2-48cf-8082-0cd984d6ada7"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_teams_1",
+                                "operationId": "PostCardToConversation",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams"
+                              },
+                              "parameters": {
+                                "poster": "Power Virtual Agents",
+                                "location": "powerva",
+                                "body/bot": "mpa_LeaveManagement",
+                                "body/recipient": "@{outputs('Get_Manager_by_Id_in_Users_table')?['body/domainname']};",
+                                "body/messageBody": "{\n    \"type\": \"AdaptiveCard\",\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"version\": \"1.5\",\n    \"body\": [\n        {\n            \"type\": \"TextBlock\",\n            \"text\": \"Hi @{outputs('Get_Manager_by_Id_in_Users_table')?['body/firstname']},\",\n            \"wrap\": true\n        },\n        {\n            \"type\": \"TextBlock\",\n            \"text\": \"@{outputs('Get_Employee_by_Id_in_Users_table')?['body/fullname']} has updated a request.\",\n            \"wrap\": true\n        },\n        {\n            \"type\": \"FactSet\",\n            \"facts\": [\n                {\n                    \"title\": \"Type\",\n                    \"value\": \"@{outputs('Get_Leave_Request')?['body/_mpa_leavetype_label']}\"\n                },\n                {\n                    \"title\": \"Comments\",\n                    \"value\": \"@{coalesce(outputs('Get_Leave_Request')?['body']?['mpa_requestorcomments'], 'none')}\"\n                },\n                {\n                    \"title\": \"Start Date\",\n                    \"value\": \"@{outputs('Get_Leave_Request')?['body/mpa_leavestartdateutc']}\"\n                },\n                {\n                    \"title\": \"End Date\",\n                    \"value\": \"@{outputs('Get_Leave_Request')?['body/mpa_leaveenddateutc']}\"\n                },\n                {\n                    \"title\": \"Hour(s) Requested\",\n                    \"value\": \"@{outputs('Get_Leave_Request')?['body/mpa_hoursrequested']}\"\n                },\n                {\n                    \"title\": \"Hour(s) Remaining\",\n                    \"value\": \"@{outputs('Compose_Hours_Available')}\"\n                }\n            ],\n            \"spacing\": \"Medium\"\n        },\n        {\n            \"type\": \"TextBlock\",\n            \"text\": \"If you would like to view this or other requests, simply type approve requests in the chat.\",\n            \"wrap\": true,\n            \"spacing\": \"Medium\"\n        },\n    ]\n}",
+                                "body/attribution": true,
+                                "body/activeChat": "Send",
+                                "body/installedError": "Fail"
+                              },
+                              "authentication": "@parameters('$authentication')"
+                            }
+                          },
+                          "Set_variable_SubjectEmployee_(Updated)": {
+                            "runAfter": {},
+                            "metadata": {
+                              "operationMetadataId": "c5f06f75-588f-4f3c-ad23-1f87a8812857"
+                            },
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "SubjectEmployee",
+                              "value": "Leave request has been updated"
+                            }
+                          },
+                          "Set_variable_MessageEmployee_(Updated)": {
+                            "runAfter": {
+                              "Set_variable_SubjectEmployee_(Updated)": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "50dfa842-59bb-4a47-818b-b6e6f56c3a72"
+                            },
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "MessageEmployee",
+                              "value": "I have notified your approver of the update you made in your leave request. "
+                            }
+                          },
+                          "Set_variable_MessageManager_(Updated)": {
+                            "runAfter": {
+                              "Set_variable_SubjectManager_(Updated)": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "50dfa842-59bb-4a47-818b-b6e6f56c3a72"
+                            },
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "MessageManager",
+                              "value": "@{outputs('Get_Employee_by_Id_in_Users_table')?['body/fullname']} has updated a leave request. "
+                            }
+                          },
+                          "Set_variable_SubjectManager_(Updated)": {
+                            "runAfter": {
+                              "Set_variable_MessageEmployee_(Updated)": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "c5f06f75-588f-4f3c-ad23-1f87a8812857"
+                            },
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "SubjectManager",
+                              "value": "Leave request has been updated"
+                            }
+                          },
+                          "Continue_if__chatbot_is_not_installed_(Update)": {
+                            "actions": {},
+                            "runAfter": {
+                              "Post_Card_Notification__in_Teams_for_Manager_(Updated)": [
+                                "Failed"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "c83306c7-acf6-4fdc-944f-b94310023ca7"
+                            },
+                            "type": "Scope"
+                          }
+                        }
+                      },
+                      "expression": {
+                        "equals": [
+                          "@outputs('Format_Modified_On')",
+                          "@outputs('Format_Created_On')"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "ab70e92e-c57a-4cc9-aab8-c2a9736f2619"
+                      },
+                      "type": "If"
+                    }
+                  }
+                },
+                "Approved": {
+                  "case": 865420001,
+                  "actions": {
+                    "Post_Card_Notification__in_Teams_for_Employee_(Approved)": {
+                      "runAfter": {
+                        "Set_variable_MessageManager_(Approved)": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "8d653430-423f-4eef-8816-6f7992349908"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_teams_1",
+                          "operationId": "PostCardToConversation",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams"
+                        },
+                        "parameters": {
+                          "poster": "Power Virtual Agents",
+                          "location": "powerva",
+                          "body/bot": "mpa_LeaveManagement",
+                          "body/recipient": "@outputs('Get_Employee_by_Id_in_Users_table')?['body/domainname']",
+                          "body/messageBody": "{\n    \"type\": \"AdaptiveCard\",\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"version\": \"1.5\",\n    \"body\": [\n        {\n            \"type\": \"TextBlock\",\n            \"text\": \"Hi @{outputs('Get_Manager_by_Id_in_Users_table')?['body/firstname']},\",\n            \"wrap\": true\n        },\n        {\n            \"type\": \"TextBlock\",\n            \"text\": \"@{outputs('Get_Employee_by_Id_in_Users_table')?['body/fullname']} has update a request.\",\n            \"wrap\": true\n        },\n        {\n            \"type\": \"FactSet\",\n            \"facts\": [\n                {\n                    \"title\": \"Type\",\n                    \"value\": \"@{outputs('Get_Leave_Request')?['body/_mpa_leavetype_label']}\"\n                },\n                {\n                    \"title\": \"Comments\",\n                    \"value\": \"@{coalesce(outputs('Get_Leave_Request')?['body']?['mpa_requestorcomments'], 'none')}\"\n                },\n                {\n                    \"title\": \"Start Date\",\n                    \"value\": \"@{outputs('Get_Leave_Request')?['body/mpa_leavestartdateutc']}\"\n                },\n                {\n                    \"title\": \"End Date\",\n                    \"value\": \"@{outputs('Get_Leave_Request')?['body/mpa_leaveenddateutc']}\"\n                },\n                {\n                    \"title\": \"Hour(s) Requested\",\n                    \"value\": \"@{outputs('Get_Leave_Request')?['body/mpa_hoursrequested']}\"\n                },\n                {\n                    \"title\": \"Hour(s) Remaining\",\n                    \"value\": \"@{outputs('Compose_Hours_Available')}\"\n                }\n            ],\n            \"spacing\": \"Medium\"\n        },\n        {\n            \"type\": \"TextBlock\",\n            \"text\": \"If you would like to view this or other requests, simply type approve requests in the chat.\",\n            \"wrap\": true,\n            \"spacing\": \"Medium\"\n        },\n    ]\n}",
+                          "body/attribution": true,
+                          "body/activeChat": "Send",
+                          "body/installedError": "Fail"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Set_variable_SubjectEmployee_(Approved)": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "4936492c-1715-413f-b657-f739b119ed8a"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "SubjectEmployee",
+                        "value": "Your leave request has been approved"
+                      }
+                    },
+                    "Set_variable_MessageEmployee_(Approved)": {
+                      "runAfter": {
+                        "Set_variable_SubjectEmployee_(Approved)": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "6d7b5804-ad1e-47e8-8c78-ad9fc90b6708"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "MessageEmployee",
+                        "value": "Your leave request has been approved."
+                      }
+                    },
+                    "Set_variable_SubjectManager_(Approved)": {
+                      "runAfter": {
+                        "Set_variable_MessageEmployee_(Approved)": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "60e6e0cb-84c3-488d-b59a-f48d2af95b6b"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "SubjectManager",
+                        "value": "You approved a leave request"
+                      }
+                    },
+                    "Set_variable_MessageManager_(Approved)": {
+                      "runAfter": {
+                        "Set_variable_SubjectManager_(Approved)": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "63e2847f-0488-4cec-84c3-af2d0c1ddf7a"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "MessageManager",
+                        "value": "You approved the leave request of @{outputs('Get_Employee_by_Id_in_Users_table')?['body/fullname']}."
+                      }
+                    },
+                    "Continue_if__chatbot_is_not_installed__(Approved)": {
+                      "actions": {},
+                      "runAfter": {
+                        "Post_Card_Notification__in_Teams_for_Employee_(Approved)": [
+                          "Failed"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "f3a38d33-c4ad-4376-9dfb-ef4d82fde6e8"
+                      },
+                      "type": "Scope"
+                    }
+                  }
+                },
+                "Rejected": {
+                  "case": 865420002,
+                  "actions": {
+                    "Post_Card_Notification__in_Teams_for_Employee_(Rejected)": {
+                      "runAfter": {
+                        "Set_variable_MessageManager_(Rejected)": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "8e703207-1b75-460f-b49c-b0bd9c2a6ea1"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_teams_1",
+                          "operationId": "PostCardToConversation",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams"
+                        },
+                        "parameters": {
+                          "poster": "Power Virtual Agents",
+                          "location": "powerva",
+                          "body/bot": "mpa_LeaveManagement",
+                          "body/recipient": "@{outputs('Get_Employee_by_Id_in_Users_table')?['body/domainname']};",
+                          "body/messageBody": "{\n    \"type\": \"AdaptiveCard\",\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"version\": \"1.5\",\n    \"body\": [\n        {\n            \"type\": \"TextBlock\",\n            \"text\": \"Hi @{outputs('Get_Employee_by_Id_in_Users_table')?['body/firstname']},\",\n            \"wrap\": true\n        },\n        {\n            \"type\": \"TextBlock\",\n            \"text\": \"@{outputs('Get_Manager_by_Id_in_Users_table')?['body/fullname']} has rejected your request.\",\n            \"wrap\": true\n        },\n        {\n            \"type\": \"FactSet\",\n            \"facts\": [\n                {\n                    \"title\": \"Type\",\n                    \"value\": \"@{outputs('Get_Leave_Request')['body/_mpa_leavetype_label']}\"\n                },\n                {\n                    \"title\": \"Approver\",\n                    \"value\": \"@{outputs('Get_Manager_by_Id_in_Users_table')?['body/fullname']}\"\n                },\n                {\n                    \"title\": \"Comments\",\n                    \"value\": \"@{coalesce(outputs('Get_Leave_Request')['body']?['mpa_requestorcomments'], 'none')}\"\n                },\n                {\n                    \"title\": \"Manager's Comment\",\n                    \"value\": \"@{coalesce(outputs('Get_Leave_Request')['body']?['mpa_approvalcomments'], 'none')}\"\n                },\n                {\n                    \"title\": \"Start Date\",\n                    \"value\": \"@{outputs('Get_Leave_Request')['body/mpa_leavestartdateutc']}\"\n                },\n                {\n                    \"title\": \"End Date\",\n                    \"value\": \"@{outputs('Get_Leave_Request')['body/mpa_leaveenddateutc']}\"\n                },\n                {\n                    \"title\": \"Hour(s) Requested\",\n                    \"value\": \"@{outputs('Get_Leave_Request')['body/mpa_hoursrequested']}\"\n                },\n                {\n                    \"title\": \"Hour(s) Remaining\",\n                    \"value\": \"@{outputs('Compose_Hours_Available')}\"\n                }\n            ],\n            \"spacing\": \"Medium\"\n        },\n        {\n            \"type\": \"TextBlock\",\n            \"text\": \"Thank you, \n                        \\nLeave Management Copilot\",\n            \"wrap\": true,\n            \"spacing\": \"Medium\"\n        },\n    ]\n}",
+                          "body/attribution": true,
+                          "body/activeChat": "Send",
+                          "body/installedError": "Fail"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Set_variable_SubjectEmployee_(Rejected)": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "548cf84d-3b78-4405-8199-90e0c75b6cf7"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "SubjectEmployee",
+                        "value": "Your leave request has been rejected"
+                      }
+                    },
+                    "Set_variable_MessageEmployee_(Rejected)": {
+                      "runAfter": {
+                        "Set_variable_SubjectEmployee_(Rejected)": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "bd6771ff-edae-4074-bb23-1a1ed0819b91"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "MessageEmployee",
+                        "value": "Your leave request has been rejected."
+                      }
+                    },
+                    "Set_variable_SubjectManager_(Rejected)": {
+                      "runAfter": {
+                        "Set_variable_MessageEmployee_(Rejected)": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "ee04c2b0-fc60-4868-9154-bd221a510cea"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "SubjectManager",
+                        "value": "You rejected a leave request"
+                      }
+                    },
+                    "Set_variable_MessageManager_(Rejected)": {
+                      "runAfter": {
+                        "Set_variable_SubjectManager_(Rejected)": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "09b2f804-dad8-4e3a-acca-1b9bbb775cc5"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "MessageManager",
+                        "value": "You rejected the leave request of @{outputs('Get_Employee_by_Id_in_Users_table')?['body/fullname']}. "
+                      }
+                    },
+                    "Continue_if__chatbot_is_not_installed__(Rejected)": {
+                      "actions": {},
+                      "runAfter": {
+                        "Post_Card_Notification__in_Teams_for_Employee_(Rejected)": [
+                          "Failed"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "6ff240e7-cf0e-456b-8dd3-fd0c7aa3943e"
+                      },
+                      "type": "Scope"
+                    }
+                  }
+                },
+                "Cancelled": {
+                  "case": 2,
+                  "actions": {
+                    "Post_Card_Notification__in_Teams_for_Manager_(Cancelled)": {
+                      "runAfter": {
+                        "Set_variable_MessageManager_(Cancelled)": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "a00d8606-0842-4052-b1ad-950f82f9e5cc"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_teams_1",
+                          "operationId": "PostCardToConversation",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams"
+                        },
+                        "parameters": {
+                          "poster": "Power Virtual Agents",
+                          "location": "powerva",
+                          "body/bot": "mpa_LeaveManagement",
+                          "body/recipient": "@{outputs('Get_Manager_by_Id_in_Users_table')?['body/domainname']};",
+                          "body/messageBody": "{\n    \"type\": \"AdaptiveCard\",\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"version\": \"1.5\",\n    \"body\": [\n        {\n            \"type\": \"TextBlock\",\n            \"text\": \"Hi @{outputs('Get_Manager_by_Id_in_Users_table')?['body/firstname']},\",\n            \"wrap\": true\n        },\n        {\n            \"type\": \"TextBlock\",\n            \"text\": \"@{outputs('Get_Employee_by_Id_in_Users_table')?['body/fullname']} has cancelled a request.\",\n            \"wrap\": true\n        },\n        {\n            \"type\": \"FactSet\",\n            \"facts\": [\n                {\n                    \"title\": \"Type\",\n                    \"value\": \"@{outputs('Get_Leave_Request')['body/_mpa_leavetype_label']}\"\n                },\n                {\n                    \"title\": \"Comments\",\n                    \"value\": \"@{coalesce(outputs('Get_Leave_Request')['body']?['mpa_requestorcomments'], 'none')}\"\n                },\n                {\n                    \"title\": \"Start Date\",\n                    \"value\": \"@{outputs('Get_Leave_Request')['body/mpa_leavestartdateutc']}\"\n                },\n                {\n                    \"title\": \"End Date\",\n                    \"value\": \"@{outputs('Get_Leave_Request')['body/mpa_leaveenddateutc']}\"\n                },\n                {\n                    \"title\": \"Hour(s) Requested\",\n                    \"value\": \"@{outputs('Get_Leave_Request')['body/mpa_hoursrequested']}\"\n                },\n                {\n                    \"title\": \"Hour(s) Remaining\",\n                    \"value\": \"@{outputs('Compose_Hours_Available')}\"\n                }\n            ],\n            \"spacing\": \"Medium\"\n        },\n        {\n            \"type\": \"TextBlock\",\n            \"text\": \"Thank you, \n                        \\nLeave Management Copilot\",\n            \"wrap\": true,\n            \"spacing\": \"Medium\"\n        },\n    ]\n}",
+                          "body/attribution": true,
+                          "body/activeChat": "Send",
+                          "body/installedError": "Fail"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Set_variable_SubjectEmployee_(Cancelled)": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "e16acf04-4b5a-4be9-a5c9-87eda1248544"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "SubjectEmployee",
+                        "value": "You cancelled a leave request"
+                      }
+                    },
+                    "Set_variable_MessageEmployee_(Cancelled)": {
+                      "runAfter": {
+                        "Set_variable_SubjectEmployee_(Cancelled)": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "6650d20a-f298-4058-9ad5-3eba98e727f6"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "MessageEmployee",
+                        "value": "You cancelled a leave request. "
+                      }
+                    },
+                    "Set_variable_SubjectManager_(Cancelled)": {
+                      "runAfter": {
+                        "Set_variable_MessageEmployee_(Cancelled)": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "9a87fd0f-06d2-4c46-b508-571aff51ef03"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "SubjectManager",
+                        "value": "Leave request has been cancelled."
+                      }
+                    },
+                    "Set_variable_MessageManager_(Cancelled)": {
+                      "runAfter": {
+                        "Set_variable_SubjectManager_(Cancelled)": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "d4590f00-6c9f-42ea-b819-5c0fad68d7f0"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "MessageManager",
+                        "value": "@{outputs('Get_Employee_by_Id_in_Users_table')?['body/fullname']} has cancelled a leave request."
+                      }
+                    },
+                    "Continue_if__chatbot_is_not_installed_(Cancelled)": {
+                      "actions": {},
+                      "runAfter": {
+                        "Post_Card_Notification__in_Teams_for_Manager_(Cancelled)": [
+                          "Failed"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "69a21729-c211-4115-8066-50e8e0c083ba"
+                      },
+                      "type": "Scope"
+                    }
+                  }
+                }
+              },
+              "default": {
+                "actions": {}
+              },
+              "expression": "@outputs('Get_Leave_Request')?['body/statuscode']",
+              "metadata": {
+                "operationMetadataId": "fd9356fc-90e4-4c10-b9d2-7a926ff82104"
+              },
+              "type": "Switch"
+            },
+            "Compose_email_body_style": {
+              "runAfter": {
+                "Compose_Website_Icon": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "d2921412-7122-4588-acfc-82fc736ecbc8"
+              },
+              "type": "Compose",
+              "inputs": "<style>\n            table {\n                border-collapse: collapse;\n            }\n\n            .tablerow {\n                border-bottom: 1px solid gray;\n                height: 60px;\n            }\n\n            .fieldcol {\n                width: 210px;\n                color: #101828;\n                font-weight: 600;\n                font-family: Inter, Arial, sans-serif;\n                font-size: 16px;\n                line-height: 24px;\n                text-align: left;\n            }\n\n            .valuecol {\n                width: 340px;\n                color: #101828;\n                font-family: Inter, Arial, sans-serif;\n                font-size: 15px;\n                line-height: 24px;\n                text-align: left;\n            }\n\n            .reminder {\n                color: #d13438;\n                font-family: Segoe UI, Arial, sans-serif;\n                font-size: 12px;\n                line-height: 16px;\n                text-align: left;\n            }\n\n            .subject {\n                color: #6461f2;\n                font-weight: 600;\n                font-family: Inter, Arial, sans-serif;\n                font-size: 16px;\n                line-height: 24px;\n                text-align: left;\n            }\n\n            .message {\n                color: #667085;\n                font-family: Inter, Arial, sans-serif;\n                font-size: 15px;\n                line-height: 24px;\n                margin: 0px;\n            }\n\n            .floatleft{\n                float: left;\n            }\n\n            .xsmall-image{\n                min-width:16px;\n                width:16px;\n                height: auto;\n                display: block;\n            }\n\n            .small-image {\n                min-width:48px;\n                width:48px;\n                height: auto;\n                display: block;\n            }\n\n            .big-image {\n                min-width:128px; \n                width:128px; \n                height: auto; \n                display: block;\n            }\n\n            .title {\n                color:#101828;\n                font-weight:600;\n                font-family:Inter,Arial,sans-serif;\n                font-size:16px;\n                line-height:24px;\n                text-align:left;\n                padding-top: 12px;\n            }\n\n            .title-align {\n                margin-left: 75px;\n            }\n\n            .alink {\n                color:#6461f2;\n                text-decoration:none;\n                font-family:Inter,Arial,sans-serif;\n                font-size:15px;\n                line-height:24px;\n                text-align:left;\n            }\n\n            .card-title {\n                padding-left: 150px;\n                color: #101828;\n                font-weight: 600;\n                font-family: Inter, Arial, sans-serif;\n                font-size: 20px;\n                line-height: 28px;\n                text-align: left;\n                margin-bottom: 5px;\n            }\n\n            .card-subtitle {\n                padding-left: 150px;\n                margin-bottom: 20px;\n            }\n\n            .card-body {\n                padding-left: 150px;\n                margin-bottom: 10px;\n            }\n\n            .card-body-txt {\n                margin-left: 25px;\n            }\n\n            .card-body-image {\n                padding-top: 4px;\n                float: left;\n            }\n        </style>"
+            },
+            "Send_an_email_to_employee": {
+              "runAfter": {
+                "Compose_email_body_template_for_manager": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "cb047e69-68c8-4c8d-9748-a24364dc5c78"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365_1",
+                  "operationId": "SendEmailV2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                },
+                "parameters": {
+                  "emailMessage/To": "@{outputs('Get_Employee_by_Id_in_Users_table')?['body/domainname']}; ",
+                  "emailMessage/Subject": "@variables('SubjectEmployee')",
+                  "emailMessage/Body": "<p>@{outputs('Compose_email_body_style')}@{outputs('Compose_email_body_template_for_employee')}</p>",
+                  "emailMessage/Importance": "Normal"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Compose_email_body_template_for_manager": {
+              "runAfter": {
+                "Compose_email_body_template_for_employee": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "b9ee41be-4b71-48ff-b917-78668d2512ab"
+              },
+              "type": "Compose",
+              "inputs": " <div>\n            <p class=\"reminder\">\n                This is a system-generated email. This mailbox is not monitored. <br><br>\n                Please do not reply to this message. For concerns or inquiries, please get in touch with the project manager below or HR Support via: hremail@domain.com\n            </p>\n        </div>\n        <br>\n        <div>\n            <div class=\"floatleft\">\n                <img src=\"@{outputs('Compose_LM_Small_Icon')}\" width=\"48\" class=\"small-image\">\n            </div>\n            <div class=\"title\">\n                <div class=\"title-align\">Leave Management Copilot</div>\n            </div>\n        </div>\n        <br>\n        <div>\n            <p class=\"subject\">\n                @{variables('SubjectManager')}\n            </p>\n        </div>\n        <br>\n        <div>\n            <p class=\"message\">\n Hi! <br><br>\n                I’m Leave Management Copilot! <br><br>\n               @{variables('MessageManager')}\n            </p>\n        </div>\n        <br>\n        <table>\n            <tbody>\n                <tr class=\"tablerow\">\n                    <td class=\"fieldcol\">\n                        <div>Leave type</div>\n                    </td>\n                    <td class=\"valuecol\">\n                        <div>@{outputs('Get_Leave_Request')['body/mpa_leavetype@OData.Community.Display.V1.FormattedValue']}</div>\n                    </td>\n                </tr>\n                <tr class=\"tablerow\">\n                    <td class=\"fieldcol\">\n                        <div>Leave start date</div>\n                    </td>\n                    <td class=\"valuecol\">\n                        <div>@{outputs('Get_Leave_Request')['body/mpa_leavestartdateutc@OData.Community.Display.V1.FormattedValue']}</div>\n                    </td>\n                </tr>\n                <tr class=\"tablerow\">\n                    <td class=\"fieldcol\">\n                        <div>Leave end date</div>\n                    </td>\n                    <td class=\"valuecol\">\n                        <div>@{outputs('Get_Leave_Request')['body/mpa_leaveenddateutc@OData.Community.Display.V1.FormattedValue']}</div>\n                    </td>\n                </tr>\n                <tr class=\"tablerow\">\n                    <td class=\"fieldcol\">\n                        <div>Requested hours</div>\n                    </td>\n                    <td class=\"valuecol\">\n                        <div>@{outputs('Get_Leave_Request')['body/mpa_hoursrequested']}</div>\n                    </td>\n                </tr>\n                <tr class=\"tablerow\">\n                    <td class=\"fieldcol\">\n                        <div>Available balance hours</div>\n                    </td>\n                    <td class=\"valuecol\">\n                        <div>@{outputs('Compose_Hours_Available')}</div>\n                    </td>\n                </tr>\n <tr class=\"tablerow\">\n                    <td class=\"fieldcol\">\n                        <div>Submitted By</div>\n                    </td>\n                    <td class=\"valuecol\">\n                        <div>@{outputs('Get_Employee_by_Id_in_Users_table')?['body/fullname']}</div>\n                    </td>\n                </tr>\n                <tr class=\"tablerow\">\n                    <td class=\"fieldcol\">\n                        <div>Employee’s Comments</div>\n                    </td>\n                    <td class=\"valuecol\">\n                        <div>@{coalesce(outputs('Get_Leave_Request')['body']?['mpa_requestorcomments'], 'none')}</div>\n                    </td>\n                </tr>\n                <tr class=\"tablerow\">\n                    <td class=\"fieldcol\">\n                        <div>Manager’s Comments</div>\n                    </td>\n                    <td class=\"valuecol\">\n                        <div>@{coalesce(outputs('Get_Leave_Request')['body']?['mpa_approvalcomments'], 'none')}</div>\n                    </td>\n                </tr>\n             </tbody>\n        </table>\n        <br><br>\n        <div>\n            <div class=\"floatleft\">\n                <img src=\"@{outputs('Compose_LM_Big_Icon')}\" width=\"128\" class=\"big-image\">\n            </div>\n            <div>\n                <div>\n                    <div class=\"card-title\">    \n                        Leave Management Copilot\n                    </div>\n                </div>\n                <div>\n                    <div class=\"card-subtitle\"> \n                        Automatic Mail Notification\n                    </div>\n                </div>\n                <div>\n                    <div class=\"card-body\">\n                        <div class=\"card-body-image\">   \n                            <img src=\"@{outputs('Compose_Email_Icon')}\" width=\"16\" class=\"xsmall-image\">\n                        </div>\n                        <div>   \n                            <div class=\"card-body-txt\"><a class=\"alink\" href=\"mailto:email@example.com\" target=\"_blank\">email@example.com</a></div>\n                        </div>\n                    </div>\n                </div>\n                <div>\n                    <div class=\"card-body\">\n                        <div class=\"card-body-image\">   \n                            <img src=\"@{outputs('Compose_Website_Icon')}\" width=\"16\" class=\"xsmall-image\">\n                        </div>\n                        <div>   \n                            <div class=\"card-body-txt\"><a class=\"alink\" target=\"_blank\">example.com</a></div>\n                        </div>\n                    </div>\n                </div>\n            </div>\n        </div>"
+            },
+            "Send_an_email_to_Manager": {
+              "runAfter": {
+                "Compose_email_body_template_for_manager": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "d66fea69-be19-4bae-9ae2-bfa422eb573e"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365_1",
+                  "operationId": "SendEmailV2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                },
+                "parameters": {
+                  "emailMessage/To": "@{outputs('Get_Manager_by_Id_in_Users_table')?['body/domainname']};",
+                  "emailMessage/Subject": "@variables('SubjectManager')",
+                  "emailMessage/Body": "<p>@{outputs('Compose_email_body_style')}@{outputs('Compose_email_body_template_for_manager')}</p>",
+                  "emailMessage/Importance": "Normal"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Compose_email_body_template_for_employee": {
+              "runAfter": {
+                "Compose_email_body_style": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "b9ee41be-4b71-48ff-b917-78668d2512ab"
+              },
+              "type": "Compose",
+              "inputs": " <div>\n            <p class=\"reminder\">\n                This is a system-generated email. This mailbox is not monitored. <br><br>\n                Please do not reply to this message. For concerns or inquiries, please get in touch with the project manager below or HR Support via: hremail@domain.com\n            </p>\n        </div>\n        <br>\n        <div>\n            <div class=\"floatleft\">\n                <img src=\"@{outputs('Compose_LM_Small_Icon')}\"48\" class=\"small-image\" >\n            </div>\n            <div class=\"title\">\n                <div class=\"title-align\">Leave Management Copilot</div>\n            </div>\n        </div>\n        <br>\n        <div>\n            <p class=\"subject\">\n                @{variables('SubjectEmployee')}\n            </p>\n        </div>\n        <br>\n        <div>\n            <p class=\"message\">\n Hi! <br><br>\n                I’m Leave Management Copilot! <br><br>\n               @{variables('MessageEmployee')}\n            </p>\n        </div>\n        <br>\n        <table>\n            <tbody>\n                <tr class=\"tablerow\">\n                    <td class=\"fieldcol\">\n                        <div>Leave type</div>\n                    </td>\n                    <td class=\"valuecol\">\n                        <div>@{outputs('Get_Leave_Request')['body/mpa_leavetype@OData.Community.Display.V1.FormattedValue']}</div>\n                    </td>\n                </tr>\n                <tr class=\"tablerow\">\n                    <td class=\"fieldcol\">\n                        <div>Leave start date</div>\n                    </td>\n                    <td class=\"valuecol\">\n                        <div>@{outputs('Get_Leave_Request')['body/mpa_leavestartdateutc@OData.Community.Display.V1.FormattedValue']}</div>\n                    </td>\n                </tr>\n                <tr class=\"tablerow\">\n                    <td class=\"fieldcol\">\n                        <div>Leave end date</div>\n                    </td>\n                    <td class=\"valuecol\">\n                        <div>@{outputs('Get_Leave_Request')['body/mpa_leaveenddateutc@OData.Community.Display.V1.FormattedValue']}</div>\n                    </td>\n                </tr>\n                <tr class=\"tablerow\">\n                    <td class=\"fieldcol\">\n                        <div>Requested hours</div>\n                    </td>\n                    <td class=\"valuecol\">\n                        <div>@{outputs('Get_Leave_Request')['body/mpa_hoursrequested']}</div>\n                    </td>\n                </tr>\n                <tr class=\"tablerow\">\n                    <td class=\"fieldcol\">\n                        <div>Available balance hours</div>\n                    </td>\n                    <td class=\"valuecol\">\n                        <div>@{outputs('Compose_Hours_Available')}</div>\n                    </td>\n                </tr>\n <tr class=\"tablerow\">\n                    <td class=\"fieldcol\">\n                        <div>Submitted By</div>\n                    </td>\n                    <td class=\"valuecol\">\n                        <div>@{outputs('Get_Employee_by_Id_in_Users_table')?['body/fullname']}</div>\n                    </td>\n                </tr>\n                <tr class=\"tablerow\">\n                    <td class=\"fieldcol\">\n                        <div>Employee's Comment</div>\n                    </td>\n                    <td class=\"valuecol\">\n                        <div>@{coalesce(outputs('Get_Leave_Request')['body']?['mpa_requestorcomments'], 'none')}</div>\n                    </td>\n                </tr>\n                <tr class=\"tablerow\">\n                    <td class=\"fieldcol\">\n                        <div>Manager’s Comments</div>\n                    </td>\n                    <td class=\"valuecol\">\n                        <div>@{coalesce(outputs('Get_Leave_Request')['body']?['mpa_approvalcomments'], 'none')}</div>\n                    </td>\n                </tr>\n             </tbody>\n        </table>\n        <br><br>\n        <div>\n            <div class=\"floatleft\">\n                <img src=\"@{outputs('Compose_LM_Big_Icon')}\" width=\"128\" class=\"big-image\">\n            </div>\n            <div>\n                <div>\n                    <div class=\"card-title\">    \n                        Leave Management Copilot\n                    </div>\n                </div>\n                <div>\n                    <div class=\"card-subtitle\"> \n                        Automatic Mail Notification\n                    </div>\n                </div>\n                <div>\n                    <div class=\"card-body\">\n                        <div class=\"card-body-image\">   \n                            <img src=\"@{outputs('Compose_Email_Icon')}\" width=\"16\" class=\"xsmall-image\">\n                        </div>\n                        <div>   \n                            <div class=\"card-body-txt\"><a class=\"alink\" href=\"mailto:email@example.com\" target=\"_blank\">email@example.com</a></div>\n                        </div>\n                    </div>\n                </div>\n                <div>\n                    <div class=\"card-body\">\n                        <div class=\"card-body-image\">   \n                            <img src=\"@{outputs('Compose_Website_Icon')}\" width=\"16\" class=\"xsmall-image\">\n                        </div>\n                        <div>   \n                            <div class=\"card-body-txt\"><a class=\"alink\" target=\"_blank\">example.com</a></div>\n                        </div>\n                    </div>\n                </div>\n            </div>\n        </div>"
+            },
+            "Compose_LM_Small_Icon": {
+              "runAfter": {
+                "Switch_(Approval_Status)": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "33b83cad-71ee-4213-9e92-b4cd9364ced7"
+              },
+              "type": "Compose",
+              "inputs": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAMAAADVRocKAAADAFBMVEVMaXFqWudTgPZjZuxdcPBZd/NMjPxga+5ebe9kZOtzS+F0SeBuVOVlYup0SuBsV+Z4Q91ccvFadfN6QNxNifpuUuJTgPddcu5yTt9LgvtvU+RNi/p2Rt9rWeZMjfxfbu93Rd55QtxTgPZsWOZOivloXuhZd/N1Sd95Qt1QhfhZdvJUgPZsWOZmY+p2SeByTOF4RN5Jk/5hau1dcfBga+5PiPloXehcc/BgauxvUuNsVuVVfvVKkf1QhvlOi/tyTeFLjvtJkv5yTuFWevVTf/VYePNkY+toXOdcbe1QhvlJkv13Q913R99rWuZaevRkZetwT+NKkP3///9pXOhRhfhyTuJSg/dccvB2R99iae1WffVdcO9ga+1oXuhYefNTgfd3Rd5tVeVeb/BxUOJPiPpvU+Rhau1Xe/RuVeVjZutbdPJadvJJkf1xTuJ0S+BwUuNmYelOivtrWeZfbe56Qd1UgPZfbu91SeBcc/FrWudzTeFiaO1lZOttV+VVfvV5Q91Qh/l4RN5lY+tKkP1nYOlShPhMjftgbO5qW+dsWOZYevRQhvhhae1zTOBwUeJNi/twUONkZet0SuBOifpVf/ZLj/xnYel1SN9bdfJgbe9qXOdvVORZd/JvUuRkZutZePNNjPtmYupnYOpXevRMjvxQhvnV3/1Ph/pnX+lSgvdpXujs6/1LjvxPifpIk/5wUeNuVORYePN2Rt9Oi/tjZ+xcce9mY+pUfvZRg/hdb+9VgPd4Q95XefRfbO5ad/Pr7v3r7f2imPBlZezr7v6Cm/f29f5xgvLIwPWBnfhRhvhUgPV6dOxwhPPW3fxvUeN9buqro/J0fvB3ee5vhvTq7v6FlvS2q/JvhPPZ2PqMifDFxfjj4fy5wPiQguxrc++wtffa1vm0r/Tg5v1ygfHQzvl2Yeemq/Wrvfpig/WgtvnAzvuXq/dyZuqUl/Jvbeyfn/JxauuGe+y/tvTBy/qVrvmCnPeYkO+JjvFpj/ebi+1xhPLJ1/xic/BvYehjbe5sXeiWO/XhAAAAUnRSTlMA/v7+/v7+/v7+/v7+/v7+v/7+vyAg/iAQEF17v5/vX89gP99fgH9AkJyc37/fj3/fn7/f399wz7DvQO/fv8/vv8/fv0/f7z9Ar9+v7u8wv/b3biXHswAAAAlwSFlzAAAWJQAAFiUBSVIk8AAADqhJREFUeJztl3lUm+eZxT+xSYCB4vHWtHGciePsbdJMlrbTdbrNfs4HSAYksCLAyDKSLAUJxGLZgCQMiM0sIwRIQUwBQwADsjUzTOxxmNakYKeZ2OMkTpykSbN0bz3rP3Pu876fEBjbpH/NH72fJNuc4/fHvc99XmxB+IP+H+vTux/7xs6urq6uOqaDK3o+Rju/8djuT/8ex295YGco5Aq5xsfHu8YJ01VX11V38GAU9HwM57Etn/T8z+wMBAKuJJcr5HKFQqEQOHXgcEMxdhjpM5/s2/9qa2trINAaCASSAq6kpFBSyDXuco2PdzE3UmwHo6TnD/7FJzCx5YnOQ52dhw4FWlvxglyupCSXy+UKjcNO1/h4XR0LbsXPn26YsOWJic7OTjCg1tbWGU5BZozjCo2Ph0LMDBtPXV3dhglfKSoqmiB1Spo5NDNzqBUKJAXAgCXGGe8ar+vCgOq6vr6x83c7nU5nkaSJic6Jzk5u6RD8sOkkuTAeRgmBgsQ2NOktTww34WkCxkmkiYkihuBCZjy0QCAJlBDK1jW+cyML8UB29vns89lN54edeJzOYW5nArlFQTMzMzQbPIwTSHKFNmBhi1LZ0NCQTWo6n01empxOMvR9ZmdioohjZjo7Z1qBIhLGc/s5P6BUnlYqG04rlUpGgZqceIadzu/Tywk7RUUYjdQ3VGCmNRC47Zy/NTo6OqokjTYoG+iVTYaamrKHm5qGm5x8PNJ8ilZmg6b98W0ADxVygdNArIaG0w3AcCE2ogAj1Y1yIytfvfX5u8vjysvjoozCUclQw2klrDQwN+A0OYeHwYApzqHh3HLO2x86tUiI8vIVTmGUQiR6Rd0gtGEnjYhjblnVPbXQ8VOLcYtxcYuLwBQWbovBjCp5aOSHc5rOZzdl881xOp23sLA9Ly8vr1YSIOWLcXFkp7AwTkpNySisbQ0N2coGJXLD6pxvGh5u2nnzqj6Yl7efGEQ5Xnu89lTt4vFFZqW8fFv5tvKoGaUEghmEtlKDP7/Z+X+zf0Xg5NXWSoZO1dYeJycYzzZyNDrKqsZ1WtlwWqrBzar67aGhof1rIXl5tVJux2tPITIkF7ctjpkhQ4XgSMEplcqvrH/+XQUF/1RQMDRUEIPJkyjEYZTa2uM8NHIT2wEld7R7fQPT09MF0wUFjHOM7Hzw4UdLUf39Dfrf3/0Xgosrj+McvjoPrVfVPX6/3z/o9xf4CQLO0BvibfXT2vLFchj6BxoND26dqm43GAx+Q2Jion8QmMFB//QH79z+fFH8iJXgFGJbBGSxvLzwyzdW9cHeXgO02W/w/7PBP5jo9+P7X/r4Rej6demX6z988fr16z9k+h2+hQ/RNppOXC3dAnHli4sP3GDgANTbu5lhDAa//xUEMJg4ODg9GJ3OMQQXW7afiuLCB7zSjEM1KF9cW9WnKioqGONAb++B3s2bDYbfiuJv/YkGv9+fmIj34GDBIB8OXkMFhFkSxQ9jS8229FTtn62pqEqlUmVWqCqIA1Rv7zui+CrPjRwxTTM/RIGdj0Xxo1XLw3c071urAI8TAB8VqgoVOAcOnBPFV3oRWu9mDkmEG+ratH+Qd+26KC4do04PxSD2789bVdU9Cfn5CQkJCaq5OdWciuucKF6Wcuvt7TXw+fgNiX4D5/gTp18UxSUiDRUUFOyPvQr2xEz48Ug+KSF/Lj8hYS4hM1Olyjwjii9wnaP3uRfOnXsBb3qd+zcmUVzyT0t+qAbHmJsvr1h40Kaw2iKRSH4kAicgzc3NnRM3qKVBim5wUOoa/BwbGnowasBqtVptNpvVaovYIrb8/GfIzpkNAwyIbJC6ht+AQyCpql+wuufBsFoVVoXCplAoyM4ZUXz1X1frR/8DXcb78uXLP7p8+fIrH4viktS1RKoBFQGUAl7Vu9RytVzuVs9bOQYcq9V2RhTfjUTyn8mPoAD5CTSdORWKQH2jsqleJQDVABhWuEQ48ScmMgt/olar5Wq1Wu12y93zagmjAMCqsDE7+ZgOBjSXMEdt44xMACpUbHkAOdC72UCGNvv9/m+TgebmkpLmEkgul8vVbpDcauv8GVF8mc9GYbM+E4HyI9QB1jVVgko1BwB3c0AV7TS12mAw3AUDubm5Vbm5uRxSolarS+RqtVwOgNqNwJgjBUAKcpNANcDmJDDAnCozU1VRocJHRQW/CnoP9D4lCN+b1VfNVs1WAdLc3NxcAkPAlAAgh5t5dbQDVpvVZlNEFBFbPqs1AfiKIrFMzAez4ZzvCffq9bP6Wb1ePzsLCgPlAkIOSmg+crnbrZ5nbugFFDr9TOTdd8Ql2hvanQS6Cfh8ENwe4W/b2+MH9KRZMKqq8AEMAM3R2DAeuVvtdrOyodBEsSrefR9di0TQMxZbAsrGOvC08Eg708AAx8TDEFhnRPHHGE5uCS8B2QEGsc3PW63zGA/202azKRQRG6OwWs/BjyrzcaG6ujq5Orm6Pbk9ub19oD1+YEAfH4/Y9ADMzs5WzQKSW5IrdQ0Yt5yaDZD17wiiYCTWNS5EJoTDaeFwOJzGQNwNUhs4wQBMVVVVcIMONJeUvPzaWyWEkKvlb7zltkZrYLPaFBxETvIThO+Ew+ZgOI0o4WoouTqZQAAMxMfHz8ZTZnqYwXhyc/9zQRTfYobefE0Uz7zpxnAwHt42G30orIpIRHik2wwFzYThHPipBqA9GpseGMxGP1v1Jq6413/+Zu7L7+NGPEPjQWRyugwYh0pgfUp4ur6+vru729zdbQ6ag+a0tHAa9wNAdTLzMzAwMNCu16MHCGz1RfsTig2rgw6osTtqq9vqBuZp4UnNSD30HDDkJhg0m9OC4bQTovhSOHz0aHVyNTogta19ID7+31cB3qIWYD6sBOCwts3PPyls1Wg0mhFNvWakfqS+GxwzHrPZDEAQXo6y8SRXww9BVgNeo65FWyBRSNsF4eGxsTFAgBkZYXbgiABmyg3BhcNpR1GCZGhhFWCB7Q0x2I7iJiDQFwRB+K7PlzWWpfGBg2dEQ3bq6wHoZrEFkVswnBakEVX/cs2PtJ/TklIBVrxU5ZbkNuM2FR72ZeHJAgheuB8NAPXMDChsPua0tOBLJ9YAFn7c/i/t1AJweBFAggFB+K7H4/HJfD5i4FMzlgUOAJqVzLrN3awHV/j5J96/8htOOPHL5HY2nfaBeLpv0OrZ2e3sZ+adFotF5vHIPB6fJ8vjg5WsrDEfAGN8OjQesH518Zp06C/M5rQrkokTb/yC3QRRzoBefyf/ob/jry0WGXsqPR6PR+bz+HxZAFzw+TQ+n1QC6LVoLhfN5ufMwdejf74SPhquphpU072W3P4dbkAQ7rVYLI0WrkpLpUcGQwzgg50sH0qA6awAzlJukh9RvBI0h2MunOrq5Huj//DacU9jY2NGY2MUAozndVG8CkO+LJ+HdyAr6+2V/R0Z0dS/JBV24dqv2Z1jNgfT0o5idx6J+bfpHTU1GRk1HCJxLoniNUulTCaT+WQeWCE7F85KHXp7TPMzntDC27/qrq/vfo6vaDBoDofTqKKSHtZqa5jAYZgLoiheIjeySoCoBT6f74KU+4KEOvESilBfTzWQjMQaEIQvTZWWlpbWaGsYqDEjI6Ox8RL+7sWzK7oqk8k8lbKfrd2D/5BagNRYp+vrt67+H8idU5BWO6WFamqII9U82kX02VIpu7j6y9fY8kDYnxG6dKSKStr6xT4Q+uhTqy0tJdDZNd/rVVa391Z/9SJKneUbyxqTuqbRaNYYEITPF5MAITNTU1ObtFrtf1/6QYwuIrnGRstq7lkPFsfjoYuA9VqzUtFoVb9oMi2blpcJ09cHK0QqhSEWGy9BTU3j6tv0osxiodXxodTgZN2z4waAcIfXazJNLi97+/uXTcXF/UTpY5RNU1PaKYqNpoN+ieK1S5d+Q1Z+IC2oRVZZKSPIHTeeLwgPt+m8Xh0wpuV+U7+pGG6WJTtM2lJwzuL4C2Tn4oIoLlga6SLg+yOTye5Z73zhPl2ZTqfTtXnbvF7T8uSkyeQ1mfqXl5f7WWxTU5s2MT/aS+JPKDWttubXCyeuSstD+wPGl9YFCJ/NyQGiTOfV6dp03jbv5OTkpHfSBC2Tn+Kp4j5q2oX3Nkllu/oegsvAVVCTQXdB49qKRqv6tZycnJyyshxdDjOj87ZNevljWiZQMeywyURzK9VqSzEc3oPGjBsqGq2qw+FwAEKgnBy4YQLD6zWx2Ewstanivj4Eh9A2sQ1lNbixopJ2fM2RkuJwpORImDK8yso4ZlLnbWubNHknAUGnTYQpnmIt2MRqMHXPTQ0IwpM4vsXR0tLicKTAjgMMyo0g+PDi8XopNgqNhtMvda1vat2KStqVbuwwGo3GFEdKS4qjxeGgdzS3qJ02IOiTKF7EBlBfcd/6FZV0X0dqR2oHGC3GFGNKi7GlpQUoB3MUHQ4LrQzDIU2avGw6pv5bGhCEz9rtqak9+EjvMKYb02HHaGwhJ8yMNJ6yHF0Z/FBsXl1b22Sb1zu5fLOKStraE5Xdbu/o6AAk3ZjCOC0plBsfDyAITUfr06bzTrbpJm8xYabP7SX14OnpsROow97RkU6zMRpTjI4UtECazYohiu12BgRhx1+dPHnyJCH27u0hCtlJtdtT0+124mA2xhRQmJeU6PJ887YGBOHz+0gn9zErewnEOKk9qfZUe0c6r1oLOmCkzWHTceTcZsJMj+L8I8TYt2/vyZN74Yfs9Nh77PaenlR7T3pqemq6FFtLi4N3+psbOV+47wiJGYGQmIRhwRELoaVSEdh0jC0pGzIgCPcfho4cZqAjEmvvvn17YYjNhjD2nlQk19GRno6+fW5j5wvCLiIQZQ2EDPHh8LJxpabad230fGHHrmefjTLWJbHxMD/kxt5j37XOz+Gbp/Qs1+FVpH8kEDWADSfGz4bzYbr7UQkBHV7DWRUaMPseve+TnQ/ErmfXKJZx+PARwrBCf+pu4ffR1rvv/6N19KnV+sv7797A+v5Bwk31f52P9KffCLJBAAAAAElFTkSuQmCC\" width="
+            },
+            "Compose_LM_Big_Icon": {
+              "runAfter": {
+                "Compose_LM_Small_Icon": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "738ab179-726e-4cdc-a6c8-7de696dfa494"
+              },
+              "type": "Compose",
+              "inputs": "data:image/png;base64,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"
+            },
+            "Compose_Email_Icon": {
+              "runAfter": {
+                "Compose_LM_Big_Icon": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "c6db20cf-5a43-4a76-a460-b644fdfe835c"
+              },
+              "type": "Compose",
+              "inputs": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAb1BMVEVMaXFgYO9jYPJwYO9iYPFjYfJiYfJgYO9oYO9iYfFjYfJjYfJjYPFkYO9iYfFkYfNgYO9jYvJiYvNjYfFiYPFiYfFjYfRiYvJjYO9iYO9jY/RiYO9jYPFkYPFiYvJjY/NkYPFlYO9iYPJjYPJjYfJJDUiAAAAAJHRSTlMAEL8Q39/fICDfv++QQO/PQJ9/oIDPX59QYF9woHCPb4AwYJ/VFeIxAAAACXBIWXMAABYlAAAWJQFJUiTwAAAA0ElEQVR4nM2R2RaCMAxEBxDLvgi4787/f6MnZZFi++pxnprOTZqkwG8UKKuCwY4SOpRE2g9dPhl6ABqSK6tItgASsrZ31pAdgLWU0o+ZepRiDAC5Wfq3lAbAvmPMJysmoIoF3n78o6R31QQo3KVIPRQJdhJlUDMAShfJxa9kMXEOE4CX9b0GV50uGzIB4KCLyHDFXl8sAahzP5A/xksAOKVkcRkjCwDlj+kOwNAfASWpN/ytJ+kDaGXzVpF8ySfIwaFYP658lz8tzYuskh/9hd6rASnd9uhm6gAAAABJRU5ErkJggg=="
+            },
+            "Compose_Website_Icon": {
+              "runAfter": {
+                "Compose_Email_Icon": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "33b83cad-71ee-4213-9e92-b4cd9364ced7"
+              },
+              "type": "Compose",
+              "inputs": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAilBMVEVMaXFiYfFoYO9jYfJjYfJgYO9iYPFiYPFgYO9jYfJiYfFjYPJiYPJjYPJkYO9jYfJkYfNjYvJkYPFiYvNlYO9hYPFiYfFjYfFiYO9wYO9iYPBkYPFjY/NgYO9gYO9jYfRiYO9hYPFjYPFjYO9kYfVkYvJjYPNjYvJjYPFiYPFiYPFjYPJiYfJjYfKuJCj+AAAALXRSTlMA3yDfvyBwgBDvz79gn0Bfz6+AfzCQ76BwELBwb0AwX2CgkFBPj2+fb9/Pr9+PXTRxAAAACXBIWXMAABYlAAAWJQFJUiTwAAABaUlEQVR4nJVT2XLDIAyUbTDgI6ntnD1y9L72/3+vIyEnjJt0pvtg4dmVEGIh+gfs65vJKtPt84v0g8EJZv+LXiQ0o5hUuQ8AVqtIVvItU35guvcF0D4Cxa5nxZDkA6gsNUBmfQAc2SytkTPviQpgTrQBgidfAWGhggLIPEkB/g3AM4nCRL4BYInISAEiFxkbgJkIDNATkVcdL4I/C6UDy4MCqljyJqZyu0w0wK1WXkbBUg9gYuz0d4yS0nIsYzRA65xzhUbn1kDGsQPquON1FET0/QcvbRugu7zFOm5x1OaOQBObLPVcGkudR5ke0+m5eLRWBzebDmqcIDfhdHAsFIIXQ2xBUkN+FvKcatXJ5QnDdngCgt7+nGjLJhgNG0TBe5SjLbY8P+mAsYk2dtxuLgVy5u/OpowmXWTAC09pO7DJ2SQncA1AryXIG0jyGWLjBPVu8rKIDnVCRzNOYQ9f9edH3b5ffrxX8ANWUEMYo5gmuAAAAABJRU5ErkJggg=="
+            },
+            "Compose_Hours_Available": {
+              "runAfter": {
+                "Leave_Credit_Value": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "a64bd929-fa04-4ea7-b409-1516b5613c98"
+              },
+              "type": "Compose",
+              "inputs": "@if(equals(outputs('Get_Leave_Request')?['body/mpa_leavetype'], 865420002), coalesce(outputs('Leave_Credit_Value')?['mpa_unpaidleavehoursremaining'], 0), if(equals(outputs('Get_Leave_Request')?['body/mpa_leavetype'], 865420001), coalesce(outputs('Leave_Credit_Value')?['mpa_sickhoursremaining'], 0), coalesce(outputs('Leave_Credit_Value')?['mpa_vacationhoursremaining'], 0)))"
+            }
+          },
+          "runAfter": {
+            "Initialize_Message_for_Manager": [
+              "Succeeded"
+            ]
+          },
+          "expression": {
+            "not": {
+              "equals": [
+                "@length(outputs('Get_Leave_Credits')?['body/value'])",
+                0
+              ]
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "6d6b5896-5fa9-4268-bd11-98ad236c0d91"
+          },
+          "type": "If"
+        },
+        "Get_Leave_Request": {
+          "runAfter": {
+            "Compose_-_convert_to_string_value": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "a99a0ad2-44e0-4c27-869c-2f723afdcc4f"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "GetItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "mpa_lm_leaverequests",
+              "recordId": "@variables('Result')?['Id']"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Perform_an_unbound_action": {
+          "runAfter": {
+            "Compose_Access": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "dcaee9cb-e486-44ae-b428-0f48a4166b53"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "PerformUnboundAction",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "actionName": "GrantAccess",
+              "item/Target": "/mpa_lm_leaverequests(@{outputs('Get_Leave_Request')?['body/mpa_lm_leaverequestid']})",
+              "item/PrincipalAccess": "@outputs('Compose_Access')"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Compose_Access": {
+          "runAfter": {
+            "Get_Leave_Credits": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "13911b99-7a1c-4643-b6cc-7ad886be6918"
+          },
+          "type": "Compose",
+          "inputs": {
+            "Principal": {
+              "systemuserid": "@{outputs('Get_Leave_Request')?['body/_mpa_approveruserid_value']}",
+              "@@odata.type": "Microsoft.Dynamics.CRM.systemuser"
+            },
+            "AccessMask": "ReadAccess"
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": "8966f0978a80430098d992ce322095e3"
+  },
+  "schemaVersion": "1.0.0.0"
+}

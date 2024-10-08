@@ -1,0 +1,224 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRedirect
+  id: main
+  actions:
+    - kind: BeginDialog
+      id: edE9Dh
+      input:
+        binding:
+          IsGetOwnCredits: =true
+          UserPrincipalName: =System.User.PrincipalName
+
+      dialog: mpa_LeaveManagement.topic.Function-GetAllLeaveCreditsOfUser
+      output:
+        binding:
+          LeaveCredits: Topic.LeaveCredits
+
+    - kind: BeginDialog
+      id: bxvFZA
+      input:
+        binding:
+          UserPrincipalName: =System.User.PrincipalName
+
+      dialog: mpa_LeaveManagement.topic.Function-GetAllLeaveRequestsByUser
+      output:
+        binding:
+          OutputTable: Topic.OutputTable
+          OutputTableCnt: Topic.OutputTableCnt
+
+    - kind: SetVariable
+      id: recrJd
+      variable: Topic.PendingRequests
+      value: =Filter(Topic.OutputTable, ApprovalStatus = 1)
+
+    - kind: SetVariable
+      id: HUpFTC
+      variable: Topic.ApprovedRequests
+      value: =Filter(Topic.OutputTable, ApprovalStatus = 865420001)
+
+    - kind: SetVariable
+      id: oLBAvM
+      variable: Topic.RejectedRequests
+      value: =Filter(Topic.OutputTable, ApprovalStatus = 865420002)
+
+    - kind: SendActivity
+      id: Oh8tqF
+      activity:
+        attachments:
+          - kind: AdaptiveCardTemplate
+            cardContent: |-
+              ={
+                type: "AdaptiveCard",
+                '$schema': "http://adaptivecards.io/schemas/adaptive-card.json",
+                version: "1.5",
+                body: [
+                  {
+                    type: "TextBlock",
+                    size: "extraLarge",
+                    weight: "bolder",
+                    text: "Employee Report"
+                  },
+                  {
+                    type: "TextBlock",
+                    text: "Here are the details of your leave history.",
+                    wrap: true
+                  },
+              	  {
+                    type: "TextBlock",
+                    text: "**Available hours balances**",
+                    size: "medium", 
+                    spacing: "medium",
+                    weight: "bolder"
+                  },
+                  {
+                    type: "TextBlock",
+                    text: Concat(Concatenate(ForAll(Global.LeaveCreditsFlat, "**" & ThisRecord.name & "**: " & ThisRecord.hours)), Char(13) & Value, Char(13)),
+                    wrap: true,
+                    separator: true
+                  },
+                  {
+                    type: "TextBlock",
+                    text: "**Leave Request Summary**",
+                    size: "medium", 
+                    spacing: "medium",
+                    weight: "bolder"
+                  },
+                  {
+                    type: "ColumnSet",
+                    columns: [
+                      {
+                        type: "Column",
+                        items: [ 
+                          {
+                            type: "TextBlock",
+                            text: "**Approved Leaves:**",
+                            weight: "bolder"
+                          },
+                          {
+                            type: "TextBlock",
+                            text: Concat(
+                                Concatenate(
+                                  ForAll(
+                                    Topic.ApprovedRequests, 
+                                    First(Filter(Global.LeaveTypes As lt,
+                                    Text(lt.Id) = Text(ThisRecord.LeaveTypeValue)
+                                    )).Name & ": " & 
+                                    Text(
+                                      ThisRecord.LeaveStartDateUTC, 
+                                      "mmmm dd, yyyy"
+                                    ) & " - " &
+                                    Text(
+                                      ThisRecord.LeaveEndDateUTC, 
+                                      "mmmm dd, yyyy"
+                                    ) & " (" & 
+                                    ThisRecord.HoursRequested & " hrs)"
+                                  )
+                                ), 
+                                Char(13) & Value, 
+                                Char(13)
+                              ),
+                            wrap: true,
+                            spacing: "none"
+                          }
+                        ]
+                      }
+                    ],
+                    separator: true,
+                    isVisible: If(CountRows(Topic.ApprovedRequests) > 0, true, false)
+                  },
+                  {
+                    type: "ColumnSet",
+                    columns: [
+                      {
+                        type: "Column",
+                        items: [ 
+                          {
+                            type: "TextBlock",
+                            text: "**Pending Leaves:**",
+                            weight: "bolder"
+                          },
+                          {
+                            type: "TextBlock",
+                            text: Concat(
+                                Concatenate(
+                                  ForAll(
+                                    Topic.PendingRequests, 
+                                    First(Filter(Global.LeaveTypes As lt,
+                                    Text(lt.Id) = Text(ThisRecord.LeaveTypeValue)
+                                    )).Name & ": " & 
+                                    Text(
+                                      ThisRecord.LeaveStartDateUTC, 
+                                      "mmmm dd, yyyy"
+                                    ) & " - " &
+                                    Text(
+                                      ThisRecord.LeaveEndDateUTC, 
+                                      "mmmm dd, yyyy"
+                                    ) & " (" & 
+                                    ThisRecord.HoursRequested & " hrs)"
+                                  )
+                                ), 
+                                Char(13) & Value, 
+                                Char(13)
+                              ),
+                            wrap: true,
+                            spacing: "none"
+                          }
+                        ]
+                      }
+                    ],
+                    separator: true,
+                    isVisible: If(CountRows(Topic.PendingRequests) > 0, true, false)
+                  },
+                  {
+                    type: "ColumnSet",
+                    columns: [
+                      {
+                        type: "Column",
+                        items: [ 
+                          {
+                            type: "TextBlock",
+                            text: "**Rejected Leaves:**",
+                            weight: "bolder"
+                          },
+                          {
+                            type: "TextBlock",
+                            text: Concat(
+                                Concatenate(
+                                  ForAll(
+                                    Topic.RejectedRequests, 
+                                    First(Filter(Global.LeaveTypes As lt,
+                                    Text(lt.Id) = Text(ThisRecord.LeaveTypeValue)
+                                    )).Name & ": " & 
+                                    Text(
+                                      ThisRecord.LeaveStartDateUTC, 
+                                      "mmmm dd, yyyy"
+                                    ) & " - " &
+                                    Text(
+                                      ThisRecord.LeaveEndDateUTC, 
+                                      "mmmm dd, yyyy"
+                                    ) & " (" & 
+                                    ThisRecord.HoursRequested & " hrs)"
+                                  )
+                                ), 
+                                Char(13) & Value, 
+                                Char(13)
+                              ),
+                            wrap: true,
+                            spacing: "none"
+                          }
+                        ]
+                      }
+                    ],
+                    separator: true,
+                    isVisible: If(CountRows(Topic.RejectedRequests) > 0, true, false)
+                  },
+                  {
+                    type: "TextBlock",
+                    text: "It looks like you don't have any existing requests at the moment.",
+                    wrap: true,
+                    isVisible: If(Topic.OutputTableCnt = 0, true, false),
+                    separator: true
+                  },
+                ]
+              }

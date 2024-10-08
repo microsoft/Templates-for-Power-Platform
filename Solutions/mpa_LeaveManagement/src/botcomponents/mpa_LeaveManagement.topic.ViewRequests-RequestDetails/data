@@ -1,0 +1,825 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRedirect
+  id: main
+  actions:
+    - kind: BeginDialog
+      id: G7PhxT
+      input:
+        binding:
+          IsGetOwnCredits: =true
+          UserPrincipalName: =System.User.PrincipalName
+
+      dialog: mpa_LeaveManagement.topic.Function-GetAllLeaveCreditsOfUser
+      output:
+        binding:
+          LeaveCredits: Topic.LeaveCredits
+
+    - kind: BeginDialog
+      id: aXfVN2
+      input:
+        binding:
+          LeaveRequestId: =Topic.LeaveRequestId
+
+      dialog: mpa_LeaveManagement.topic.Function-GetLeaveRequestbyId
+      output:
+        binding:
+          OutputLeaveRequestRecord: Topic.OutputLeaveRequestRecord
+
+    - kind: SetVariable
+      id: ZfksBx
+      variable: Topic.LeaveRequestRecord
+      value: =Topic.OutputLeaveRequestRecord
+
+    - kind: ConditionGroup
+      id: SULdl0
+      conditions:
+        - id: 4RPGgu
+          condition: =Topic.LeaveRequestRecord.ApprovalStatus <> 1
+          actions:
+            - kind: AdaptiveCardPrompt
+              id: JVii2r
+              card: |-
+                ={
+                  type: "AdaptiveCard",
+                  '$schema': "http://adaptivecards.io/schemas/adaptive-card.json",
+                  version: "1.4",
+                  body: [
+                    {
+                      type: "TextBlock",
+                      size: "large",
+                      weight: "bolder",
+                      text: "Leave Request Details"
+                    },
+                    {
+                      type: "TextBlock",
+                      text: "Here are the details of the leave request.",
+                      wrap: true,
+                      spacing: "medium"
+                    },
+                    {
+                      type: "ColumnSet",
+                      columns: [
+                        {
+                          type: "Column",
+                          width: "auto",
+                          items: [
+                            {
+                              type: "TextBlock",
+                              text: "Leave Status:",
+                              weight: "bolder",
+                              wrap: true
+                            }
+                          ]
+                        },
+                        {
+                          type: "Column",
+                          width: "auto",
+                          items: [
+                            {
+                              type: "TextBlock",
+                              text: "Processed",
+                              weight: "bolder",
+                              wrap: true
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      type: "TextBlock",
+                      text: "Available Leave Hour(s)",
+                      wrap: true,
+                      spacing: "Medium",
+                      weight: "bolder",
+                      separator: true
+                    },
+                    {
+                      type: "TextBlock",
+                      text: Concat(Concatenate(ForAll(Global.LeaveCreditsFlat, "**" & ThisRecord.name & "**: " & ThisRecord.hours)), Char(13) & Value, Char(13)),
+                      wrap: true,
+                      separator: true,
+                      spacing: "medium"
+                    },
+                    {
+                      type: "TextBlock",
+                      text: "Leave Request Details",
+                      wrap: true,
+                      weight: "bolder",
+                      spacing: "medium"
+                    },
+                    {
+                      type: "TextBlock",
+                      text: "Leave type: " & First(Filter(
+                                Global.LeaveTypes As lt,
+                                lt.Id = Topic.LeaveRequestRecord.LeaveTypeValue
+                            )).Name,
+                      wrap: true,
+                      spacing: "medium",
+                      separator: true
+                    },
+                    {
+                      type: "ColumnSet",
+                      columns: [
+                        {
+                          type: "Column",
+                          width: "stretch",
+                          items: [
+                            {
+                              type: "TextBlock",
+                              text: "Start date:",
+                              wrap: true,
+                              spacing: "medium"
+                            },
+                            {
+                              type: "TextBlock",
+                              text: Text(Topic.LeaveRequestRecord.LeaveStartDate, "mm/dd/yyyy"),
+                              spacing: "small",
+                              wrap: true
+                            },
+                            {
+                              type: "TextBlock",
+                              text: "Hour(s) used: " & Text(Topic.LeaveRequestRecord.HoursRequested),
+                              wrap: true,
+                              spacing: "medium"
+                            }
+                          ]
+                        },
+                        {
+                          type: "Column",
+                          width: "stretch",
+                          items: [
+                            {
+                              type: "TextBlock",
+                              text: "End date:",
+                              wrap: true,
+                              spacing: "medium"
+                            },
+                            {
+                              type: "TextBlock",
+                              text: Text(Topic.LeaveRequestRecord.LeaveEndDate, "mm/dd/yyyy"),
+                              spacing: "small",
+                              wrap: true
+                            }
+                          ]
+                        }
+                      ],
+                      spacing: "medium"
+                    },
+                    {
+                      type: "TextBlock",
+                      text: "Comment(s): " & Text(Topic.LeaveRequestRecord.RequestorComments),
+                      wrap: true,
+                      spacing: "medium"
+                    },
+                    {
+                      type: "ActionSet",
+                      actions: [
+                        {
+                          type: "Action.Submit",
+                          title: "Done",
+                          associatedInputs: "none"
+                        }
+                      ],
+                      spacing: "medium"
+                    }
+                  ]
+                }
+              output:
+                binding:
+                  actionSubmitId: Topic.actionSubmitId
+
+              outputType:
+                properties:
+                  actionSubmitId: String
+
+            - kind: BeginDialog
+              id: paLNRC
+              dialog: mpa_LeaveManagement.topic.AnythingElse
+
+            - kind: EndConversation
+              id: mcLQNQ
+
+    - kind: ParseValue
+      id: B3zMmZ
+      variable: Topic.RequestFormValues
+      valueType:
+        kind: Record
+        properties:
+          ApproverName: String
+          Comments: String
+          EndDate: DateTime
+          HoursToUse: Number
+          SelectedType:
+            type:
+              kind: Record
+              properties:
+                DisplayName: String
+                Value: String
+
+          StartDate: DateTime
+
+      value: "=\"{}\""
+
+    - kind: SetVariable
+      id: Rt4CVm
+      variable: Topic.RequestFormValues
+      value: |-
+        ={
+            Comments: Topic.LeaveRequestRecord.RequestorComments,
+            EndDate: Topic.LeaveRequestRecord.LeaveEndDate,
+            HoursToUse: If(Topic.LeaveRequestRecord.ApprovalStatus = 865420001, Topic.LeaveRequestRecord.HoursApproved, Topic.LeaveRequestRecord.HoursRequested),
+            SelectedType: {
+                DisplayName:First(Filter(
+                        Global.LeaveTypes As lt,
+                        lt.Id = Topic.LeaveRequestRecord.LeaveTypeValue
+                    )).Name, 
+                Value: Topic.LeaveRequestRecord.LeaveTypeValue
+            },
+            StartDate: Topic.LeaveRequestRecord.LeaveStartDate,
+            ApproverName: Topic.LeaveRequestRecord.ApproverName
+        }
+
+    - kind: SetVariable
+      id: jCQ08P
+      variable: Topic.MinDate
+      value: =Text(Today(), "yyyy-MM-dd")
+
+    - kind: AdaptiveCardPrompt
+      id: TyF3YP
+      card: |-
+        ={
+          type: "AdaptiveCard",
+          '$schema': "http://adaptivecards.io/schemas/adaptive-card.json",
+          version: "1.4",
+          body: [
+            {
+              type: "TextBlock",
+              size: "large",
+              weight: "bolder",
+              text: "Leave Request Details"
+            },
+            {
+              type: "TextBlock",
+              text: "Here are the details of the leave request you submitted.",
+              wrap: true,
+              spacing: "medium"
+            },
+            {
+              type: "TextBlock",
+              text: "Available hours balances",
+              wrap: true,
+              spacing: "medium",
+        	  size: "medium",
+              weight: "bolder"
+            },
+            {
+              type: "TextBlock",
+              text: Concat(Concatenate(ForAll(Global.LeaveCreditsFlat, "**" & ThisRecord.name & "**: " & ThisRecord.hours)), Char(13) & Value, Char(13)),
+              wrap: true,
+              separator: true,
+              spacing: "medium"
+            },
+            {
+              type: "ColumnSet",
+              columns: [
+                {
+                  type: "Column",
+                  width: "auto",
+                  items: [
+                    {
+                      type: "TextBlock",
+                      text: "Leave Status:",
+                      weight: "bolder",
+        			  size: "medium",
+                      wrap: true
+                    }
+                  ]
+                },
+                {
+                  type: "Column",
+                  width: "auto",
+                  items: [
+                    {
+                      type: "TextBlock",
+                      text: "Pending",
+                      weight: "bolder",
+                      wrap: true,
+                      color: "warning",
+        			  size: "medium",
+                      isVisible: Topic.LeaveRequestRecord.ApprovalStatus = 1
+                    },
+                    {
+                      type: "TextBlock",
+                      text: "Approved",
+                      weight: "bolder",
+                      wrap: true,
+                      color: "good",
+        			  size: "medium",
+                      isVisible: Topic.LeaveRequestRecord.ApprovalStatus = 865420001
+                    },
+                    {
+                      type: "TextBlock",
+                      text: "Rejected",
+                      weight: "bolder",
+                      wrap: true,
+                      color: "attention",
+        			  size: "medium",
+                      isVisible: Topic.LeaveRequestRecord.ApprovalStatus = 865420002
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              type: "ColumnSet",
+              columns: [
+                {
+                  type: "Column",
+                  width: "2",
+                  items: [
+                    {
+                      type: "Input.ChoiceSet",
+                      choices: ForAll(Global.LeaveTypes, { title: ThisRecord.Name, value: Text(ThisRecord.Id) }),
+                      placeholder: "Select leave type",
+                      id: "ipChoiceLeaveType",
+                      isRequired: true,
+                      errorMessage: "Please choose your desired leave type.",
+                      label: "Leave type:",
+                      spacing: "medium",
+                      value: Text(Topic.RequestFormValues.SelectedType.Value)
+                    },
+        			{
+                      type: "Input.Text",
+                      placeholder: "Enter hours",
+        			  errorMessage: "Hour(s) should be a valid number.",
+                      isRequired: true,
+                      regex: "^(\d+)?([.]?\d{0,1})?$",
+                      label: "Balance hours:",
+                      id: "ipNumLeaveCredits",
+                      spacing: "medium",
+                      value: Text(Topic.RequestFormValues.HoursToUse)
+                    },
+            {
+                      type: "Input.Date",
+                      id: "ipDateStart",
+                      isRequired: true,
+                      errorMessage: "Please indicate the Start date",
+                      label: "Start date:",
+        			  spacing: "medium",
+                      value: Text(Topic.RequestFormValues.StartDate, "yyyy-MM-dd")
+                    },
+                    {
+                      type: "Input.Date",
+                      id: "ipDateEnd",
+                      isRequired: true,
+                      errorMessage: "Please indicate the End date",
+                      label: "End date:",
+        			  spacing: "medium",
+                      value: Text(Topic.RequestFormValues.EndDate, "yyyy-MM-dd")
+                    }
+                  ]
+                },
+              ],
+              spacing: "small",
+        	  separator: true
+            },
+        	{
+              type: "TextBlock",
+              text: "Comments",
+              wrap: true,
+              spacing: "medium",
+        	  size: "medium",
+              weight: "bolder"
+            },
+            {
+              type: "Input.Text",
+              placeholder: "Enter comments.",
+              id: "ipTextEmployeeComments",
+              isMultiline: true,
+        	  separator: true,
+              spacing: "small",
+              value: Text(Topic.RequestFormValues.Comments)
+            },
+            {
+              type: "TextBlock",
+              text: "Manager's Comments: " & Coalesce(Text(Topic.LeaveRequestRecord.ApprovalComments), "None"),
+              wrap: true,
+              isVisible: Not(Topic.LeaveRequestRecord.ApprovalStatus = 0)
+            },
+            {
+              type: "ActionSet",
+              actions: [
+                {
+                  type: "Action.Submit",
+                  title: "Update request",
+                  data: {
+                    selectedAction: "updateRequest"
+                  }
+                },
+                {
+                  type: "Action.Submit",
+                  title: "Cancel request",
+                  associatedInputs: "none",
+                  data: {
+                    selectedAction: "cancelRequest"
+                  }
+                },
+                {
+                  type: "Action.Submit",
+                  title: "Cancel",
+                  associatedInputs: "none",
+                  data: {
+                    selectedAction: "cancel"
+                  }
+                }
+              ],
+              spacing: "medium"
+            }
+          ]
+        }
+      output:
+        binding:
+          actionSubmitId: Topic.actionSubmitId
+          ipChoiceLeaveType: Topic.ipChoiceLeaveType
+          ipDateEnd: Topic.ipDateEnd
+          ipDateStart: Topic.ipDateStart
+          ipNumLeaveCredits: Topic.ipNumLeaveCredits
+          ipTextEmployeeComments: Topic.ipTextEmployeeComments
+          selectedAction: Topic.selectedAction
+
+      outputType:
+        properties:
+          actionSubmitId: String
+          ipChoiceLeaveType: String
+          ipDateEnd: Date
+          ipDateStart: Date
+          ipNumLeaveCredits: Number
+          ipTextEmployeeComments: String
+          selectedAction: String
+
+    - kind: ConditionGroup
+      id: kKBf1Z
+      conditions:
+        - id: AGp1KB
+          condition: =Topic.actionSubmitId = "Update request"
+          actions:
+            - kind: SetVariable
+              id: aHyvCk
+              variable: Topic.AreDatesValid
+              value: |-
+                =(DateTimeValue(Topic.ipDateStart & " " & "00:00") <
+                DateTimeValue(Topic.ipDateEnd & " " & "23:59"))
+                &&
+                DateTimeValue(Topic.ipDateStart & " " & "00:00") <>
+                DateTimeValue(Topic.ipDateEnd & " " & "23:59")
+
+            - kind: SetVariable
+              id: OKO4nE
+              variable: Topic.AreHoursValid
+              value: |-
+                =If
+                (
+                  IsEmpty
+                  (
+                    Filter
+                    (
+                      Global.LeaveCreditsFlat As a,
+                      a.id = Topic.RequestFormValues.SelectedType.Value
+                    )
+                  ), 
+                  true, If(
+                      (First
+                      (
+                        Filter
+                        (
+                          Global.LeaveCreditsFlat As a,
+                          a.id = Topic.RequestFormValues.SelectedType.Value
+                        )
+                      ).hours - Topic.ipNumLeaveCredits) >=0 , true , false)
+                )
+
+            - kind: ConditionGroup
+              id: QFPzdK
+              conditions:
+                - id: nubm5K
+                  condition: =Topic.AreDatesValid = true
+                  actions:
+                    - kind: ConditionGroup
+                      id: n0afoJ
+                      conditions:
+                        - id: 1aBIXg
+                          condition: =Topic.AreHoursValid = true
+
+                      elseActions:
+                        - kind: SendActivity
+                          id: GGZM9N
+                          activity: It looks like you've entered an **invalid** hours duration. Kindly try again.
+
+                        - kind: GotoAction
+                          id: AR3Mm5
+                          actionId: TyF3YP
+
+                    - kind: SetVariable
+                      id: EXpO3H
+                      variable: Topic.RequestFormValues
+                      value: |-
+                        ={
+                            Comments: If(
+                                IsBlank(
+                                    Topic.ipTextEmployeeComments),
+                                    "",
+                                    Topic.ipTextEmployeeComments
+                            ),
+                            EndDate: DateTimeValue(
+                                Text(
+                                    Topic.ipDateEnd, "mm-dd-yyyy") & " " & 
+                                    "00:00"
+                            ),
+                            HoursToUse: Topic.ipNumLeaveCredits,
+                            SelectedType: {
+                                DisplayName:First
+                                (
+                                    Filter
+                                    (
+                                        Global.LeaveTypes As lt,
+                                        lt.Id = Topic.ipChoiceLeaveType
+                                    )
+                                ).Name, 
+                                Value: First
+                                (
+                                    Filter
+                                    (
+                                        Global.LeaveTypes As lt,
+                                        lt.Id = Topic.ipChoiceLeaveType
+                                    )
+                                ).Id
+                            },
+                            StartDate: DateTimeValue(
+                                Text(Topic.ipDateStart, "mm-dd-yyyy") & " " & 
+                                "00:00"
+                            )
+                        }
+
+                    - kind: AdaptiveCardPrompt
+                      id: IghZP2
+                      card: |-
+                        ={
+                          type: "AdaptiveCard",
+                          '$schema': "http://adaptivecards.io/schemas/adaptive-card.json",
+                          version: "1.5",
+                          body: [
+                            {
+                              type: "TextBlock",
+                              text: "Review Leave Request",
+                              wrap: true,
+                              size: "Large",
+                              weight: "Bold"
+                            },
+                            {
+                              type: "Container",
+                              style: "emphasis",
+                              items: [
+                                {
+                                  type: "FactSet",
+                                  facts: [
+                                    {
+                                      title: "Type",
+                                      value: Topic.RequestFormValues.SelectedType.DisplayName
+                                    },
+                                    {
+                                      title: "Approver",
+                                      value: Topic.LeaveRequestRecord.ApproverName
+                                    },
+                                    {
+                                      title: "Comments",
+                                      value: Topic.RequestFormValues.Comments
+                                    },
+                                    {
+                                      title: "Start Date",
+                                      value: Text(Topic.RequestFormValues.StartDate, "mmm dd, yyyy")
+                                    },
+                                    {
+                                      title: "End Date",
+                                      value: Text(Topic.RequestFormValues.EndDate, "mmm dd, yyyy")
+                                    },
+                                    {
+                                      title: "Hours used",
+                                      value: Text(Topic.RequestFormValues.HoursToUse)
+                                    },
+                                    {
+                                      title: "Hours remaining",
+                                      value: If
+                                      (
+                                        IsEmpty
+                                        (
+                                          Filter
+                                          (
+                                            Global.LeaveCreditsFlat As a,
+                                            a.id = Topic.RequestFormValues.SelectedType.Value
+                                          )
+                                        ), 
+                                        0,
+                                        First
+                                        (
+                                          Filter
+                                          (
+                                            Global.LeaveCreditsFlat As a,
+                                            a.id = Topic.RequestFormValues.SelectedType.Value
+                                          )
+                                        ).hours - Topic.RequestFormValues.HoursToUse
+                                      )
+                                    }
+                                  ],
+                                  height: "stretch"
+                                }
+                              ]
+                            }
+                          ],
+                          actions: [
+                                    {
+                                        type: "Action.Submit",
+                                        title: "Submit",
+                                        id: "SubmitId"
+                                    },
+                                    {
+                                        type: "Action.Submit",
+                                        title: "Revise",
+                                        id: "ReviseId"
+                                    },
+                        			      {
+                                        type: "Action.Submit",
+                                        title: "Cancel",
+                                        id: "CancelId"
+                                    },
+                          ]
+                        }
+                      output:
+                        binding:
+                          actionSubmitId: Topic.actionSubmitId
+
+                      outputType:
+                        properties:
+                          actionSubmitId: String
+
+                    - kind: ConditionGroup
+                      id: L46glD
+                      conditions:
+                        - id: 3QsP9F
+                          condition: =Topic.actionSubmitId = "Submit"
+                          actions:
+                            - kind: BeginDialog
+                              id: LwuMa2
+                              input:
+                                binding:
+                                  RequestCommand: UPDATE_REQUEST
+                                  RequestData: |-
+                                    ={
+                                        EmployeeComments: Topic.RequestFormValues.Comments, 
+                                        EndDate: Topic.RequestFormValues.EndDate,
+                                        HoursRequested: Topic.RequestFormValues.HoursToUse,
+                                        LeaveRequestId: Topic.LeaveRequestId,
+                                        LeaveTypeId: Topic.RequestFormValues.SelectedType.Value,
+                                        StartDate: Topic.RequestFormValues.StartDate, 
+                                        TimezoneOffset: System.Conversation.LocalTimeZoneOffset,
+                                        ApprovalStatus: Topic.LeaveRequestRecord.ApprovalStatus
+                                    }
+
+                              dialog: mpa_LeaveManagement.topic.Function-UpdateorCancelLeaveRequest
+                              output:
+                                binding:
+                                  Result: Topic.Result
+
+                            - kind: SendActivity
+                              id: g81Jqr
+                              activity: I have submitted the updates you made on this leave request. Also, I sent an email regarding your updated leave request details to you and your approver.
+
+                            - kind: BeginDialog
+                              id: xEA2ca
+                              dialog: mpa_LeaveManagement.topic.AnythingElse
+
+                        - id: TUqSLf
+                          condition: =Topic.actionSubmitId = "Revise"
+                          actions:
+                            - kind: SetVariable
+                              id: yDo0d9
+                              variable: Topic.FormLabel
+                              value: "=\"Revise Leave Request\""
+
+                            - kind: GotoAction
+                              id: buqIJk
+                              actionId: TyF3YP
+
+                      elseActions:
+                        - kind: BeginDialog
+                          id: GH78U3
+                          input:
+                            binding:
+                              ActionIn: =Topic.actionSubmitId
+
+                          dialog: mpa_LeaveManagement.topic.ConfirmorCancel
+                          output:
+                            binding:
+                              ActionOut: Topic.ActionOut
+
+                        - kind: ConditionGroup
+                          id: V9eeUL
+                          conditions:
+                            - id: cG6XAh
+                              condition: =Topic.ActionOut = "Redirect"
+                              actions:
+                                - kind: GotoAction
+                                  id: avnnAm
+                                  actionId: IghZP2
+
+                          elseActions:
+                            - kind: EndDialog
+                              id: ktTvN1
+
+              elseActions:
+                - kind: SendActivity
+                  id: 8nOCoI
+                  activity: It looks like you've entered an **invalid** date duration. Kindly try again.
+
+                - kind: GotoAction
+                  id: FRDpW6
+                  actionId: TyF3YP
+
+        - id: LCDILN
+          condition: =Topic.actionSubmitId = "Cancel request"
+          actions:
+            - kind: Question
+              id: Hhf8jC
+              interruptionPolicy:
+                allowInterruption: true
+
+              variable: init:Topic.confirmCancel
+              prompt: Are you sure you want to cancel this leave request?
+              entity: BooleanPrebuiltEntity
+
+            - kind: ConditionGroup
+              id: dfkkSg
+              conditions:
+                - id: qy1eWj
+                  condition: =Topic.confirmCancel = true
+                  actions:
+                    - kind: BeginDialog
+                      id: YEf4BN
+                      input:
+                        binding:
+                          RequestCommand: CANCEL_REQUEST
+                          RequestData: |-
+                            ={
+                                LeaveRequestId: Topic.LeaveRequestId,
+                                ApprovalStatus: Topic.LeaveRequestRecord.ApprovalStatus
+                            }
+
+                      dialog: mpa_LeaveManagement.topic.Function-UpdateorCancelLeaveRequest
+                      output:
+                        binding:
+                          Result: Topic.Result
+
+                    - kind: SendActivity
+                      id: 9irEEb
+                      activity: I have cancelled this leave request. Also, I sent an email regarding the cancellation of your leave request to you and your approver.
+
+                    - kind: BeginDialog
+                      id: gLb5Sl
+                      dialog: mpa_LeaveManagement.topic.AnythingElse
+
+              elseActions:
+                - kind: GotoAction
+                  id: 04EtzX
+                  actionId: TyF3YP
+
+      elseActions:
+        - kind: BeginDialog
+          id: dyG2Fr
+          input:
+            binding:
+              ActionIn: =Topic.actionSubmitId
+
+          dialog: mpa_LeaveManagement.topic.ConfirmorCancel
+          output:
+            binding:
+              ActionOut: Topic.ActionOut
+
+        - kind: ConditionGroup
+          id: conditionGroup_VfJ0Ov
+          conditions:
+            - id: conditionItem_RPxrbH
+              condition: =Topic.ActionOut = "Redirect"
+              actions:
+                - kind: GotoAction
+                  id: mF8ADH
+                  actionId: TyF3YP
+
+          elseActions:
+            - kind: EndDialog
+              id: l4KzEM
+
+inputType:
+  properties:
+    LeaveRequestId:
+      displayName: LeaveRequestId
+      type: String
