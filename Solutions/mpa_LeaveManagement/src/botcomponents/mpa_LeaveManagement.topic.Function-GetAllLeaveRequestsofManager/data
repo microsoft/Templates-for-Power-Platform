@@ -1,0 +1,160 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRedirect
+  id: main
+  actions:
+    - kind: ParseValue
+      id: bz9rBf
+      variable: Topic.ParsedRequests
+      valueType:
+        kind: Table
+        properties:
+          _ownerid_value: String
+          @odata.etag: String
+          mpa_approvalcomments: String
+          mpa_approvalstatus: Number
+          mpa_hoursapproved: Number
+          mpa_hoursrequested: Number
+          mpa_leaveenddateutc: String
+          mpa_leavestartdateutc: String
+          mpa_leavetype: Number
+          mpa_lm_leaverequestid: String
+          mpa_requestorcomments: String
+          requestor.fullname: String
+          requestor.internalemailaddress: String
+
+      value: "=\"[]\""
+
+    - kind: InvokeConnectorAction
+      id: Ks0VAn
+      input:
+        binding:
+          $top: 40
+          entityName: "=\"mpa_lm_leaverequests\""
+          fetchXml: |-
+            =$"<?xml version=""1.0"" encoding=""utf-16""?>
+            <fetch top=""40"">
+              <entity name=""mpa_lm_leaverequest"">
+                <attribute name=""mpa_lm_leaverequestid"" />
+                <attribute name=""mpa_leavestartdateutc"" />
+                <attribute name=""mpa_leaveenddateutc"" />
+                <attribute name=""mpa_hoursapproved"" />
+                <attribute name=""mpa_hoursrequested"" />
+                <attribute name=""mpa_requestorcomments"" />
+                <attribute name=""mpa_approvalcomments"" />
+                <attribute name=""mpa_leavetype"" />
+                <attribute name=""ownerid"" />
+                <order attribute=""mpa_leavestartdateutc"" descending=""true"" />
+                <filter type=""and"">
+                  <condition entityname=""approver"" attribute=""internalemailaddress"" operator=""eq"" value=""{Topic.UserPrincipalName}"" />
+                  <condition entityname=""mpa_lm_leaverequest"" attribute=""statecode"" operator=""eq"" value=""{Topic.LeaveStatus}"" />
+                </filter>
+                
+                <link-entity name=""systemuser"" from=""systemuserid"" to=""ownerid"" link-type=""inner"" alias=""requestor"">
+                  <attribute name=""fullname"" />
+                  <attribute name=""internalemailaddress"" />
+                </link-entity>
+            
+                <link-entity name=""systemuser"" from=""systemuserid"" to=""mpa_approveruserid"" link-type=""inner"" alias=""approver"" />
+              </entity>
+            </fetch>"
+          organization: current
+
+      output:
+        binding:
+          value: Topic.Requests
+
+      connectionReference: mpa_LeaveManagementDataverse
+      connectionProperties:
+        mode: Invoker
+
+      operationId: ListRecordsWithOrganization
+      dynamicOutputSchema:
+        kind: Record
+        properties:
+          @odata.nextLink:
+            displayName: Next link
+            description: The url to fetch next page data.
+            visibility: Advanced
+            order: 1
+            type: String
+
+          value:
+            order: 0
+            type:
+              kind: Table
+              properties:
+                dynamicProperties:
+                  order: 0
+                  type: Any
+
+    - kind: SetVariable
+      id: gMP9zk
+      variable: Topic.ParsedRequests
+      value: =Topic.Requests
+
+    - kind: SetVariable
+      id: WKclJq
+      variable: Topic.FilteredRequests
+      value: |-
+        =ForAll(Topic.ParsedRequests, {
+            'LeaveRequestId': ThisRecord.mpa_lm_leaverequestid,
+            'LeaveType': Text(ThisRecord.mpa_leavetype),
+            'LeaveStartDateUTC': DateTimeValue(First(Split(ThisRecord.mpa_leavestartdateutc, "T")).Value),
+            'LeaveEndDateUTC': DateTimeValue(First(Split(ThisRecord.mpa_leaveenddateutc, "T")).Value),
+            'OwnerId': ThisRecord._ownerid_value,
+            'RequestorComments': If(
+                IsBlank(ThisRecord.mpa_requestorcomments),
+                "",
+                ThisRecord.mpa_requestorcomments
+            ),
+            'HoursRequested': ThisRecord.mpa_hoursrequested,
+            'HoursApproved': ThisRecord.mpa_hoursapproved,
+            'ApprovalStatus': ThisRecord.mpa_approvalstatus,
+            'ApprovalComments': If(
+                IsBlank(ThisRecord.mpa_approvalcomments),
+                "",
+                ThisRecord.mpa_approvalcomments
+            ),
+            'RequestorName': ThisRecord.'requestor.fullname',
+            'RequestorEmail': ThisRecord.'requestor.internalemailaddress'
+        })
+
+    - kind: SetVariable
+      id: fRvQyK
+      variable: Topic.RequestsCount
+      value: =CountRows(Topic.ParsedRequests)
+
+inputType:
+  properties:
+    LeaveStatus:
+      displayName: LeaveStatus
+      type: String
+
+    UserPrincipalName:
+      displayName: UserPrincipalName
+      type: String
+
+outputType:
+  properties:
+    FilteredRequests:
+      displayName: FilteredRequests
+      type:
+        kind: Table
+        properties:
+          ApprovalComments: String
+          ApprovalStatus: Number
+          HoursApproved: Number
+          HoursRequested: Number
+          LeaveEndDateUTC: DateTime
+          LeaveRequestId: String
+          LeaveStartDateUTC: DateTime
+          LeaveType: String
+          OwnerId: String
+          RequestorComments: String
+          RequestorEmail: String
+          RequestorName: String
+
+    RequestsCount:
+      displayName: RequestsCount
+      type: Number

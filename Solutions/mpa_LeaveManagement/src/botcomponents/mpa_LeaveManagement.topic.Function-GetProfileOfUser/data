@@ -1,0 +1,124 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRedirect
+  id: main
+  actions:
+    - kind: ParseValue
+      id: cYDpyP
+      variable: Topic.ParsedUser
+      valueType:
+        kind: Table
+        properties:
+          firstname: String
+          fullname: String
+          internalemailaddress: String
+          lastname: String
+          systemuserid: String
+
+      value: "=\"[]\""
+
+    - kind: InvokeConnectorAction
+      id: HJeuzc
+      input:
+        binding:
+          entityName: "=\"systemusers\""
+          fetchXml: |-
+            =$"<?xml version=""1.0"" encoding=""utf-16""?>
+            <fetch top=""1"">
+              <entity name=""systemuser"">
+                <attribute name=""firstname"" />
+                <attribute name=""fullname"" />
+                <attribute name=""internalemailaddress"" />
+                <attribute name=""lastname"" />
+                <attribute name=""systemuserid"" />
+                <filter>
+                  <condition attribute=""internalemailaddress"" operator=""eq"" value=""{Topic.UserPrincipalName}"" />
+                </filter>
+              </entity>
+            </fetch>"
+          organization: current
+
+      output:
+        binding:
+          value: Topic.ParsedUser
+
+      connectionReference: mpa_LeaveManagementDataverse
+      connectionProperties:
+        mode: Invoker
+
+      operationId: ListRecordsWithOrganization
+      dynamicOutputSchema:
+        kind: Record
+        properties:
+          @odata.nextLink:
+            displayName: Next link
+            description: The url to fetch next page data.
+            visibility: Advanced
+            order: 1
+            type: String
+
+          value:
+            order: 0
+            type:
+              kind: Table
+              properties:
+                dynamicProperties:
+                  order: 0
+                  type: Any
+
+    - kind: ParseValue
+      id: uK9yGI
+      variable: Topic.FilteredDetails
+      valueType:
+        kind: Record
+        properties:
+          firstname: String
+          fullname: String
+          internalemailaddress: String
+          lastname: String
+          systemuserid: String
+
+      value: "=\"{}\""
+
+    - kind: SetVariable
+      id: UYrJEP
+      variable: Topic.FilteredDetails
+      value: |-
+        ={
+            firstname : First(Topic.ParsedUser).firstname,
+            fullname : First(Topic.ParsedUser).fullname,
+            internalemailaddress : First(Topic.ParsedUser).internalemailaddress,
+            lastname : First(Topic.ParsedUser).lastname,
+            systemuserid : First(Topic.ParsedUser).systemuserid
+        }
+
+    - kind: SetVariable
+      id: YNxZNi
+      variable: Topic.Profile
+      value: |-
+        ={
+            Id : Topic.FilteredDetails.systemuserid,
+            PrincipalName : Topic.FilteredDetails.internalemailaddress,
+            DisplayName : Topic.FilteredDetails.fullname,
+            FirstName : Topic.FilteredDetails.firstname,
+            LastName : Topic.FilteredDetails.lastname
+        }
+
+inputType:
+  properties:
+    UserPrincipalName:
+      displayName: UserPrincipalName
+      type: String
+
+outputType:
+  properties:
+    Profile:
+      displayName: Profile
+      type:
+        kind: Record
+        properties:
+          DisplayName: String
+          FirstName: String
+          Id: String
+          LastName: String
+          PrincipalName: String

@@ -1,0 +1,83 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRedirect
+  id: main
+  actions:
+    - kind: InvokeFlowAction
+      id: aPhZhY
+      input:
+        binding:
+          text: "=\"SUBMIT_REQUEST\""
+          text_1: |-
+            =JSON
+            (
+                {
+                    RequestorId : Topic.RequestData.RequestorId, 
+                    ApproverId : Topic.RequestData.ApproverId, 
+                    LeaveTypeId : Topic.RequestData.LeaveTypeId, 
+                    LeaveCreditRequested : Topic.RequestData.LeaveCreditRequested, 
+                    StartDateUtc : Text(
+                        Topic.RequestData.StartDate, 
+                        DateTimeFormat.ShortDateTime
+                    ), 
+                    EndDateUtc : Text(
+                        Topic.RequestData.EndDate, 
+                        DateTimeFormat.ShortDateTime
+                    ),
+                    EmployeeComments : Topic.RequestData.EmployeeComments,
+                    TimezoneOffset: TimeZoneOffset()
+                }
+                , JSONFormat.Compact
+            )
+
+      output:
+        binding:
+          result: Topic.jsonString
+
+      flowId: b5c91074-c727-ef11-840a-7c1e520251fa
+
+    - kind: ParseValue
+      id: 7277pQ
+      variable: Topic.newRecord
+      valueType:
+        kind: Record
+        properties:
+          Id: String
+          RecordNumber: String
+
+      value: =Topic.jsonString
+
+    - kind: SetVariable
+      id: KQubtG
+      variable: Topic.Result
+      value: |-
+        ={
+            Id : Topic.newRecord.Id,
+            RecordNumber : Topic.newRecord.RecordNumber
+        }
+
+inputType:
+  properties:
+    RequestData:
+      displayName: RequestData
+      type:
+        kind: Record
+        properties:
+          ApproverId: String
+          EmployeeComments: String
+          EndDate: DateTime
+          LeaveCreditRequested: Number
+          LeaveTypeId: String
+          RequestorId: String
+          StartDate: DateTime
+          TimezoneOffset: Time
+
+outputType:
+  properties:
+    Result:
+      displayName: Result
+      type:
+        kind: Record
+        properties:
+          Id: String
+          RecordNumber: String

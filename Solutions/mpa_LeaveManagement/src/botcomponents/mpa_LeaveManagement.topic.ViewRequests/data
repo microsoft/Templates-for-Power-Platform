@@ -1,0 +1,150 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRecognizedIntent
+  id: main
+  intent:
+    triggerQueries:
+      - view requests
+      - show requests
+      - list requests
+
+  actions:
+    - kind: BeginDialog
+      id: LaJfII
+      input:
+        binding:
+          UserPrincipalName: =System.User.PrincipalName
+
+      dialog: mpa_LeaveManagement.topic.Function-GetAllLeaveRequestsByUser
+      output:
+        binding:
+          OutputTable: Topic.OutputTable
+          OutputTableCnt: Topic.OutputTableCnt
+
+    - kind: ConditionGroup
+      id: o8biun
+      conditions:
+        - id: ElCBrp
+          condition: =Topic.OutputTableCnt > 0
+          actions:
+            - kind: AdaptiveCardPrompt
+              id: 9KZI9E
+              card: |-
+                ={
+                  type: "AdaptiveCard",
+                  '$schema': "http://adaptivecards.io/schemas/adaptive-card.json",
+                  version: "1.5",
+                  body: [
+                    {
+                      type: "Container",
+                      items: [
+                        {
+                          type: "TextBlock",
+                          text: "Here are the list of leave requests you submitted:",
+                          wrap: true
+                        },
+                        {
+                          type: "TextBlock",
+                          text: "Please note that I can only show a maximum of 10 items from the list.",
+                          wrap: true,
+                          spacing: "medium"
+                        },
+                        {
+                          type: "Input.ChoiceSet",
+                          choices: ForAll(Topic.OutputTable,
+                            {
+                              title: Switch(ApprovalStatus, 1, "Pending", 865420001, "Approved", 865420002, "Rejected", "Cancelled") & " - " & First(Filter(
+                                Global.LeaveTypes As lt,
+                                lt.Id = LeaveTypeValue
+                            )).Name & " - " & Text(LeaveStartDateUTC, "mmmm dd, yyyy") & " (" & If(ApprovalStatus = 865420001, HoursApproved , HoursRequested) & " hours)" ,
+                              value: LeaveRequestId
+                            }
+                          ),
+                          placeholder: "Please select a leave request.",
+                          id: "selectedLeaveRequestId",
+                          label: "You can select a request to view more details.",
+                          style: "expanded",
+                          isRequired: true,
+                          errorMessage: "Leave request is required.",
+                          spacing: "medium"
+                        },
+                        {
+                          type: "ActionSet",
+                          spacing: "medium",
+                          actions: [
+                            {
+                              type: "Action.Submit",
+                              title: "View request details"
+                            },
+                            {
+                              type: "Action.Submit",
+                              title: "Cancel",
+                              associatedInputs: "none"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              output:
+                binding:
+                  actionSubmitId: Topic.actionSubmitId
+                  selectedLeaveRequestId: Topic.selectedLeaveRequestId
+
+              outputType:
+                properties:
+                  actionSubmitId: String
+                  selectedLeaveRequestId: String
+
+            - kind: ConditionGroup
+              id: x268yY
+              conditions:
+                - id: v8btMy
+                  condition: =Topic.actionSubmitId = "View request details"
+                  actions:
+                    - kind: BeginDialog
+                      id: RWMDgz
+                      input:
+                        binding:
+                          LeaveRequestId: =Topic.selectedLeaveRequestId
+
+                      dialog: mpa_LeaveManagement.topic.ViewRequests-RequestDetails
+
+              elseActions:
+                - kind: BeginDialog
+                  id: oGbSkM
+                  input:
+                    binding:
+                      ActionIn: =Topic.actionSubmitId
+
+                  dialog: mpa_LeaveManagement.topic.ConfirmorCancel
+                  output:
+                    binding:
+                      ActionOut: Topic.ActionOut
+
+                - kind: ConditionGroup
+                  id: aVWCHD
+                  conditions:
+                    - id: mgWc87
+                      condition: =Topic.ActionOut = "Redirect"
+                      actions:
+                        - kind: GotoAction
+                          id: p9KYjc
+                          actionId: 9KZI9E
+
+                  elseActions:
+                    - kind: EndDialog
+                      id: 28ItWF
+
+      elseActions:
+        - kind: SendActivity
+          id: FTqvDU
+          activity: You do not have any leave requests.
+
+        - kind: BeginDialog
+          id: 8RKT2c
+          dialog: mpa_LeaveManagement.topic.AnythingElse
+
+        - kind: EndDialog
+          id: XJK7xq

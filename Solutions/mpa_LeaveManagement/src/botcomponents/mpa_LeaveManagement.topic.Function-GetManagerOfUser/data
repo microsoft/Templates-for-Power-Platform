@@ -1,0 +1,110 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRedirect
+  id: main
+  actions:
+    - kind: InvokeConnectorAction
+      id: bpNjHF
+      input:
+        binding:
+          id: =Topic.UserPrincipalName
+
+      output:
+        binding:
+          aboutMe: Topic.aboutMe
+          accountEnabled: Topic.accountEnabled
+          birthday: Topic.birthday
+          businessPhones: Topic.businessPhones
+          city: Topic.city
+          companyName: Topic.companyName
+          country: Topic.country
+          department: Topic.department
+          displayName: Topic.displayName
+          givenName: Topic.givenName
+          hireDate: Topic.hireDate
+          id: Topic.id
+          interests: Topic.interests
+          jobTitle: Topic.jobTitle
+          mail: Topic.mail
+          mailNickname: Topic.mailNickname
+          mobilePhone: Topic.mobilePhone
+          mySite: Topic.mySite
+          officeLocation: Topic.officeLocation
+          pastProjects: Topic.pastProjects
+          postalCode: Topic.postalCode
+          preferredLanguage: Topic.preferredLanguage
+          preferredName: Topic.preferredName
+          responsibilities: Topic.responsibilities
+          schools: Topic.schools
+          skills: Topic.skills
+          state: Topic.state
+          streetAddress: Topic.streetAddress
+          surname: Topic.surname
+          userPrincipalName: Topic.userPrincipalName
+          userType: Topic.userType
+
+      connectionReference: mpa_LeaveManagementO365Users
+      connectionProperties:
+        mode: Invoker
+
+      operationId: Manager_V2
+      errorHandling:
+        kind: ContinueOnErrorBehavior
+        statusCode: Topic.StatusCode
+        errorResponseBody: Topic.ErrorResponseBody
+
+    - kind: SetVariable
+      id: uStj7v
+      variable: Topic.Items
+      value: =[]
+
+    - kind: ConditionGroup
+      id: PAN4bH
+      conditions:
+        - id: DsZ5Ub
+          condition: =!IsBlank(Topic.StatusCode)
+
+      elseActions:
+        - kind: BeginDialog
+          id: khFe0W
+          input:
+            binding:
+              UserPrincipalName: =Topic.userPrincipalName
+
+          dialog: mpa_LeaveManagement.topic.Function-GetProfileOfUser
+          output:
+            binding:
+              Profile: Topic.Profile
+
+        - kind: SetVariable
+          id: a06e98
+          variable: Topic.Items
+          value: |-
+            =[
+                {
+                    Id : Topic.Profile.Id,
+                    PrincipalName : Topic.Profile.PrincipalName,
+                    DisplayName : Topic.Profile.DisplayName,
+                    FirstName : Topic.Profile.FirstName,
+                    LastName : Topic.Profile.LastName
+                }
+            ]
+
+inputType:
+  properties:
+    UserPrincipalName:
+      displayName: UserPrincipalName
+      type: String
+
+outputType:
+  properties:
+    Items:
+      displayName: Items
+      type:
+        kind: Table
+        properties:
+          DisplayName: String
+          FirstName: String
+          Id: String
+          LastName: String
+          PrincipalName: String

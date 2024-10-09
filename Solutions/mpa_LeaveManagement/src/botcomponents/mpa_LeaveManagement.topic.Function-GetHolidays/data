@@ -1,0 +1,59 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRecognizedIntent
+  id: main
+  intent:
+    triggerQueries:
+      - holiday
+
+  actions:
+    - kind: SetVariable
+      id: sbBLBJ
+      variable: Topic.Filter
+      value: "=\"mpa_holidaydateutc le \" & Topic.StartDate & \" and mpa_holidaydateutc ge \" & Topic.EndDate"
+
+    - kind: InvokeConnectorAction
+      id: ecOs1o
+      input:
+        binding:
+          $filter: =Topic.Filter
+          entityName: "=\"mpa_lm_holidaies\""
+          organization: current
+
+      output:
+        binding:
+          value: Topic.Holidays
+
+      connectionReference: mpa_LeaveManagementDataverse
+      connectionProperties:
+        mode: Invoker
+
+      operationId: ListRecordsWithOrganization
+      dynamicOutputSchema:
+        kind: Record
+        properties:
+          @odata.nextLink:
+            displayName: Next link
+            description: The url to fetch next page data.
+            visibility: Advanced
+            order: 1
+            type: String
+
+          value:
+            order: 0
+            type:
+              kind: Table
+              properties:
+                dynamicProperties:
+                  order: 0
+                  type: Any
+
+inputType:
+  properties:
+    EndDate:
+      displayName: EndDate
+      type: String
+
+    StartDate:
+      displayName: StartDate
+      type: String

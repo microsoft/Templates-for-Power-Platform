@@ -1,0 +1,125 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRedirect
+  id: main
+  actions:
+    - kind: InvokeConnectorAction
+      id: 6jOyaM
+      input:
+        binding:
+          entityName: "=\"mpa_lm_leaverequests\""
+          fetchXml: |-
+            =$"<?xml version=""1.0"" encoding=""utf-16""?>
+            <fetch top=""1"">
+            <entity name=""mpa_lm_leaverequest"">
+            <attribute name=""mpa_lm_leaverequestid"" />
+            <attribute name=""mpa_approvalcomments"" />
+            <attribute name=""statuscode"" />
+            <attribute name=""mpa_approveruserid"" /> 
+            <attribute name=""mpa_hoursapproved"" />
+            <attribute name=""mpa_hoursrequested"" />
+            <attribute name=""mpa_leavestartdateutc"" />
+            <attribute name=""mpa_leaveenddateutc"" />
+            <attribute name=""mpa_requestorcomments"" />
+            <attribute name=""mpa_leavetype"" />
+            <filter>
+            <condition attribute=""mpa_lm_leaverequestid"" operator=""eq"" value=""{Topic.LeaveRequestId}"" />
+            </filter>
+            <link-entity name=""systemuser"" from=""systemuserid"" to=""mpa_approveruserid"" link-type=""inner"" alias=""approver"" visible=""true"">
+            <attribute name=""fullname"" />
+            </link-entity>
+            </entity>
+            </fetch>"
+          organization: current
+
+      output:
+        binding:
+          value: Topic.OutputValue
+
+      connectionReference: mpa_LeaveManagementDataverse
+      connectionProperties:
+        mode: Invoker
+
+      operationId: ListRecordsWithOrganization
+      dynamicOutputSchema:
+        kind: Record
+        properties:
+          @odata.nextLink:
+            displayName: Next link
+            description: The url to fetch next page data.
+            visibility: Advanced
+            order: 1
+            type: String
+
+          value:
+            order: 0
+            type:
+              kind: Table
+              properties:
+                dynamicProperties:
+                  order: 0
+                  type: Any
+
+    - kind: ParseValue
+      id: ERhcVT
+      variable: Topic.ParsedRequest
+      valueType:
+        kind: Table
+        properties:
+          _mpa_approveruserid_value: String
+          approver.fullname: String
+          mpa_approvalcomments: String
+          mpa_hoursapproved: Number
+          mpa_hoursrequested: Number
+          mpa_leaveenddateutc: String
+          mpa_leavestartdateutc: String
+          mpa_leavetype: Number
+          mpa_lm_leaverequestid: String
+          mpa_requestorcomments: String
+          statuscode: Number
+
+      value: "=\"[]\""
+
+    - kind: SetVariable
+      id: apKVWX
+      variable: Topic.ParsedRequest
+      value: =Topic.OutputValue
+
+    - kind: SetVariable
+      id: TF95mL
+      variable: Topic.OutputLeaveRequestRecord
+      value: |-
+        ={
+        'ApprovalStatus': First(Topic.ParsedRequest).statuscode,
+        'ApprovalComments': First(Topic.ParsedRequest).mpa_approvalcomments,
+        'HoursRequested': First(Topic.ParsedRequest).mpa_hoursrequested,
+        'HoursApproved': First(Topic.ParsedRequest).mpa_hoursapproved,
+        'RequestorComments': First(Topic.ParsedRequest).mpa_requestorcomments,
+        'LeaveStartDate': DateTimeValue(First(Split(First(Topic.ParsedRequest).mpa_leavestartdateutc, "T")).Value),
+        'LeaveEndDate': DateTimeValue(First(Split(First(Topic.ParsedRequest).mpa_leaveenddateutc, "T")).Value),
+        'LeaveTypeValue': Text(First(Topic.ParsedRequest).mpa_leavetype),
+        'ApproverName': First(Topic.ParsedRequest).'approver.fullname'
+        }
+
+inputType:
+  properties:
+    LeaveRequestId:
+      displayName: LeaveRequestId
+      type: String
+
+outputType:
+  properties:
+    OutputLeaveRequestRecord:
+      displayName: OutputLeaveRequestRecord
+      type:
+        kind: Record
+        properties:
+          ApprovalComments: String
+          ApprovalStatus: Number
+          ApproverName: String
+          HoursApproved: Number
+          HoursRequested: Number
+          LeaveEndDate: DateTime
+          LeaveStartDate: DateTime
+          LeaveTypeValue: String
+          RequestorComments: String

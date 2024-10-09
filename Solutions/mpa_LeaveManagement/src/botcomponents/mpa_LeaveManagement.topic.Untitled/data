@@ -1,0 +1,649 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRecognizedIntent
+  id: main
+  intent:
+    triggerQueries:
+      - new request
+      - create request
+      - new leave
+      - create leave
+      - file a leave
+      - submit request
+
+  actions:
+    - kind: SetVariable
+      id: uYM9Pj
+      variable: Topic.UserPrincipalName
+      value: =System.User.PrincipalName
+
+    - kind: BeginDialog
+      id: bTb4yN
+      input:
+        binding:
+          UserPrincipalName: =Topic.UserPrincipalName
+
+      dialog: mpa_LeaveManagement.topic.Function-GetManagerOfUser
+      output:
+        binding:
+          Items: Topic.Managers
+
+    - kind: SetVariable
+      id: setVariable_IyRfBx
+      variable: Topic.RetrieveManager
+      value: =Topic.Managers
+
+    - kind: ConditionGroup
+      id: OPLZm3
+      conditions:
+        - id: c6E1Qj
+          condition: =IsEmpty(Topic.RetrieveManager)
+          actions:
+            - kind: SendActivity
+              id: 4OjabZ
+              activity: |-
+                I am unable to continue with your request because you don't have an assigned manager.
+                
+                Please reach out to your HR support or Office 365 administrator for more information and guidance.
+
+            - kind: BeginDialog
+              id: q1Gk4i
+              dialog: mpa_LeaveManagement.topic.AnythingElse
+
+            - kind: EndDialog
+              id: QRy8ZN
+
+      elseActions:
+        - kind: SetVariable
+          id: setVariable_ywoArA
+          variable: Topic.IsManagerPresent
+          value: =If(IsEmpty(Topic.RetrieveManager),false,true)
+
+        - kind: ConditionGroup
+          id: conditionGroup_zwZQX5
+          conditions:
+            - id: conditionItem_mRMqNM
+              condition: =Topic.IsManagerPresent = true
+
+          elseActions:
+            - kind: SendActivity
+              id: sendActivity_zKsF3F
+              activity: |-
+                I am unable to continue with your request because you don't have manager added as user to environment.
+                
+                Please reach out to your HR support or Office 365 administrator for more information and guidance.
+
+            - kind: BeginDialog
+              id: c9Qp4r
+              dialog: mpa_LeaveManagement.topic.AnythingElse
+
+            - kind: EndDialog
+              id: rQmrhL
+
+    - kind: BeginDialog
+      id: iIjZcl
+      input:
+        binding:
+          UserPrincipalName: =Topic.UserPrincipalName
+
+      dialog: mpa_LeaveManagement.topic.Function-GetProfileOfUser
+      output:
+        binding:
+          Profile: Topic.OwnerProfile
+
+    - kind: BeginDialog
+      id: nos3kN
+      input:
+        binding:
+          IsGetOwnCredits: =true
+          UserPrincipalName: =Topic.UserPrincipalName
+
+      dialog: mpa_LeaveManagement.topic.Function-GetAllLeaveCreditsOfUser
+      output:
+        binding:
+          LeaveCredits: Topic.LeaveCredits
+
+    - kind: SetVariable
+      id: xHOFnt
+      variable: Topic.FormLabel
+      value: "=\"Create New Leave Request\""
+
+    - kind: ParseValue
+      id: Ixk8WS
+      variable: Topic.RequestFormValues
+      valueType:
+        kind: Record
+        properties:
+          Comments: String
+          EndDate: DateTime
+          LeaveCreditsToUse: Number
+          SelectedType:
+            type:
+              kind: Record
+              properties:
+                DisplayName: String
+                Value: String
+
+          StartDate: DateTime
+
+      value: "=\"{}\""
+
+    - kind: SetVariable
+      id: 5PoFiR
+      variable: Topic.RequestFormValues
+      value: |-
+        ={
+            Comments: "",
+            StartDate: Now(),
+            LeaveCreditsToUse: 8,
+            SelectedType: {
+                DisplayName:First(Global.LeaveTypes).Name, 
+                Value: First(Global.LeaveTypes).Id
+            },
+            EndDate: DateAdd(Now(),1,TimeUnit.Days)
+        }
+
+    - kind: SetVariable
+      id: q0bzYW
+      variable: Topic.BalanceHours
+      value: 0
+
+    - kind: SetVariable
+      id: GVPn69
+      variable: Topic.MinDate
+      value: =Text(Today(), "yyyy-MM-dd")
+
+    - kind: AdaptiveCardPrompt
+      id: zyl3iN
+      card: |-
+        ={
+          type: "AdaptiveCard",
+          '$schema': "http://adaptivecards.io/schemas/adaptive-card.json",
+          version: "1.4",
+          body: [
+            {
+              type: "TextBlock",
+              size: "large",
+              weight: "bolder",
+              text: Topic.FormLabel
+            },
+            {
+              type: "TextBlock",
+              text: "Please fill out all the required fields to submit your leave request.",
+              wrap: true,
+              spacing: "medium"
+            },
+            {
+              type: "TextBlock",
+              text: "Available hours balances",
+              wrap: true,
+              spacing: "medium",
+        	  size: "medium",
+              weight: "bolder"
+            },
+            {
+              type: "TextBlock",
+              text: Concat(Concatenate(ForAll(Global.LeaveCreditsFlat, "**" & ThisRecord.name & "**: " & ThisRecord.hours)), Char(13) & Value, Char(13)),
+              wrap: true,
+              separator: true,
+              spacing: "medium"
+            },
+            {
+              type: "TextBlock",
+              text: "Leave Request Details",
+              wrap: true,
+              weight: "bolder",
+              spacing: "medium",
+        	  size: "medium"
+            },
+            {
+              type: "ColumnSet",
+              columns: [
+                {
+                  type: "Column",
+                  width: "2",
+                  items: [
+                    {
+                      type: "Input.ChoiceSet",
+                      choices: ForAll(Global.LeaveTypes, { title: ThisRecord.Name, value: Text(ThisRecord.Id) }),
+                      placeholder: "Select leave type",
+                      id: "ipChoiceLeaveType",
+                      isRequired: true,
+                      errorMessage: "Please choose your desired leave type.",
+                      label: "Leave type:",
+                      spacing: "small",
+                      value: Topic.RequestFormValues.SelectedType.Value,
+                       wrap: true
+                    },
+        			{
+                      type: "Input.Text",
+        			  errorMessage: If(
+                        Value(Topic.RequestFormValues.LeaveCreditsToUse) > 0,
+                        "Please enter valid Hour(s) in numbers",
+                        "Enter valid hours"
+                      ),
+                      isRequired: true,
+                      regex: "^(\d+)?([.]?\d{0,1})?$",
+                      label: "Requested hours:",
+                      id: "ipNumLeaveCredits",
+                      placeholder: If(
+                        Value(Topic.BalanceHours) > 0,
+                        Text(Topic.BalanceHours),
+                        "Enter hours"
+                      ),
+                      min : 0,
+                      max : 9000,
+                      spacing: "medium",
+                      value: "",
+                      wrap: true
+                     
+                    } ,
+                     {
+                      type: "Input.Date",
+                      id: "ipDateStart",
+                      isRequired: true,
+                      errorMessage: "Please enter the Start Date.",
+                      label: "Start date:",
+                      spacing: "medium",
+                       wrap: true,
+                      value: "${Text(Topic.RequestFormValues.StartDate, 'yyyy-MM-dd')}",
+                      min: Topic.MinDate
+                    
+                    },
+                    {
+                      type: "Input.Date",
+                      id: "ipDateEnd",
+                      isRequired: true,
+                      errorMessage: "Please enter the End Date.",
+                      label: "End date:",
+                      spacing: "medium",
+                       wrap: true,
+                      value: "${Text(Topic.RequestFormValues.EndDate, 'yyyy-MM-dd')}"
+                     
+                    }           
+                  ]       
+                }
+              ],
+              spacing: "small",
+        	  separator: true
+            },
+        	{
+              type: "TextBlock",
+              text: "Comments",
+              wrap: true,
+              spacing: "medium",
+        	  size: "medium",
+              weight: "bolder"
+            },
+            {
+              type: "Input.Text",
+              placeholder: "Enter comments.",
+              id: "ipTextEmployeeComments",
+              isMultiline: true,
+              spacing: "small",
+        	  separator: true,
+              value: Text(Topic.RequestFormValues.Comments)
+            },
+            {
+              type: "ActionSet",
+              actions: [
+                {
+                  type: "Action.Submit",
+                  title: "Submit",
+                  data: {
+                    selectedAction: "submit"
+                  }
+                },
+                {
+                  type: "Action.Submit",
+                  title: "Cancel",
+                  associatedInputs: "none",
+                  data: {
+                    selectedAction: "cancel"
+                  }
+                }
+              ],
+              spacing: "medium"
+            }
+          ]
+        }
+      output:
+        binding:
+          actionSubmitId: Topic.actionSubmitId
+          ipChoiceLeaveType: Topic.ipChoiceLeaveType
+          ipDateEnd: Topic.ipDateEnd
+          ipDateStart: Topic.ipDateStart
+          ipNumLeaveCredits: Topic.ipNumLeaveCredits
+          ipTextEmployeeComments: Topic.ipTextEmployeeComments
+          selectedAction: Topic.selectedAction
+
+      outputType:
+        properties:
+          actionSubmitId: String
+          ipChoiceLeaveType: String
+          ipDateEnd: Date
+          ipDateStart: Date
+          ipNumLeaveCredits: Number
+          ipTextEmployeeComments: String
+          selectedAction: String
+
+    - kind: ConditionGroup
+      id: NZ609B
+      conditions:
+        - id: 2yp11V
+          condition: =Topic.selectedAction = "submit"
+          actions:
+            - kind: SetVariable
+              id: U8q7iL
+              variable: Topic.AreDatesValid
+              value: |-
+                =(DateTimeValue(Topic.ipDateStart & " " & "00:00") <
+                DateTimeValue(Topic.ipDateEnd & " " & "23:59"))
+                &&
+                DateTimeValue(Topic.ipDateStart & " " & "00:00") <>
+                DateTimeValue(Topic.ipDateEnd & " " & "23:59")
+
+            - kind: SetVariable
+              id: JYHMSP
+              variable: Topic.AreHoursValid
+              value: |-
+                =If
+                (
+                  IsEmpty
+                  (
+                    Filter
+                    (
+                      Global.LeaveCreditsFlat As a,
+                      a.id = Topic.RequestFormValues.SelectedType.Value
+                    )
+                  ), 
+                  true, If(
+                      (First
+                      (
+                        Filter
+                        (
+                          Global.LeaveCreditsFlat As a,
+                          a.id = Topic.RequestFormValues.SelectedType.Value
+                        )
+                      ).hours - Topic.ipNumLeaveCredits) >=0 , true , false)
+                )
+
+            - kind: ConditionGroup
+              id: YzRUbc
+              conditions:
+                - id: TomXVF
+                  condition: =Topic.AreDatesValid = true
+                  actions:
+                    - kind: ConditionGroup
+                      id: 8ht9sb
+                      conditions:
+                        - id: TKWXOc
+                          condition: =Topic.AreHoursValid = true
+
+                      elseActions:
+                        - kind: SendActivity
+                          id: xo5rjh
+                          activity: It looks like you've entered an **invalid** hours duration. Kindly try again.
+
+                        - kind: GotoAction
+                          id: 52YRJk
+                          actionId: zyl3iN
+
+              elseActions:
+                - kind: SendActivity
+                  id: ZWbIKx
+                  activity: It looks like you've entered an **invalid** date duration. Kindly try again.
+
+                - kind: GotoAction
+                  id: bq3Tuk
+                  actionId: zyl3iN
+
+      elseActions:
+        - kind: BeginDialog
+          id: 7cVeL7
+          input:
+            binding:
+              ActionIn: =Topic.actionSubmitId
+
+          dialog: mpa_LeaveManagement.topic.ConfirmorCancel
+          output:
+            binding:
+              ActionOut: Topic.ActionOut
+
+        - kind: ConditionGroup
+          id: conditionGroup_fOVfUr
+          conditions:
+            - id: conditionItem_USrShH
+              condition: =Topic.ActionOut = "Redirect"
+              actions:
+                - kind: GotoAction
+                  id: xqUyy4
+                  actionId: zyl3iN
+
+          elseActions:
+            - kind: EndDialog
+              id: BcXeZo
+
+    - kind: SetVariable
+      id: M1bgOy
+      variable: Topic.RequestFormValues
+      value: |-
+        ={
+            Comments: If(
+                IsBlank(
+                    Topic.ipTextEmployeeComments),
+                    "",
+                    Topic.ipTextEmployeeComments
+            ),
+            EndDate: DateTimeValue(
+                Text(
+                    Topic.ipDateEnd, "mm-dd-yyyy") & " " & 
+                    "00:00"
+            ),
+            LeaveCreditsToUse: Topic.ipNumLeaveCredits,
+            SelectedType: {
+                DisplayName:First
+                (
+                    Filter
+                    (
+                        Global.LeaveTypes As lt,
+                        lt.Id = Topic.ipChoiceLeaveType
+                    )
+                ).Name, 
+                Value: First
+                (
+                    Filter
+                    (
+                        Global.LeaveTypes As lt,
+                        lt.Id = Topic.ipChoiceLeaveType
+                    )
+                ).Id
+            },
+            StartDate: DateTimeValue(
+                Text(Topic.ipDateStart, "mm-dd-yyyy") & " " & 
+                "00:00"
+            )
+        }
+
+    - kind: AdaptiveCardPrompt
+      id: cMjqCR
+      card: |-
+        ={
+          type: "AdaptiveCard",
+          '$schema': "http://adaptivecards.io/schemas/adaptive-card.json",
+          version: "1.5",
+          body: [
+            {
+              type: "TextBlock",
+              text: "Review Leave Request",
+              wrap: true,
+              size: "Large",
+              weight: "Bold"
+            },
+            {
+              type: "Container",
+              style: "emphasis",
+              items: [
+                {
+                  type: "FactSet",
+                  facts: [
+                    {
+                      title: "Type",
+                      value: Topic.RequestFormValues.SelectedType.DisplayName
+                    },
+                    {
+                      title: "Approver",
+                      value: First(Topic.RetrieveManager).DisplayName
+                    },
+                    {
+                      title: "Comments",
+                      value: Topic.RequestFormValues.Comments
+                    },
+                    {
+                      title: "Start Date",
+                      value: Text(Topic.RequestFormValues.StartDate, "mmm dd, yyyy")
+                    },
+                    {
+                      title: "End Date",
+                      value: Text(Topic.RequestFormValues.EndDate, "mmm dd, yyyy")
+                    },
+                    {
+                      title: "Hours used",
+                      value: Text(Topic.RequestFormValues.LeaveCreditsToUse)
+                    },
+                    {
+                      title: "Hours remaining",
+                      value: If
+                      (
+                        IsEmpty
+                        (
+                          Filter
+                          (
+                            Global.LeaveCreditsFlat As a,
+                            a.id = Topic.RequestFormValues.SelectedType.Value
+                          )
+                        ), 
+                        0,
+                        First
+                        (
+                          Filter
+                          (
+                            Global.LeaveCreditsFlat As a,
+                            a.id = Topic.RequestFormValues.SelectedType.Value
+                          )
+                        ).hours - Topic.RequestFormValues.LeaveCreditsToUse
+                      )
+                    }
+                  ],
+                  height: "stretch"
+                }
+              ]
+            }
+          ],
+          actions: [
+                    {
+                        type: "Action.Submit",
+                        title: "Submit",
+                        id: "SubmitId"
+                    },
+                    {
+                        type: "Action.Submit",
+                        title: "Revise",
+                        id: "ReviseId"
+                    },
+        			      {
+                        type: "Action.Submit",
+                        title: "Cancel",
+                        id: "CancelId"
+                    },
+          ]
+        }
+      output:
+        binding:
+          actionSubmitId: Topic.actionSubmitId
+
+      outputType:
+        properties:
+          actionSubmitId: String
+
+    - kind: ConditionGroup
+      id: 52xG9w
+      conditions:
+        - id: XDXZIX
+          condition: =Topic.actionSubmitId = "Submit"
+
+        - id: jhOaVJ
+          condition: =Topic.actionSubmitId = "Revise"
+          actions:
+            - kind: SetVariable
+              id: 7JrPGk
+              variable: Topic.FormLabel
+              value: "=\"Revise Leave Request\""
+
+            - kind: SetVariable
+              id: vTRkkO
+              variable: Topic.BalanceHours
+              value: =Topic.ipNumLeaveCredits
+
+            - kind: GotoAction
+              id: fgJNYB
+              actionId: zyl3iN
+
+      elseActions:
+        - kind: BeginDialog
+          id: LnjzaB
+          input:
+            binding:
+              ActionIn: =Topic.actionSubmitId
+
+          dialog: mpa_LeaveManagement.topic.ConfirmorCancel
+          output:
+            binding:
+              ActionOut: Topic.ActionOut
+
+        - kind: ConditionGroup
+          id: conditionGroup_Kjc7r3
+          conditions:
+            - id: conditionItem_XgKsjR
+              condition: =Topic.ActionOut = "Redirect"
+              actions:
+                - kind: GotoAction
+                  id: PziKLl
+                  actionId: cMjqCR
+
+          elseActions:
+            - kind: EndDialog
+              id: vKNH7N
+
+    - kind: BeginDialog
+      id: ab07VQ
+      input:
+        binding:
+          RequestData: |-
+            ={
+                ApproverId: First(Topic.RetrieveManager).Id,
+                EmployeeComments: Topic.RequestFormValues.Comments, 
+                EndDate: Topic.RequestFormValues.EndDate,
+                LeaveCreditRequested: Topic.RequestFormValues.LeaveCreditsToUse, 
+                LeaveTypeId: Topic.RequestFormValues.SelectedType.Value,
+                RequestorId: Topic.OwnerProfile.Id, 
+                StartDate: Topic.RequestFormValues.StartDate, 
+                TimezoneOffset: System.Conversation.LocalTimeZoneOffset
+            }
+
+      dialog: mpa_LeaveManagement.topic.Function-AddLeaveRequest
+      output:
+        binding:
+          Result: Topic.NewRequestRecord
+
+    - kind: SendActivity
+      id: S5i9Ad
+      activity: I have submitted your new leave request.
+
+    - kind: SendActivity
+      id: Y3D1hD
+      activity: I have sent an email regarding your new leave request details to you and your approver.
+
+    - kind: BeginDialog
+      id: OYEJKG
+      dialog: mpa_LeaveManagement.topic.AnythingElse
