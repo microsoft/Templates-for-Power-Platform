@@ -1,0 +1,880 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps_2": {
+        "impersonation": {},
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_microsoftpoweracceleratordataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      },
+      "shared_office365": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_microsoftpoweracceleratoroutlook"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "d7728c01-0577-499b-a3ef-d77ce9725e18"
+          },
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "record ID",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "text_1": {
+                  "title": "record entity name",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT",
+                  "enum": [
+                    "service requests",
+                    "reported issues"
+                  ]
+                }
+              },
+              "required": []
+            }
+          }
+        }
+      },
+      "actions": {
+        "Respond_to_a_PowerApp_or_flow": {
+          "runAfter": {
+            "Catch": [
+              "Succeeded",
+              "Skipped"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "d1a956d2-7a4b-486f-89c2-c49fbdbe6a8f"
+          },
+          "type": "Response",
+          "kind": "PowerApp",
+          "inputs": {
+            "statusCode": 200,
+            "body": {
+              "is_success": "@{variables('IsSuccess')}"
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "is_success": {
+                  "title": "Is Success",
+                  "x-ms-dynamically-added": true,
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        },
+        "Try": {
+          "actions": {
+            "Assign_entity_name": {
+              "runAfter": {},
+              "cases": {
+                "Service_Request": {
+                  "case": "service requests",
+                  "actions": {
+                    "Set_service_request_table_as_entity_name": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "e977a140-42b6-4ae4-a94b-3558d55c3ca0"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "entityName",
+                        "value": "mpa_servicerequest"
+                      }
+                    }
+                  }
+                },
+                "Reported_Issues": {
+                  "case": "reported issues",
+                  "actions": {
+                    "Set_reported_issue_table_as_entity_name": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "a4bef645-13fc-4cc1-a375-a1da655f64ab"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "entityName",
+                        "value": "mpa_reportedissue"
+                      }
+                    }
+                  }
+                }
+              },
+              "default": {
+                "actions": {}
+              },
+              "expression": "@triggerBody()?['text_1']",
+              "metadata": {
+                "operationMetadataId": "743be6c7-5d01-469e-a596-e39354f40055"
+              },
+              "type": "Switch",
+              "description": "Assign the entity name based on the trigger choices for entity"
+            },
+            "Set_record_web_link": {
+              "runAfter": {
+                "Assign_entity_name": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "17a08a2d-1610-4101-89df-7e3a5f9cb212"
+              },
+              "type": "Compose",
+              "inputs": "@{outputs('Model_driven_application_weblink')}&pagetype=entityrecord&etn=@{variables('entityName')}&id=@{triggerBody()?['text']}"
+            },
+            "Send_Email_notification": {
+              "runAfter": {
+                "Set_record_web_link": [
+                  "Succeeded"
+                ]
+              },
+              "cases": {
+                "Service_Requests": {
+                  "case": "service requests",
+                  "actions": {
+                    "Get_Record_information": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "9cce1c9c-9763-4015-abc7-cdc5429aa0f9"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                          "connectionName": "shared_commondataserviceforapps_2",
+                          "operationId": "GetItem"
+                        },
+                        "parameters": {
+                          "entityName": "mpa_servicerequests",
+                          "recordId": "@triggerBody()?['text']"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      },
+                      "description": "Get record information necessary for composing email"
+                    },
+                    "Check_status_reason": {
+                      "actions": {
+                        "New_requested_service_email_body": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "8d7dbe1a-66bc-4357-abfa-c40269bdea94"
+                          },
+                          "type": "Compose",
+                          "inputs": "<p>Hello @{variables('strEmailReceipientName')} ,<br>\n<br>\nA new service request has been created. Here are the details:<br>\n<br>\nRequested By: @{outputs('Get_Record_information')?['body/_createdby_value@OData.Community.Display.V1.FormattedValue']}<br>\nMeeting: @{outputs('Get_Meeting_Information')?['body/mpa_meetingname']}<br>\nLocation: @{outputs('Get_Meeting_Information')?['body/mpa_location']}<br>\nMeeting Schedule: @{concat(formatDateTime(outputs('Get_Meeting_Information')?['body/mpa_startdate'], 'MMM dd, yyyy hh:mm:ss tt'), ' - ', formatDateTime(outputs('Get_Meeting_Information')?['body/mpa_enddate'], 'MMM dd, yyyy hh:mm:ss tt'))}<br>\n<br>\nService: @{outputs('Get_Record_information')?['body/_mpa_service_value@OData.Community.Display.V1.FormattedValue']}<br>\nSubservice: @{outputs('Get_Record_information')?['body/_mpa_subservice_value@OData.Community.Display.V1.FormattedValue']}<br>\n<br>\nAdditional Details: @{outputs('Get_Record_information')?['body/mpa_requestnote']}<br>\n<br>\nLink: <a href=@{outputs('Set_record_web_link')}>Record details</a><br>\n<br>\nThank you.<br>\n<em>Please do not respond to this system-generated email. If you have questions, please contact </em><em>@{outputs('Administrator_Email')}</em><em>.</em></p>"
+                        },
+                        "Send_new_service_request_email": {
+                          "runAfter": {
+                            "New_requested_service_email_body": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "4af329f1-6faf-4010-92ea-c98ea57f6015"
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                              "connectionName": "shared_office365",
+                              "operationId": "SendEmailV2"
+                            },
+                            "parameters": {
+                              "emailMessage/To": "@variables('strEmailRecipient')",
+                              "emailMessage/Subject": "New Service Request @{outputs('Get_Record_information')?['body/mpa_servicerequestnumber']}",
+                              "emailMessage/Body": "<p>@{outputs('New_requested_service_email_body')}</p>",
+                              "emailMessage/Importance": "Normal"
+                            },
+                            "authentication": "@parameters('$authentication')"
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "Get_Meeting_Information": [
+                          "Succeeded"
+                        ]
+                      },
+                      "else": {
+                        "actions": {
+                          "Updated_service_request_status_email_body": {
+                            "runAfter": {},
+                            "metadata": {
+                              "operationMetadataId": "7d6b97f4-15a3-4c2f-8c38-af41a0ecdc44"
+                            },
+                            "type": "Compose",
+                            "inputs": "<p>Hello @{variables('strEmailReceipientName')}  ,<br>\n<br>\nThis service request is @{ToLower(outputs('Get_Record_information')?['body/statuscode@OData.Community.Display.V1.FormattedValue'])}. Here are the details:<br>\n<br>\nRequested By: @{outputs('Get_Record_information')?['body/_createdby_value@OData.Community.Display.V1.FormattedValue']}<br>\nMeeting:  @{outputs('Get_Meeting_Information')?['body/mpa_meetingname']}<br>\nLocation: @{outputs('Get_Meeting_Information')?['body/mpa_location']}<br>\nMeeting Schedule: @{concat(formatDateTime(outputs('Get_Meeting_Information')?['body/mpa_startdate'], 'MMM dd, yyyy hh:mm:ss tt'), ' - ', formatDateTime(outputs('Get_Meeting_Information')?['body/mpa_enddate'], 'MMM dd, yyyy hh:mm:ss tt'))}<br>\n<br>\nService: @{outputs('Get_Record_information')?['body/_mpa_service_value@OData.Community.Display.V1.FormattedValue']}<br>\nSubservice: @{outputs('Get_Record_information')?['body/_mpa_subservice_value@OData.Community.Display.V1.FormattedValue']}<br>\nAdditional Details: @{outputs('Get_Record_information')?['body/mpa_requestnote']}<br>\n<br>\nLink: <a href=@{outputs('Set_record_web_link')}>Record details</a><br>\n<br>\nThank you.<br>\n<em>Please do not respond to this system-generated email. If you have questions, please contact </em><em>@{outputs('Administrator_Email')}</em><em>.</em></p>"
+                          },
+                          "Send_request_service_update_status_email": {
+                            "runAfter": {
+                              "Updated_service_request_status_email_body": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "4af329f1-6faf-4010-92ea-c98ea57f6015"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                                "connectionName": "shared_office365",
+                                "operationId": "SendEmailV2"
+                              },
+                              "parameters": {
+                                "emailMessage/To": "@variables('strEmailRecipient')",
+                                "emailMessage/Subject": "Service Request is @{ToLower(outputs('Get_Record_information')?['body/statuscode@OData.Community.Display.V1.FormattedValue'])} @{outputs('Get_Record_information')?['body/mpa_servicerequestnumber']}",
+                                "emailMessage/Body": "<p>@{outputs('Updated_service_request_status_email_body')}</p>",
+                                "emailMessage/Importance": "Normal"
+                              },
+                              "authentication": "@parameters('$authentication')"
+                            }
+                          }
+                        }
+                      },
+                      "expression": {
+                        "equals": [
+                          "@outputs('Get_Record_information')?['body/statuscode']",
+                          1
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "42de6f01-63f0-48cb-a0c6-aef80bf70a73"
+                      },
+                      "type": "If"
+                    },
+                    "Get_Service_Details": {
+                      "runAfter": {
+                        "Get_Record_information": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "747dc8de-173f-4ddb-8dc2-45da4f3ab7bc"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                          "connectionName": "shared_commondataserviceforapps_2",
+                          "operationId": "GetItem"
+                        },
+                        "parameters": {
+                          "entityName": "mpa_services",
+                          "recordId": "@outputs('Get_Record_information')?['body/_mpa_service_value']"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Get_Meeting_Information": {
+                      "runAfter": {
+                        "Check_record_owner_type": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "d46421ff-8371-4e71-b029-a8b748a3ddff"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                          "connectionName": "shared_commondataserviceforapps_2",
+                          "operationId": "GetItem"
+                        },
+                        "parameters": {
+                          "entityName": "mpa_meetings",
+                          "recordId": "@outputs('Get_Record_information')?['body/_mpa_meeting_value']",
+                          "$select": "mpa_meetingname, mpa_location, mpa_startdate, mpa_enddate"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      },
+                      "description": "Get the meeting name, location, end date and start date or the meeting record"
+                    },
+                    "Check_record_owner_type": {
+                      "actions": {
+                        "Get_user_email": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "6aef108d-77a9-4255-bcb8-7593c0c2982f"
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                              "connectionName": "shared_commondataserviceforapps_2",
+                              "operationId": "GetItem"
+                            },
+                            "parameters": {
+                              "entityName": "systemusers",
+                              "recordId": "@outputs('Get_Service_Details')?['body/_ownerid_value']",
+                              "$select": "internalemailaddress, fullname"
+                            },
+                            "authentication": "@parameters('$authentication')"
+                          }
+                        },
+                        "Set_email_recipient_to_user_email": {
+                          "runAfter": {
+                            "Get_user_email": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "77eaec05-30ae-4371-a839-18b0eb82a679"
+                          },
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "strEmailRecipient",
+                            "value": "@outputs('Get_user_email')?['body/internalemailaddress']"
+                          }
+                        },
+                        "Set_recipient_name_to_user_full_name": {
+                          "runAfter": {
+                            "Set_email_recipient_to_user_email": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "43a25531-6969-4920-a7bf-1856818e024d"
+                          },
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "strEmailReceipientName",
+                            "value": "@outputs('Get_user_email')?['body/fullname']"
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "Get_Service_Details": [
+                          "Succeeded"
+                        ]
+                      },
+                      "else": {
+                        "actions": {
+                          "List_Team_members": {
+                            "runAfter": {},
+                            "metadata": {
+                              "operationMetadataId": "277b946a-0586-43ce-ae36-4585bfac3397"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                                "connectionName": "shared_commondataserviceforapps_2",
+                                "operationId": "ListRecords"
+                              },
+                              "parameters": {
+                                "entityName": "systemusers",
+                                "$select": "internalemailaddress",
+                                "$filter": "(teammembership_association/any(o1:(o1/teamid eq @{outputs('Get_Service_Details')?['body/_ownerid_value']})))"
+                              },
+                              "authentication": "@parameters('$authentication')"
+                            },
+                            "description": "get each of team members email"
+                          },
+                          "Create_an_array_of_team_member_emails": {
+                            "runAfter": {
+                              "List_Team_members": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "227a6a59-6ac5-4b3a-a262-36b259495ce2"
+                            },
+                            "type": "Select",
+                            "inputs": {
+                              "from": "@outputs('List_Team_members')?['body/value']",
+                              "select": "@item()?['internalemailaddress']"
+                            }
+                          },
+                          "Create_a_string_out_of_the_team_member_email_array": {
+                            "runAfter": {
+                              "Create_an_array_of_team_member_emails": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "9529b172-843f-44b1-b623-2569d2d60e64"
+                            },
+                            "type": "Join",
+                            "inputs": {
+                              "from": "@body('Create_an_array_of_team_member_emails')",
+                              "joinWith": ";"
+                            }
+                          },
+                          "Set_the_email_recipient_to_the_string_output": {
+                            "runAfter": {
+                              "Create_a_string_out_of_the_team_member_email_array": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "e25e4672-fd78-43c3-b6fa-29708ff853af"
+                            },
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "strEmailRecipient",
+                              "value": "@body('Create_a_string_out_of_the_team_member_email_array')"
+                            }
+                          },
+                          "Set_recipient_name_to_team_name": {
+                            "runAfter": {
+                              "Set_the_email_recipient_to_the_string_output": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "c1152c99-48a5-48cf-9fb0-4ad4abf672c6"
+                            },
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "strEmailReceipientName",
+                              "value": "@{outputs('Get_Service_Details')?['body/_ownerid_value@OData.Community.Display.V1.FormattedValue']}"
+                            }
+                          }
+                        }
+                      },
+                      "expression": {
+                        "equals": [
+                          "@outputs('Get_Service_Details')?['body/_ownerid_value@Microsoft.Dynamics.CRM.lookuplogicalname']",
+                          "systemuser"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "373d4fbd-f124-401c-94e2-9311c270d410"
+                      },
+                      "type": "If",
+                      "description": "check if the record type is single user or a team"
+                    }
+                  }
+                },
+                "Reported_Issues": {
+                  "case": "reported issues",
+                  "actions": {
+                    "Get_reported_issue_record": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "d6541036-b61f-4adf-a023-7f6bbe3362b0"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                          "connectionName": "shared_commondataserviceforapps_2",
+                          "operationId": "GetItem"
+                        },
+                        "parameters": {
+                          "entityName": "mpa_reportedissues",
+                          "recordId": "@triggerBody()?['text']"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Send_email_to_report_issue_team_members": {
+                      "runAfter": {
+                        "Submitted_issues_email_body": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "45141406-cdbf-4ac4-a317-c1b6196c20d7"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                          "connectionName": "shared_office365",
+                          "operationId": "SendEmailV2"
+                        },
+                        "parameters": {
+                          "emailMessage/To": "@body('Convert_array_of_issue_team_members_to_string')",
+                          "emailMessage/Subject": "Reported Issue on @{outputs('Get_meeting_details')?['body/mpa_location']} - @{outputs('Get_reported_issue_record')?['body/mpa_issuenumber']}",
+                          "emailMessage/Body": "<p>@{outputs('Submitted_issues_email_body')}</p>",
+                          "emailMessage/Importance": "Normal"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Get_meeting_details": {
+                      "runAfter": {
+                        "Get_reported_issue_record": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "fb976567-60a0-4ab9-a271-077110c76b7c"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                          "connectionName": "shared_commondataserviceforapps_2",
+                          "operationId": "GetItem"
+                        },
+                        "parameters": {
+                          "entityName": "mpa_meetings",
+                          "recordId": "@outputs('Get_reported_issue_record')?['body/_mpa_meeting_value']",
+                          "$select": "mpa_meetingname, mpa_location, mpa_startdate, mpa_enddate"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Submitted_issues_email_body": {
+                      "runAfter": {
+                        "Convert_array_of_issue_team_members_to_string": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "d9961b05-174e-4ab6-b672-0fb8f75e4a5a"
+                      },
+                      "type": "Compose",
+                      "inputs": "<p>Hello Meeting Room Team,<br>\n<br>\nAn issue has been reported. Here are the details:<br>\n<br>\nMeeting: @{outputs('Get_meeting_details')?['body/mpa_meetingname']}<br>\nLocation: @{outputs('Get_meeting_details')?['body/mpa_location']}<br>\nIs Room Usable: @{if(equals(outputs('Get_reported_issue_record')?['body/mpa_isroomunusable'], true), 'Yes', 'No')}<br>\nIssue Description: @{outputs('Get_reported_issue_record')?['body/mpa_issuedescription']}<br>\nLink: <a href=@{outputs('Set_record_web_link')}>Record details</a><br>\nReported By: @{outputs('Get_reported_issue_record')?['body/_createdby_value@OData.Community.Display.V1.FormattedValue']}<br>\n<br>\n<br>\nThank you.<br>\n<br>\n<em>Please do not respond to this system-generated email. If you have questions, please contact </em><em>@{outputs('Administrator_Email')}</em><em>.</em></p>"
+                    },
+                    "List_reported_issues_team_members": {
+                      "runAfter": {
+                        "Get_issue_support_team_id": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "5eb6e7b1-ee9b-4a21-85fd-1e5bb713782a"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                          "connectionName": "shared_commondataserviceforapps_2",
+                          "operationId": "ListRecords"
+                        },
+                        "parameters": {
+                          "entityName": "systemusers",
+                          "$select": "internalemailaddress",
+                          "$filter": "(teammembership_association/any(o1:(o1/teamid eq @{variables('supportTeamID')})))"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      },
+                      "description": "Get all reported issues team members"
+                    },
+                    "Get_issue_support_team_id": {
+                      "foreach": "@outputs('Get_meeting_room_services_app_settings')?['body/value']",
+                      "actions": {
+                        "Set_variable_supportTeamID": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "de4b7168-854f-4a94-a9bb-1a6f7cd6d1d6"
+                          },
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "supportTeamID",
+                            "value": "@items('Get_issue_support_team_id')?['_mpa_reportedissuessupportteam_value']"
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "Get_meeting_details": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "f534cad1-1c5a-485a-b0e1-69e3f3b891fc"
+                      },
+                      "type": "Foreach"
+                    },
+                    "Create_array_of_report_issue_team_members": {
+                      "runAfter": {
+                        "List_reported_issues_team_members": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "39b7e27f-f64d-4f10-b8e5-75f0adb3b172"
+                      },
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@outputs('List_reported_issues_team_members')?['body/value']",
+                        "select": "@item()?['internalemailaddress']"
+                      }
+                    },
+                    "Convert_array_of_issue_team_members_to_string": {
+                      "runAfter": {
+                        "Create_array_of_report_issue_team_members": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "47feeeb0-38ab-4405-be35-e4e830352784"
+                      },
+                      "type": "Join",
+                      "inputs": {
+                        "from": "@body('Create_array_of_report_issue_team_members')",
+                        "joinWith": ";"
+                      },
+                      "description": "Convert the array of team member emails to a semi colon delimited text"
+                    }
+                  }
+                }
+              },
+              "default": {
+                "actions": {}
+              },
+              "expression": "@triggerBody()?['text_1']",
+              "metadata": {
+                "operationMetadataId": "743be6c7-5d01-469e-a596-e39354f40055"
+              },
+              "type": "Switch",
+              "description": "Switch email contents based on the chosen entity name from the flow trigger dropdown"
+            },
+            "Set_Response_Variable_to_True": {
+              "runAfter": {
+                "Send_Email_notification": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "f7007cc7-947f-45d4-ae18-1592b643fef1"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "IsSuccess",
+                "value": true
+              },
+              "description": "Set the response variable to true if no errors on try run"
+            }
+          },
+          "runAfter": {
+            "Administrator_Email": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "f8a76196-74e5-4103-8e9c-b513da014819"
+          },
+          "type": "Scope",
+          "description": "Run the block of actions for this flow"
+        },
+        "Get_meeting_room_services_app_settings": {
+          "runAfter": {
+            "Initialize_variable_to_hold_full_name_of_recipient": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "cbe2b1d3-72ea-4cc3-8279-32f60148d38b"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps_2",
+              "operationId": "ListRecords"
+            },
+            "parameters": {
+              "entityName": "mpa_appsettingses",
+              "$select": "mpa_modeldrivenappurl, mpa_applicationadministratoremail, mpa_reportedissuessupportteam, _mpa_reportedissuessupportteam_value"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Getting the model driven app URL and administrator email"
+        },
+        "Model_driven_application_weblink": {
+          "runAfter": {
+            "Get_meeting_room_services_app_settings": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "19c7d677-3480-4bb6-b597-2a704ea7528b"
+          },
+          "type": "Compose",
+          "inputs": "@first(outputs('Get_meeting_room_services_app_settings')?['body/value'])?['mpa_modeldrivenappurl']",
+          "description": "Model driven application URL"
+        },
+        "Initialize_entity_name_variable": {
+          "runAfter": {
+            "Initialize_return_status_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "26eaaed8-2913-4fd0-bedb-b21dfd11910d"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "entityName",
+                "type": "string"
+              }
+            ]
+          },
+          "description": "captures entity name"
+        },
+        "Catch": {
+          "actions": {
+            "Set_Response_Variable_to_False": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "d6d9d53d-a5a4-49b3-bce7-f7056ff7753f"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "IsSuccess",
+                "value": false
+              },
+              "description": "Set the response variable to false if errors are captured on try run"
+            },
+            "Terminate": {
+              "runAfter": {
+                "Set_Response_Variable_to_False": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "1e01434a-dbaf-4f5b-9a7a-4163eae8dc4e"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed"
+              }
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6b0fb574-e329-4e1f-91eb-ca6c28ade0ce"
+          },
+          "type": "Scope"
+        },
+        "Administrator_Email": {
+          "runAfter": {
+            "Model_driven_application_weblink": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "4f5b9baf-ba72-4cef-b4f1-5aec318fdfd3"
+          },
+          "type": "Compose",
+          "inputs": "@first(outputs('Get_meeting_room_services_app_settings')?['body/value'])?['mpa_applicationadministratoremail']",
+          "description": "Administrator email from app settings"
+        },
+        "Initialize_return_status_variable": {
+          "runAfter": {
+            "Initialize_variable_for_email_recipient": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "2f1235cf-9892-459e-a8a2-3b3a2fbdad27"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "IsSuccess",
+                "type": "boolean"
+              }
+            ]
+          },
+          "description": "captures the status of the flow run"
+        },
+        "Initialize_variable_for_email_recipient": {
+          "runAfter": {
+            "Initialize_suppor_team_id_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "32e4700e-8b52-4996-ac0a-9517052e911c"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "strEmailRecipient",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_to_hold_full_name_of_recipient": {
+          "runAfter": {
+            "Initialize_entity_name_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "4410af45-044b-4a4b-ac8b-06ae1bd2aa51"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "strEmailReceipientName",
+                "type": "string"
+              }
+            ]
+          },
+          "description": "Full name for system user and team name for team type owner"
+        },
+        "Initialize_suppor_team_id_variable": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "a3fb2c29-3476-4921-8262-d30822f5f51c"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "supportTeamID",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

@@ -1,0 +1,233 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps_2": {
+        "impersonation": {},
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_microsoftpoweracceleratordataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      },
+      "shared_office365": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_microsoftpoweracceleratoroutlook"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_start_date_of_the_meeting_has_been_updated": {
+          "metadata": {
+            "operationMetadataId": "2b18029f-d72b-4ad7-9b2a-6ad79ebe05b1"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps_2",
+              "operationId": "SubscribeWebhookTrigger"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 3,
+              "subscriptionRequest/entityname": "mpa_meeting",
+              "subscriptionRequest/scope": 4,
+              "subscriptionRequest/filteringattributes": "mpa_startdate",
+              "subscriptionRequest/name": "f87bd5fd-80fc-ee11-a1ff-0022480461f7"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      },
+      "actions": {
+        "Try": {
+          "actions": {
+            "Get_list_of_Service_Requests": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "2e42caa4-fe88-4289-9d66-04c6ea8deb41"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "connectionName": "shared_commondataserviceforapps_2",
+                  "operationId": "ListRecords"
+                },
+                "parameters": {
+                  "entityName": "mpa_servicerequests",
+                  "$select": "mpa_servicerequestnumber ",
+                  "$filter": "_mpa_meeting_value eq '@{triggerOutputs()?['body/mpa_meetingid']}' and (statuscode eq 865420005)"
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": "Get associated service request that are in  resubmitted"
+            },
+            "Create_an_array_of_request_numbers": {
+              "runAfter": {
+                "Get_organizer_full_name_and_email": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "e9920072-408e-40a0-b646-c2a4d638aa64"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@outputs('Get_list_of_Service_Requests')?['body/value']",
+                "select": "@concat('Service Request','-', item()?['mpa_servicerequestnumber'])"
+              }
+            },
+            "Email_body_for_meeting_organizer": {
+              "runAfter": {
+                "Convert_array_of_service_request_numbers_to_HTML_string": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "0d21e396-19bf-465e-a791-a7f9d0d57455"
+              },
+              "type": "Compose",
+              "inputs": "\nHello @{outputs('Get_organizer_full_name_and_email')?['body/fullname']},\n<br>\n<br>\nThere has been a change in your meeting schedule,<br>\nthe following  <b>New</b>  or <b>In Progress</b> service requests has been resubmitted: \n<br>\n<br>\n<strong>\n@{if(equals(length(outputs('Convert_array_of_service_request_numbers_to_HTML_string')),0), '----', outputs('Convert_array_of_service_request_numbers_to_HTML_string'))}\n</strong>\n<br>\n<br>\nFor more details, please check the My Requests page <a href=@{first(outputs('Get_meeting_room_services_app_settings')?['body/value'])?['mpa_canvasweblink']} ><strong> here</strong></a>\n<br>\n<br>\n<em>Please do not respond to this system-generated email. If you have questions, please contact <strong>@{first(outputs('Get_meeting_room_services_app_settings')?['body/value'])?['mpa_applicationadministratoremail']}</strong></em>.\n"
+            },
+            "Get_meeting_room_services_app_settings": {
+              "runAfter": {
+                "Get_list_of_Service_Requests": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "e6cc7490-038b-4038-b53c-ff4c962e5c8a"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "connectionName": "shared_commondataserviceforapps_2",
+                  "operationId": "ListRecords"
+                },
+                "parameters": {
+                  "entityName": "mpa_appsettingses",
+                  "$select": "mpa_modeldrivenappurl, mpa_applicationadministratoremail, mpa_canvasweblink"
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": "Get MDA link, administrator email, canvas weblink"
+            },
+            "Send_email_to_meeting_organizer": {
+              "runAfter": {
+                "Email_body_for_meeting_organizer": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "2211f0bf-3d01-489b-8036-c7fd7a720084"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                  "connectionName": "shared_office365",
+                  "operationId": "SendEmailV2"
+                },
+                "parameters": {
+                  "emailMessage/To": "@outputs('Get_organizer_full_name_and_email')?['body/internalemailaddress']",
+                  "emailMessage/Subject": "Meeting start date has been changed",
+                  "emailMessage/Body": "<p>@{outputs('Email_body_for_meeting_organizer')}</p>",
+                  "emailMessage/Importance": "Normal"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Get_organizer_full_name_and_email": {
+              "runAfter": {
+                "Get_meeting_room_services_app_settings": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "79aebc36-9a74-4749-ac53-ef812357e06d"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "connectionName": "shared_commondataserviceforapps_2",
+                  "operationId": "GetItem"
+                },
+                "parameters": {
+                  "entityName": "systemusers",
+                  "recordId": "@triggerOutputs()?['body/_mpa_organizer_value']",
+                  "$select": "fullname, internalemailaddress"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Convert_array_of_service_request_numbers_to_HTML_string": {
+              "runAfter": {
+                "Create_an_array_of_request_numbers": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "4216fdcf-d061-4a5a-9d14-a5195faea751"
+              },
+              "type": "Compose",
+              "inputs": "@join(body('Create_an_array_of_request_numbers'), '<br>')"
+            }
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "4a9d6300-9b12-4b96-bfe3-a22c4ed86779"
+          },
+          "type": "Scope",
+          "description": "Run the set of actions"
+        },
+        "Catch": {
+          "actions": {
+            "Terminate": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "1e01434a-dbaf-4f5b-9a7a-4163eae8dc4e"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed"
+              }
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6b0fb574-e329-4e1f-91eb-ca6c28ade0ce"
+          },
+          "type": "Scope"
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}
