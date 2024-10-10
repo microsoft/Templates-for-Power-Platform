@@ -173,55 +173,8 @@
         },
         "Catch": {
           "actions": {
-            "Filter_Data": {
-              "runAfter": {},
-              "metadata": {
-                "operationMetadataId": "e847fa91-0860-4940-9709-1735f796748b"
-              },
-              "type": "Query",
-              "inputs": {
-                "from": "@result('Try')",
-                "where": "@or(equals(item()?['Status'], 'Failed'), equals(item()?['Status'], 'TimedOut'))"
-              },
-              "description": "Filter data by failed and timeout."
-            },
-            "Create_entry_in_Employee_Experience_Error": {
-              "runAfter": {
-                "Error_Return": [
-                  "Succeeded"
-                ]
-              },
-              "metadata": {
-                "operationMetadataId": "d7b067c6-fe34-4a13-8c87-d22bc89f1a0a"
-              },
-              "type": "OpenApiConnection",
-              "inputs": {
-                "host": {
-                  "connectionName": "shared_commondataserviceforapps",
-                  "operationId": "CreateRecord",
-                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
-                },
-                "parameters": {
-                  "entityName": "mpa_employeeexperienceerrors",
-                  "item/mpa_name": "@outputs('Error_Return')?['body'][0]['FlowName']",
-                  "item/mpa_action": "@outputs('Error_Return')?['body'][0]['Step']",
-                  "item/mpa_errormessage": "@outputs('Error_Return')?['body'][0]['InnerErrorMessage']",
-                  "item/mpa_sourcetype": 865420001,
-                  "item/mpa_workflowinstanceurl": "@outputs('Error_Return')?['body'][0]['URL']"
-                },
-                "authentication": {
-                  "type": "Raw",
-                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
-                }
-              },
-              "description": "Add new record in Employee Experience error table."
-            },
             "Terminate": {
-              "runAfter": {
-                "Create_entry_in_Employee_Experience_Error": [
-                  "Succeeded"
-                ]
-              },
+              "runAfter": {},
               "metadata": {
                 "operationMetadataId": "ddf9f509-d2b5-411d-a2be-61808598c00a"
               },
@@ -230,29 +183,6 @@
                 "runStatus": "Failed"
               },
               "description": "Terminate and set status to failed."
-            },
-            "Error_Return": {
-              "runAfter": {
-                "Filter_Data": [
-                  "Succeeded"
-                ]
-              },
-              "metadata": {
-                "operationMetadataId": "08fe3aa3-bb2e-4039-bf63-e78ad0216a2f"
-              },
-              "type": "Select",
-              "inputs": {
-                "from": "@body('Filter_Data')",
-                "select": {
-                  "Step": "@item()?['name']",
-                  "Status": "@item()?['Status']",
-                  "InnerErrorMessage": "@{item()?['error']?['message']} \n@{item()?['outputs']?['body']?['error']?['message']}",
-                  "Input": "@triggerBody()['text']",
-                  "FlowName": "@workflow()?['tags']['flowDisplayName']",
-                  "URL": "@concat('https://flow.microsoft.com/manage/environments/', workflow()?['tags']['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']['name'])"
-                }
-              },
-              "description": "To hold a specific value."
             }
           },
           "runAfter": {
