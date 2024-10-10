@@ -1,50 +1,8 @@
 App As appinfo:
     BackEnabled: =true
     ConfirmExit: =varConfirmExit
-    ConfirmExitMessage: |-
-        =// Define a variable named "Text" with the value "{value}"
-        With(
-            {Text: "You may have unsaved data. Are you sure you want to exit without saving?"},
-           // Check if a localized text exists for "Text" in the user's preferred language
-            If(
-                // If the localized text is blank, return the default text
-                IsBlank(
-                    LookUp(
-                        colUserLocalizedStrings,
-                        'English Value' = Text
-                    ).'Localized Value'
-                ),
-                Text,
-                // If a localized text is found, return that instead of the default text
-                LookUp(
-                    colUserLocalizedStrings,
-                    'English Value' = Text
-                ).'Localized Value'
-            )
-        )
-    OnError: |-
-        =//Patch a new record in dataverse for unhandled or unexpected errors and trace
-        If(
-            !IsBlank(FirstError.Message),
-            Patch(
-                'Employee Experience Errors',
-                Defaults('Employee Experience Errors'),
-                {
-                    Action: FirstError.Source,
-                    'Additional Information': App.ActiveScreen.Name,
-                    'Error Message': FirstError.Message,
-                    Name: "Expense Reimbursements",
-                    'Source Type': 'Source Type (Employee Experience Errors)'.'Power App'
-                }
-            );
-         
-        //Show the error also in app monitor
-        Trace(FirstError.Message);
-         
-        //Rethrow the error so user can see it
-        Error(FirstError);
-         
-        )
+    ConfirmExitMessage: ="You may have unsaved data. Are you sure you want to exit without saving?"
+    OnError: =
     OnStart: |-
         =//set desktop fonts
         Set(
@@ -186,45 +144,8 @@ App As appinfo:
             varThemeColors,
             varLightTheme
         );
-        //Lookup and set localized text, remove region 
-        Set(
-            varISOUserLanguageCode,//Get user's language and map to existing choice values that are supported by the 'HR Localizations' entity which can be customized to support more languages
-            Switch(
-                Left(
-                    Language(),
-                    2
-                ),
-                "ar",
-                'ISO EE Language Code'.ar,
-                "de",
-                'ISO EE Language Code'.de,
-                "en",
-                'ISO EE Language Code'.en,
-                "es",
-                'ISO EE Language Code'.es,
-                "fr",
-                'ISO EE Language Code'.fr,
-                "he",
-                'ISO EE Language Code'.he,
-                "it",
-                'ISO EE Language Code'.it,
-                "ja",
-                'ISO EE Language Code'.ja,
-                "pt",
-                'ISO EE Language Code'.pt,
-                "zh",
-                'ISO EE Language Code'.zh,
-                'ISO EE Language Code'.en
-            )
-        );
-        ClearCollect(
-            colUserLocalizedStrings,//Collection used to display localized value according to user's language value
-            Filter(
-                'Employee Experience Localizations',
-                Language = varISOUserLanguageCode,
-                'Employee Experience Localizations (Views)'.'Active EE Localizations'
-            )
-        );
+        
+        
         
         ClearCollect(
             colExpenseSteps,//Collection used to show the steps in adding an expense in a request
