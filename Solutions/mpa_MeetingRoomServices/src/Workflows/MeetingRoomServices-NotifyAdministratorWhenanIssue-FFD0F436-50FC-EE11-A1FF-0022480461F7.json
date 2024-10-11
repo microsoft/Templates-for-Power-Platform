@@ -1,0 +1,111 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "impersonation": {},
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_microsoftpoweracceleratordataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "Auto-Notify_Administrator_When_an_Issue_is_Reported": {
+          "metadata": {
+            "operationMetadataId": "28ed10be-9d27-4462-b835-47924719b149"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "SubscribeWebhookTrigger"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 3,
+              "subscriptionRequest/entityname": "mpa_reportedissue",
+              "subscriptionRequest/scope": 4,
+              "subscriptionRequest/name": "ffd0f436-50fc-ee11-a1ff-0022480461f7"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "This workflow will run when there's issue reported."
+        }
+      },
+      "actions": {
+        "Try": {
+          "actions": {
+            "Send_email_notification": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "825d4051-abeb-4cfb-a063-f642b21d0937"
+              },
+              "type": "Workflow",
+              "inputs": {
+                "host": {
+                  "workflowReferenceName": "bcfd9d5a-c6fb-ee11-a1ff-00224805c837"
+                },
+                "body": {
+                  "text": "@triggerOutputs()?['body/mpa_reportedissueid']",
+                  "text_1": "reported issues"
+                }
+              },
+              "description": "Trigger Send email notifications child flow to send notification to admin regarding the reported issue"
+            }
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "6f970276-66a9-49e1-aa8e-6c9439dfd808"
+          },
+          "type": "Scope",
+          "description": "Trigger Send email notifications child flow to send notification to admin regarding the reported issue"
+        },
+        "Catch": {
+          "actions": {
+            "Terminate": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "7080daf0-8920-4848-be26-cfd260fa30d5"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed"
+              }
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "Skipped",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6b0fb574-e329-4e1f-91eb-ca6c28ade0ce"
+          },
+          "type": "Scope",
+          "description": "If the previous step encounters an error, run below actions"
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

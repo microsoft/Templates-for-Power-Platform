@@ -1,0 +1,1660 @@
+"'Give Feedback Screen' As screen":
+    OnHidden: |-
+        =Clear(colFeedbackSurvey);
+        Clear(colSurveyRatings);
+    OnVisible: |-
+        =//Local LyoutProperties
+        UpdateContext(
+            {
+                var_LayoutProperties: {
+                    outerPadding: {
+                        top: 20,
+                        right: 20,
+                        bottom: 20,
+                        left: 20
+                    },
+                    gap: {
+                        singlePX: 1,
+                        extraSmall: 5,
+                        small: 10,
+                        medium: 20,
+                        semiLarge: 30,
+                        large: 40
+                    },
+                    requestServiceGallery: {templateHeight: 85},
+                    conmainPadding: 36,
+                    buttonsize: 141
+                }
+            }
+        );
+        
+        //Initialize gallery item variable
+        UpdateContext(
+            {
+                var_serviceitemcount: 1,
+                var_relatedSR: Filter(
+                    'Service Requests',
+                    Meeting.'Meeting ID' = var_selectedMeeting.'Meeting ID' And 'Status Reason' = 'Status Reason (Service Requests)'.Completed
+                )
+            }
+        );
+        //Create collection for feedback responses
+        ClearCollect(
+            colFeedbackSurvey,
+            Defaults(Surveys)
+        );
+        ClearCollect(
+            colSurveyRatings,
+            Defaults(
+                AddColumns(
+                    'Survey Ratings',
+                    'service request id',
+                    GUID(Blank()),
+                    'is not applicable',
+                    Boolean(Blank())
+                )
+            )
+        );
+        Clear(colFeedbackSurvey);
+        Clear(colSurveyRatings);
+        Reset(txtOtherFeedback_GiveFeedback)
+
+    conGiveFeedback As groupContainer.horizontalAutoLayoutContainer:
+        DropShadow: =DropShadow.None
+        Height: =Parent.Height - compHeader_GiveFeedback.Height
+        LayoutMode: =LayoutMode.Auto
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =Parent.Width
+        Y: =50
+        ZIndex: =2
+
+        conLeftNavigation_GiveFeedback As groupContainer.verticalAutoLayoutContainer:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            DropShadow: =DropShadow.None
+            FillPortions: =0
+            Height: =Parent.Height - compHeader_GiveFeedback.Y
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            Width: =comLeftNavigation_GiveFeedback.Width
+            ZIndex: =2
+
+            comLeftNavigation_GiveFeedback As compLeftNavigation:
+                Height: =Parent.Height
+                LayoutMinWidth: =640
+
+        conFeedbackMain As groupContainer.verticalAutoLayoutContainer:
+            DropShadow: =DropShadow.None
+            Fill: =ColorValue(varThemeColors.background)
+            Height: =Parent.Height - compHeader_GiveFeedback.Height
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            LayoutMode: =LayoutMode.Auto
+            LayoutOverflowY: =LayoutOverflow.Scroll
+            PaddingBottom: =Self.PaddingLeft
+            PaddingLeft: |
+                =
+                
+                //Responsive condition
+                If(
+                    'Give Feedback Screen'.Size = ScreenSize.Small,
+                    var_LayoutProperties.conmainPadding / 3,
+                    var_LayoutProperties.conmainPadding
+                )
+            PaddingRight: =Self.PaddingLeft 
+            PaddingTop: =Self.PaddingLeft
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Width: =Parent.Width
+            Y: =compHeader_GiveFeedback.Height
+            ZIndex: =3
+
+            lblFeedbackTitle As label:
+                Color: =ColorValue(varThemeColors.text)
+                Font: =varThemeFont.H3.face
+                FontWeight: =varThemeFont.H3.weight
+                Height: =Self.Size * 1.8 + Self.PaddingBottom
+                PaddingBottom: =var_LayoutProperties.gap.medium
+                PaddingRight: =10
+                PaddingTop: =0
+                Size: =varThemeFont.H1.size
+                Text: ="Give feedback"
+                Tooltip: =Self.Text
+                Width: =(Parent.Width - Self.X)- Parent.PaddingRight
+                Wrap: =false
+                X: =40
+                Y: =40
+                ZIndex: =1
+
+            conFeedbackBody As groupContainer.verticalAutoLayoutContainer:
+                AlignInContainer: =AlignInContainer.SetByContainer
+                Fill: =ColorValue(varThemeColors.backgroundFill)
+                FillPortions: =0
+                Height: |
+                    =//Responsive Conditions
+                    If('Give Feedback Screen'.Size >= ScreenSize.Large, 
+                        
+                            Max(Parent.Height - Self.X - lblFeedbackTitle.Height - Parent.PaddingBottom, 
+                            conSurveyRatingBody.Height + 
+                            shpSeparatorMeetingDetails_Feedback.Height + 
+                            conFeedbackScreenHeaderDetails.Height
+                            ,0
+                        ) ,
+                        conFeedbackScreenHeaderDetails.Height + shpSeparatorMeetingDetails_Feedback.Height + conSurveyRatingBodyLeft.Height + shpSeparatorFeedbackBody.Height + conRatings.Height +conSurveyRatingButtons.Height
+                    )
+                LayoutAlignItems: =LayoutAlignItems.Stretch
+                LayoutDirection: =LayoutDirection.Vertical
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                LayoutMode: =LayoutMode.Auto
+                Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                ZIndex: =2
+
+                conFeedbackScreenHeaderDetails As groupContainer.verticalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.SetByContainer
+                    BorderColor: =ColorValue(varThemeColors.secondaryGray)
+                    BorderStyle: =BorderStyle.None
+                    BorderThickness: =1
+                    DropShadow: =DropShadow.None
+                    FillPortions: =0
+                    Height: |
+                        =conServiceMeetingDateTime.Height + Self.PaddingBottom + Self.PaddingTop + If('Give Feedback Screen'.Size < ScreenSize.Large, Self.LayoutGap + conServiceMeetingDetails.Height, 0) 
+                    LayoutDirection: |-
+                        =If('Give Feedback Screen'.Size < ScreenSize.Large, 
+                        LayoutDirection.Vertical,
+                        LayoutDirection.Horizontal)
+                    LayoutGap: =var_LayoutProperties.gap.small
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    PaddingBottom: =var_LayoutProperties.outerPadding.bottom
+                    PaddingLeft: |-
+                        =var_LayoutProperties.outerPadding.left * 
+                        If(
+                            App.ActiveScreen.Size >= ScreenSize.Large, //Desktop
+                            1,
+                            0.5
+                        )
+                    PaddingRight: |-
+                        =var_LayoutProperties.outerPadding.right * 
+                        If(
+                            App.ActiveScreen.Size >= ScreenSize.Large, //Desktop
+                            1,
+                            0.5
+                        )
+                    PaddingTop: =var_LayoutProperties.outerPadding.top
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Width: =Parent.Width
+                    ZIndex: =1
+
+                    conServiceMeetingDateTime As groupContainer.verticalAutoLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        DropShadow: =DropShadow.None
+                        FillPortions: =0
+                        Height: =lblServiceMeetingDate.Height + lblServiceMeettingTime.Height
+                        LayoutDirection: =LayoutDirection.Vertical
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Width: =Max(lblServiceMeetingDate.Width, lblServiceMeettingTime.Width)
+                        ZIndex: =1
+
+                        lblServiceMeetingDate As label:
+                            AutoHeight: =true
+                            Color: =ColorValue(varThemeColors.text)
+                            DisplayMode: =DisplayMode.View
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weightSemibold
+                            Height: =Self.Size * 2
+                            PaddingBottom: =var_LayoutProperties.gap.small
+                            PaddingRight: =10
+                            PaddingTop: =0
+                            Size: =varThemeFont.B1.size
+                            Text: |+
+                                =Text(var_selectedMeeting.'Start Date', "dd mmm, yyyy")
+                                
+                            Tooltip: =Self.Text
+                            Width: =Self.Size * Len(Self.Text)
+                            X: =40
+                            Y: =40
+                            ZIndex: =1
+
+                        lblServiceMeettingTime As label:
+                            AutoHeight: =true
+                            Color: =ColorValue(varThemeColors.tertiaryGray)
+                            DisplayMode: =DisplayMode.View
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weight
+                            Height: =Self.Size * 2
+                            PaddingBottom: =var_LayoutProperties.gap.small
+                            PaddingRight: =10
+                            PaddingTop: =0
+                            Size: =varThemeFont.B2.size
+                            Text: |-
+                                =$"{Text(var_selectedMeeting.'Start Date', "hh:mm AM/PM")} to {Text(var_selectedMeeting.'End Date', "hh:mm AM/PM")}"
+                            Tooltip: =Self.Text
+                            Width: =Self.Size * Len(Self.Text)
+                            X: =40
+                            Y: =40
+                            ZIndex: =2
+
+                    conServiceMeetingDetails As groupContainer.verticalAutoLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        DropShadow: =DropShadow.None
+                        FillPortions: =0
+                        Height: =lblServiceMeetingName.Height + lblServiceMeetingNameLocation.Height
+                        LayoutDirection: =LayoutDirection.Vertical
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Width: |-
+                            =If('Give Feedback Screen'.Size < ScreenSize.Large,
+                            Parent.Width,
+                            Parent.Width - conServiceMeetingDateTime.Width) - Parent.PaddingLeft - Parent.PaddingRight
+                        ZIndex: =2
+
+                        lblServiceMeetingName As label:
+                            AutoHeight: =true
+                            Color: =ColorValue(varThemeColors.text)
+                            DisplayMode: =DisplayMode.View
+                            Fill: =Color.Transparent
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weightSemibold
+                            Height: =Self.Size * 2
+                            PaddingBottom: =var_LayoutProperties.gap.small
+                            PaddingRight: =10
+                            PaddingTop: =0
+                            Size: =varThemeFont.B1.size
+                            Text: =var_selectedMeeting.'Meeting Name'
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width
+                            X: =40
+                            Y: =40
+                            ZIndex: =1
+
+                        lblServiceMeetingNameLocation As label:
+                            AutoHeight: =true
+                            Color: =ColorValue(varThemeColors.tertiaryGray)
+                            DisplayMode: =DisplayMode.View
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weight
+                            Height: =Self.Size * 2
+                            PaddingBottom: =var_LayoutProperties.gap.small
+                            PaddingRight: =10
+                            PaddingTop: =0
+                            Size: =varThemeFont.B2.size
+                            Text: =var_selectedMeeting.Location
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width
+                            X: =40
+                            Y: =40
+                            ZIndex: =2
+
+                shpSeparatorMeetingDetails_Feedback As rectangle:
+                    DisplayMode: =DisplayMode.Disabled
+                    Fill: =ColorValue(varThemeColors.secondaryGray)
+                    Height: =var_LayoutProperties.gap.singlePX
+                    Width: =Parent.Width - Parent.PaddingBottom - Parent.PaddingTop
+                    ZIndex: =2
+
+                conSurveyRatingBody As groupContainer.horizontalAutoLayoutContainer:
+                    AlignInContainer: =AlignInContainer.Start
+                    DropShadow: =DropShadow.None
+                    FillPortions: =0
+                    Height: |-
+                        =//Responsive condition
+                        If('Give Feedback Screen'.Size >= ScreenSize.Large,
+                            Max(lblServiceCount.Height + galServiceRequestInformation.Height + conSurveyRatingBodyLeft.PaddingTop + conSurveyRatingBodyLeft.PaddingBottom,
+                                conSurveyRatingBodyRight.Height
+                            ),
+                            conSurveyRatingBodyRight.Height + conSurveyRatingBodyRight.Height + 1
+                        )
+                    LayoutDirection: |+
+                        =
+                        If('Give Feedback Screen'.Size < ScreenSize.Large, LayoutDirection.Vertical, LayoutDirection.Horizontal)
+                        
+                    LayoutMinHeight: =100
+                    LayoutMinWidth: =250
+                    LayoutMode: =LayoutMode.Auto
+                    RadiusBottomLeft: =0
+                    RadiusBottomRight: =0
+                    RadiusTopLeft: =0
+                    RadiusTopRight: =0
+                    Width: =Parent.Width
+                    ZIndex: =3
+
+                    conSurveyRatingBodyLeft As groupContainer.verticalAutoLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =ColorValue(varThemeColors.error)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =1
+                        DropShadow: =DropShadow.None
+                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                        FillPortions: =0
+                        Height: =Self.PaddingTop + galServiceRequestInformation.Height + lblServiceCount.Height + Self.PaddingBottom
+                        LayoutDirection: =LayoutDirection.Vertical
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        LayoutOverflowY: =LayoutOverflow.Scroll
+                        PaddingBottom: =var_LayoutProperties.outerPadding.top
+                        PaddingLeft: |-
+                            =var_LayoutProperties.outerPadding.left * 
+                            If(
+                                App.ActiveScreen.Size >= ScreenSize.Large, //Desktop
+                                1,
+                                0.5
+                            )
+                        PaddingRight: |-
+                            =var_LayoutProperties.outerPadding.right * 
+                            If(
+                                App.ActiveScreen.Size >= ScreenSize.Large, //Desktop
+                                1,
+                                0.5
+                            )
+                        PaddingTop: =var_LayoutProperties.outerPadding.top
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Width: |-
+                            =
+                            If('Give Feedback Screen'.Size < ScreenSize.Large, Parent.Width, 
+                            Max(Parent.Width * .24, 160))
+                        ZIndex: =1
+
+                        lblServiceCount As label:
+                            Color: =ColorValue(varThemeColors.tertiaryGray)
+                            DisplayMode: =DisplayMode.View
+                            Font: =varThemeFont.B2.face
+                            FontWeight: =varThemeFont.B2.weight
+                            Height: =Self.Size * 2
+                            PaddingBottom: =var_LayoutProperties.gap.small
+                            PaddingRight: =10
+                            PaddingTop: =10
+                            Size: =varThemeFont.B2.size
+                            Text: |+
+                                = "Service request" & " " & var_serviceitemcount & " " 
+                                
+                                & "of" & " " & CountRows(var_relatedSR)
+                                
+                            Tooltip: =Self.Text
+                            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                            Wrap: =false
+                            X: =40
+                            Y: =40
+                            ZIndex: =1
+
+                        galServiceRequestInformation As gallery.variableTemplateHeightGallery:
+                            AccessibleLabel: = "Service request"
+                            AlignInContainer: =AlignInContainer.SetByContainer
+                            BorderColor: =Parent.Fill
+                            BorderStyle: =BorderStyle.None
+                            BorderThickness: =1
+                            DelayItemLoading: =true
+                            FillPortions: =0
+                            Height: =Max(Self.AllItemsCount, 1) * Self.TemplateHeight
+                            Items: |-
+                                =Last(
+                                    FirstN(
+                                        var_relatedSR,
+                                        var_serviceitemcount
+                                    )
+                                )
+                            Layout: =Layout.Vertical
+                            LayoutMinHeight: =287
+                            LayoutMinWidth: =320
+                            LoadingSpinner: =LoadingSpinner.Data
+                            TabIndex: =0
+                            TemplatePadding: =0
+                            TemplateSize: =conServiceRequestInformation.Height
+                            Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                            ZIndex: =3
+
+                            conServiceRequestInformation As groupContainer.horizontalAutoLayoutContainer:
+                                DropShadow: =DropShadow.None
+                                Height: =Self.PaddingTop + lblServiceName.Height + lblFeedbackServiceNumber.Height + conSubservice.Height + conAdditionalNotes.Height + conServiceRequestedOn.Height + Self.PaddingBottom
+                                LayoutDirection: =LayoutDirection.Vertical
+                                LayoutMode: =LayoutMode.Auto
+                                PaddingBottom: =var_LayoutProperties.gap.medium
+                                RadiusBottomLeft: =0
+                                RadiusBottomRight: =0
+                                RadiusTopLeft: =0
+                                RadiusTopRight: =0
+                                Width: =Parent.Width
+                                ZIndex: =1
+
+                                lblServiceName As label:
+                                    AutoHeight: =true
+                                    Color: =ColorValue(varThemeColors.text)
+                                    DisplayMode: =DisplayMode.View
+                                    Font: =varThemeFont.B2.face
+                                    FontWeight: =varThemeFont.H3.weightSemibold
+                                    Height: =Self.Size * 2
+                                    PaddingBottom: =var_LayoutProperties.gap.medium
+                                    PaddingRight: =10
+                                    PaddingTop: =0
+                                    Size: =varThemeFont.H3.size
+                                    Text: =ThisItem.Service.'Service Name'
+                                    Tooltip: =Self.Text
+                                    Width: =Parent.Width
+                                    ZIndex: =1
+
+                                lblFeedbackServiceNumber As label:
+                                    AutoHeight: =true
+                                    Color: =ColorValue(varThemeColors.text)
+                                    DisplayMode: =DisplayMode.View
+                                    Font: =varThemeFont.B2.face
+                                    FontWeight: =varThemeFont.B1.weightSemibold
+                                    Height: =Self.Size * 2
+                                    PaddingBottom: =var_LayoutProperties.gap.medium
+                                    PaddingRight: =10
+                                    PaddingTop: =0
+                                    Size: =varThemeFont.B1.size
+                                    Text: ="Request number" & " " & ThisItem.'Service Request Number'
+                                    Tooltip: =Self.Text
+                                    Width: =Parent.Width
+                                    Y: =lblServiceName.Y + lblServiceName.Height + 19
+                                    ZIndex: =2
+
+                                conSubservice As groupContainer.verticalAutoLayoutContainer:
+                                    AlignInContainer: =AlignInContainer.SetByContainer
+                                    DropShadow: =DropShadow.None
+                                    FillPortions: =0
+                                    Height: =Self.PaddingTop + lblFeedbackSubservice.Height + Self.LayoutGap + lbllblFeedbackSubserviceName.Height + Self.PaddingBottom
+                                    LayoutDirection: =LayoutDirection.Vertical
+                                    LayoutGap: =var_LayoutProperties.gap.small
+                                    LayoutMinHeight: =100
+                                    LayoutMinWidth: =250
+                                    LayoutMode: =LayoutMode.Auto
+                                    PaddingBottom: =var_LayoutProperties.gap.medium
+                                    RadiusBottomLeft: =0
+                                    RadiusBottomRight: =0
+                                    RadiusTopLeft: =0
+                                    RadiusTopRight: =0
+                                    Width: =Parent.Width
+                                    Y: =lblFeedbackServiceNumber.Y + lblFeedbackServiceNumber.Height + 2
+                                    ZIndex: =3
+
+                                    lblFeedbackSubservice As label:
+                                        AutoHeight: =true
+                                        Color: =ColorValue(varThemeColors.text)
+                                        DisplayMode: =DisplayMode.View
+                                        Font: =varThemeFont.B2.face
+                                        FontWeight: =varThemeFont.B1.weightSemibold
+                                        Height: =Self.Size * 3.2
+                                        PaddingBottom: =0
+                                        PaddingLeft: =var_LayoutProperties.gap.extraSmall
+                                        PaddingRight: =var_LayoutProperties.gap.small
+                                        PaddingTop: =0
+                                        Size: =varThemeFont.B2.size
+                                        Text: ="Subservice"
+                                        Tooltip: =Self.Text
+                                        Width: =Parent.Width
+                                        Y: =lblServiceName.Y + lblServiceName.Height + 19
+                                        ZIndex: =1
+
+                                    lbllblFeedbackSubserviceName As label:
+                                        AutoHeight: =true
+                                        Color: =ColorValue(varThemeColors.text)
+                                        DisplayMode: =DisplayMode.View
+                                        Font: =varThemeFont.B2.face
+                                        FontWeight: =varThemeFont.B1.weight
+                                        Height: =Self.Size * 3.2
+                                        PaddingBottom: =0
+                                        PaddingLeft: =var_LayoutProperties.gap.extraSmall
+                                        PaddingRight: =var_LayoutProperties.gap.small
+                                        PaddingTop: =0
+                                        Size: =varThemeFont.B1.size
+                                        Text: =ThisItem.SubService.'Subservice Name'
+                                        Tooltip: =Self.Text
+                                        Width: =Parent.Width
+                                        Y: =lblServiceName.Y + lblServiceName.Height + 19
+                                        ZIndex: =2
+
+                                conAdditionalNotes As groupContainer.verticalAutoLayoutContainer:
+                                    AlignInContainer: =AlignInContainer.SetByContainer
+                                    DropShadow: =DropShadow.None
+                                    FillPortions: =0
+                                    Height: =Self.PaddingTop + lblAdditionalDetails.Height + Self.LayoutGap + Max(lblServiceRequestDetails.Height, lblServiceRequestDetails.Size * 3.6) + Self.PaddingBottom
+                                    LayoutDirection: =LayoutDirection.Vertical
+                                    LayoutGap: =var_LayoutProperties.gap.small
+                                    LayoutMinHeight: =100
+                                    LayoutMinWidth: =250
+                                    LayoutMode: =LayoutMode.Auto
+                                    PaddingBottom: =var_LayoutProperties.gap.medium
+                                    RadiusBottomLeft: =0
+                                    RadiusBottomRight: =0
+                                    RadiusTopLeft: =0
+                                    RadiusTopRight: =0
+                                    Width: =Parent.Width
+                                    Y: =conSubservice.Y + conSubservice.Height
+                                    ZIndex: =4
+
+                                    lblAdditionalDetails As label:
+                                        AutoHeight: =true
+                                        Color: =ColorValue(varThemeColors.text)
+                                        Font: =varThemeFont.B2.face
+                                        FontWeight: =varThemeFont.B1.weightSemibold
+                                        Height: =Self.Size * 3.6
+                                        PaddingBottom: =0
+                                        PaddingLeft: =var_LayoutProperties.gap.extraSmall
+                                        PaddingRight: =var_LayoutProperties.gap.small
+                                        PaddingTop: =0
+                                        Size: =varThemeFont.B2.size
+                                        Text: ="Additional details"
+                                        Tooltip: =Self.Text
+                                        Width: =Parent.Width
+                                        Y: =lblServiceName.Y + lblServiceName.Height + 19
+                                        ZIndex: =1
+
+                                    lblServiceRequestDetails As label:
+                                        AutoHeight: =true
+                                        Color: =ColorValue(varThemeColors.text)
+                                        DisplayMode: =DisplayMode.View
+                                        Font: =varThemeFont.B2.face
+                                        FontWeight: =varThemeFont.B1.weight
+                                        Height: =Self.Size * Len(Self.Text)
+                                        PaddingBottom: =0
+                                        PaddingLeft: =var_LayoutProperties.gap.extraSmall
+                                        PaddingRight: =var_LayoutProperties.gap.small
+                                        PaddingTop: =0
+                                        Size: =varThemeFont.B1.size
+                                        Text: =ThisItem.'Request Note'
+                                        Tooltip: =Self.Text
+                                        VerticalAlign: =VerticalAlign.Top
+                                        Width: =Parent.Width
+                                        Y: =lblServiceName.Y + lblServiceName.Height + 19
+                                        ZIndex: =2
+
+                                conServiceRequestedOn As groupContainer.verticalAutoLayoutContainer:
+                                    AlignInContainer: =AlignInContainer.SetByContainer
+                                    DropShadow: =DropShadow.None
+                                    FillPortions: =0
+                                    Height: =Self.PaddingTop + lblRequestedOn.Height + Self.LayoutGap + lblRequestedonDate.Height + Self.PaddingBottom
+                                    LayoutDirection: =LayoutDirection.Vertical
+                                    LayoutGap: =var_LayoutProperties.gap.small
+                                    LayoutMinHeight: =100
+                                    LayoutMinWidth: =250
+                                    LayoutMode: =LayoutMode.Auto
+                                    PaddingBottom: =var_LayoutProperties.gap.small
+                                    RadiusBottomLeft: =0
+                                    RadiusBottomRight: =0
+                                    RadiusTopLeft: =0
+                                    RadiusTopRight: =0
+                                    Width: =Parent.Width
+                                    Y: =conAdditionalNotes.Y + conAdditionalNotes.Height
+                                    ZIndex: =5
+
+                                    lblRequestedOn As label:
+                                        AutoHeight: =true
+                                        Color: =ColorValue(varThemeColors.text)
+                                        DisplayMode: =DisplayMode.View
+                                        Font: =varThemeFont.B2.face
+                                        FontWeight: =varThemeFont.B1.weightSemibold
+                                        Height: =Self.Size * 3.2
+                                        PaddingBottom: =0
+                                        PaddingLeft: =var_LayoutProperties.gap.extraSmall
+                                        PaddingRight: =var_LayoutProperties.gap.small
+                                        PaddingTop: =0
+                                        Size: =varThemeFont.B2.size
+                                        Text: ="Requested on"
+                                        Tooltip: =Self.Text
+                                        Width: =Parent.Width
+                                        Y: =lblServiceName.Y + lblServiceName.Height + 19
+                                        ZIndex: =1
+
+                                    lblRequestedonDate As label:
+                                        AutoHeight: =true
+                                        Color: =ColorValue(varThemeColors.text)
+                                        DisplayMode: =DisplayMode.View
+                                        Font: =varThemeFont.B2.face
+                                        FontWeight: =varThemeFont.B1.weight
+                                        Height: =Self.Size * 3.2
+                                        PaddingBottom: =0
+                                        PaddingLeft: =var_LayoutProperties.gap.extraSmall
+                                        PaddingRight: =var_LayoutProperties.gap.small
+                                        PaddingTop: =0
+                                        Size: =varThemeFont.B1.size
+                                        Text: =Text(ThisItem.'Requested On', "dd mmm, yyyy")
+                                        Tooltip: =Self.Text
+                                        Width: =Parent.Width
+                                        Y: =lblServiceName.Y + lblServiceName.Height + 19
+                                        ZIndex: =2
+
+                    shpSeparatorFeedbackBody As rectangle:
+                        BorderColor: =Self.Fill
+                        BorderThickness: =1
+                        DisplayMode: =DisplayMode.Disabled
+                        Fill: =ColorValue(varThemeColors.secondaryGray)
+                        Height: |-
+                            =If(
+                                'Give Feedback Screen'.Size < ScreenSize.Large,
+                                1,
+                                conSurveyRatingBodyRight.Height
+                            )
+                        Width: |-
+                            =If(
+                                'Give Feedback Screen'.Size < ScreenSize.Large,
+                                Parent.Width,
+                                1
+                               
+                            )
+                        ZIndex: =2
+
+                    conSurveyRatingBodyRight As groupContainer.verticalAutoLayoutContainer:
+                        AlignInContainer: =AlignInContainer.SetByContainer
+                        BorderColor: =ColorValue(varThemeColors.secondaryGray)
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =1
+                        DropShadow: =DropShadow.None
+                        FillPortions: =0
+                        Height: |-
+                            =//Responsive condition
+                            If('Give Feedback Screen'.Size >= ScreenSize.Large,
+                                Max(conRatings.Height + conSurveyRatingButtons.Height + 1, lblServiceCount.Height + galServiceRequestInformation.Height + conSurveyRatingBodyLeft.PaddingTop + conSurveyRatingBodyLeft.PaddingBottom),
+                                conRatings.Height + conSurveyRatingButtons.Height + 1
+                            )
+                                
+                        LayoutAlignItems: =LayoutAlignItems.Stretch
+                        LayoutDirection: =LayoutDirection.Vertical
+                        LayoutMinHeight: =100
+                        LayoutMinWidth: =250
+                        LayoutMode: =LayoutMode.Auto
+                        RadiusBottomLeft: =0
+                        RadiusBottomRight: =0
+                        RadiusTopLeft: =0
+                        RadiusTopRight: =0
+                        Width: |-
+                            =
+                            If('Give Feedback Screen'.Size < ScreenSize.Large, 
+                            Parent.Width,
+                            Parent.Width - conSurveyRatingBodyLeft.Width - shpSeparatorFeedbackBody.Width)
+                        ZIndex: =3
+
+                        conRatings As groupContainer.verticalAutoLayoutContainer:
+                            AlignInContainer: =AlignInContainer.Start
+                            DropShadow: =DropShadow.None
+                            FillPortions: =0
+                            Height: |-
+                                =//Responsive condition
+                                If('Give Feedback Screen'.Size >= ScreenSize.Large,
+                                Max(
+                                    conFeedbackMain.Height - conFeedbackMain.PaddingTop - conFeedbackMain.PaddingBottom - lblFeedbackTitle.Height - conSurveyRatingButtons.Height - conFeedbackScreenHeaderDetails.Height - shpSeparatorMeetingDetails_Feedback.Height,
+                                    conServiceRatingGallery.Height + conOtherFeedback.Height
+                                ),
+                                conServiceRatingGallery.Height + conOtherFeedback.Height
+                                )
+                            LayoutDirection: =LayoutDirection.Vertical
+                            LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+                            LayoutMinHeight: =100
+                            LayoutMinWidth: =250
+                            LayoutMode: =LayoutMode.Auto
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Width: =Parent.Width
+                            ZIndex: =1
+
+                            conServiceRatingGallery As groupContainer.verticalAutoLayoutContainer:
+                                AlignInContainer: =AlignInContainer.SetByContainer
+                                BorderStyle: =BorderStyle.None
+                                DropShadow: =DropShadow.None
+                                FillPortions: =0
+                                Height: =lblSurveyRatingInstruction.Height + galServiceRequestRating.Height + Self.PaddingTop + Self.PaddingBottom + Self.LayoutGap
+                                LayoutDirection: =LayoutDirection.Vertical
+                                LayoutGap: =24
+                                LayoutMinHeight: =100
+                                LayoutMinWidth: =250
+                                LayoutMode: =LayoutMode.Auto
+                                LayoutOverflowY: =LayoutOverflow.Scroll
+                                PaddingBottom: =galServiceRequestRating.FocusedBorderThickness
+                                RadiusBottomLeft: =0
+                                RadiusBottomRight: =0
+                                RadiusTopLeft: =0
+                                RadiusTopRight: =0
+                                Width: =Parent.Width
+                                ZIndex: =2
+
+                                lblSurveyRatingInstruction As label:
+                                    AutoHeight: =true
+                                    Color: =ColorValue(varThemeColors.tertiaryGray)
+                                    Font: =varThemeFont.B2.face
+                                    FontWeight: =varThemeFont.B2.weight
+                                    Height: =Self.Size * 3.5
+                                    PaddingBottom: =var_LayoutProperties.gap.small
+                                    PaddingLeft: |-
+                                        =//Responsive condition
+                                        If(
+                                            'Give Feedback Screen'.Size < ScreenSize.Large,
+                                            12,
+                                            24
+                                        )
+                                    PaddingRight: |-
+                                        =//Responsive condition
+                                        If(
+                                            'Give Feedback Screen'.Size < ScreenSize.Large,
+                                            12,
+                                            24
+                                        )
+                                    PaddingTop: |-
+                                        =//Responsive condition
+                                        If(
+                                            'Give Feedback Screen'.Size < ScreenSize.Large,
+                                            12,
+                                            24
+                                        )
+                                    Size: =varThemeFont.B2.size
+                                    Text: = "Please leave feedback on this Service."
+                                    Tooltip: =Self.Text
+                                    Width: =Parent.Width
+                                    X: =40
+                                    Y: =40
+                                    ZIndex: =1
+
+                                galServiceRequestRating As gallery.variableTemplateHeightGallery:
+                                    AccessibleLabel: = "Service request feedback topic"
+                                    AlignInContainer: =AlignInContainer.SetByContainer
+                                    BorderColor: =RGBA(0, 0, 0, 0)
+                                    DelayItemLoading: =true
+                                    FillPortions: =0
+                                    FocusedBorderThickness: =2
+                                    Height: =(Self.AllItemsCount * Self.TemplateHeight) + ((Self.AllItemsCount -1) * Self.TemplatePadding)
+                                    Items: =Filter('Survey Topics', Service.'Service ID' = galServiceRequestInformation.Selected.Service.'Service ID')
+                                    Layout: =Layout.Vertical
+                                    LayoutMinHeight: =287
+                                    LayoutMinWidth: =320
+                                    LoadingSpinner: =LoadingSpinner.Data
+                                    TabIndex: =0
+                                    TemplatePadding: =0
+                                    TemplateSize: |-
+                                        =//Responsive condition
+                                        If(
+                                            'Give Feedback Screen'.Size < ScreenSize.Large,
+                                            134,
+                                            91
+                                        )
+                                    Width: =Parent.Width
+                                    ZIndex: =3
+
+                                    conGalleryServiceSpace As groupContainer.manualLayoutContainer:
+                                        DropShadow: =DropShadow.None
+                                        Height: =30
+                                        RadiusBottomLeft: =0
+                                        RadiusBottomRight: =0
+                                        RadiusTopLeft: =0
+                                        RadiusTopRight: =0
+                                        Width: =1
+                                        X: |-
+                                            =If(
+                                                'Give Feedback Screen'.Size < ScreenSize.Large,
+                                                chkApplicable.X,
+                                                rtgRating.X
+                                            )
+                                        Y: |-
+                                            =//Responsive condition
+                                            If(
+                                                'Give Feedback Screen'.Size < ScreenSize.Large,
+                                                chkApplicable.Y + chkApplicable.Height,
+                                                rtgRating.Y + rtgRating.Height
+                                            )
+                                        ZIndex: =1
+
+                                    chkApplicable As checkbox:
+                                        BorderColor: =ColorValue(varThemeColors.primaryGray)
+                                        CheckboxBackgroundFill: =ColorValue(varThemeColors.background)
+                                        CheckboxBorderColor: =ColorValue(varThemeColors.primaryGray)
+                                        CheckboxSize: =30
+                                        CheckmarkFill: =ColorValue(varThemeColors.primary)
+                                        Color: =ColorValue(varThemeColors.text)
+                                        Default: |-
+                                            =LookUp(
+                                                    colSurveyRatings,
+                                                    GUID('service request id') = galServiceRequestInformation.Selected.'Service Request ID' And 'Survey Topic Id'.'Survey Topic ID' = ThisItem.'Survey Topic ID'
+                                                ).'is not applicable'
+                                        DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+                                        DisabledColor: =ColorValue(varThemeColors.disabledText)
+                                        DisabledFill: =ColorValue(varThemeColors.backgroundFill)
+                                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                                        FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                                        FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                                        Font: =varThemeFont.B1.face
+                                        FontWeight: =varThemeFont.B1.weight
+                                        Height: =24
+                                        HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                                        HoverColor: =ColorValue(varThemeColors.text)
+                                        HoverFill: =Self.Fill
+                                        Italic: =varThemeFont.B1.italic
+                                        OnCheck: |-
+                                            =With(
+                                                {
+                                                    wExistingRating: LookUp(
+                                                        colSurveyRatings,
+                                                        'service request id' = galServiceRequestInformation.Selected.'Service Request ID' And 'Survey Topic Id'.'Survey Topic ID' = ThisItem.'Survey Topic ID'
+                                                    ),
+                                                    wExistingSurveyRecord: LookUp(
+                                                        colFeedbackSurvey,
+                                                        'Service Request'.'Service Request ID' = galServiceRequestInformation.Selected.'Service Request ID'
+                                                    )
+                                                },
+                                                If(
+                                                    !IsBlank(wExistingRating),
+                                                    Patch(
+                                                        colSurveyRatings,
+                                                        wExistingRating,
+                                                        {'is not applicable': true, Rating:Blank()}
+                                                    );
+                                                    Remove(colFeedbackSurvey, wExistingSurveyRecord);
+                                                    ,
+                                                    Patch(
+                                                        colSurveyRatings,
+                                                        Defaults(colSurveyRatings),
+                                                        {
+                                                            Rating: Blank(),
+                                                            'Survey Rating Name': lblSurveyTopic.Text,
+                                                            'Survey Topic Id': LookUp(
+                                                                'Survey Topics',
+                                                                'Survey Topic ID' = ThisItem.'Survey Topic ID'
+                                                            ),
+                                                            'service request id': galServiceRequestInformation.Selected.'Service Request ID',
+                                                            'is not applicable': true
+                                                        }
+                                                    )
+                                                )
+                                            )
+                                        OnUncheck: |-
+                                            =With(
+                                                {
+                                                    wExistingRating: LookUp(
+                                                        colSurveyRatings,
+                                                        'service request id' = galServiceRequestInformation.Selected.'Service Request ID' And 'Survey Topic Id'.'Survey Topic ID' = ThisItem.'Survey Topic ID'
+                                                    )
+                                                },
+                                                //Remove from the collection 
+                                                If(
+                                                    !IsBlank(wExistingRating),
+                                                    Remove(
+                                                        colSurveyRatings,
+                                                        wExistingRating
+                                                    )
+                                                )
+                                            )
+                                        PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                                        PressedColor: =ColorValue(varThemeColors.text)
+                                        PressedFill: =ColorValue(varThemeColors.background)
+                                        Size: =varThemeFont.B1.size
+                                        Text: ="Not applicable"
+                                        Width: =200
+                                        X: |-
+                                            =//Responsive condition
+                                            If(
+                                            'Give Feedback Screen'.Size < ScreenSize.Large,
+                                            rtgRating.X,
+                                            rtgRating.Width + rtgRating.X + 36
+                                            )
+                                        Y: |-
+                                            =//Responsive condition
+                                            If(
+                                            'Give Feedback Screen'.Size < ScreenSize.Large,
+                                                rtgRating.Y  + rtgRating.Height + 16,
+                                            
+                                                rtgRating.Y  + (rtgRating.Height/2) - (Self.Height/2)
+                                            )
+                                        ZIndex: =2
+
+                                    rtgRating As rating:
+                                        AccessibleLabel: ="Rating"
+                                        BorderColor: =ColorValue(varThemeColors.primaryGray)
+                                        Default: |-
+                                            =With(
+                                                {
+                                                    wThisSurveyRating: LookUp(
+                                                        colSurveyRatings,
+                                                        'service request id' = galServiceRequestInformation.Selected.'Service Request ID' And 'Survey Topic Id'.'Survey Topic ID' = ThisItem.'Survey Topic ID'
+                                                    )
+                                                },
+                                                If(
+                                                    wThisSurveyRating.'is not applicable',
+                                                    0,
+                                                    Coalesce(
+                                                        LookUp(
+                                                            colSurveyRatings,
+                                                            'service request id' = galServiceRequestInformation.Selected.'Service Request ID' And 'Survey Topic Id'.'Survey Topic ID' = ThisItem.'Survey Topic ID'
+                                                        ).Rating,
+                                                        0
+                                                    )
+                                                )
+                                            )
+                                        DisplayMode: =If(chkApplicable.Value, DisplayMode.Disabled, DisplayMode.Edit)
+                                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                                        FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                                        FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                                        Height: =43
+                                        OnChange: |-
+                                            =With (
+                                                {
+                                                    wExistingRatingRecord: LookUp(
+                                                        colSurveyRatings,
+                                                        'service request id' = galServiceRequestInformation.Selected.'Service Request ID' And 'Survey Topic Id'.'Survey Topic ID' = ThisItem.'Survey Topic ID'
+                                                    ),
+                                                    wExistingSurveyRecord: LookUp(
+                                                        colFeedbackSurvey,
+                                                        'Service Request'.'Service Request ID' = galServiceRequestInformation.Selected.'Service Request ID'
+                                                    )
+                                                },
+                                                If(
+                                                    IsBlank(wExistingSurveyRecord),
+                                                    Patch(
+                                                        colFeedbackSurvey,
+                                                        Defaults(colFeedbackSurvey),
+                                                        {
+                                                            'Service Request': LookUp(
+                                                                'Service Requests',
+                                                                'Service Request ID' = galServiceRequestInformation.Selected.'Service Request ID'
+                                                            )
+                                                        }
+                                                    )
+                                                );
+                                                //Patch surveys (only the service request column)
+                                                If(
+                                                    !IsBlank(wExistingRatingRecord),
+                                                    Patch(
+                                                        colSurveyRatings,
+                                                        wExistingRatingRecord,
+                                                        {Rating: Self.Value}
+                                                    ),
+                                                    Patch(
+                                                        colSurveyRatings,
+                                                        Defaults(colSurveyRatings),
+                                                        {
+                                                            Rating: Self.Value,
+                                                            'Survey Rating Name': lblSurveyTopic.Text,
+                                                            'Survey Topic Id': LookUp(
+                                                                'Survey Topics',
+                                                                'Survey Topic ID' = ThisItem.'Survey Topic ID'
+                                                            ),
+                                                            'service request id': galServiceRequestInformation.Selected.'Service Request ID',
+                                                            'is not applicable': false
+                                                        }
+                                                    )
+                                                )
+                                            )
+                                        RatingFill: =ColorValue(varThemeColors.primary)
+                                        Width: |
+                                            =
+                                            If('Give Feedback Screen'.Size < ScreenSize.Large, 200, 215)
+                                        X: |-
+                                            =//Responsive condition
+                                            If(
+                                                'Give Feedback Screen'.Size < ScreenSize.Large,
+                                                12,
+                                                24
+                                            )
+                                        Y: =lblSurveyTopic.Height
+                                        ZIndex: =3
+
+                                    lblSurveyTopic As label:
+                                        AutoHeight: =true
+                                        Color: =ColorValue(varThemeColors.text)
+                                        Font: =varThemeFont.B2.face
+                                        FontWeight: =varThemeFont.H3.weightSemibold
+                                        Height: =19
+                                        PaddingBottom: =0
+                                        PaddingLeft: =0
+                                        PaddingRight: =0
+                                        PaddingTop: =0
+                                        Size: =varThemeFont.B2.size
+                                        Text: =ThisItem.'Survey Topic Name'
+                                        Tooltip: =Self.Text
+                                        Width: =Parent.Width - (Self.X * 2)
+                                        X: |-
+                                            =//Responsive condition
+                                            If(
+                                                'Give Feedback Screen'.Size < ScreenSize.Large,
+                                                12,
+                                                24
+                                            )
+                                        ZIndex: =4
+
+                            conOtherFeedback As groupContainer.horizontalAutoLayoutContainer:
+                                AlignInContainer: =AlignInContainer.SetByContainer
+                                BorderColor: =ColorValue(varThemeColors.secondaryGray)
+                                BorderStyle: =BorderStyle.None
+                                DropShadow: =DropShadow.None
+                                Fill: =ColorValue(varThemeColors.backgroundFill)
+                                FillPortions: =0
+                                Height: =lblOtherFeedback_GiveFeedback.Height + txtOtherFeedback_GiveFeedback.Height + Self.LayoutGap + Self.PaddingBottom
+                                LayoutDirection: =LayoutDirection.Vertical
+                                LayoutGap: =10
+                                LayoutMinHeight: =100
+                                LayoutMinWidth: =250
+                                LayoutMode: =LayoutMode.Auto
+                                PaddingBottom: =24
+                                RadiusBottomLeft: =0
+                                RadiusBottomRight: =0
+                                RadiusTopLeft: =0
+                                RadiusTopRight: =0
+                                Width: =Parent.Width - Parent.PaddingLeft -Parent.PaddingRight
+                                ZIndex: =3
+
+                                conOtherFeedBackLayout As groupContainer.verticalAutoLayoutContainer:
+                                    AlignInContainer: =AlignInContainer.SetByContainer
+                                    DropShadow: =DropShadow.None
+                                    FillPortions: =0
+                                    Height: =lblOtherFeedback_GiveFeedback.Height + txtOtherFeedback_GiveFeedback.Height + Self.LayoutGap + Self.PaddingBottom
+                                    LayoutDirection: =LayoutDirection.Vertical
+                                    LayoutGap: =5
+                                    LayoutMinHeight: =100
+                                    LayoutMinWidth: =250
+                                    LayoutMode: =LayoutMode.Auto
+                                    PaddingBottom: =1
+                                    PaddingLeft: |-
+                                        =//Responsive condition
+                                        If(
+                                            'Give Feedback Screen'.Size < ScreenSize.Large,
+                                            12,
+                                            24
+                                        )
+                                    PaddingRight: |-
+                                        =//Responsive condition
+                                        If(
+                                            'Give Feedback Screen'.Size < ScreenSize.Large,
+                                            12,
+                                            24
+                                        )
+                                    RadiusBottomLeft: =0
+                                    RadiusBottomRight: =0
+                                    RadiusTopLeft: =0
+                                    RadiusTopRight: =0
+                                    Width: =Parent.Width
+                                    ZIndex: =1
+
+                                    lblOtherFeedback_GiveFeedback As label:
+                                        Color: =ColorValue(varThemeColors.text)
+                                        DisplayMode: =DisplayMode.View
+                                        Font: =varThemeFont.B2.face
+                                        FontWeight: =varThemeFont.H3.weightSemibold
+                                        Height: =Self.Size * 2
+                                        PaddingLeft: =2
+                                        Size: =varThemeFont.B2.size
+                                        Text: ="Anything else to add?"
+                                        Tooltip: =Self.Text
+                                        Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                        Wrap: =false
+                                        X: =40
+                                        Y: =40
+                                        ZIndex: =1
+
+                                    txtOtherFeedback_GiveFeedback As text:
+                                        AccessibleLabel: ="Service feedback"
+                                        BorderColor: =ColorValue(varThemeColors.primaryGray)
+                                        BorderThickness: =1
+                                        Color: =ColorValue(varThemeColors.text)
+                                        Default: =LookUp(colFeedbackSurvey, 'Service Request'.'Service Request ID' = galServiceRequestInformation.Selected.'Service Request ID').Feedback
+                                        DisabledBorderColor: =ColorValue(varThemeColors.primaryGray)
+                                        DisabledColor: =ColorValue(varThemeColors.disabledText)
+                                        DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                                        Fill: =ColorValue(varThemeColors.backgroundFill)
+                                        FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                                        FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                                        Font: =varThemeFont.B1.face
+                                        FontWeight: =varThemeFont.B1.weight
+                                        Height: =64
+                                        HintText: ="Enter additional details"
+                                        HoverBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                                        HoverColor: =ColorValue(varThemeColors.text)
+                                        HoverFill: =ColorValue(varThemeColors.backgroundFill)
+                                        Italic: =varThemeFont.B1.italic
+                                        MaxLength: =DataSourceInfo(Surveys,DataSourceInfo.MaxLength,mpa_feedback)
+                                        Mode: =TextMode.MultiLine
+                                        OnChange: |
+                                            =
+                                        PressedBorderColor: =ColorValue(varThemeColors.tertiaryGray)
+                                        PressedColor: =ColorValue(varThemeColors.text)
+                                        PressedFill: =ColorValue(varThemeColors.backgroundFill)
+                                        RadiusBottomLeft: =0
+                                        RadiusBottomRight: =0
+                                        RadiusTopLeft: =0
+                                        RadiusTopRight: =0
+                                        Size: =varThemeFont.B1.size
+                                        Width: =Parent.Width - Parent.PaddingLeft - Parent.PaddingRight
+                                        X: =
+                                        Y: =
+                                        ZIndex: =2
+
+                        conSpacerAndSeparator As groupContainer.manualLayoutContainer:
+                            AlignInContainer: =AlignInContainer.SetByContainer
+                            DropShadow: =DropShadow.None
+                            Fill: =RGBA(100, 50, 100, 0)
+                            FillPortions: =0
+                            Height: |-
+                                =//Responsive condition
+                                If(
+                                    App.ActiveScreen.Size >= ScreenSize.Large,
+                                    If(
+                                         lblServiceCount.Height + galServiceRequestInformation.Height + conSurveyRatingBodyLeft.PaddingTop + conSurveyRatingBodyLeft.PaddingBottom > conRatings.Height + conSurveyRatingButtons.Height,
+                                        conSurveyRatingBodyLeft.Height - conRatings.Height - conSurveyRatingButtons.Height,
+                                        1
+                                    ),
+                                    1
+                                )
+                            LayoutMinHeight: =100
+                            LayoutMinWidth: =100
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            ZIndex: =2
+
+                            shpSeparatorFeedbackButtons As rectangle:
+                                BorderColor: =Self.Fill
+                                BorderThickness: =1
+                                DisplayMode: =DisplayMode.Disabled
+                                Fill: =ColorValue(varThemeColors.secondaryGray)
+                                Height: =var_LayoutProperties.gap.singlePX
+                                Width: =Parent.Width 
+                                Y: =Parent.Height - Self.Height
+                                ZIndex: =1
+
+                        conSurveyRatingButtons As groupContainer.horizontalAutoLayoutContainer:
+                            AlignInContainer: =AlignInContainer.SetByContainer
+                            BorderColor: =ColorValue(varThemeColors.secondaryGray)
+                            BorderStyle: =BorderStyle.None
+                            BorderThickness: =1
+                            DropShadow: =DropShadow.None
+                            Fill: |
+                                =ColorValue(varThemeColors.backgroundFill)
+                            FillPortions: =0
+                            Height: |
+                                =If(
+                                    'Give Feedback Screen'.Size < ScreenSize.Large,
+                                    btnSkip_Rating.Height + conButtonBackNext.Height + Self.LayoutGap,
+                                    btnSubmit_Feedback.Height 
+                                ) + Self.PaddingTop + Self.PaddingBottom
+                            LayoutAlignItems: =LayoutAlignItems.Center
+                            LayoutDirection: |-
+                                =//Responsive condition
+                                If(
+                                    'Give Feedback Screen'.Size < ScreenSize.Large,
+                                    LayoutDirection.Vertical,
+                                    LayoutDirection.Horizontal
+                                )
+                            LayoutGap: =12
+                            LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+                            LayoutMinHeight: =100
+                            LayoutMinWidth: =250
+                            LayoutMode: =LayoutMode.Auto
+                            PaddingBottom: |-
+                                =//Responsive condition
+                                If(
+                                    'Give Feedback Screen'.Size < ScreenSize.Large,
+                                    12,
+                                    24
+                                )
+                            PaddingLeft: |-
+                                =//Responsive condition
+                                If(
+                                    'Give Feedback Screen'.Size < ScreenSize.Large,
+                                    12,
+                                    24
+                                )
+                            PaddingRight: |-
+                                =//Responsive condition
+                                If(
+                                    'Give Feedback Screen'.Size < ScreenSize.Large,
+                                    12,
+                                    24
+                                )
+                            PaddingTop: |-
+                                =//Responsive condition
+                                If(
+                                    'Give Feedback Screen'.Size < ScreenSize.Large,
+                                    12,
+                                    24
+                                )
+                            RadiusBottomLeft: =0
+                            RadiusBottomRight: =0
+                            RadiusTopLeft: =0
+                            RadiusTopRight: =0
+                            Width: =Parent.Width
+                            ZIndex: =3
+
+                            btnSkip_Rating As button:
+                                BorderColor: =ColorValue(varThemeColors.primary)
+                                BorderThickness: =1
+                                Color: =ColorValue(varThemeColors.primary)
+                                DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                                DisabledColor: =ColorValue(varThemeColors.disabledText)
+                                DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                                DisplayMode: |-
+                                    =//Check if service requests are greater tham 1 and survey topics are greater than or equal to 1
+                                    If(
+                                        CountRows(var_relatedSR) > 1 And galServiceRequestRating.AllItemsCount >= 1 And var_serviceitemcount < CountRows(var_relatedSR),
+                                        DisplayMode.Edit,
+                                        DisplayMode.Disabled    
+                                    )
+                                Fill: =ColorValue(varThemeColors.backgroundFill)
+                                FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                                FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                                Font: =varThemeFont.CTA.face
+                                FontWeight: =varThemeFont.CTA.weight
+                                Height: =32
+                                HoverBorderColor: =ColorValue(varThemeColors.tertiary)
+                                HoverColor: =ColorValue(varThemeColors.altText)
+                                HoverFill: =ColorValue(varThemeColors.tertiary)
+                                Italic: =varThemeFont.CTA.italic
+                                OnSelect: |
+                                    =//Remove in the collections before skipping
+                                    With(
+                                        {
+                                            wExistingInRatings: Filter(
+                                                colSurveyRatings,
+                                                'service request id' = galServiceRequestInformation.Selected.'Service Request ID'
+                                            ),
+                                            wExistingInSurvey: LookUp(
+                                                colFeedbackSurvey,
+                                                'Service Request'.'Service Request ID' = galServiceRequestInformation.Selected.'Service Request ID'
+                                            )
+                                        },
+                                        Remove(
+                                            colFeedbackSurvey,
+                                            wExistingInSurvey
+                                        );
+                                        ForAll(
+                                            wExistingInRatings,
+                                            Remove(
+                                                colSurveyRatings,
+                                                ThisRecord
+                                            )
+                                        )
+                                    );
+                                    //Execute Skip
+                                    UpdateContext(
+                                        {
+                                            var_serviceitemcount: If(
+                                                var_serviceitemcount = CountRows(var_relatedSR),
+                                                1,
+                                                Min(
+                                                    var_serviceitemcount + 1,
+                                                    CountRows(var_relatedSR)
+                                                )
+                                            )
+                                        }
+                                    );
+                                PressedBorderColor: =ColorValue(varThemeColors.primary)
+                                PressedColor: =ColorValue(varThemeColors.altText)
+                                PressedFill: =ColorValue(varThemeColors.primary)
+                                RadiusBottomLeft: =6
+                                RadiusBottomRight: =6
+                                RadiusTopLeft: =6
+                                RadiusTopRight: =6
+                                Size: |-
+                                    =
+                                    If('Give Feedback Screen'.Size < 3, varThemeFont.B2.size,
+                                    varThemeFont.CTA.size)
+                                Text: ="Skip"
+                                Width: =btnSubmit_Feedback.Width
+                                X: =1
+                                ZIndex: =2
+
+                            conButtonBackNext As groupContainer.horizontalAutoLayoutContainer:
+                                AlignInContainer: =AlignInContainer.SetByContainer
+                                DropShadow: =DropShadow.None
+                                FillPortions: =0
+                                Height: |-
+                                    =
+                                    //Responsive condition 
+                                    If(
+                                        'Give Feedback Screen'.Size < ScreenSize.Large,
+                                        (btnBack_Rating.Height * If(btnBack_Rating.Visible = true, 3,3)) + (Self.LayoutGap * If(btnBack_Rating.Visible = true, 2,2)) + Self.PaddingTop + Self.PaddingBottom,
+                                        btnNext_Rating.Height + 2
+                                    )
+                                LayoutAlignItems: =LayoutAlignItems.End
+                                LayoutDirection: |-
+                                    =//Responsive condition
+                                    If(
+                                        'Give Feedback Screen'.Size < ScreenSize.Large,
+                                        LayoutDirection.Vertical,
+                                        LayoutDirection.Horizontal
+                                    )
+                                LayoutGap: =If('Give Feedback Screen'.Size < ScreenSize.Medium, 10, 12)
+                                LayoutJustifyContent: =LayoutJustifyContent.End
+                                LayoutMinHeight: =100
+                                LayoutMinWidth: =250
+                                LayoutMode: =LayoutMode.Auto
+                                PaddingBottom: =1
+                                PaddingLeft: =5
+                                PaddingRight: =5
+                                PaddingTop: =1
+                                RadiusBottomLeft: =0
+                                RadiusBottomRight: =0
+                                RadiusTopLeft: =0
+                                RadiusTopRight: =0
+                                Width: |-
+                                    =//Responsive condition
+                                    If(
+                                        'Give Feedback Screen'.Size < ScreenSize.Large,
+                                        Parent.Width - Parent.PaddingLeft - Parent.PaddingRight,
+                                        Parent.Width / 2
+                                    )
+                                ZIndex: =3
+
+                                btnBack_Rating As button:
+                                    BorderColor: =ColorValue(varThemeColors.primary)
+                                    BorderThickness: =1
+                                    Color: =ColorValue(varThemeColors.primary)
+                                    DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                                    DisabledColor: =ColorValue(varThemeColors.disabledText)
+                                    DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                                    DisplayMode: |-
+                                        =
+                                        
+                                        If(var_serviceitemcount > 1, DisplayMode.Edit, DisplayMode.Disabled)
+                                    Fill: =ColorValue(varThemeColors.backgroundFill)
+                                    FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                                    FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                                    Font: =varThemeFont.CTA.face
+                                    FontWeight: =varThemeFont.CTA.weight
+                                    Height: =32
+                                    HoverBorderColor: =ColorValue(varThemeColors.tertiary)
+                                    HoverColor: =ColorValue(varThemeColors.altText)
+                                    HoverFill: =ColorValue(varThemeColors.tertiary)
+                                    Italic: =varThemeFont.CTA.italic
+                                    OnSelect: |-
+                                        =UpdateContext({var_serviceitemcount: var_serviceitemcount - 1})
+                                    PressedBorderColor: =ColorValue(varThemeColors.primary)
+                                    PressedColor: =ColorValue(varThemeColors.altText)
+                                    PressedFill: =ColorValue(varThemeColors.primary)
+                                    RadiusBottomLeft: =6
+                                    RadiusBottomRight: =6
+                                    RadiusTopLeft: =6
+                                    RadiusTopRight: =6
+                                    Size: |-
+                                        =
+                                        If('Give Feedback Screen'.Size < 3, varThemeFont.B2.size,
+                                        varThemeFont.CTA.size)
+                                    Text: = "Back"
+                                    Visible: =CountRows(var_relatedSR) > 1
+                                    Width: =btnSubmit_Feedback.Width
+                                    X: =1
+                                    ZIndex: =1
+
+                                btnNext_Rating As button:
+                                    BorderColor: =ColorValue(varThemeColors.primary)
+                                    BorderThickness: =1
+                                    Color: =ColorValue(varThemeColors.primary)
+                                    DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                                    DisabledColor: =ColorValue(varThemeColors.disabledText)
+                                    DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                                    DisplayMode: |-
+                                        =If(
+                                            var_serviceitemcount = CountRows(var_relatedSR) Or btnSubmit_Feedback.DisplayMode = DisplayMode.Disabled, 
+                                            DisplayMode.Disabled, 
+                                            DisplayMode.Edit
+                                        )
+                                    Fill: =ColorValue(varThemeColors.backgroundFill)
+                                    FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                                    FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                                    Font: =varThemeFont.CTA.face
+                                    FontWeight: =varThemeFont.CTA.weight
+                                    Height: =32
+                                    HoverBorderColor: =ColorValue(varThemeColors.tertiary)
+                                    HoverColor: =ColorValue(varThemeColors.altText)
+                                    HoverFill: =ColorValue(varThemeColors.tertiary)
+                                    Italic: =varThemeFont.CTA.italic
+                                    OnSelect: |-
+                                        =//Add the current screen anyting else to the collection
+                                        
+                                        If(!IsBlank(txtOtherFeedback_GiveFeedback.Text),
+                                        With(
+                                            {
+                                                wExistingSurveys: LookUp(
+                                                    colFeedbackSurvey,
+                                                    'Service Request'.'Service Request ID' = galServiceRequestInformation.Selected.'Service Request ID'
+                                                )
+                                            },
+                                            If(
+                                                !IsBlank(wExistingSurveys),
+                                                Patch(
+                                                    colFeedbackSurvey,
+                                                    wExistingSurveys,
+                                                    {Feedback: txtOtherFeedback_GiveFeedback.Text}
+                                                ),
+                                                Patch(
+                                                    colFeedbackSurvey,
+                                                    Defaults(colFeedbackSurvey),
+                                                    {
+                                                        Feedback: txtOtherFeedback_GiveFeedback.Text, 
+                                                        'Service Request': LookUp('Service Requests', 'Service Request ID' = galServiceRequestInformation.Selected.'Service Request ID')
+                                                    }
+                                                )
+                                            )
+                                        )
+                                        );
+                                        
+                                        Reset(txtOtherFeedback_GiveFeedback);
+                                        UpdateContext({var_serviceitemcount: var_serviceitemcount + 1})
+                                    PressedBorderColor: =ColorValue(varThemeColors.primary)
+                                    PressedColor: =ColorValue(varThemeColors.altText)
+                                    PressedFill: =ColorValue(varThemeColors.primary)
+                                    RadiusBottomLeft: =6
+                                    RadiusBottomRight: =6
+                                    RadiusTopLeft: =6
+                                    RadiusTopRight: =6
+                                    Size: |-
+                                        =
+                                        If('Give Feedback Screen'.Size < 3, varThemeFont.B2.size,
+                                        varThemeFont.CTA.size)
+                                    Text: ="Next"
+                                    Width: =btnSubmit_Feedback.Width
+                                    X: =1
+                                    ZIndex: =2
+
+                                btnSubmit_Feedback As button:
+                                    BorderColor: =ColorValue(varThemeColors.primary)
+                                    BorderThickness: =1
+                                    Color: =ColorValue(varThemeColors.altText)
+                                    DisabledBorderColor: =ColorValue(varThemeColors.backgroundFillDisabled)
+                                    DisabledColor: =ColorValue(varThemeColors.disabledText)
+                                    DisabledFill: =ColorValue(varThemeColors.backgroundFillDisabled)
+                                    DisplayMode: |-
+                                        =If(
+                                            CountRows(colSurveyRatings) >= 1,
+                                            DisplayMode.Edit,
+                                            DisplayMode.Disabled
+                                        )
+                                    Fill: =ColorValue(varThemeColors.primary)
+                                    FocusedBorderColor: =ColorValue(varThemeColors.focusBorder)
+                                    FocusedBorderThickness: =varThemeColors.focusBorderThickness
+                                    Font: =varThemeFont.CTA.face
+                                    FontWeight: =varThemeFont.CTA.weight
+                                    Height: |-
+                                        =//btnSkip_Rating.Height
+                                        
+                                        32
+                                    HoverBorderColor: =ColorValue(varThemeColors.primary)
+                                    HoverColor: =ColorValue(varThemeColors.altText)
+                                    HoverFill: =ColorValue(varThemeColors.tertiary)
+                                    Italic: =varThemeFont.CTA.italic
+                                    OnSelect: |-
+                                        =
+                                        //add the current screen anything else to add if any
+                                        If(
+                                            !IsBlank(txtOtherFeedback_GiveFeedback.Text),
+                                            With(
+                                                {
+                                                    wExistingSurveys: LookUp(
+                                                        colFeedbackSurvey,
+                                                        'Service Request'.'Service Request ID' = galServiceRequestInformation.Selected.'Service Request ID'
+                                                    )
+                                                },
+                                                If(
+                                                    !IsBlank(wExistingSurveys),
+                                                    Patch(
+                                                        colFeedbackSurvey,
+                                                        wExistingSurveys,
+                                                        {Feedback: txtOtherFeedback_GiveFeedback.Text}
+                                                    ),
+                                                    Patch(
+                                                        colFeedbackSurvey,
+                                                        Defaults(colFeedbackSurvey),
+                                                        {
+                                                            Feedback: txtOtherFeedback_GiveFeedback.Text,
+                                                            'Service Request': LookUp(
+                                                                'Service Requests',
+                                                                'Service Request ID' = galServiceRequestInformation.Selected.'Service Request ID'
+                                                            )
+                                                        }
+                                                    )
+                                                )
+                                            )
+                                        );
+                                        //patch first the survey
+                                        If(
+                                            Or(
+                                                CountRows(
+                                                    Filter(
+                                                        colSurveyRatings,
+                                                        'is not applicable' = false And !IsBlank(Rating)
+                                                    )
+                                                ) > 0,
+                                                CountRows(
+                                                    Filter(
+                                                        colFeedbackSurvey,
+                                                        !IsBlank(Feedback)
+                                                    )
+                                                ) >= 1
+                                            ),
+                                            With(
+                                                {
+                                                    wSurveys: Patch(
+                                                        Surveys,
+                                                        ForAll(
+                                                            Sequence(CountRows(colFeedbackSurvey)),
+                                                            Defaults(Surveys)
+                                                        ),
+                                                        colFeedbackSurvey
+                                                    )
+                                                },
+                                            //Error notification for survey patching
+                                                If(
+                                                    IsBlank(wSurveys),
+                                                    Notify(
+                                                       "Error on submitting your feedback and rating please check with system administrator.",
+                                                        NotificationType.Error
+                                                    ),
+                                                    IfError(
+                                                //Patch ratings if there are ratings available in collection
+                                                        ForAll(
+                                                            wSurveys As surveystoPatch,
+                                                            If(
+                                                                CountRows(colSurveyRatings) > 0,
+                                                                ForAll(
+                                                                    colSurveyRatings,
+                                                                    If(
+                                                                        !ThisRecord.'is not applicable' And 'service request id' = surveystoPatch.'Service Request'.'Service Request ID',//Patch only those are applicable
+                                                                        Patch(
+                                                                            'Survey Ratings',
+                                                                            Defaults('Survey Ratings'),
+                                                                            {
+                                                                                Rating: ThisRecord.Rating,
+                                                                                'Survey Rating Name': ThisRecord.'Survey Rating Name',
+                                                                                'Survey Topic Id': ThisRecord.'Survey Topic Id',
+                                                                                Survey: LookUp(
+                                                                                    Surveys,
+                                                                                    'Survey ID' = surveystoPatch.'Survey ID'
+                                                                                )
+                                                                            }
+                                                                        )
+                                                                    )
+                                                                )
+                                                            )
+                                                        ),
+                                                        //Error encountered
+                                                        Notify(
+                                                          "Error on submitting your feedback and rating please check with system administrator." & " - " & Concat(
+                                                                Errors('Survey Ratings'),
+                                                                Column & ": " & Message,
+                                                                "; "
+                                                            ),
+                                                            NotificationType.Error
+                                                        ),
+                                                        Navigate(
+                                                            'Success Screen',
+                                                            Transition.None,
+                                                            {
+                                                                var_Destination: 'Feedback and Issue Screen',
+                                                                var_ButtonText:  "Go to feedback and issues",
+                                                                var_Message:  "Thank you for your feedback!",
+                                                                var_Header:"Feedback Submitted",
+                                                                var_ButtonWidth: 239
+                                                            }
+                                                        )
+                                                    )
+                                                )
+                                            ),
+                                            Notify(
+                                               "Please submit a rating or feedback for any of the services for this meeting",
+                                                NotificationType.Warning
+                                            )
+                                        )
+                                    PressedBorderColor: =ColorValue(varThemeColors.primary)
+                                    PressedColor: =ColorValue(varThemeColors.altText)
+                                    PressedFill: =ColorValue(varThemeColors.primary)
+                                    RadiusBottomLeft: =6
+                                    RadiusBottomRight: =6
+                                    RadiusTopLeft: =6
+                                    RadiusTopRight: =6
+                                    Size: |-
+                                        =
+                                        
+                                        If('Give Feedback Screen'.Size < 3, varThemeFont.B2.size,
+                                        varThemeFont.CTA.size)
+                                    Text: ="Submit" 
+                                    Tooltip: =Self.Text
+                                    Width: |-
+                                        =//Responsive condition
+                                        If(
+                                            'Give Feedback Screen'.Size < ScreenSize.Large,
+                                            Parent.Width - Parent.PaddingLeft - Parent.PaddingRight,
+                                            (Parent.Width - Parent.PaddingLeft - Parent.PaddingRight - (Parent.LayoutGap * 2) ) / 3
+                                        )
+                                    ZIndex: =3
+
+            conOuterPaddingBottom As groupContainer.manualLayoutContainer:
+                DropShadow: =DropShadow.None
+                FillPortions: =0
+                Height: =Parent.PaddingBottom -1
+                LayoutMinHeight: =100
+                LayoutMinWidth: =250
+                RadiusBottomLeft: =0
+                RadiusBottomRight: =0
+                RadiusTopLeft: =0
+                RadiusTopRight: =0
+                ZIndex: =3
+
+    compHeader_GiveFeedback As compHeader:
+        HeaderComponentWidth: =App.Width
+        Height: =compHeader_GiveFeedback.HeaderComponentHeight
+        Width: =compHeader_GiveFeedback.HeaderComponentWidth
+        ZIndex: =3
+

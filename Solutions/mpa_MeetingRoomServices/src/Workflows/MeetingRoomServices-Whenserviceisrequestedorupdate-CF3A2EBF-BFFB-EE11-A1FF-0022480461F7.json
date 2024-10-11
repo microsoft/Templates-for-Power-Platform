@@ -1,0 +1,108 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "impersonation": {},
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_microsoftpoweracceleratordataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_a_service_is_requested_or_updated": {
+          "metadata": {
+            "operationMetadataId": "16ad6205-03f4-4331-8c7d-92e5bf0b8789"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "SubscribeWebhookTrigger"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 4,
+              "subscriptionRequest/entityname": "mpa_servicerequest",
+              "subscriptionRequest/scope": 4,
+              "subscriptionRequest/filteringattributes": "statuscode, mpa_subservice, mpa_requestnote",
+              "subscriptionRequest/name": "cf3a2ebf-bffb-ee11-a1ff-0022480461f7"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Get the service information and monitor the status reason if service is modified"
+        }
+      },
+      "actions": {
+        "Try": {
+          "actions": {
+            "Run_a_Child_Flow_-_Send_email_notifications": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "cd4c0b93-79c0-4860-89da-77f817557461"
+              },
+              "type": "Workflow",
+              "inputs": {
+                "host": {
+                  "workflowReferenceName": "bcfd9d5a-c6fb-ee11-a1ff-00224805c837"
+                },
+                "body": {
+                  "text": "@triggerOutputs()?['body/mpa_servicerequestid']",
+                  "text_1": "service requests"
+                }
+              }
+            }
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "eb5e9b42-45fb-4308-979a-97894293f08a"
+          },
+          "type": "Scope"
+        },
+        "Catch": {
+          "actions": {
+            "Terminate": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "7080daf0-8920-4848-be26-cfd260fa30d5"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed"
+              }
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6b0fb574-e329-4e1f-91eb-ca6c28ade0ce"
+          },
+          "type": "Scope",
+          "description": "If the previous step encounters an error, run below actions"
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}
