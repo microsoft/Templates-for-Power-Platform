@@ -4,25 +4,11 @@ App As appinfo:
     ConfirmExitMessage: |-
         =With(
             {Text: "You have items in your cart that have not been submitted yet. Do you want to exit?"},
-            If(
-                // If the localized text is blank, return the default text
-                IsBlank(
-                    LookUp(
-                        colUserLocalizedStrings,
-                        'English Value' = Text 
-                    ).'Localized Value'
-                ),
-                Text,
-                // If a localized text is found, return that instead of the default text
-                LookUp(
-                    colUserLocalizedStrings,
-                    'English Value' = Text 
-                ).'Localized Value'
-            )
+            Text
         )
     OnError: |-
         =//Patch a new record in dataverse for unhandled or unexpected errors and trace
-        If(
+        /*If(
             !IsBlank(FirstError.Message),
             Patch(
                 'IT Errors',
@@ -40,7 +26,7 @@ App As appinfo:
         //Rethrow the error so user can see it
         Error(FirstError);
             
-        )
+        )*/
     OnStart: |-
         =// request state mode variables
         Set(
@@ -188,42 +174,12 @@ App As appinfo:
         //Lookup and set localized text, remove region 
         Set(
             varISOUserLanguageCode,//Get user's language and map to existing choice values that are supported by the 'HR Localizations' entity which can be customized to support more languages
-            Switch(
-                Left(
-                    Language(),
-                    2
-                ),
-                "ar",
-                'ISO Language Code'.ar,
-                "de",
-                'ISO Language Code'.de,
-                "en",
-                'ISO Language Code'.en,
-                "es",
-                'ISO Language Code'.es,
-                "fr",
-                'ISO Language Code'.fr,
-                "he",
-                'ISO Language Code'.he,
-                "it",
-                'ISO Language Code'.it,
-                "ja",
-                'ISO Language Code'.ja,
-                "pt",
-                'ISO Language Code'.pt,
-                "zh",
-                'ISO Language Code'.zh,
-                'ISO Language Code'.en
-            )
+            "en"
         );
         Concurrent(
             ClearCollect(
                 colUserLocalizedStrings,//Collection used to display localized value according to user's language value
-                Filter(
-                    'IT Localizations',
-                    Language = varISOUserLanguageCode,
-                    'IT Localizations (Views)'.'Active IT Localizations'
-                )
+                "en"
             ),
             Set(
                 varUser,
