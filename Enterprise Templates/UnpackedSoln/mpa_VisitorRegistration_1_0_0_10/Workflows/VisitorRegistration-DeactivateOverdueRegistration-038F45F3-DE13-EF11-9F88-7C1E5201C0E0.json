@@ -1,0 +1,199 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "impersonation": {},
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_PowerAppsInnovationCenterDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "Trigger_Flow_Every_Day_": {
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "startTime": "2024-05-16T16:00:00Z"
+          },
+          "metadata": {
+            "operationMetadataId": "d5c948e3-d92c-4fe4-9f13-00e0ca493fc6"
+          },
+          "type": "Recurrence",
+          "description": "Execute flow at 12 am"
+        }
+      },
+      "actions": {
+        "Get_Overdue_Registration_Lists": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "6774744f-8278-4996-b91a-7df02e622e33"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "ListRecords"
+            },
+            "parameters": {
+              "entityName": "mpa_visitormgt_visitorregistrationids",
+              "$filter": "statuscode ne 865420006"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Query list of overdue registrations"
+        },
+        "Apply_to_each_Registration_Lists": {
+          "foreach": "@outputs('Get_Overdue_Registration_Lists')?['body/value']",
+          "actions": {
+            "Check_if_the_Registration_is_Multi_Day": {
+              "actions": {
+                "Check_if_the_Registration_has_End_Date_less_than_Today": {
+                  "actions": {
+                    "Deactivate_Registrations_for_Multi_Day": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "3eaf2e6f-f61f-463e-8c41-4b81f8b6e060"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                          "connectionName": "shared_commondataserviceforapps",
+                          "operationId": "UpdateRecord"
+                        },
+                        "parameters": {
+                          "entityName": "mpa_visitormgt_visitorregistrationids",
+                          "recordId": "@items('Apply_to_each_Registration_Lists')?['mpa_visitormgt_visitorregistrationidid']",
+                          "item/statecode": 1,
+                          "item/statuscode": 865420006
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      },
+                      "description": "Set Status Reason to Inactive to every Registrations on the list"
+                    }
+                  },
+                  "runAfter": {},
+                  "expression": {
+                    "less": [
+                      "@items('Apply_to_each_Registration_Lists')?['mpa_appointmentenddate']",
+                      "@utcNow()"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "730d9890-dd14-4586-a42c-7ad45a035ccf"
+                  },
+                  "type": "If"
+                }
+              },
+              "runAfter": {},
+              "else": {
+                "actions": {
+                  "Check_if_the_Registration_has_Start_Date_less_than_Today": {
+                    "actions": {
+                      "Deactivate_Registrations_for_Single_Day": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "3eaf2e6f-f61f-463e-8c41-4b81f8b6e060"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                            "connectionName": "shared_commondataserviceforapps",
+                            "operationId": "UpdateRecord"
+                          },
+                          "parameters": {
+                            "entityName": "mpa_visitormgt_visitorregistrationids",
+                            "recordId": "@items('Apply_to_each_Registration_Lists')?['mpa_visitormgt_visitorregistrationidid']",
+                            "item/statecode": 1,
+                            "item/statuscode": 865420006
+                          },
+                          "authentication": "@parameters('$authentication')"
+                        },
+                        "description": "Set Status Reason to Inactive to every Registrations on the list"
+                      }
+                    },
+                    "runAfter": {},
+                    "expression": {
+                      "and": [
+                        {
+                          "not": {
+                            "equals": [
+                              "@items('Apply_to_each_Registration_Lists')?['mpa_appointmentstartdate']",
+                              "@null"
+                            ]
+                          }
+                        },
+                        {
+                          "less": [
+                            "@items('Apply_to_each_Registration_Lists')?['mpa_appointmentstartdate']",
+                            "@utcNow()"
+                          ]
+                        }
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "7c48c30b-94e7-4d2d-9bc7-73bab6926677"
+                    },
+                    "type": "If"
+                  }
+                }
+              },
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@items('Apply_to_each_Registration_Lists')?['mpa_ismultidayvisit']",
+                      true
+                    ]
+                  },
+                  {
+                    "not": {
+                      "equals": [
+                        "@items('Apply_to_each_Registration_Lists')?['mpa_appointmentenddate']",
+                        "@null"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "66cf65f5-819f-4892-9d5a-57f02b824cbc"
+              },
+              "type": "If"
+            }
+          },
+          "runAfter": {
+            "Get_Overdue_Registration_Lists": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "d5584601-d5c9-42fa-b3fd-793d770472b0"
+          },
+          "type": "Foreach"
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

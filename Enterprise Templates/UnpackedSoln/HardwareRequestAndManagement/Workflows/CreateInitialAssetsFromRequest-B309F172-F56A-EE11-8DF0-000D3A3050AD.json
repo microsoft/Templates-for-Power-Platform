@@ -1,0 +1,416 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps_1": {
+        "impersonation": {
+          "source": "invoker"
+        },
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_HardwareRequestAndManagementDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "splitOn": "@triggerBody()['rows']",
+          "metadata": {
+            "operationMetadataId": "26b3c934-b4b9-40ae-ac7b-9d1a4d28bf75"
+          },
+          "type": "Request",
+          "kind": "ApiConnection",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "rows": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "entity": {
+                        "type": "object",
+                        "properties": {
+                          "entity": {
+                            "type": "object",
+                            "properties": {
+                              "BPFInstanceId": {
+                                "title": "BPF Instance Id",
+                                "type": "string"
+                              },
+                              "FlowsWorkflowLogId": {
+                                "title": "Flows Workflow Log Id",
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "required": [
+                          "entity"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "entity"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "rows"
+              ]
+            },
+            "host": {
+              "connection": {
+                "name": "@parameters('$connections')['shared_commondataserviceforapps_1']['connectionId']"
+              }
+            },
+            "operationId": "FlowStepRun",
+            "parameters": {}
+          }
+        }
+      },
+      "actions": {
+        "Try": {
+          "actions": {
+            "Get_BPF_Instance": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "860e920b-4b56-4cf7-8730-07b2204312c1"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_hardwarerequestbpfs",
+                  "recordId": "@triggerBody()?['entity']?['entity']?['BPFInstanceId']"
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              }
+            },
+            "Get_Hardware_Request_Items": {
+              "runAfter": {
+                "Get_BPF_Instance": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "675675f1-ba3e-4920-83ac-8347decf82dc"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "ListRecords",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_hardwarerequestitems",
+                  "$filter": "_mpa_hardwarerequest_value eq '@{outputs('Get_BPF_Instance')?['body/_bpf_mpa_hardwarerequestid_value']}'"
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              }
+            },
+            "Get_Hardware_Request": {
+              "runAfter": {
+                "Get_BPF_Instance": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "45ffadb5-b205-4468-83c5-c74a3eb07920"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_hardwarerequests",
+                  "recordId": "@outputs('Get_BPF_Instance')?['body/_bpf_mpa_hardwarerequestid_value']"
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              }
+            },
+            "Get_Purchase_Orders": {
+              "runAfter": {
+                "Get_BPF_Instance": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "8f9acc92-7be5-45f0-948f-95a593e37b3c"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "ListRecords",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_purchaseorders",
+                  "$filter": "_mpa_hardwarerequest_value eq '@{outputs('Get_BPF_Instance')?['body/_bpf_mpa_hardwarerequestid_value']}'"
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              }
+            },
+            "Apply_to_each": {
+              "foreach": "@outputs('Get_Hardware_Request_Items')?['body/value']",
+              "actions": {
+                "Get_Product": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "0cd35f9a-8712-47b2-8bfd-ae88a5d7528e"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "GetItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_products",
+                      "recordId": "@items('Apply_to_each')?['_mpa_product_value']"
+                    },
+                    "authentication": {
+                      "type": "Raw",
+                      "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                    }
+                  }
+                },
+                "Condition_-_Single_Purchase_Order": {
+                  "actions": {
+                    "Create_Asset_-_With_PO": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "2f7d6456-1609-45e0-9be8-613d82c254dd"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps_1",
+                          "operationId": "CreateRecord",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "mpa_assets",
+                          "item/mpa_assettatus": 865420000,
+                          "item/mpa_BusinessGroup@odata.bind": "/mpa_businessgroups(@{outputs('Get_Hardware_Request')?['body/_mpa_businessgroup_value']})",
+                          "item/mpa_name": "@outputs('Get_Product')?['body/mpa_name']",
+                          "item/mpa_product@odata.bind": "/mpa_products(@{items('Apply_to_each')?['_mpa_product_value']})",
+                          "item/mpa_hardwarerequest@odata.bind": "/mpa_hardwarerequests(@{outputs('Get_BPF_Instance')?['body/_bpf_mpa_hardwarerequestid_value']})",
+                          "item/mpa_purchaseorder@odata.bind": "/mpa_purchaseorders(@{first(outputs('Get_Purchase_Orders')?['body/value'])['mpa_purchaseorderid']})"
+                        },
+                        "authentication": {
+                          "type": "Raw",
+                          "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Get_Product": [
+                      "Succeeded"
+                    ]
+                  },
+                  "else": {
+                    "actions": {
+                      "Create_Asset_-_No_PO": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "45f4c418-b4ea-40ed-b57d-997cd2f18db6"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_commondataserviceforapps_1",
+                            "operationId": "CreateRecord",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                          },
+                          "parameters": {
+                            "entityName": "mpa_assets",
+                            "item/mpa_assettatus": 865420000,
+                            "item/mpa_BusinessGroup@odata.bind": "/mpa_businessgroups(@{outputs('Get_Hardware_Request')?['body/_mpa_businessgroup_value']})",
+                            "item/mpa_name": "@outputs('Get_Product')?['body/mpa_name']",
+                            "item/mpa_product@odata.bind": "/mpa_products(@{items('Apply_to_each')?['_mpa_product_value']})",
+                            "item/mpa_hardwarerequest@odata.bind": "/mpa_hardwarerequests(@{outputs('Get_BPF_Instance')?['body/_bpf_mpa_hardwarerequestid_value']})",
+                            "item/ownerid@odata.bind": "/systemusers(@{if(empty(outputs('Get_Hardware_Request')?['body/_mpa_requestedfor_value']),outputs('Get_Hardware_Request')?['body/_mpa_submittedby_value'],outputs('Get_Hardware_Request')?['body/_mpa_requestedfor_value'])})"
+                          },
+                          "authentication": {
+                            "type": "Raw",
+                            "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "expression": {
+                    "equals": [
+                      "@length(outputs('Get_Purchase_Orders')?['body/value'])",
+                      1
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "810546ca-c47e-4864-8bb5-849c708eb190"
+                  },
+                  "type": "If"
+                }
+              },
+              "runAfter": {
+                "Get_Hardware_Request": [
+                  "Succeeded"
+                ],
+                "Get_Hardware_Request_Items": [
+                  "Succeeded"
+                ],
+                "Get_Purchase_Orders": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "3d554b0c-9331-4408-8362-a29285cb1912"
+              },
+              "type": "Foreach"
+            },
+            "Update_Flow_Log_Succeeded": {
+              "runAfter": {
+                "Apply_to_each": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "cc6c63cc-112c-4d4d-83df-2dd9af44851d"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "UpdateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "workflowlogs",
+                  "recordId": "@triggerBody()?['entity']?['entity']?['FlowsWorkflowLogId']",
+                  "item/status": 2
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              }
+            }
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "8ef86d6a-f230-4bc4-b2ab-a8a893928238"
+          },
+          "type": "Scope"
+        },
+        "Catch": {
+          "actions": {
+            "Filter_array": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "7c6ea790-c936-46aa-83db-be2ec1ccd40e"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@result('Try')",
+                "where": "@or(equals(item()?['Status'], 'Failed'), equals(item()?['Status'], 'TimedOut'))"
+              }
+            },
+            "Terminate": {
+              "runAfter": {
+                "Update_Flow_Log_Error": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "4b0b3204-edb6-46b9-9ec9-ad13db87f56a"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed"
+              }
+            },
+            "Update_Flow_Log_Error": {
+              "runAfter": {
+                "Filter_array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "c5dec097-65e7-4555-b971-65ecbb67ccb4"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "UpdateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "workflowlogs",
+                  "recordId": "@triggerBody()?['entity']?['entity']?['FlowsWorkflowLogId']",
+                  "item/status": 3
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "f8635815-3d8c-47f4-953a-1b0282c82f23"
+          },
+          "type": "Scope"
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

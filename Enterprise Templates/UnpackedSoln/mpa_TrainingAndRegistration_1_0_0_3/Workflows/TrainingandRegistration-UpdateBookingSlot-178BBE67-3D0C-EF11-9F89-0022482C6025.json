@@ -1,0 +1,146 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps_1": {
+        "impersonation": {},
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_microsoftpoweracceleratordataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "84f0b546-8219-43ce-a939-59d6392aa3ea"
+          },
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "Training Session ID",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter training session",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Get_Latest_Booking_numbers": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "cb452e4a-74ec-46a1-9098-e43b911a2271"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "ListRecords"
+            },
+            "parameters": {
+              "entityName": "mpa_bookings",
+              "$filter": "(statecode eq 0) and (_mpa_trainingsession_value eq @{triggerBody()['text']})"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Getting the total number of bookings related with the cancelled booking's training session"
+        },
+        "Latest_booking_Count": {
+          "runAfter": {
+            "Get_Latest_Booking_numbers": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "dff6f7d5-d0fd-4401-a175-a52031db027f"
+          },
+          "type": "Compose",
+          "inputs": "@length(outputs('Get_Latest_Booking_numbers')?['body/value'])",
+          "description": "latest booking count"
+        },
+        "Update_a_row_-_Update_training_sessions_booked_slot": {
+          "runAfter": {
+            "Latest_booking_Count": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "323c8fbd-8e2f-4411-a34e-12065ae5a81b"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "UpdateRecord"
+            },
+            "parameters": {
+              "entityName": "mpa_trainingsessions",
+              "recordId": "@triggerBody()['text']",
+              "item/mpa_bookedslot": "@outputs('Latest_booking_Count')"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Update the training session record booked slot to retrieve the latest booked count"
+        },
+        "Respond_to_a_Power_App_or_flow": {
+          "runAfter": {
+            "Update_a_row_-_Update_training_sessions_booked_slot": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "94516712-44e4-40ca-bf80-79d5e437580c"
+          },
+          "type": "Response",
+          "kind": "PowerApp",
+          "inputs": {
+            "statusCode": 200,
+            "body": {
+              "response": "Success"
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "response": {
+                  "title": "Response",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

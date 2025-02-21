@@ -1,0 +1,387 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_KudosDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_a_row_is_added,_modified_or_deleted": {
+          "metadata": {
+            "operationMetadataId": "6c91761b-f7af-41d6-a97f-fe5395fdc3b7"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps_1",
+              "operationId": "SubscribeWebhookTrigger",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 1,
+              "subscriptionRequest/entityname": "mpa_kudo",
+              "subscriptionRequest/scope": 4
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      },
+      "actions": {
+        "Scope": {
+          "actions": {
+            "Check_if_sender_is_not_null": {
+              "actions": {
+                "Compose_PrincipalAccess_for_sender": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "cd87b19f-552d-47b7-8b7a-442d71fa4df3"
+                  },
+                  "type": "Compose",
+                  "inputs": {
+                    "Principal": {
+                      "systemuserid": "@{triggerOutputs()?['body/_mpa_senderid_value']}",
+                      "@@odata.type": "Microsoft.Dynamics.CRM.systemuser"
+                    },
+                    "AccessMask": "ReadAccess"
+                  }
+                },
+                "Perform_an_unbound_action_to_GrantAccess_to_sender": {
+                  "runAfter": {
+                    "Compose_PrincipalAccess_for_sender": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "74991f59-0d22-493e-a2f8-6e0f6219c4a5"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "PerformUnboundAction",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "actionName": "GrantAccess",
+                      "item/Target": "mpa_kudos(@{triggerOutputs()?['body/mpa_kudoid']})",
+                      "item/PrincipalAccess": "@outputs('Compose_PrincipalAccess_for_sender')"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {},
+              "expression": {
+                "not": {
+                  "equals": [
+                    "@triggerOutputs()?['body/_mpa_senderid_value']",
+                    "@null"
+                  ]
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "08d265cf-682d-4c99-a071-105878707780"
+              },
+              "type": "If",
+              "description": "Validate SenderId is valid, and grant read access to them"
+            },
+            "Check_if_recipient_is_not_null": {
+              "actions": {
+                "Assign_the_kudo_to_the_recipient": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "dfd101f7-8d73-48a7-a4c9-93fe56a0e734"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "UpdateRecord",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_kudos",
+                      "recordId": "@triggerOutputs()?['body/mpa_kudoid']",
+                      "item/ownerid@odata.bind": "/systemusers(@{triggerOutputs()?['body/_mpa_recipientid_value']})"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  },
+                  "description": "Assign to the Recipient so it appears on their \"my\" list"
+                }
+              },
+              "runAfter": {
+                "Check_if_sender_is_not_null": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "not": {
+                  "equals": [
+                    "@triggerOutputs()?['body/_mpa_recipientid_value']",
+                    "@null"
+                  ]
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "09bfa521-ea3c-4194-9ea5-6560d6a2f76c"
+              },
+              "type": "If",
+              "description": "Validate RecipientId is valid, and assign it to them"
+            },
+            "Check_if_recipient_manager_is_not_null": {
+              "actions": {
+                "Get_Manager_Id": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "1573a924-ade9-4655-8106-88254f9efce2"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "ListRecords",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "systemusers",
+                      "$select": "systemuserid",
+                      "$filter": "internalemailaddress eq '@{triggerOutputs()?['body/mpa_recipientmanageremail']}'",
+                      "$top": 1
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Check_if_manager_is_found": {
+                  "actions": {
+                    "Compose_PrincipalAccess_for_recipient_manager": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "cd87b19f-552d-47b7-8b7a-442d71fa4df3"
+                      },
+                      "type": "Compose",
+                      "inputs": {
+                        "Principal": {
+                          "systemuserid": "@{outputs('Get_Manager_Id')?['body/value']?[0]?['systemuserid']}",
+                          "@@odata.type": "Microsoft.Dynamics.CRM.systemuser"
+                        },
+                        "AccessMask": "ReadAccess"
+                      }
+                    },
+                    "Perform_an_unbound_action_to_GrantAccess_to_recipient_manager": {
+                      "runAfter": {
+                        "Compose_PrincipalAccess_for_recipient_manager": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "74991f59-0d22-493e-a2f8-6e0f6219c4a5"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps_1",
+                          "operationId": "PerformUnboundAction",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "actionName": "GrantAccess",
+                          "item/Target": "mpa_kudos(@{triggerOutputs()?['body/mpa_kudoid']})",
+                          "item/PrincipalAccess": "@outputs('Compose_PrincipalAccess_for_recipient_manager')"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Get_Manager_Id": [
+                      "Succeeded"
+                    ]
+                  },
+                  "expression": {
+                    "greaterOrEquals": [
+                      "@length(outputs('Get_Manager_Id')?['body/value'])",
+                      1
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "29ba6d3b-01c9-4a5a-beb6-94bad05ead39"
+                  },
+                  "type": "If"
+                }
+              },
+              "runAfter": {
+                "Check_if_recipient_is_not_null": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Check_is_recipient_is_valid": {
+                    "actions": {
+                      "Condition": {
+                        "actions": {
+                          "Compose_PrincipalAccess_for_recipient_manager_2": {
+                            "runAfter": {},
+                            "metadata": {
+                              "operationMetadataId": "cd87b19f-552d-47b7-8b7a-442d71fa4df3"
+                            },
+                            "type": "Compose",
+                            "inputs": {
+                              "Principal": {
+                                "systemuserid": "@{outputs('Get_recipient_user_record')?['body/_parentsystemuserid_value']}",
+                                "@@odata.type": "Microsoft.Dynamics.CRM.systemuser"
+                              },
+                              "AccessMask": "ReadAccess"
+                            }
+                          },
+                          "Perform_an_unbound_action_to_GrantAccess_to_recipient_manager_2": {
+                            "runAfter": {
+                              "Compose_PrincipalAccess_for_recipient_manager_2": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "74991f59-0d22-493e-a2f8-6e0f6219c4a5"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_commondataserviceforapps_1",
+                                "operationId": "PerformUnboundAction",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                              },
+                              "parameters": {
+                                "actionName": "GrantAccess",
+                                "item/Target": "mpa_kudos(@{triggerOutputs()?['body/mpa_kudoid']})",
+                                "item/PrincipalAccess": "@outputs('Compose_PrincipalAccess_for_recipient_manager_2')"
+                              },
+                              "authentication": "@parameters('$authentication')"
+                            }
+                          }
+                        },
+                        "runAfter": {
+                          "Get_recipient_user_record": [
+                            "Succeeded"
+                          ]
+                        },
+                        "expression": {
+                          "not": {
+                            "equals": [
+                              "@outputs('Get_recipient_user_record')?['body/_parentsystemuserid_value']",
+                              "@null"
+                            ]
+                          }
+                        },
+                        "metadata": {
+                          "operationMetadataId": "6d88f277-bf38-45cb-828e-c875a2091e92"
+                        },
+                        "type": "If"
+                      },
+                      "Get_recipient_user_record": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "f1e4d179-f08b-4f2d-a4a3-e5fbbfe1527f"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_commondataserviceforapps_1",
+                            "operationId": "GetItem",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                          },
+                          "parameters": {
+                            "entityName": "systemusers",
+                            "recordId": "@triggerOutputs()?['body/_mpa_recipientid_value']"
+                          },
+                          "authentication": "@parameters('$authentication')"
+                        }
+                      }
+                    },
+                    "runAfter": {},
+                    "expression": {
+                      "not": {
+                        "equals": [
+                          "@triggerOutputs()?['body/_mpa_recipientid_value']",
+                          "@null"
+                        ]
+                      }
+                    },
+                    "metadata": {
+                      "operationMetadataId": "29d5e625-017d-4be9-8118-fbb1d8cc241f"
+                    },
+                    "type": "If"
+                  }
+                }
+              },
+              "expression": {
+                "not": {
+                  "equals": [
+                    "@triggerOutputs()?['body/mpa_recipientmanageremail']",
+                    "@null"
+                  ]
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "ba53d366-056b-4548-9e28-2f7aedde801c"
+              },
+              "type": "If",
+              "description": "Validate RecipientManagerEmail is valid, and grant read access to them"
+            }
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "08915e8d-3bfe-4574-962a-bdb7693a766d"
+          },
+          "type": "Scope"
+        },
+        "Scope_success": {
+          "actions": {},
+          "runAfter": {
+            "Scope": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "da0cc744-395b-432d-a6e3-95d887d1daad"
+          },
+          "type": "Scope"
+        },
+        "Scope_error": {
+          "actions": {},
+          "runAfter": {
+            "Scope": [
+              "Failed",
+              "Skipped",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "d23df442-b55a-4747-9091-20ca800ace36"
+          },
+          "type": "Scope"
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

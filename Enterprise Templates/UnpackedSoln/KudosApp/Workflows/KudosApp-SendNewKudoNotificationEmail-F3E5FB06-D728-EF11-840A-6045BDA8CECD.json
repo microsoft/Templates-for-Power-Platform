@@ -1,0 +1,452 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps_1": {
+        "impersonation": {
+          "source": "invoker"
+        },
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_KudosDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      },
+      "shared_office365users_2": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_KudosO365"
+        },
+        "api": {
+          "name": "shared_office365users"
+        }
+      },
+      "shared_office365": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_KudosOutlook"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "59e99412-c2ea-4267-9c38-68dbdb19b5d5"
+          },
+          "type": "Request",
+          "kind": "PowerAppV2",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "KudoId",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter your input",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Scope": {
+          "actions": {
+            "Get_the_Kudo_record": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "b1b8cfd3-1271-4fe2-9dd5-62174aaf577d"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_kudos",
+                  "recordId": "@triggerBody()['text']"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Check_if_sender_is_valid": {
+              "actions": {
+                "Get_sender_email_ID": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "8eea5f5d-a7cd-4ccb-ac1c-3f415a93def9"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "GetItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "systemusers",
+                      "recordId": "@outputs('Get_the_Kudo_record')?['body/_mpa_senderid_value']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Get_the_Kudo_record": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "not": {
+                  "equals": [
+                    "@outputs('Get_the_Kudo_record')?['body/_mpa_senderid_value']",
+                    "@null"
+                  ]
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "cb5208dd-1397-4f36-9109-702669d2a819"
+              },
+              "type": "If"
+            },
+            "Check_if_recipient_is_valid": {
+              "actions": {
+                "Get_recipient_email_ID": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "ee5bf3dc-d246-4481-afb5-fb6cddab05c4"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps_1",
+                      "operationId": "GetItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "systemusers",
+                      "recordId": "@outputs('Get_the_Kudo_record')?['body/_mpa_recipientid_value']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Get_manager_(V2)_for_recipient": {
+                  "runAfter": {
+                    "Get_recipient_email_ID": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "440133ae-9849-4f60-aeb6-c7efa960c503"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365users_2",
+                      "operationId": "Manager_V2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365users"
+                    },
+                    "parameters": {
+                      "id": "@outputs('Get_recipient_email_ID')?['body/domainname']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Set_variable_when_manager_is_found": {
+                  "runAfter": {
+                    "Get_manager_(V2)_for_recipient": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "d7c40347-1437-4ad4-baae-38457b2208e7"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "managerEmail",
+                    "value": "@outputs('Get_manager_(V2)_for_recipient')?['body/mail']"
+                  }
+                },
+                "Set_variable_when_manager_is_not_assigned": {
+                  "runAfter": {
+                    "Get_manager_(V2)_for_recipient": [
+                      "Failed"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "9009620a-9f90-45be-9366-161539dc8dfa"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "managerEmail",
+                    "value": "Not Found"
+                  }
+                }
+              },
+              "runAfter": {
+                "Check_if_sender_is_valid": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "not": {
+                  "equals": [
+                    "@outputs('Get_the_Kudo_record')?['body/_mpa_recipientid_value']",
+                    "@null"
+                  ]
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "942139fc-4734-46b3-98e6-b9b77e2fd58b"
+              },
+              "type": "If"
+            },
+            "Sender_photo": {
+              "runAfter": {
+                "Check_if_recipient_is_valid": [
+                  "Succeeded",
+                  "Failed"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "3e6bd3d8-ccf0-4395-8faf-92b2ca11cb72"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365users_2",
+                  "operationId": "UserPhoto_V2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365users"
+                },
+                "parameters": {
+                  "id": "@outputs('Get_sender_email_ID')?['body/domainname']"
+                },
+                "authentication": "@parameters('$authentication')"
+              },
+              "description": "Get photo from O365 using the Sender email"
+            },
+            "Sender_has_photo_or_not": {
+              "actions": {
+                "Set_AddPhoto_to_true": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "bbffa64f-3f0e-435e-bae3-609eb75ba936"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "AddPhoto",
+                    "value": "@true"
+                  },
+                  "description": "Sender has photo"
+                },
+                "Body_with_photo": {
+                  "runAfter": {
+                    "Set_AddPhoto_to_true": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "d510f06f-e1ba-4c75-b47c-7099a385f568"
+                  },
+                  "type": "Compose",
+                  "inputs": "<p><br>\n<body>\n<style>\nbody { \n font-family: Segoe UI, Helvetica, sans-serif;\n}\n#headerDiv{\n width: 600px; \n height: 240px;\n position:relative; \n left: 0px; \n top: 0px; \n background: rgb(0, 90, 158); \n text-align: left;\n margin-right:5px;\n}\n\n#headerSpan{\nposition: absolute;\nwidth: 429px;\nheight: 76px;\nleft: 58px;\ntop: 114px;\n  \tposition:absolute;\n    bottom:0;\n    color: rgb(255, 255, 255); \n    font-family: 'Segoe UI';\n    font-style: normal;\n    font-weight: 400;\n    font-size: 36px;\n    line-height: 48px;\n}\n\n#content{\nwidth: 600px;\nleft: 58px;\ntop: 589px;\n\nfont-family: 'Segoe UI';\nfont-style: normal;\nfont-weight: 600;\nfont-size: 18px;\nline-height: 24px;\ncolor: #201F1E;\n}\n\n#senderImg {\n  border: 1px solid #ddd;\n  border-radius: 4px;\n  border-radius:50%;\n\twidth:50px;\n\theight:50px;\n}\n</style>\n<div id=\"headerDiv\"><span id=\"headerSpan\">You&apos;ve recevied a new&nbsp;<br>Kudo!</span></div>\n<div id=\"content\">\n<p>Hi @{outputs('Get_recipient_email_ID')?['body/fullname']}, </p>\n<p>@{outputs('Get_sender_email_ID')?['body/fullname']} has sent you a new Kudo titled <strong><em>@{outputs('Get_the_Kudo_record')?['body/mpa_title']}.</em></strong></p>\n<p><img id=\"senderImg\" src=\"data:image/jpeg;base64,@{base64(outputs('Sender_photo')?['body'])}\"></img>On @{formatDateTime(outputs('Get_the_Kudo_record')?['body/createdon'],'MM/dd/yyyy hh:mm')}, @{outputs('Get_sender_email_ID')?['body/fullname']} said:\n<p style=\"font-style:italic; font-weight: bold\">@{outputs('Get_the_Kudo_record')?['body/mpa_message']}</p>\n<br>\n<p>Congratulations!</p>\n</div>\n</body>\n<br>\n</p>",
+                  "description": "Receives: Compose_Input = Recipient Name, Compose_Input1 = Sender name,  Compose_Input2 = Title,  Compose_Input3 = Message. Formula Base64 is to convert the content of the photo to a photo. "
+                }
+              },
+              "runAfter": {
+                "Sender_photo": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Body_without_photo": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "cdade6d0-066e-41ad-9ad5-6dbcdeaf2776"
+                    },
+                    "type": "Compose",
+                    "inputs": "<p><br>\n<body>\n<style>\nbody { \n font-family: Segoe UI, Helvetica, sans-serif;\n}\n#headerDiv{\n width: 600px; \n height: 240px;\n position:relative; \n left: 0px; \n top: 0px; \n background: rgb(0, 90, 158); \n text-align: left;\n margin-right:5px;\n}\n\n#headerSpan{\nposition: absolute;\nwidth: 429px;\nheight: 76px;\nleft: 58px;\ntop: 114px;\n  \tposition:absolute;\n    bottom:0;\n    color: rgb(255, 255, 255); \n    font-family: 'Segoe UI';\n    font-style: normal;\n    font-weight: 400;\n    font-size: 36px;\n    line-height: 48px;\n}\n\n#content{\nwidth: 600px;\nheight: 334px;\nleft: 58px;\ntop: 589px;\n\nfont-family: 'Segoe UI';\nfont-style: normal;\nfont-weight: 600;\nfont-size: 18px;\nline-height: 24px;\ncolor: #201F1E;\n}\n\n#senderImg {\n  border: 1px solid #ddd;\n  border-radius: 4px;\n  padding: 5px;\n  border-radius:50%;\n\twidth:50px;\n\theight:50px;\n}\n</style>\n<div id=\"headerDiv\"><span id=\"headerSpan\">You&apos;ve recevied a new&nbsp;<br>Kudo!</span></div>\n<div id=\"content\">\n<p>Hi @{outputs('Get_recipient_email_ID')?['body/fullname']},</p>\n<p>@{outputs('Get_sender_email_ID')?['body/fullname']} has sent you a new Kudo titled <strong><em>@{outputs('Get_the_Kudo_record')?['body/mpa_title']}.</em></strong></p>\n<p><img></img>On @{formatDateTime(outputs('Get_the_Kudo_record')?['body/createdon'],'MM/dd/yyyy hh:mm')}, @{outputs('Get_sender_email_ID')?['body/fullname']} said:\n<p style=\"font-style:italic; font-weight: bold\">@{outputs('Get_the_Kudo_record')?['body/mpa_message']}</p>\n<br>\n<p>Congratulations!</p>\n</div>\n</body>\n<br>\n</p>",
+                    "description": "Body of the email when the sender has no photo."
+                  }
+                }
+              },
+              "expression": {
+                "not": {
+                  "equals": [
+                    "@body('Sender_photo')",
+                    "@null"
+                  ]
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "2d255de4-1d88-4051-9491-81974e64e96c"
+              },
+              "type": "If",
+              "description": "2 paths for email with Sender photo and withouth"
+            },
+            "Send_an_email_(V2)": {
+              "runAfter": {
+                "Sender_has_photo_or_not": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "3ce48d38-c033-43c0-a4cf-c1138f898a2b"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365",
+                  "operationId": "SendEmailV2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                },
+                "parameters": {
+                  "emailMessage/To": "@outputs('Get_recipient_email_ID')?['body/domainname']",
+                  "emailMessage/Subject": "@outputs('Get_the_Kudo_record')?['body/mpa_title']",
+                  "emailMessage/Body": "<p>@{if(variables('AddPhoto'),outputs('Body_with_photo'),outputs('Body_without_photo'))}</p>",
+                  "emailMessage/Cc": "@{outputs('Get_sender_email_ID')?['body/domainname']};@{if(not(equals(variables('managerEmail'), 'Not Found')), variables('managerEmail'), '')}",
+                  "emailMessage/Importance": "Normal"
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_variable_manager_email": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "0e958810-41fb-43c8-8fa0-174b78a3cf35"
+          },
+          "type": "Scope"
+        },
+        "AddPhotoInit": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "dd58ad0c-344d-4d84-ac85-a0dc2fd34f8a"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "AddPhoto",
+                "type": "boolean",
+                "value": "@false"
+              }
+            ]
+          },
+          "description": "Variable to mark if the Sender has a photo or not"
+        },
+        "Respond_to_a_Power_App_or_flow_with_Success": {
+          "runAfter": {
+            "Scope": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6d3778dc-aaf1-4f01-b523-76bf105a160a"
+          },
+          "type": "Response",
+          "kind": "PowerApp",
+          "inputs": {
+            "statusCode": 200,
+            "body": {
+              "status": 200
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "title": "Status",
+                  "x-ms-dynamically-added": true,
+                  "type": "number"
+                }
+              }
+            }
+          }
+        },
+        "Respond_to_a_Power_App_or_flow_with_Error": {
+          "runAfter": {
+            "Scope": [
+              "Failed",
+              "Skipped",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "284b7d06-f9c3-461e-9970-32f6c038ea03"
+          },
+          "type": "Response",
+          "kind": "PowerApp",
+          "inputs": {
+            "statusCode": 200,
+            "body": {
+              "status": 400
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "title": "Status",
+                  "x-ms-dynamically-added": true,
+                  "type": "number"
+                }
+              }
+            }
+          }
+        },
+        "Initialize_variable_manager_email": {
+          "runAfter": {
+            "AddPhotoInit": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "ff70ad36-60c9-4577-84e9-786d250df405"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "managerEmail",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

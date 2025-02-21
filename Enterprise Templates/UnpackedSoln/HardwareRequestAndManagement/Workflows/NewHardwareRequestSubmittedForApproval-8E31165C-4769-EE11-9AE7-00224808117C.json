@@ -1,0 +1,854 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "impersonation": {
+          "source": "invoker"
+        },
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_HardwareRequestAndManagementDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      },
+      "shared_commondataserviceforapps_1": {
+        "impersonation": {
+          "source": "invoker"
+        },
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_HardwareRequestAndManagementDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      },
+      "shared_approvals_1": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_HardwareRequestAndManagementApprovals"
+        },
+        "api": {
+          "name": "shared_approvals"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "Hardware Request and Management URL (mpa_HardwareRequestAndManagementAppURL)": {
+          "defaultValue": "https://ph1.crm.dynamics.com/main.aspx?appid=1381a3f5-6342-4af1-9290-8e564a417129&pagetype=dashboard&id=5d431800-1270-40e9-a90a-c970556cf0fe&type=system&_canOverride=true",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mpa_HardwareRequestAndManagementAppURL",
+            "description": "Used to store the URL of the Hardware Request and Management model-driven app."
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "0f2f065e-0595-420c-9342-e63463f6f8e4"
+          },
+          "type": "Request",
+          "kind": "PowerAppV2",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "Request ID",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Primary identifier for the hardware request",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Initialize_variable_-_Total_Amount": {
+          "runAfter": {
+            "Initialize_variable_-_Approver_Emails": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6ce3d46d-a63f-4df0-bc25-a8be7b692f05"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Total Amount",
+                "type": "float",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_Items_Markup": {
+          "runAfter": {
+            "Initialize_variable_-_Total_Amount": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "543a93c9-3de4-4a53-bc8c-18af1cd7eac3"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Items Markup",
+                "type": "string",
+                "value": "|Hardware|Qty.|Unit Price|Total|\n|-----------|----|-----------|-----|"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_Approval_Comments": {
+          "runAfter": {
+            "Initialize_variable_-_Items_Markup": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c9416536-7bc5-4bf7-aa5d-fdc6a78fe528"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Approval Comments",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_Approver_Emails": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "202e8a9d-496a-4c5c-90b0-bf67ca12f3c7"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Approver Emails",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Try": {
+          "actions": {
+            "Get_Currency": {
+              "runAfter": {
+                "Share_record_with_Submitted_By": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "59a72ead-ee8f-4720-8fb1-fc07bd28192c"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "transactioncurrencies",
+                  "recordId": "@outputs('Get_Hardware_Request')?['body/_transactioncurrencyid_value']"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Get_Business_Group": {
+              "runAfter": {
+                "Get_Currency": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "0e0f03c7-4e61-4a55-9f6c-a492293963d1"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_businessgroups",
+                  "recordId": "@outputs('Get_Hardware_Request')?['body/_mpa_businessgroup_value']"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Get_Submitted_By": {
+              "runAfter": {
+                "Get_Business_Group": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "50bebc9d-a0c4-4d2a-b177-0d26607a8384"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "systemusers",
+                  "recordId": "@outputs('Get_Hardware_Request')?['body/_mpa_submittedby_value']"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Get_Hardware_Request_Items": {
+              "runAfter": {
+                "Get_Submitted_By": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "88f0d81f-43c0-4d09-ac85-7c3c2215d31d"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_hardwarerequestitems",
+                  "$filter": "_mpa_hardwarerequest_value eq '@{outputs('Get_Hardware_Request')?['body/mpa_hardwarerequestid']}'"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Apply_to_each_-_Hardware_Request_Items": {
+              "foreach": "@outputs('Get_Hardware_Request_Items')?['body/value']",
+              "actions": {
+                "Increment_variable_-_Total_Amount": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "a0c3b5c0-fc17-4101-8860-1f2ec2972aa7"
+                  },
+                  "type": "IncrementVariable",
+                  "inputs": {
+                    "name": "Total Amount",
+                    "value": "@items('Apply_to_each_-_Hardware_Request_Items')?['mpa_totalamount']"
+                  }
+                },
+                "Append_to_string_variable": {
+                  "runAfter": {
+                    "Increment_variable_-_Total_Amount": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "db57afe2-141e-45e9-877b-d75a84e02e6d"
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "Items Markup",
+                    "value": "\n|@{items('Apply_to_each_-_Hardware_Request_Items')?['mpa_name']}|@{formatNumber(float(items('Apply_to_each_-_Hardware_Request_Items')?['mpa_quantity']), '#,##0')}|@{outputs('Get_Currency')?['body/currencysymbol']}@{formatNumber(float(items('Apply_to_each_-_Hardware_Request_Items')?['mpa_unitprice']), '#,##0.00')}|@{outputs('Get_Currency')?['body/currencysymbol']}@{formatNumber(float(items('Apply_to_each_-_Hardware_Request_Items')?['mpa_totalamount']), '#,##0.00')}|"
+                  }
+                }
+              },
+              "runAfter": {
+                "Get_Hardware_Request_Items": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "2d518c90-33c1-492d-aa32-f590986e89c1"
+              },
+              "type": "Foreach"
+            },
+            "Condition_-_Primary_vs._Team_Approver": {
+              "actions": {
+                "Get_Primary_Approver": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "6dc38dc8-de8c-4d83-824a-9ea93b51b74d"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "GetItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "systemusers",
+                      "recordId": "@outputs('Get_Business_Group')?['body/_mpa_primaryapprover_value']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Set_variable_-_Approver_Emails_(Primary)": {
+                  "runAfter": {
+                    "Update_Assigned_To_Primary_Approver": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "f4d5610b-83df-4f7b-9409-b921966c9195"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "Approver Emails",
+                    "value": "@outputs('Get_Primary_Approver')?['body/domainname']"
+                  }
+                },
+                "Update_Assigned_To_Primary_Approver": {
+                  "runAfter": {
+                    "Get_Primary_Approver": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "71f6ac55-9826-4ed2-9805-298faf68cb20"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "UpdateRecord",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "mpa_hardwarerequests",
+                      "recordId": "@outputs('Get_Hardware_Request')?['body/mpa_hardwarerequestid']",
+                      "item/ownerid@odata.bind": "/systemusers(@{outputs('Get_Business_Group')?['body/_mpa_primaryapprover_value']})"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Apply_to_each_-_Hardware_Request_Items": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Apply_to_each_Approver_Group_Member": {
+                    "foreach": "@outputs('List_rows_-_Team_Members')?['body/value']",
+                    "actions": {
+                      "Append_to_string_variable_-_Approver_Emails": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "8a272036-a2a1-4d39-860f-34a95de1e263"
+                        },
+                        "type": "AppendToStringVariable",
+                        "inputs": {
+                          "name": "Approver Emails",
+                          "value": "@{items('Apply_to_each_Approver_Group_Member')?['domainname']};"
+                        }
+                      }
+                    },
+                    "runAfter": {
+                      "Apply_to_each": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "6e71785b-b934-4f32-90a1-e9621f5611ab"
+                    },
+                    "type": "Foreach"
+                  },
+                  "List_rows_-_Team_Members": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "8425c766-ee98-456b-b878-6971c97f2c66"
+                    },
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_commondataserviceforapps",
+                        "operationId": "ListRecords",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                      },
+                      "parameters": {
+                        "entityName": "systemusers",
+                        "$select": "domainname",
+                        "$filter": "(teammembership_association/any(t:t/teamid eq '@{outputs('Get_Business_Group')?['body/_mpa_approverteam_value']}'))"
+                      },
+                      "authentication": "@parameters('$authentication')"
+                    }
+                  },
+                  "Apply_to_each": {
+                    "foreach": "@outputs('Get_Hardware_Request_Items')?['body/value']",
+                    "actions": {
+                      "Update_Assigned_to_Approver_Team": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "6b8aa2a9-8c2c-4417-a1b6-5b660563de79"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_commondataserviceforapps",
+                            "operationId": "UpdateRecord",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                          },
+                          "parameters": {
+                            "entityName": "mpa_hardwarerequests",
+                            "recordId": "@items('Apply_to_each')?['_mpa_hardwarerequest_value']",
+                            "item/ownerid@odata.bind": "/teams(@{outputs('Get_Business_Group')?['body/_mpa_approverteam_value']})"
+                          },
+                          "authentication": "@parameters('$authentication')"
+                        }
+                      }
+                    },
+                    "runAfter": {
+                      "List_rows_-_Team_Members": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "536f182a-e3ac-44e0-9158-4e0f5c6f710a"
+                    },
+                    "type": "Foreach"
+                  }
+                }
+              },
+              "expression": {
+                "equals": [
+                  "@outputs('Get_Business_Group')?['body/mpa_useapproveremaillist']",
+                  false
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "9f6d6252-1d35-47d4-a5c4-774896955fb6"
+              },
+              "type": "If"
+            },
+            "Compose_-_Deep_Link_href": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "785fe06e-b78f-45f5-9861-1511c9079d29"
+              },
+              "type": "Compose",
+              "inputs": "@concat('<a href=\"',parameters('Hardware Request and Management URL (mpa_HardwareRequestAndManagementAppURL)'),'&pagetype=entityrecord&etn=mpa_hardwarerequest&id=',triggerBody()['text'],'\">here</a>')"
+            },
+            "Get_Hardware_Request": {
+              "runAfter": {
+                "Compose_-_Deep_Link_href": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "fd4a8bee-0f13-43c9-82c5-7d709074b188"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_hardwarerequests",
+                  "recordId": "@triggerBody()['text']"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Create_an_approval": {
+              "runAfter": {
+                "Condition_-_Primary_vs._Team_Approver": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "b5812c02-4246-4edf-98bb-d0175bd66196"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_approvals_1",
+                  "operationId": "CreateAnApproval",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+                },
+                "parameters": {
+                  "approvalType": "Basic",
+                  "ApprovalCreationInput/title": "@outputs('Get_Hardware_Request')?['body/mpa_name']",
+                  "ApprovalCreationInput/assignedTo": "@{variables('Approver Emails')};",
+                  "ApprovalCreationInput/details": "Please review the request details and choose to approve or reject it.\n\n**Submitted By:** @{outputs('Get_Submitted_By')?['body/fullname']}\n**Amount:** @{outputs('Get_Currency')?['body/currencysymbol']}@{formatNumber(float(variables('Total Amount')), '#,##0.00')}\n**Additional Details:** @{if(empty(outputs('Get_Hardware_Request')?['body/mpa_additionaldetails']),'No additional details provided',outputs('Get_Hardware_Request')?['body/mpa_additionaldetails'])}\n\n@{variables('Items Markup')}\n",
+                  "ApprovalCreationInput/itemLink": "@concat(parameters('Hardware Request and Management URL (mpa_HardwareRequestAndManagementAppURL)'),'&pagetype=entityrecord&etn=mpa_hardwarerequest&id=',triggerBody()['text'])",
+                  "ApprovalCreationInput/itemLinkDescription": "Request record to review",
+                  "ApprovalCreationInput/enableNotifications": true,
+                  "ApprovalCreationInput/enableReassignment": true
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Update_Approval_ID": {
+              "runAfter": {
+                "Create_an_approval": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "adac428a-3ec2-480c-8596-3501cbb7549c"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps_1",
+                  "operationId": "UpdateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "mpa_hardwarerequests",
+                  "recordId": "@outputs('Get_Hardware_Request')?['body/mpa_hardwarerequestid']",
+                  "item/mpa_approvalid": "@outputs('Create_an_approval')?['body/name']"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Share_record_with_Submitted_By": {
+              "runAfter": {
+                "Get_Hardware_Request": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "ea17dd63-8466-47e1-b43a-179666a5f6d2"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "PerformUnboundAction",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "actionName": "GrantAccess",
+                  "item/Target": "mpa_hardwarerequests(@{outputs('Get_Hardware_Request')?['body/mpa_hardwarerequestid']})",
+                  "item/PrincipalAccess": {
+                    "Principal": {
+                      "systemuserid": "@{outputs('Get_Hardware_Request')?['body/_mpa_submittedby_value']}",
+                      "@{variables('At')}odata.type": "Microsoft.Dynamics.CRM.systemuser"
+                    },
+                    "AccessMask": "ReadAccess,WriteAccess,AppendAccess,AppendToAccess,CreateAccess,AssignAccess,DeleteAccess,ShareAccess"
+                  }
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_variable_-_Error": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3edef835-d360-46b6-b817-b579ddd882a6"
+          },
+          "type": "Scope"
+        },
+        "Initialize_variable_-_At": {
+          "runAfter": {
+            "Initialize_variable_-_Approval_Comments": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "e614e3fe-b865-4517-a0d9-3daf3bb432c3"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "At",
+                "type": "string",
+                "value": "@@"
+              }
+            ]
+          }
+        },
+        "Catch": {
+          "actions": {
+            "Filter_array": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "9ab9fe70-8506-4794-943c-c26a5e885b18"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@result('Try')",
+                "where": "@or(equals(item()?['Status'], 'Failed'), equals(item()?['Status'], 'TimedOut'))"
+              }
+            },
+            "Terminate": {
+              "runAfter": {
+                "Apply_to_each_error": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "4e03209e-a02a-4f79-b06f-e741349c843d"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed"
+              }
+            },
+            "Parse_JSON": {
+              "runAfter": {
+                "Filter_array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "7fe6f99d-7f4d-4ac2-a76a-f0cfa416666a"
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@body('Filter_array')",
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "inputs": {
+                        "type": "object",
+                        "properties": {
+                          "host": {
+                            "type": "object",
+                            "properties": {
+                              "apiId": {
+                                "type": "string"
+                              },
+                              "connectionReferenceName": {
+                                "type": "string"
+                              },
+                              "operationId": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "parameters": {
+                            "type": "object",
+                            "properties": {
+                              "entityName": {
+                                "type": "string"
+                              },
+                              "recordId": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "outputs": {
+                        "type": "object",
+                        "properties": {
+                          "statusCode": {
+                            "type": "integer"
+                          },
+                          "headers": {
+                            "type": "object",
+                            "properties": {
+                              "Cache-Control": {
+                                "type": "string"
+                              },
+                              "x-ms-service-request-id": {
+                                "type": "string"
+                              },
+                              "Set-Cookie": {
+                                "type": "string"
+                              },
+                              "Strict-Transport-Security": {
+                                "type": "string"
+                              },
+                              "REQ_ID": {
+                                "type": "string"
+                              },
+                              "CRM.ServiceId": {
+                                "type": "string"
+                              },
+                              "AuthActivityId": {
+                                "type": "string"
+                              },
+                              "x-ms-dop-hint": {
+                                "type": "string"
+                              },
+                              "x-ms-ratelimit-time-remaining-xrm-requests": {
+                                "type": "string"
+                              },
+                              "x-ms-ratelimit-burst-remaining-xrm-requests": {
+                                "type": "string"
+                              },
+                              "OData-Version": {
+                                "type": "string"
+                              },
+                              "X-Source": {
+                                "type": "string"
+                              },
+                              "Public": {
+                                "type": "string"
+                              },
+                              "Date": {
+                                "type": "string"
+                              },
+                              "Allow": {
+                                "type": "string"
+                              },
+                              "Content-Type": {
+                                "type": "string"
+                              },
+                              "Expires": {
+                                "type": "string"
+                              },
+                              "Content-Length": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "body": {
+                            "type": "object",
+                            "properties": {
+                              "error": {
+                                "type": "object",
+                                "properties": {
+                                  "code": {
+                                    "type": "string"
+                                  },
+                                  "message": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "startTime": {
+                        "type": "string"
+                      },
+                      "endTime": {
+                        "type": "string"
+                      },
+                      "trackingId": {
+                        "type": "string"
+                      },
+                      "clientTrackingId": {
+                        "type": "string"
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "inputs",
+                      "outputs",
+                      "startTime",
+                      "endTime",
+                      "trackingId",
+                      "clientTrackingId",
+                      "code",
+                      "status"
+                    ]
+                  }
+                }
+              }
+            },
+            "Apply_to_each_error": {
+              "foreach": "@body('Parse_JSON')",
+              "actions": {
+                "Append_to_string_variable_-_Error": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "467fa33e-4dbb-4c5f-96a0-f54f65c6e31e"
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "Error",
+                    "value": "@{items('Apply_to_each_error')?['outputs']?['body']?['error']}; "
+                  }
+                }
+              },
+              "runAfter": {
+                "Parse_JSON": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "5087ca32-cad8-4623-8135-966aa349d459"
+              },
+              "type": "Foreach"
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "40dae41e-eaac-418c-b5c7-c43ba7015ddc"
+          },
+          "type": "Scope"
+        },
+        "Initialize_variable_-_Error": {
+          "runAfter": {
+            "Initialize_variable_-_At": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "8468f0e1-da32-47c6-adf1-bef9c02fb37a"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Error",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

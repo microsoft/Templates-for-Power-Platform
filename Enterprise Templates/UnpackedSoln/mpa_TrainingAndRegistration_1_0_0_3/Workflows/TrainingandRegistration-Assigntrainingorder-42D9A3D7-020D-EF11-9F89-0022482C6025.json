@@ -1,0 +1,173 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "impersonation": {},
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mpa_microsoftpoweracceleratordataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "Get_Trainings_added,_modified_or_deleted": {
+          "metadata": {
+            "operationMetadataId": "ee647866-f4c4-4bfd-9219-449a016b720b"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "SubscribeWebhookTrigger"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 7,
+              "subscriptionRequest/entityname": "mpa_training",
+              "subscriptionRequest/scope": 4,
+              "subscriptionRequest/filteringattributes": "mpa_category, mpa_prerequisite",
+              "subscriptionRequest/name": "42d9a3d7-020d-ef11-9f89-0022482c6025"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Gets the training that is modified, added or deleted"
+        }
+      },
+      "actions": {
+        "List_all_trainings_in_the_the_same_category_as_the_modified_training": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "8e2bdfb8-6f1f-424d-88f7-79c21f7e128e"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "ListRecords"
+            },
+            "parameters": {
+              "entityName": "mpa_trainings",
+              "$filter": "(_mpa_category_value eq @{triggerOutputs()?['body/_mpa_category_value']}) and (statecode eq 0)",
+              "$orderby": "createdon"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "description": "Gets all the active trainings under the same category as the modified training record"
+        },
+        "Add_an_order_value_to_each_trainings_within_the_same_category": {
+          "foreach": "@outputs('List_all_trainings_in_the_the_same_category_as_the_modified_training')?['body/value']",
+          "actions": {
+            "Condition_-_If_has_prerequisite": {
+              "actions": {
+                "Assign_the_numerical_value_1_to_the_top_most_training_in_the_series": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "356e70d9-ae42-4df2-b31c-ba39d7218262"
+                  },
+                  "type": "Workflow",
+                  "inputs": {
+                    "host": {
+                      "workflowReferenceName": "d7af44e2-040d-ef11-9f89-0022482c6025"
+                    },
+                    "body": {
+                      "text": "@items('Add_an_order_value_to_each_trainings_within_the_same_category')?['mpa_trainingid']",
+                      "number": 1
+                    }
+                  },
+                  "description": "This adds the value 1 to the top most training in the series"
+                }
+              },
+              "runAfter": {},
+              "else": {
+                "actions": {
+                  "Get_Order_Value_of_the_prerequisite": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "18a1d084-bb86-4ff3-869d-cbbb425621e9"
+                    },
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                        "connectionName": "shared_commondataserviceforapps",
+                        "operationId": "GetItem"
+                      },
+                      "parameters": {
+                        "entityName": "mpa_trainings",
+                        "recordId": "@items('Add_an_order_value_to_each_trainings_within_the_same_category')?['_mpa_prerequisite_value']",
+                        "$select": "mpa_order"
+                      },
+                      "authentication": "@parameters('$authentication')"
+                    },
+                    "description": "get only the order value of the record"
+                  },
+                  "Assign_values_of_the_non_top_level_training_in_the_series": {
+                    "runAfter": {
+                      "Get_Order_Value_of_the_prerequisite": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "937f890b-1037-460d-8a06-f3a86f71696e"
+                    },
+                    "type": "Workflow",
+                    "inputs": {
+                      "host": {
+                        "workflowReferenceName": "d7af44e2-040d-ef11-9f89-0022482c6025"
+                      },
+                      "body": {
+                        "text": "@items('Add_an_order_value_to_each_trainings_within_the_same_category')?['mpa_trainingid']",
+                        "number": "@add(outputs('Get_Order_Value_of_the_prerequisite')?['body/mpa_order'], 1)"
+                      }
+                    },
+                    "description": "Adds numerical values starting from 2 up until the last order for the non top most training in the series"
+                  }
+                }
+              },
+              "expression": {
+                "equals": [
+                  "@items('Add_an_order_value_to_each_trainings_within_the_same_category')?['_mpa_prerequisite_value']",
+                  "@null"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "c36d9972-4968-4ff6-b65c-ae84a45a6875"
+              },
+              "type": "If",
+              "description": "This condition checks if the current record has a prerequisite"
+            }
+          },
+          "runAfter": {
+            "List_all_trainings_in_the_the_same_category_as_the_modified_training": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "af44815f-ca9c-4062-b939-2496eb1ef143"
+          },
+          "type": "Foreach",
+          "description": "This will add numerical value to the order column for each training record"
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}
